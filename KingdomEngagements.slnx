@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="src/KingdomEngagements.Web/KingdomEngagements.Web.csproj" />
+  <Project Path="tests/KingdomEngagements.Tests/KingdomEngagements.Tests.csproj" />
 </Solution>

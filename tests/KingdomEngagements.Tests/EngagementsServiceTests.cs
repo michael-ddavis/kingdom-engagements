@@ -1,6 +1,7 @@
 using System.Text.Json;
 using KingdomEngagements.Web.Features;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace KingdomEngagements.Tests;
 
@@ -175,6 +176,7 @@ public sealed class EngagementsServiceTests
     private static TestFixture CreateFixture()
     {
         var options = new DbContextOptionsBuilder<EngagementsDbContext>()
+            .ReplaceService<IModelCustomizer, EngagementsModelCustomizer>()
             .UseInMemoryDatabase($"engagements-tests-{Guid.NewGuid():N}")
             .Options;
         var database = new EngagementsDbContext(options);

@@ -1,21 +1,23 @@
-using System.Security.Claims;
 using KingdomEngagements.Web.Features;
 using KingdomEngagements.Web.Platform;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var provider = builder.Configuration["Database:Provider"] ?? "Sqlite";
-var connectionString = builder.Configuration.GetConnectionString("EngagementsDatabase")
-    ?? "Data Source=kingdom-engagements.db";
+var provider = builder.Configuration["Database:Provider"] ?? "InMemory";
+var connectionString = builder.Configuration.GetConnectionString("EngagementsDatabase");
 builder.Services.AddDbContext<EngagementsDbContext>(options =>
 {
     if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
+    {
+        if (string.IsNullOrWhiteSpace(connectionString))
+            throw new InvalidOperationException("ConnectionStrings:EngagementsDatabase is required for SQL Server.");
         options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure());
-    else
-        options.UseSqlite(connectionString);
+        return;
+    }
+
+    options.UseInMemoryDatabase("KingdomEngagements");
 });
 
 var keyPath = builder.Configuration["KingdomOS:Identity:KeyPath"];
@@ -64,9 +66,7 @@ app.UseAuthentication();
 app.Use(async (context, next) =>
 {
     if (app.Environment.IsDevelopment() && context.User.Identity?.IsAuthenticated != true)
-    {
         context.User = KingdomIdentity.CreateDevelopmentPrincipal();
-    }
     await next();
 });
 app.UseMiddleware<EngagementsEntitlementMiddleware>();

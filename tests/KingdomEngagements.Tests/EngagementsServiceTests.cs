@@ -19,6 +19,7 @@ public sealed class EngagementsServiceTests
             "Regional Leadership Gathering");
 
         var first = await fixture.Service.IngestAsync(envelope, CancellationToken.None);
+        fixture.Database.ChangeTracker.Clear();
         var second = await fixture.Service.IngestAsync(envelope, CancellationToken.None);
 
         Assert.False(first.Duplicate);
@@ -54,6 +55,7 @@ public sealed class EngagementsServiceTests
                 DateTimeOffset.UtcNow.AddDays(11),
                 "Atlanta"),
             CancellationToken.None);
+        fixture.Database.ChangeTracker.Clear();
         await fixture.Service.CreateAsync(
             secondTenant,
             new CreateEngagementRequest(
@@ -65,6 +67,7 @@ public sealed class EngagementsServiceTests
                 DateTimeOffset.UtcNow.AddDays(21),
                 "Chicago"),
             CancellationToken.None);
+        fixture.Database.ChangeTracker.Clear();
 
         var firstResults = await fixture.Service.GetAsync(firstTenant, CancellationToken.None);
         var secondResults = await fixture.Service.GetAsync(secondTenant, CancellationToken.None);
@@ -91,6 +94,7 @@ public sealed class EngagementsServiceTests
                 DateTimeOffset.UtcNow.AddDays(31),
                 "Charlotte"),
             CancellationToken.None);
+        fixture.Database.ChangeTracker.Clear();
 
         var withTask = await fixture.Service.AddTaskAsync(
             tenantId,
@@ -106,6 +110,7 @@ public sealed class EngagementsServiceTests
         Assert.Equal("open", task.Status);
         Assert.Equal(0, withTask.Summary.ReadinessPercent);
         Assert.Equal(1, withTask.Summary.OpenTasks);
+        fixture.Database.ChangeTracker.Clear();
 
         var completed = await fixture.Service.UpdateTaskAsync(
             tenantId,

@@ -2,6 +2,7 @@ using KingdomEngagements.Web.Features;
 using KingdomEngagements.Web.Platform;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,6 +10,7 @@ var provider = builder.Configuration["Database:Provider"] ?? "InMemory";
 var connectionString = builder.Configuration.GetConnectionString("EngagementsDatabase");
 builder.Services.AddDbContext<EngagementsDbContext>(options =>
 {
+    options.ReplaceService<IModelCustomizer, EngagementsModelCustomizer>();
     if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
     {
         if (string.IsNullOrWhiteSpace(connectionString))

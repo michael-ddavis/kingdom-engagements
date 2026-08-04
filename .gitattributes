@@ -1,0 +1,9 @@
+* text=auto
+*.cs text eol=lf
+*.csproj text eol=lf
+*.slnx text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.js text eol=lf

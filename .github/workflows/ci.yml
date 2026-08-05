@@ -17,3 +17,15 @@ jobs:
       - run: dotnet build KingdomEngagements.slnx --configuration Release --no-restore
       - run: dotnet test KingdomEngagements.slnx --configuration Release --no-build
       - run: docker build --tag kingdom-engagements:ci .
+      - name: Verify container health
+        shell: bash
+        run: |
+          container_id="$(docker run --detach kingdom-engagements:ci)"
+          trap 'docker logs "$container_id"; docker rm --force "$container_id"' EXIT
+          for attempt in {1..30}; do
+            if docker exec "$container_id"               curl --fail --silent http://localhost:8080/health               | grep --quiet '"module":"engagements"'; then
+              exit 0
+            fi
+            sleep 2
+          done
+          exit 1

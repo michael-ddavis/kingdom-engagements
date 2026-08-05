@@ -202,7 +202,11 @@ public sealed class EngagementsInitializer(EngagementsDbContext database)
 {
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
-        await database.Database.EnsureCreatedAsync(cancellationToken);
+        if (database.Database.IsRelational())
+            await database.Database.MigrateAsync(cancellationToken);
+        else
+            await database.Database.EnsureCreatedAsync(cancellationToken);
+
         if (await database.Assignments.AnyAsync(cancellationToken)) return;
 
         var now = DateTimeOffset.UtcNow;

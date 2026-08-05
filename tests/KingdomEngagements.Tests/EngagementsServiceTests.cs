@@ -8,6 +8,19 @@ namespace KingdomEngagements.Tests;
 public sealed class EngagementsServiceTests
 {
     [Fact]
+    public void SqlServerSchemaMigrationIsRegistered()
+    {
+        var options = new DbContextOptionsBuilder<EngagementsDbContext>()
+            .ReplaceService<IModelCustomizer, EngagementsModelCustomizer>()
+            .UseSqlServer("Server=localhost;Database=KingdomEngagements;Integrated Security=true;TrustServerCertificate=true")
+            .Options;
+
+        using var database = new EngagementsDbContext(options);
+
+        Assert.Contains("20260805000000_InitialEngagementsSchema", database.Database.GetMigrations());
+    }
+
+    [Fact]
     public async Task AssignmentApprovedIntakeIsIdempotent()
     {
         await using var fixture = CreateFixture();

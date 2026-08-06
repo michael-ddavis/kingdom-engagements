@@ -3,56 +3,105 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Kingdom Engagements</title>
+  <title>Ministry Daybook · Kingdom Engagements</title>
   <link rel="stylesheet" href="/app.css" />
 </head>
 <body>
   <div class="shell">
     <aside class="sidebar">
-      <a class="brand" id="platform-link" href="http://localhost:5100"><span>K</span><strong>KingdomOS<small>Engagements</small></strong></a>
-      <nav>
-        <a class="active" href="#overview">Overview</a>
-        <a href="#assignments">Assignments</a>
-        <a href="#readiness">Readiness</a>
-        <a href="#coordination">Travel & host</a>
-        <a href="#documents">Documents</a>
-        <a href="#closeout">Closeout</a>
+      <a class="brand" id="platform-link" href="http://localhost:5100">
+        <span>K</span>
+        <strong>KingdomOS<small>Kingdom Engagements</small></strong>
+      </a>
+      <nav aria-label="Engagements navigation">
+        <a class="active" href="#daybook">Ministry Daybook</a>
+        <a href="#journey">Journey</a>
+        <a href="#working-page">Working page</a>
+        <a href="#context">Context</a>
       </nav>
       <p class="boundary">Engagements owns traveler-facing logistics. Operations receives only governed status, risk, owner, and requested help.</p>
     </aside>
+
     <main>
-      <header class="topbar"><span id="tenant-name">Cynthia Thompson Global</span><b><i></i> Entitlement verified</b></header>
-      <section class="hero" id="overview">
-        <div><p class="eyebrow">Approved assignments · prepared hosts · ready travelers</p><h1>Every engagement, ready before arrival.</h1><p>Coordinate host details, travel, lodging, transportation, documents, readiness, and closeout in one independently entitled workspace.</p></div>
-        <button id="refresh">Refresh workspace</button>
-      </section>
-      <section class="metrics" id="metrics"></section>
-      <p id="message" class="message" hidden></p>
-      <section class="workspace-grid" id="assignments">
-        <article class="panel assignment-panel">
-          <header><div><p class="eyebrow">Assignment inbox</p><h2>Approved engagements</h2></div><span id="assignment-count">0</span></header>
-          <div id="assignment-list" class="assignment-list"></div>
-        </article>
-        <article class="panel detail-panel" id="assignment-detail">
-          <div class="empty">Select an engagement to open its coordination workspace.</div>
-        </article>
-      </section>
-      <section class="boundary-grid">
-        <article><strong>Operations</strong><p>Owns organizational oversight, dependencies, support requests, and exceptions—not itinerary details.</p></article>
-        <article><strong>Missions</strong><p>Owns trip-specific passport, visa, and mission readiness when the engagement belongs to a missions trip.</p></article>
-        <article><strong>Engagements</strong><p>Owns host coordination, travel, lodging, transportation, documents, readiness, and closeout.</p></article>
+      <header class="topbar">
+        <span id="tenant-name">Cynthia Thompson Global</span>
+        <b><i></i> Entitlement verified</b>
+      </header>
+
+      <section class="daybook" id="daybook">
+        <header class="daybook-heading">
+          <div>
+            <p class="eyebrow">Kingdom Engagements / Ministry coordination</p>
+            <h1>Ministry Daybook</h1>
+            <p>Where engagement work is, who carries it, what comes next, and what must not fall through the cracks.</p>
+          </div>
+          <div class="daybook-date"><span>Daily working range</span><strong id="selected-date"></strong></div>
+        </header>
+
+        <div class="toolbar" aria-label="Daybook controls">
+          <div class="date-controls">
+            <button id="previous-range" type="button" aria-label="Previous working range">←</button>
+            <button id="today" type="button">Today</button>
+            <button id="next-range" type="button" aria-label="Next working range">→</button>
+          </div>
+          <div class="view-controls" aria-label="Planning range">
+            <button type="button" class="active" data-view="day">Day</button>
+            <button type="button" data-view="week">Week</button>
+            <button type="button" data-view="month">Month</button>
+          </div>
+          <button id="refresh" class="refresh-button" type="button">Refresh record ↗</button>
+        </div>
+
+        <p id="summary-line" class="summary-line"><span></span>Loading permitted engagement work…</p>
+        <p id="message" class="message" hidden></p>
+
+        <div class="fieldbook-frame">
+          <aside class="journey-rail" id="journey" aria-label="Selected ministry journey">
+            <header><span>Journey rail</span><strong id="journey-stage">Select an entry</strong></header>
+            <ol id="journey-list" class="journey-list"></ol>
+          </aside>
+
+          <section class="working-page" id="working-page">
+            <header class="working-heading">
+              <div><p class="eyebrow">Working page</p><h2 id="working-date">Today</h2></div>
+              <span id="entry-count">0 in range</span>
+            </header>
+
+            <div id="ledger" class="ledger" role="list" aria-label="Ministry work ledger"></div>
+            <div id="record-workspace" class="record-workspace" hidden></div>
+
+            <footer class="action-line">
+              <div><span>Next meaningful action</span><strong id="next-action">Select a work item to see its next action.</strong></div>
+              <button id="primary-action" type="button" disabled>Open coordination record →</button>
+            </footer>
+          </section>
+
+          <aside class="context-margin" id="context" aria-label="Selected work context">
+            <section class="context-intro"><span>Context margin</span><h2 id="context-title">No work selected</h2><p id="context-ministry"></p><small id="context-location"></small></section>
+            <section><h3>Ownership</h3><dl id="context-facts" class="context-facts"></dl></section>
+            <section><h3>People in this work</h3><ul id="people-list" class="people-list"></ul></section>
+            <section class="intelligence-note"><span>Apostolic Intelligence</span><p id="intelligence-copy">Select an entry to see permission-safe guidance.</p></section>
+            <section><h3>Recent record</h3><ol id="history-list" class="history-list"></ol></section>
+          </aside>
+        </div>
       </section>
     </main>
   </div>
-  <template id="detail-template">
-    <header class="detail-header"><div><p class="eyebrow">Engagement workspace</p><h2 data-field="title"></h2><p data-field="subtitle"></p></div><span data-field="status"></span></header>
-    <section class="readiness-card" id="readiness"><div><strong data-field="readiness"></strong><small>overall readiness</small></div><progress data-field="progress" max="100"></progress></section>
-    <section class="status-grid" id="coordination"></section>
-    <section class="detail-section"><header><div><p class="eyebrow">Host coordination</p><h3>Assignment details</h3></div></header><dl class="details-list"></dl></section>
-    <section class="detail-section"><header><div><p class="eyebrow">Work to complete</p><h3>Readiness tasks</h3></div><button type="button" data-action="add-task">Add task</button></header><div class="task-list"></div></section>
-    <section class="detail-section" id="documents"><header><div><p class="eyebrow">Required records</p><h3>Documents</h3></div></header><div class="document-list"></div></section>
-    <section class="detail-section" id="closeout"><header><div><p class="eyebrow">After the engagement</p><h3>Closeout</h3></div></header><p class="closeout-copy"></p></section>
+
+  <template id="record-template">
+    <header class="record-header">
+      <button type="button" data-action="back">← Back to Daybook</button>
+      <div><p class="eyebrow">Engagement working record</p><h2 data-field="title"></h2><p data-field="subtitle"></p></div>
+      <span data-field="status"></span>
+    </header>
+    <section class="readiness-line"><div><strong data-field="readiness"></strong><small>overall readiness</small></div><progress data-field="progress" max="100"></progress></section>
+    <section class="status-ledger" id="coordination"></section>
+    <section class="record-section"><header><div><p class="eyebrow">Host coordination</p><h3>Assignment details</h3></div></header><dl class="details-list"></dl></section>
+    <section class="record-section"><header><div><p class="eyebrow">Work to complete</p><h3>Readiness tasks</h3></div><button type="button" data-action="add-task">Add task</button></header><div class="task-list"></div></section>
+    <section class="record-section"><header><div><p class="eyebrow">Required records</p><h3>Documents</h3></div></header><div class="document-list"></div></section>
+    <section class="record-section"><header><div><p class="eyebrow">After the engagement</p><h3>Closeout</h3></div></header><p class="closeout-copy"></p></section>
   </template>
+
   <dialog id="task-dialog">
     <form method="dialog" id="task-form">
       <header><div><p class="eyebrow">New readiness item</p><h2>Add a task</h2></div><button value="cancel" aria-label="Close">×</button></header>

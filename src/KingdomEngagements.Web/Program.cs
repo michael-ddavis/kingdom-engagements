@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using KingdomEngagements.Web.Features;
 using KingdomEngagements.Web.Platform;
 using Microsoft.AspNetCore.DataProtection;
@@ -34,6 +35,11 @@ builder.Services.AddDbContext<SpeakingRequestsDbContext>(options =>
     }
 
     options.UseInMemoryDatabase("KingdomEngagementsSpeakingRequests");
+});
+
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
 });
 
 var keyPath = builder.Configuration["KingdomOS:Identity:KeyPath"];

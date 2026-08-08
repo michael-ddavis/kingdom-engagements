@@ -24,6 +24,7 @@ builder.Services.AddDbContext<EngagementsDbContext>(options =>
 
 builder.Services.AddDbContext<SpeakingRequestsDbContext>(options =>
 {
+    options.ReplaceService<IModelCustomizer, SpeakingRequestsModelCustomizer>();
     if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
     {
         if (string.IsNullOrWhiteSpace(connectionString))

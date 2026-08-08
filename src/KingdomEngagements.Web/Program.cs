@@ -37,6 +37,19 @@ builder.Services.AddDbContext<SpeakingRequestsDbContext>(options =>
     options.UseInMemoryDatabase("KingdomEngagementsSpeakingRequests");
 });
 
+builder.Services.AddDbContext<EngagementPreparationDbContext>(options =>
+{
+    if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
+    {
+        if (string.IsNullOrWhiteSpace(connectionString))
+            throw new InvalidOperationException("ConnectionStrings:EngagementsDatabase is required for SQL Server.");
+        options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure());
+        return;
+    }
+
+    options.UseInMemoryDatabase("KingdomEngagementsPreparation");
+});
+
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
@@ -77,6 +90,7 @@ builder.Services.AddHttpClient<EngagementsEntitlementResolver>(client =>
 builder.Services.AddScoped<EngagementsInitializer>();
 builder.Services.AddScoped<EngagementsService>();
 builder.Services.AddScoped<SpeakingRequestsService>();
+builder.Services.AddScoped<EngagementPreparationService>();
 builder.Services.AddSingleton<EngagementsStartupState>();
 builder.Services.AddHostedService<EngagementsStartupWorker>();
 
@@ -104,7 +118,7 @@ app.MapGet("/api/product", (IConfiguration configuration) => Results.Ok(new
     name = "Kingdom Engagements",
     tenantName = configuration["KingdomOS:TenantName"] ?? "Cynthia Thompson Global",
     platformUrl = configuration["KingdomOS:PlatformBrowserUrl"] ?? "http://localhost:5100",
-    boundary = "Invitation intake, review, host coordination, travel, lodging, transportation, documents, readiness, and closeout."
+    boundary = "Invitation intake, review, accepted terms, host coordination, travel, lodging, transportation, documents, readiness, and closeout."
 }));
 app.MapGet("/api/capabilities", async (
     HttpContext context,
@@ -120,8 +134,13 @@ app.MapGet("/invite/apostle-cynthia", (IWebHostEnvironment environment) =>
     Results.File(Path.Combine(environment.WebRootPath, "invite.html"), "text/html; charset=utf-8")).AllowAnonymous();
 app.MapGet("/invite/apostle-cynthia/requests/{token}", (string token, IWebHostEnvironment environment) =>
     Results.File(Path.Combine(environment.WebRootPath, "invite.html"), "text/html; charset=utf-8")).AllowAnonymous();
+app.MapGet("/host/terms/{token}", (string token, IWebHostEnvironment environment) =>
+    Results.File(Path.Combine(environment.WebRootPath, "terms.html"), "text/html; charset=utf-8")).AllowAnonymous();
+app.MapGet("/host/coordination/{token}", (string token, IWebHostEnvironment environment) =>
+    Results.File(Path.Combine(environment.WebRootPath, "coordination.html"), "text/html; charset=utf-8")).AllowAnonymous();
 
 app.MapSpeakingRequestEndpoints();
+app.MapEngagementPreparationEndpoints();
 app.MapEngagementsEndpoints();
 app.MapFallbackToFile("index.html");
 app.Run();

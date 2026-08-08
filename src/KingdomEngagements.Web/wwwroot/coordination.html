@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Host coordination · Cynthia Thompson Global</title>
+  <link rel="stylesheet" href="/host-portal.css" />
+</head>
+<body>
+  <main class="host-shell">
+    <aside class="host-brand">
+      <img src="https://raw.githubusercontent.com/michael-ddavis/kingdomsolutionz/9f776af8d697aeeda2c9253a7b41ac4e25bc299c/KingdomSolutionz.Web/ClientApp/src/assets/images/apostle-cynthia/booking-portrait.avif" alt="Cynthia Thompson Global" />
+      <img class="host-brand-logo" src="https://raw.githubusercontent.com/michael-ddavis/kingdomsolutionz/9f776af8d697aeeda2c9253a7b41ac4e25bc299c/KingdomSolutionz.Web/ClientApp/src/assets/images/apostle-cynthia/ct-logo.avif" alt="Cynthia Thompson Global" />
+      <div class="host-brand-copy">
+        <p class="eyebrow">Host coordination</p>
+        <h1>Prepare every<br />detail with clarity.</h1>
+        <p>Share the final travel plan, lodging, local transportation, event schedule, ministry contacts, promotional expectations, prayer focus and documents in one secure place.</p>
+      </div>
+    </aside>
+    <section class="host-content">
+      <a class="return-link" href="https://www.cynthiathompsonglobal.com/"><span>←</span> Cynthia Thompson Global</a>
+      <div id="state" class="portal-state" hidden></div>
+      <section id="coordination-view" hidden>
+        <header class="host-header">
+          <p class="eyebrow" id="reference"></p>
+          <h2 id="event-name">Host coordination</h2>
+          <p id="event-copy"></p>
+        </header>
+        <div id="submitted-banner" class="submitted-banner" hidden><strong>Host coordination submitted</strong><span id="submitted-copy"></span></div>
+        <div class="status-line"><span>Coordination status</span><strong id="coordination-status"></strong></div>
+        <form id="coordination-form">
+          <div class="section-stack">
+            <section class="portal-section">
+              <header><div><p class="eyebrow">01 · Travel</p><h3>Outbound and return itinerary</h3><p>Provide the confirmed itinerary when available. Save progress at any time.</p></div></header>
+              <div class="field-grid three">
+                <label class="field"><span>Outbound airline</span><input name="outboundAirline" /></label>
+                <label class="field"><span>Flight number</span><input name="outboundFlightNumber" /></label>
+                <label class="field"><span>Confirmation number</span><input name="outboundConfirmationNumber" /></label>
+                <label class="field"><span>Departure airport</span><input name="outboundDepartureAirport" placeholder="RIC" /></label>
+                <label class="field"><span>Arrival airport</span><input name="outboundArrivalAirport" placeholder="ATL" /></label>
+                <label class="field"><span>Departs</span><input name="outboundDepartsAtUtc" type="datetime-local" /></label>
+                <label class="field"><span>Arrives</span><input name="outboundArrivesAtUtc" type="datetime-local" /></label>
+              </div>
+              <div class="field-grid three" style="margin-top:18px">
+                <label class="field"><span>Return airline</span><input name="returnAirline" /></label>
+                <label class="field"><span>Flight number</span><input name="returnFlightNumber" /></label>
+                <label class="field"><span>Confirmation number</span><input name="returnConfirmationNumber" /></label>
+                <label class="field"><span>Departure airport</span><input name="returnDepartureAirport" /></label>
+                <label class="field"><span>Arrival airport</span><input name="returnArrivalAirport" /></label>
+                <label class="field"><span>Departs</span><input name="returnDepartsAtUtc" type="datetime-local" /></label>
+                <label class="field"><span>Arrives</span><input name="returnArrivesAtUtc" type="datetime-local" /></label>
+              </div>
+            </section>
+
+            <section class="portal-section">
+              <header><div><p class="eyebrow">02 · Lodging and local movement</p><h3>Hotel and transportation</h3><p>Include the hotel confirmation and the person responsible for local pickup or transportation.</p></div></header>
+              <div class="field-grid">
+                <label class="field"><span>Hotel name</span><input name="hotelName" /></label>
+                <label class="field"><span>Hotel confirmation</span><input name="hotelConfirmationNumber" /></label>
+                <label class="field wide"><span>Hotel address</span><input name="hotelAddress" /></label>
+                <label class="field"><span>Check in</span><input name="hotelCheckInAtUtc" type="datetime-local" /></label>
+                <label class="field"><span>Check out</span><input name="hotelCheckOutAtUtc" type="datetime-local" /></label>
+                <label class="field"><span>Pickup / transportation contact</span><input name="pickupContactName" /></label>
+                <label class="field"><span>Contact phone</span><input name="pickupContactPhone" /></label>
+                <label class="field wide"><span>Transportation plan</span><textarea name="transportationPlan" rows="4" placeholder="Airport pickup, local driver, vehicle arrangements, venue transfers…"></textarea></label>
+              </div>
+            </section>
+
+            <section class="portal-section">
+              <header><div><p class="eyebrow">03 · Event schedule</p><h3>Sessions and ministry moments</h3><p>Add the sessions Cynthia Thompson is expected to attend or lead.</p></div><button class="secondary-button" type="button" id="add-schedule">Add session</button></header>
+              <div id="schedule-list" class="repeat-list"></div>
+            </section>
+
+            <section class="portal-section">
+              <header><div><p class="eyebrow">04 · Local contacts</p><h3>Host, travel and media contacts</h3><p>Add the people the ministry team may need to reach before or during the assignment.</p></div><button class="secondary-button" type="button" id="add-contact">Add contact</button></header>
+              <div id="contact-list" class="repeat-list"></div>
+            </section>
+
+            <section class="portal-section">
+              <header><div><p class="eyebrow">05 · Ministry preparation</p><h3>Promotion and prayer focus</h3><p>Tell the team what is being communicated publicly and what the host is carrying in prayer for this gathering.</p></div></header>
+              <div class="field-grid">
+                <label class="field wide"><span>Promotional requirements or expectations</span><textarea name="promotionRequirements" rows="5"></textarea></label>
+                <label class="field wide"><span>Prayer focus</span><textarea name="prayerFocus" rows="5" placeholder="What is the spiritual burden, need or focus for this gathering?"></textarea></label>
+                <label class="field wide"><span>Additional host notes</span><textarea name="hostNotes" rows="4"></textarea></label>
+              </div>
+            </section>
+
+            <section class="portal-section">
+              <header><div><p class="eyebrow">06 · Documents</p><h3>Schedules, confirmations and host files</h3><p>Upload final schedules, hotel or flight confirmations, venue documents or other files the ministry team needs. Maximum 10 MB per file.</p></div></header>
+              <div class="upload-panel"><input id="document-file" type="file" /><button class="secondary-button" type="button" id="upload-document">Upload document</button></div>
+              <div id="document-list" class="document-list"></div>
+            </section>
+          </div>
+          <div class="button-row"><button class="secondary-button" type="button" id="save-progress">Save progress</button><button class="primary-button" type="submit">Submit host coordination →</button></div>
+        </form>
+        <p class="powered">Powered by <strong>KingdomOS · Engagements</strong></p>
+      </section>
+    </section>
+  </main>
+  <script src="/coordination.js" defer></script>
+</body>
+</html>

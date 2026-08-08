@@ -55,9 +55,9 @@ public sealed class EngagementPreparationDbContext(DbContextOptions<EngagementPr
         preparation.Property(x => x.PickupContactPhone).HasMaxLength(60);
         preparation.Property(x => x.ScheduleJson).HasMaxLength(16000).IsRequired();
         preparation.Property(x => x.ContactsJson).HasMaxLength(12000).IsRequired();
-        preparation.Property(x => x.PromotionRequirements).HasMaxLength(5000);
-        preparation.Property(x => x.PrayerFocus).HasMaxLength(5000);
-        preparation.Property(x => x.HostNotes).HasMaxLength(5000);
+        preparation.Property(x => x.PromotionRequirements).HasMaxLength(4000);
+        preparation.Property(x => x.PrayerFocus).HasMaxLength(4000);
+        preparation.Property(x => x.HostNotes).HasMaxLength(4000);
 
         var document = modelBuilder.Entity<HostCoordinationDocumentRecord>();
         document.ToTable("EngagementHostCoordinationDocuments");
@@ -132,9 +132,9 @@ BEGIN
         [PickupContactPhone] nvarchar(60) NULL,
         [ScheduleJson] nvarchar(max) NOT NULL,
         [ContactsJson] nvarchar(max) NOT NULL,
-        [PromotionRequirements] nvarchar(5000) NULL,
-        [PrayerFocus] nvarchar(5000) NULL,
-        [HostNotes] nvarchar(5000) NULL,
+        [PromotionRequirements] nvarchar(4000) NULL,
+        [PrayerFocus] nvarchar(4000) NULL,
+        [HostNotes] nvarchar(4000) NULL,
         [SubmittedAtUtc] datetimeoffset NULL,
         [CreatedAtUtc] datetimeoffset NOT NULL,
         [UpdatedAtUtc] datetimeoffset NOT NULL,
@@ -406,6 +406,10 @@ public sealed class EngagementPreparationService(
             CoordinationToken = Guid.NewGuid().ToString("N"),
             CoordinationTokenExpiresAtUtc = request.AgreementStatus == "signed" ? now.AddDays(30) : null,
             CoordinationStatus = request.AgreementStatus == "signed" ? "in-progress" : "locked",
+            ContactsJson = JsonSerializer.Serialize(new[]
+            {
+                new HostContactInput("primary", request.ContactName, request.ContactEmail, request.ContactPhone)
+            }, JsonOptions),
             CreatedAtUtc = now,
             UpdatedAtUtc = now
         };

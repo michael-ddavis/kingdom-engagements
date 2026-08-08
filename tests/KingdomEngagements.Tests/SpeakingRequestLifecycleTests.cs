@@ -16,6 +16,7 @@ public sealed class SpeakingRequestLifecycleTests
         Assert.Equal("awaiting-review", created.Status);
         Assert.StartsWith("CTG-", created.ReferenceNumber);
         Assert.Single(created.Communications);
+        fixture.Requests.ChangeTracker.Clear();
 
         var requested = await fixture.Service.RequestInformationAsync(
             tenantId,
@@ -27,6 +28,7 @@ public sealed class SpeakingRequestLifecycleTests
         Assert.Equal("information-needed", requested.Status);
         Assert.NotNull(requested.EditTokenExpiresAtUtc);
         Assert.Contains(requested.Communications, item => item.Type == "information-requested");
+        fixture.Requests.ChangeTracker.Clear();
 
         var updatedInput = ValidRequest() with { TravelBookedBy = "host", TravelCoverageStatus = "yes" };
         var resubmitted = await fixture.Service.SubmitHostResponseAsync(
@@ -39,6 +41,7 @@ public sealed class SpeakingRequestLifecycleTests
         Assert.Equal("awaiting-review", resubmitted.Status);
         Assert.Equal("host", resubmitted.TravelBookedBy);
         Assert.Contains(resubmitted.Communications, item => item.Type == "host-responded");
+        fixture.Requests.ChangeTracker.Clear();
 
         var approved = await fixture.Service.ApproveAsync(tenantId, created.Id, CancellationToken.None);
         Assert.NotNull(approved);
@@ -66,6 +69,7 @@ public sealed class SpeakingRequestLifecycleTests
         await using var fixture = CreateFixture();
         var tenantId = Guid.NewGuid();
         var created = await fixture.Service.CreateAsync(tenantId, ValidRequest(), CancellationToken.None);
+        fixture.Requests.ChangeTracker.Clear();
 
         await Assert.ThrowsAsync<ArgumentException>(() =>
             fixture.Service.DeclineAsync(tenantId, created.Id, " ", CancellationToken.None));
@@ -79,6 +83,7 @@ public sealed class SpeakingRequestLifecycleTests
         Assert.NotNull(declined);
         Assert.Equal("declined", declined.Status);
         Assert.Equal("The requested dates are not available.", declined.DeclineReason);
+        fixture.Requests.ChangeTracker.Clear();
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             fixture.Service.ApproveAsync(tenantId, created.Id, CancellationToken.None));

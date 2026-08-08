@@ -63,6 +63,19 @@ builder.Services.AddDbContext<AssignmentWorkspaceDbContext>(options =>
     options.UseInMemoryDatabase("KingdomEngagementsAssignmentWorkspace");
 });
 
+builder.Services.AddDbContext<EngagementCompletionDbContext>(options =>
+{
+    if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
+    {
+        if (string.IsNullOrWhiteSpace(connectionString))
+            throw new InvalidOperationException("ConnectionStrings:EngagementsDatabase is required for SQL Server.");
+        options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure());
+        return;
+    }
+
+    options.UseInMemoryDatabase("KingdomEngagementsCompletion");
+});
+
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
@@ -105,6 +118,7 @@ builder.Services.AddScoped<EngagementsService>();
 builder.Services.AddScoped<SpeakingRequestsService>();
 builder.Services.AddScoped<EngagementPreparationService>();
 builder.Services.AddScoped<AssignmentWorkspaceService>();
+builder.Services.AddScoped<EngagementCompletionService>();
 builder.Services.AddSingleton<EngagementsStartupState>();
 builder.Services.AddHostedService<EngagementsStartupWorker>();
 
@@ -132,7 +146,7 @@ app.MapGet("/api/product", (IConfiguration configuration) => Results.Ok(new
     name = "Kingdom Engagements",
     tenantName = configuration["KingdomOS:TenantName"] ?? "Cynthia Thompson Global",
     platformUrl = configuration["KingdomOS:PlatformBrowserUrl"] ?? "http://localhost:5100",
-    boundary = "Invitation intake, review, accepted terms, host coordination, travel, lodging, transportation, documents, readiness, and closeout."
+    boundary = "Invitation intake, review, accepted terms, host coordination, travel, lodging, transportation, documents, readiness, event outcomes, follow-up, and closeout."
 }));
 app.MapGet("/api/capabilities", async (
     HttpContext context,
@@ -156,6 +170,7 @@ app.MapGet("/host/coordination/{token}", (string token, IWebHostEnvironment envi
 app.MapSpeakingRequestEndpoints();
 app.MapEngagementPreparationEndpoints();
 app.MapAssignmentWorkspaceEndpoints();
+app.MapEngagementCompletionEndpoints();
 app.MapEngagementsEndpoints();
 app.MapFallbackToFile("index.html");
 app.Run();

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Engagement terms · Cynthia Thompson Global</title>
+  <link rel="stylesheet" href="/host-portal.css" />
+</head>
+<body>
+  <main class="host-shell">
+    <aside class="host-brand">
+      <img src="https://raw.githubusercontent.com/michael-ddavis/kingdomsolutionz/9f776af8d697aeeda2c9253a7b41ac4e25bc299c/KingdomSolutionz.Web/ClientApp/src/assets/images/apostle-cynthia/booking-portrait.avif" alt="Cynthia Thompson Global" />
+      <img class="host-brand-logo" src="https://raw.githubusercontent.com/michael-ddavis/kingdomsolutionz/9f776af8d697aeeda2c9253a7b41ac4e25bc299c/KingdomSolutionz.Web/ClientApp/src/assets/images/apostle-cynthia/ct-logo.avif" alt="Cynthia Thompson Global" />
+      <div class="host-brand-copy">
+        <p class="eyebrow">Approved invitation</p>
+        <h1>Confirm the<br />engagement terms.</h1>
+        <p>These terms carry forward the commitments submitted with your invitation. Once accepted, the secure host coordination portal will open for itinerary, schedule, contacts, prayer focus and documents.</p>
+      </div>
+    </aside>
+    <section class="host-content">
+      <a class="return-link" href="https://www.cynthiathompsonglobal.com/"><span>←</span> Cynthia Thompson Global</a>
+      <div id="state" class="portal-state" hidden></div>
+      <section id="terms-view" hidden>
+        <header class="host-header">
+          <p class="eyebrow" id="reference"></p>
+          <h2>Accepted engagement terms</h2>
+          <p>Review the approved engagement details below. The values shown here are a snapshot of the invitation that was approved by the Cynthia Thompson Global ministry team.</p>
+        </header>
+        <div class="summary-grid" id="event-summary"></div>
+        <section class="agreement-copy">
+          <p class="eyebrow">Engagement understanding</p>
+          <h3>Preparation commitments</h3>
+          <p>By accepting these terms, the host ministry confirms that the event details and commitments below accurately reflect the approved invitation and may be used by Cynthia Thompson Global to prepare for the assignment.</p>
+          <ul>
+            <li>Travel, lodging and honorarium commitments reflect the approved invitation.</li>
+            <li>The host will use the secure coordination portal to provide final itinerary, schedule, local contacts, promotional requirements, prayer focus and requested documents.</li>
+            <li>Material changes to dates, location, travel responsibility or financial commitments should be communicated to the ministry team before the engagement.</li>
+          </ul>
+        </section>
+        <div class="terms-grid" id="terms-grid"></div>
+        <section id="acceptance-section" class="form-section">
+          <p class="eyebrow">Host acceptance</p>
+          <h3>Confirm on behalf of the host ministry</h3>
+          <form id="terms-form">
+            <div class="field-grid">
+              <label class="field"><span>Authorized host representative</span><input name="signatoryName" required maxlength="180" /></label>
+              <label class="field"><span>Email address</span><input name="signatoryEmail" type="email" required maxlength="320" /></label>
+              <label class="field wide"><span>Optional note to the ministry team</span><textarea name="note" rows="4" maxlength="2000"></textarea></label>
+            </div>
+            <label class="check-row"><input name="accepted" type="checkbox" required /><span>I confirm that I am authorized to accept these engagement terms on behalf of the host ministry and that the information above reflects our approved commitments.</span></label>
+            <div class="button-row"><button class="primary-button" type="submit">Accept terms and continue →</button></div>
+          </form>
+        </section>
+        <section id="accepted-view" class="submitted-banner" hidden>
+          <strong>Terms accepted</strong>
+          <span id="accepted-copy"></span>
+          <div class="button-row"><a id="coordination-link" class="primary-button" href="#">Open host coordination →</a></div>
+        </section>
+        <p class="powered">Powered by <strong>KingdomOS · Engagements</strong></p>
+      </section>
+    </section>
+  </main>
+  <script src="/terms.js" defer></script>
+</body>
+</html>

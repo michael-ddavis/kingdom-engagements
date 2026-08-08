@@ -50,16 +50,16 @@ builder.Services.AddAuthentication(KingdomIdentity.Scheme)
     });
 builder.Services.AddAuthorization();
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddHttpClient<EngagementsEntitlementResolver>();
+builder.Services.AddHttpClient<EngagementsEntitlementResolver>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(5);
+});
 builder.Services.AddScoped<EngagementsInitializer>();
 builder.Services.AddScoped<EngagementsService>();
+builder.Services.AddSingleton<EngagementsStartupState>();
+builder.Services.AddHostedService<EngagementsStartupWorker>();
 
 var app = builder.Build();
-
-await using (var scope = app.Services.CreateAsyncScope())
-{
-    await scope.ServiceProvider.GetRequiredService<EngagementsInitializer>().InitializeAsync();
-}
 
 app.UseHttpsRedirection();
 app.UseDefaultFiles();
@@ -71,15 +71,11 @@ app.Use(async (context, next) =>
         context.User = KingdomIdentity.CreateDevelopmentPrincipal();
     await next();
 });
+app.UseMiddleware<EngagementsReadinessMiddleware>();
 app.UseMiddleware<EngagementsEntitlementMiddleware>();
 app.UseAuthorization();
 
-app.MapGet("/health", () => Results.Ok(new
-{
-    status = "Healthy",
-    service = "KingdomEngagements",
-    module = "engagements"
-}));
+app.MapEngagementsHealth();
 app.MapGet("/api/product", (IConfiguration configuration) => Results.Ok(new
 {
     moduleKey = "engagements",

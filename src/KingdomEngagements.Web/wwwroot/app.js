@@ -1,4 +1,4 @@
-const state = { assignments: [], selectedId: null, selected: null };
+const state = { assignments: [], selectedId: null, selected: null, requests: [], selectedRequestId: null, selectedRequest: null };
 const list = document.querySelector('#assignment-list');
 const count = document.querySelector('#assignment-count');
 const detail = document.querySelector('#assignment-detail');
@@ -6,6 +6,9 @@ const metrics = document.querySelector('#metrics');
 const message = document.querySelector('#message');
 const dialog = document.querySelector('#task-dialog');
 const taskForm = document.querySelector('#task-form');
+const requestList = document.querySelector('#request-list');
+const requestCount = document.querySelector('#request-count');
+const requestDetail = document.querySelector('#request-detail');
 
 async function api(url, options = {}) {
   const response = await fetch(url, {
@@ -13,11 +16,12 @@ async function api(url, options = {}) {
     ...options,
     headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
   });
+  const body = response.status === 204 ? null : await response.json().catch(() => ({}));
   if (!response.ok) {
-    const body = await response.json().catch(() => ({}));
-    throw new Error(body.message || body.title || `Request failed (${response.status})`);
+    const validation = body?.errors ? Object.values(body.errors).flat().join(' ') : '';
+    throw new Error(validation || body?.message || body?.title || `Request failed (${response.status})`);
   }
-  return response.status === 204 ? null : response.json();
+  return body;
 }
 
 function showMessage(text, error = false) {
@@ -31,6 +35,141 @@ async function loadProduct() {
   const product = await api('/api/product');
   document.querySelector('#tenant-name').textContent = product.tenantName;
   document.querySelector('#platform-link').href = product.platformUrl;
+}
+
+async function loadRequests(keepSelection = true) {
+  state.requests = await api('/api/engagements/requests');
+  requestCount.textContent = String(state.requests.length);
+  renderRequests();
+  const preferred = keepSelection && state.selectedRequestId
+    ? state.requests.find(item => item.id === state.selectedRequestId)?.id
+    : state.requests[0]?.id;
+  if (preferred) await selectRequest(preferred);
+  else requestDetail.innerHTML = '<div class="empty request-empty">No invitations have been submitted yet. Open the host invitation form to start the demo flow.</div>';
+}
+
+function renderRequests() {
+  requestList.innerHTML = state.requests.length ? state.requests.map(item => `
+    <button class="request-card ${item.id === state.selectedRequestId ? 'active' : ''}" data-request-id="${item.id}">
+      <span class="request-status request-status--${escapeHtml(item.status)}">${formatStatus(item.status)}</span>
+      <strong>${escapeHtml(item.eventName)}</strong>
+      <small>${escapeHtml(item.organizationName)} · ${escapeHtml(item.city)}, ${escapeHtml(item.state || item.region || item.country)}</small>
+      <em>${escapeHtml(item.referenceNumber)} · ${formatDate(item.startDate)}</em>
+      <b>${item.readinessPercentage}%</b>
+    </button>`).join('') : '<p class="request-list-empty">No invitations yet.</p>';
+  requestList.querySelectorAll('[data-request-id]').forEach(button => button.addEventListener('click', () => selectRequest(button.dataset.requestId)));
+}
+
+async function selectRequest(id) {
+  state.selectedRequestId = id;
+  state.selectedRequest = await api(`/api/engagements/requests/${id}`);
+  renderRequests();
+  renderRequestDetail();
+}
+
+function renderRequestDetail() {
+  const item = state.selectedRequest;
+  if (!item) return;
+  const canReview = !['approved', 'declined'].includes(item.status);
+  const hostLink = item.status === 'information-needed' && item.editToken
+    ? `${window.location.origin}/invite/apostle-cynthia/requests/${encodeURIComponent(item.editToken)}`
+    : null;
+  const timeline = item.communications?.length
+    ? item.communications.map(entry => `
+      <article class="request-timeline-item">
+        <span></span>
+        <div><strong>${escapeHtml(formatCommunicationType(entry.type))}</strong><p>${escapeHtml(entry.message)}</p><small>${escapeHtml(entry.actor)} · ${formatDateTime(entry.createdAtUtc)}</small></div>
+      </article>`).join('')
+    : '<p class="request-list-empty">No communication history yet.</p>';
+
+  requestDetail.innerHTML = `
+    <header class="request-detail-header">
+      <div><p class="eyebrow">${escapeHtml(item.referenceNumber)}</p><h2>${escapeHtml(item.eventName)}</h2><p>${escapeHtml(item.organizationName)} · ${escapeHtml(item.eventType)}</p></div>
+      <span class="request-status request-status--${escapeHtml(item.status)}">${formatStatus(item.status)}</span>
+    </header>
+    <section class="request-readiness">
+      <div><strong>${item.readinessPercentage}%</strong><small>host readiness</small></div>
+      <progress max="100" value="${item.readinessPercentage}"></progress>
+    </section>
+    <section class="request-summary-grid">
+      ${requestSummary('Event dates', `${formatDate(item.startDate)}${item.endDate !== item.startDate ? ` – ${formatDate(item.endDate)}` : ''}`)}
+      ${requestSummary('Venue', `${item.venueName} · ${item.venueAddress}`)}
+      ${requestSummary('Location', [item.city, item.state || item.region, item.country].filter(Boolean).join(', '))}
+      ${requestSummary('Timezone', item.timeZone)}
+      ${requestSummary('Primary contact', `${item.contactName} · ${item.contactEmail} · ${item.contactPhone}`)}
+      ${requestSummary('Expected attendance', String(item.expectedAttendance))}
+    </section>
+    <section class="request-section">
+      <header><div><p class="eyebrow">Requested ministry</p><h3>Assignment request</h3></div></header>
+      <p class="request-copy">${escapeHtml(item.ministryRequest)}</p>
+    </section>
+    <section class="request-section">
+      <header><div><p class="eyebrow">Host commitments</p><h3>Travel, lodging and terms</h3></div></header>
+      <div class="request-terms-grid">
+        ${requestSummary('Travel coverage', formatStatus(item.travelCoverageStatus))}
+        ${requestSummary('Lodging coverage', formatStatus(item.lodgingCoverageStatus))}
+        ${requestSummary('Honorarium', `${formatStatus(item.honorariumStatus)}${item.honorariumAmount ? ` · ${item.honorariumCurrency} ${Number(item.honorariumAmount).toLocaleString()}` : ''}`)}
+        ${requestSummary('Travel booked by', formatStatus(item.travelBookedBy))}
+        ${requestSummary('Payment', formatStatus(item.paymentStatus))}
+        ${requestSummary('Agreement', formatStatus(item.agreementStatus))}
+      </div>
+    </section>
+    ${hostLink ? `<section class="host-link-card"><div><p class="eyebrow">Host correction link</p><strong>Waiting on host response</strong><p>The same invitation form will reopen with the host's original answers populated.</p></div><a href="${hostLink}" target="_blank" rel="noopener">Open secure link</a></section>` : ''}
+    <section class="request-section">
+      <header><div><p class="eyebrow">Review exchange</p><h3>Communication history</h3></div></header>
+      <div class="request-timeline">${timeline}</div>
+    </section>
+    ${canReview ? `<section class="request-actions">
+      <label>Message or decision reason<textarea id="review-message" rows="4" placeholder="Write the host question or decline reason here."></textarea></label>
+      <div class="request-action-buttons">
+        <button type="button" class="request-action request-action--secondary" data-review-action="rfi">Request information</button>
+        <button type="button" class="request-action request-action--approve" data-review-action="approve">Approve invitation</button>
+        <button type="button" class="request-action request-action--decline" data-review-action="decline">Decline</button>
+      </div>
+    </section>` : item.status === 'approved' && item.assignmentId ? `<section class="request-actions request-actions--resolved"><strong>Invitation approved</strong><p>This request is now linked to a real Engagements assignment.</p><button type="button" class="request-action request-action--approve" data-open-assignment="${item.assignmentId}">Open assignment</button></section>` : `<section class="request-actions request-actions--resolved"><strong>Invitation declined</strong><p>${escapeHtml(item.declineReason || 'The ministry team is unable to accept this invitation.')}</p></section>`}
+  `;
+
+  requestDetail.querySelectorAll('[data-review-action]').forEach(button => button.addEventListener('click', () => reviewRequest(button.dataset.reviewAction)));
+  requestDetail.querySelectorAll('[data-open-assignment]').forEach(button => button.addEventListener('click', async () => {
+    await loadAssignments(false);
+    await selectAssignment(button.dataset.openAssignment);
+    window.location.hash = 'assignments';
+  }));
+}
+
+function requestSummary(label, value) {
+  return `<article><span>${escapeHtml(label)}</span><strong>${escapeHtml(value || 'Not provided')}</strong></article>`;
+}
+
+async function reviewRequest(action) {
+  const item = state.selectedRequest;
+  if (!item) return;
+  const reviewMessage = requestDetail.querySelector('#review-message')?.value.trim() || '';
+  try {
+    if (action === 'rfi') {
+      if (!reviewMessage) throw new Error('Write the information request before sending it to the host.');
+      const result = await api(`/api/engagements/requests/${item.id}/request-information`, {
+        method: 'POST', body: JSON.stringify({ message: reviewMessage }),
+      });
+      showMessage(`Information requested. Host update link: ${result.editUrl}`);
+    } else if (action === 'decline') {
+      if (!reviewMessage) throw new Error('A decline reason is required.');
+      if (!window.confirm('Decline this invitation and record the reason?')) return;
+      await api(`/api/engagements/requests/${item.id}/decline`, {
+        method: 'POST', body: JSON.stringify({ reason: reviewMessage }),
+      });
+      showMessage('Invitation declined and the decision was recorded.');
+    } else if (action === 'approve') {
+      if (!window.confirm('Approve this invitation and create the Engagements assignment?')) return;
+      const result = await api(`/api/engagements/requests/${item.id}/approve`, { method: 'POST', body: '{}' });
+      showMessage('Invitation approved. The assignment was created from the host intake without duplicate entry.');
+      state.selectedId = result.assignmentId;
+      await loadAssignments(true);
+    }
+    await loadRequests(true);
+  } catch (error) {
+    showMessage(error.message, true);
+  }
 }
 
 async function loadAssignments(keepSelection = true) {
@@ -155,7 +294,7 @@ taskForm.addEventListener('submit', async event => {
   }
 });
 
-document.querySelector('#refresh').addEventListener('click', () => loadAssignments(true).catch(error => showMessage(error.message, true)));
+document.querySelector('#refresh').addEventListener('click', () => Promise.all([loadRequests(true), loadAssignments(true)]).catch(error => showMessage(error.message, true)));
 document.querySelectorAll('.sidebar nav a').forEach(link => link.addEventListener('click', () => {
   document.querySelectorAll('.sidebar nav a').forEach(item => item.classList.remove('active'));
   link.classList.add('active');
@@ -168,8 +307,17 @@ function statusEntries(item) {
     ['Documents', item.documentsStatus], ['Closeout', item.closeoutStatus],
   ];
 }
-function formatDate(value) { return value ? new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(value)) : 'Date pending'; }
+function formatStatus(value) { return String(value || '').replaceAll('-', ' ').replace(/\b\w/g, c => c.toUpperCase()); }
+function formatCommunicationType(value) { return ({ submitted:'Invitation submitted', 'information-requested':'Information requested', 'host-responded':'Host resubmitted', approved:'Invitation approved', declined:'Invitation declined' })[value] || formatStatus(value); }
+function formatDate(value) {
+  if (!value) return 'Date pending';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number);
+    return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(year, month - 1, day));
+  }
+  return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(value));
+}
 function formatDateTime(value) { return value ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)) : 'Pending'; }
 function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, character => ({ '&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;' })[character]); }
 
-Promise.all([loadProduct(), loadAssignments(false)]).catch(error => showMessage(error.message, true));
+Promise.all([loadProduct(), loadRequests(false), loadAssignments(false)]).catch(error => showMessage(error.message, true));

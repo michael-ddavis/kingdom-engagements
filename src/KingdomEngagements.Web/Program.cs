@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using KingdomEngagements.Web.Features;
 using KingdomEngagements.Web.Platform;
 using Microsoft.AspNetCore.DataProtection;
@@ -20,6 +21,25 @@ builder.Services.AddDbContext<EngagementsDbContext>(options =>
     }
 
     options.UseInMemoryDatabase("KingdomEngagements");
+});
+
+builder.Services.AddDbContext<SpeakingRequestsDbContext>(options =>
+{
+    options.ReplaceService<IModelCustomizer, SpeakingRequestsModelCustomizer>();
+    if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
+    {
+        if (string.IsNullOrWhiteSpace(connectionString))
+            throw new InvalidOperationException("ConnectionStrings:EngagementsDatabase is required for SQL Server.");
+        options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure());
+        return;
+    }
+
+    options.UseInMemoryDatabase("KingdomEngagementsSpeakingRequests");
+});
+
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
 });
 
 var keyPath = builder.Configuration["KingdomOS:Identity:KeyPath"];
@@ -56,6 +76,7 @@ builder.Services.AddHttpClient<EngagementsEntitlementResolver>(client =>
 });
 builder.Services.AddScoped<EngagementsInitializer>();
 builder.Services.AddScoped<EngagementsService>();
+builder.Services.AddScoped<SpeakingRequestsService>();
 builder.Services.AddSingleton<EngagementsStartupState>();
 builder.Services.AddHostedService<EngagementsStartupWorker>();
 
@@ -83,7 +104,7 @@ app.MapGet("/api/product", (IConfiguration configuration) => Results.Ok(new
     name = "Kingdom Engagements",
     tenantName = configuration["KingdomOS:TenantName"] ?? "Cynthia Thompson Global",
     platformUrl = configuration["KingdomOS:PlatformBrowserUrl"] ?? "http://localhost:5100",
-    boundary = "Assignment intake, host coordination, travel, lodging, transportation, documents, readiness, and closeout."
+    boundary = "Invitation intake, review, host coordination, travel, lodging, transportation, documents, readiness, and closeout."
 }));
 app.MapGet("/api/capabilities", async (
     HttpContext context,
@@ -95,6 +116,12 @@ app.MapGet("/api/capabilities", async (
     return Results.Ok(new { engagementsEnabled = state == ModuleEntitlementState.Enabled, state = state.ToString() });
 });
 
+app.MapGet("/invite/apostle-cynthia", (IWebHostEnvironment environment) =>
+    Results.File(Path.Combine(environment.WebRootPath, "invite.html"), "text/html; charset=utf-8")).AllowAnonymous();
+app.MapGet("/invite/apostle-cynthia/requests/{token}", (string token, IWebHostEnvironment environment) =>
+    Results.File(Path.Combine(environment.WebRootPath, "invite.html"), "text/html; charset=utf-8")).AllowAnonymous();
+
+app.MapSpeakingRequestEndpoints();
 app.MapEngagementsEndpoints();
 app.MapFallbackToFile("index.html");
 app.Run();

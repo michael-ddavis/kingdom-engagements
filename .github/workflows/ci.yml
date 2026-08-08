@@ -27,6 +27,8 @@ jobs:
           for attempt in {1..30}; do
             if docker exec "$container_id" curl --fail --silent http://localhost:8080/health \
               | grep --quiet '"module":"engagements"'; then
+              docker exec "$container_id" curl --fail --silent http://localhost:8080/invite/apostle-cynthia \
+                | grep --quiet 'Invite Cynthia Thompson'
               exit 0
             fi
             sleep 2
@@ -120,6 +122,97 @@ jobs:
             docker exec "$app_name" curl --silent http://localhost:8080/health >&2 || true
             exit 1
           fi
+
+          docker exec "$app_name" curl --fail --silent http://localhost:8080/invite/apostle-cynthia \
+            | grep --quiet 'Invite Cynthia Thompson'
+
+          request_json="$(docker exec -i "$app_name" curl --fail --silent \
+            -X POST http://localhost:8080/api/public/engagements/requests \
+            -H 'Content-Type: application/json' --data-binary @- <<'JSON'
+          {
+            "organizationName":"CI Covenant Fellowship",
+            "eventName":"CI Kingdom Leadership Gathering",
+            "eventType":"Leadership Intensive",
+            "contactName":"Jordan Ellis",
+            "contactEmail":"jordan@example.org",
+            "contactPhone":"+1 804 555 0100",
+            "city":"Atlanta",
+            "state":"Georgia",
+            "country":"United States",
+            "region":null,
+            "timeZone":"America/New_York",
+            "venueAddress":"100 Kingdom Way, Atlanta, GA 30303",
+            "venueName":"CI Covenant Fellowship",
+            "startDate":"2026-09-20",
+            "endDate":"2026-09-22",
+            "ministryRequest":"Sunday ministry plus a leadership intensive.",
+            "expectedAttendance":450,
+            "travelCoverageStatus":"not-determined",
+            "lodgingCoverageStatus":"yes",
+            "honorariumStatus":"yes",
+            "travelBookedBy":"not-determined",
+            "honorariumAmount":2500,
+            "honorariumCurrency":"USD",
+            "paymentStatus":"not-due",
+            "agreementStatus":"not-started",
+            "engagementStatus":"proposed"
+          }
+          JSON
+          )"
+          request_id="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])' <<<"$request_json")"
+
+          docker exec "$app_name" curl --fail --silent http://localhost:8080/api/engagements/requests \
+            | grep --quiet 'CI Kingdom Leadership Gathering'
+
+          rfi_json="$(docker exec "$app_name" curl --fail --silent \
+            -X POST "http://localhost:8080/api/engagements/requests/$request_id/request-information" \
+            -H 'Content-Type: application/json' \
+            -d '{"message":"Please confirm who will arrange primary travel."}')"
+          edit_token="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["request"]["editToken"])' <<<"$rfi_json")"
+
+          docker exec -i "$app_name" curl --fail --silent \
+            -X PUT "http://localhost:8080/api/public/engagements/requests/$edit_token" \
+            -H 'Content-Type: application/json' --data-binary @- >/dev/null <<'JSON'
+          {
+            "request": {
+              "organizationName":"CI Covenant Fellowship",
+              "eventName":"CI Kingdom Leadership Gathering",
+              "eventType":"Leadership Intensive",
+              "contactName":"Jordan Ellis",
+              "contactEmail":"jordan@example.org",
+              "contactPhone":"+1 804 555 0100",
+              "city":"Atlanta",
+              "state":"Georgia",
+              "country":"United States",
+              "region":null,
+              "timeZone":"America/New_York",
+              "venueAddress":"100 Kingdom Way, Atlanta, GA 30303",
+              "venueName":"CI Covenant Fellowship",
+              "startDate":"2026-09-20",
+              "endDate":"2026-09-22",
+              "ministryRequest":"Sunday ministry plus a leadership intensive.",
+              "expectedAttendance":450,
+              "travelCoverageStatus":"yes",
+              "lodgingCoverageStatus":"yes",
+              "honorariumStatus":"yes",
+              "travelBookedBy":"host",
+              "honorariumAmount":2500,
+              "honorariumCurrency":"USD",
+              "paymentStatus":"not-due",
+              "agreementStatus":"not-started",
+              "engagementStatus":"proposed"
+            },
+            "responseMessage":"The host ministry will book primary travel."
+          }
+          JSON
+
+          approval_json="$(docker exec "$app_name" curl --fail --silent \
+            -X POST "http://localhost:8080/api/engagements/requests/$request_id/approve" \
+            -H 'Content-Type: application/json' -d '{}')"
+          assignment_id="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["assignmentId"])' <<<"$approval_json")"
+
+          docker exec "$app_name" curl --fail --silent "http://localhost:8080/api/engagements/assignments/$assignment_id" \
+            | grep --quiet 'CI Kingdom Leadership Gathering'
 
           docker exec "$app_name" curl --fail --silent http://localhost:8080/api/engagements/assignments \
             | grep --quiet 'Kingdom Leadership Gathering'

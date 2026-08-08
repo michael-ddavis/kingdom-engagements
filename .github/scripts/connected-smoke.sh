@@ -257,5 +257,76 @@ grep --quiet '"documentsStatus":"received"' <<<"$assignment_json"
 grep --quiet 'Complete host coordination' <<<"$assignment_json"
 grep --quiet 'final-schedule.txt' <<<"$assignment_json"
 
+workspace_json="$(docker exec "$app_name" curl --fail --silent \
+  "http://localhost:8080/api/engagements/assignments/$assignment_id/workspace")"
+grep --quiet '"overallPercent":100' <<<"$workspace_json"
+grep --quiet 'Leadership intensive' <<<"$workspace_json"
+grep --quiet 'Leadership renewal and regional alignment' <<<"$workspace_json"
+grep --quiet 'Host preparation submitted' <<<"$workspace_json"
+
+docker exec -i "$app_name" curl --fail --silent \
+  -X PUT "http://localhost:8080/api/engagements/assignments/$assignment_id/workspace/coordination" \
+  -H 'Content-Type: application/json' --data-binary @- >/dev/null <<'JSON'
+{
+  "outboundAirline":"Delta",
+  "outboundFlightNumber":"DL1201",
+  "outboundConfirmationNumber":"CI123",
+  "outboundDepartureAirport":"RIC",
+  "outboundArrivalAirport":"ATL",
+  "outboundDepartsAtUtc":"2026-09-20T10:00:00Z",
+  "outboundArrivesAtUtc":"2026-09-20T11:30:00Z",
+  "returnAirline":"Delta",
+  "returnFlightNumber":"DL1202",
+  "returnConfirmationNumber":"CI123",
+  "returnDepartureAirport":"ATL",
+  "returnArrivalAirport":"RIC",
+  "returnDepartsAtUtc":"2026-09-22T18:00:00Z",
+  "returnArrivesAtUtc":"2026-09-22T19:30:00Z",
+  "hotelName":"Covenant Hotel",
+  "hotelAddress":"200 Peachtree Street, Atlanta, GA",
+  "hotelConfirmationNumber":"HOTEL-77",
+  "hotelCheckInAtUtc":"2026-09-20T16:00:00Z",
+  "hotelCheckOutAtUtc":"2026-09-22T11:00:00Z",
+  "transportationPlan":"Host driver will handle airport and venue transportation.",
+  "pickupContactName":"Naomi Brooks",
+  "pickupContactPhone":"+1 404 555 0199",
+  "schedule":[{"title":"Leadership intensive","date":"2026-09-21","startsAt":"09:00","endsAt":"12:00","location":"Main Sanctuary","notes":"Leadership team only"}],
+  "contacts":[{"type":"primary","name":"Pastor Jordan Ellis","email":"jordan@example.org","phone":"+1 804 555 0100"},{"type":"media","name":"Alex Green","email":"media@example.org","phone":"+1 404 555 0110"}],
+  "promotionRequirements":"Use the approved CTG image and biography.",
+  "prayerFocus":"Leadership renewal and regional alignment.",
+  "hostNotes":"Ministry team verified the host preparation record.",
+  "submit":false
+}
+JSON
+
+workspace_json="$(docker exec "$app_name" curl --fail --silent \
+  "http://localhost:8080/api/engagements/assignments/$assignment_id/workspace")"
+grep --quiet 'Ministry team verified the host preparation record' <<<"$workspace_json"
+grep --quiet 'Coordination details updated' <<<"$workspace_json"
+grep --quiet '"coordinationStatus":"submitted"' <<<"$workspace_json"
+
+docker exec "$app_name" sh -c "printf 'ministry team packet' > /tmp/ministry-packet.txt"
+ministry_document_json="$(docker exec "$app_name" curl --fail --silent \
+  -X POST "http://localhost:8080/api/engagements/assignments/$assignment_id/workspace/documents" \
+  -F 'file=@/tmp/ministry-packet.txt;type=text/plain')"
+ministry_document_id="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])' <<<"$ministry_document_json")"
+
+docker exec "$app_name" curl --fail --silent \
+  "http://localhost:8080/api/engagements/assignments/$assignment_id/preparation/documents/$ministry_document_id" \
+  | grep --quiet 'ministry team packet'
+
+workspace_json="$(docker exec "$app_name" curl --fail --silent \
+  "http://localhost:8080/api/engagements/assignments/$assignment_id/workspace")"
+grep --quiet 'Assignment document added' <<<"$workspace_json"
+grep --quiet 'ministry-packet.txt' <<<"$workspace_json"
+
+docker exec "$app_name" curl --fail --silent \
+  -X DELETE "http://localhost:8080/api/engagements/assignments/$assignment_id/workspace/documents/$ministry_document_id" >/dev/null
+
+workspace_json="$(docker exec "$app_name" curl --fail --silent \
+  "http://localhost:8080/api/engagements/assignments/$assignment_id/workspace")"
+grep --quiet 'Assignment document removed' <<<"$workspace_json"
+grep --quiet '"overallPercent":100' <<<"$workspace_json"
+
 docker exec "$app_name" curl --fail --silent http://localhost:8080/api/engagements/assignments \
   | grep --quiet 'Kingdom Leadership Gathering'

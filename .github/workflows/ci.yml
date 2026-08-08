@@ -17,15 +17,109 @@ jobs:
       - run: dotnet build KingdomEngagements.slnx --configuration Release --no-restore
       - run: dotnet test KingdomEngagements.slnx --configuration Release --no-build
       - run: docker build --tag kingdom-engagements:ci .
-      - name: Verify container health
+
+      - name: Verify standalone container health
         shell: bash
         run: |
+          set -euo pipefail
           container_id="$(docker run --detach kingdom-engagements:ci)"
-          trap 'docker logs "$container_id"; docker rm --force "$container_id"' EXIT
+          trap 'docker logs "$container_id" || true; docker rm --force "$container_id" >/dev/null 2>&1 || true' EXIT
           for attempt in {1..30}; do
-            if docker exec "$container_id"               curl --fail --silent http://localhost:8080/health               | grep --quiet '"module":"engagements"'; then
+            if docker exec "$container_id" curl --fail --silent http://localhost:8080/health \
+              | grep --quiet '"module":"engagements"'; then
               exit 0
             fi
             sleep 2
           done
           exit 1
+
+      - name: Verify connected SQL and strict entitlement runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          network="engagements-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          sql_name="engagements-sql"
+          platform_name="engagements-platform"
+          app_name="engagements-app"
+          password='LocalKingdom0S!'
+
+          cleanup() {
+            docker logs "$app_name" 2>/dev/null || true
+            docker rm --force "$app_name" "$platform_name" "$sql_name" >/dev/null 2>&1 || true
+            docker network rm "$network" >/dev/null 2>&1 || true
+            rm -rf .ci-platform
+          }
+          trap cleanup EXIT
+
+          docker network create "$network" >/dev/null
+          docker run --detach --name "$sql_name" --network "$network" \
+            -e ACCEPT_EULA=Y \
+            -e MSSQL_PID=Developer \
+            -e MSSQL_SA_PASSWORD="$password" \
+            mcr.microsoft.com/mssql/server:2022-latest >/dev/null
+
+          sql_ready=false
+          for attempt in {1..60}; do
+            if docker exec "$sql_name" /opt/mssql-tools18/bin/sqlcmd \
+              -S localhost -U sa -P "$password" -C -Q 'SELECT 1' >/dev/null 2>&1; then
+              sql_ready=true
+              break
+            fi
+            sleep 2
+          done
+          if [ "$sql_ready" != true ]; then
+            echo 'SQL Server did not become ready.' >&2
+            docker logs "$sql_name" >&2 || true
+            exit 1
+          fi
+
+          docker exec "$sql_name" /opt/mssql-tools18/bin/sqlcmd \
+            -S localhost -U sa -P "$password" -C \
+            -Q 'IF DB_ID(N'"'"'KingdomEngagements'"'"') IS NULL CREATE DATABASE [KingdomEngagements]' >/dev/null
+
+          mkdir -p .ci-platform/api
+          printf '%s\n' '[{"moduleKey":"engagements","enabled":true}]' > .ci-platform/api/modules
+          docker run --detach --name "$platform_name" --network "$network" \
+            -v "$PWD/.ci-platform:/srv:ro" -w /srv \
+            python:3.12-alpine python -m http.server 8080 >/dev/null
+
+          docker run --detach --name "$app_name" --network "$network" \
+            -e ASPNETCORE_ENVIRONMENT=Development \
+            -e Database__Provider=SqlServer \
+            -e "ConnectionStrings__EngagementsDatabase=Server=$sql_name;Database=KingdomEngagements;User ID=sa;Password=$password;TrustServerCertificate=True" \
+            -e "KingdomOS__PlatformInternalUrl=http://$platform_name:8080" \
+            -e KingdomOS__Entitlements__BypassInDevelopment=false \
+            -e KingdomOS__Entitlements__FailOpenInDevelopment=false \
+            kingdom-engagements:ci >/dev/null
+
+          live=false
+          for attempt in {1..30}; do
+            if docker exec "$app_name" curl --fail --silent http://localhost:8080/health/live \
+              | grep --quiet '"module":"engagements"'; then
+              live=true
+              break
+            fi
+            sleep 1
+          done
+          if [ "$live" != true ]; then
+            echo 'Engagements process never became live.' >&2
+            exit 1
+          fi
+
+          ready=false
+          for attempt in {1..60}; do
+            if docker exec "$app_name" curl --fail --silent http://localhost:8080/health \
+              | grep --quiet '"database":"ready"'; then
+              ready=true
+              break
+            fi
+            sleep 2
+          done
+          if [ "$ready" != true ]; then
+            echo 'Engagements never became database-ready.' >&2
+            docker exec "$app_name" curl --silent http://localhost:8080/health >&2 || true
+            exit 1
+          fi
+
+          docker exec "$app_name" curl --fail --silent http://localhost:8080/api/engagements/assignments \
+            | grep --quiet 'Kingdom Leadership Gathering'

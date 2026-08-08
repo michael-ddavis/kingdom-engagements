@@ -18,11 +18,11 @@ jobs:
       - run: dotnet test KingdomEngagements.slnx --configuration Release --no-build
       - run: docker build --tag kingdom-engagements:ci .
 
-      - name: Verify standalone container health
+      - name: Verify standalone development health
         shell: bash
         run: |
           set -euo pipefail
-          container_id="$(docker run --detach kingdom-engagements:ci)"
+          container_id="$(docker run --detach -e ASPNETCORE_ENVIRONMENT=Development kingdom-engagements:ci)"
           trap 'docker logs "$container_id" || true; docker rm --force "$container_id" >/dev/null 2>&1 || true' EXIT
           for attempt in {1..30}; do
             if docker exec "$container_id" curl --fail --silent http://localhost:8080/health \
@@ -75,7 +75,7 @@ jobs:
 
           docker exec "$sql_name" /opt/mssql-tools18/bin/sqlcmd \
             -S localhost -U sa -P "$password" -C \
-            -Q 'IF DB_ID(N'"'"'KingdomEngagements'"'"') IS NULL CREATE DATABASE [KingdomEngagements]' >/dev/null
+            -Q "IF DB_ID(N'KingdomEngagements') IS NULL CREATE DATABASE [KingdomEngagements]" >/dev/null
 
           mkdir -p .ci-platform/api
           printf '%s\n' '[{"moduleKey":"engagements","enabled":true}]' > .ci-platform/api/modules
@@ -109,14 +109,14 @@ jobs:
           ready=false
           for attempt in {1..60}; do
             if docker exec "$app_name" curl --fail --silent http://localhost:8080/health \
-              | grep --quiet '"database":"ready"'; then
+              | grep --quiet '"platformEntitlement":"enabled"'; then
               ready=true
               break
             fi
             sleep 2
           done
           if [ "$ready" != true ]; then
-            echo 'Engagements never became database-ready.' >&2
+            echo 'Engagements never became connected-runtime ready.' >&2
             docker exec "$app_name" curl --silent http://localhost:8080/health >&2 || true
             exit 1
           fi

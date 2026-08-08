@@ -6,23 +6,31 @@ namespace KingdomEngagements.Web.Platform;
 public sealed class EngagementsStartupState
 {
     private readonly object sync = new();
+    private bool ready;
     private string phase = "starting";
     private string? problem;
     private DateTimeOffset updatedAtUtc = DateTimeOffset.UtcNow;
 
-    public bool Ready { get; private set; }
+    public bool Ready
+    {
+        get
+        {
+            lock (sync)
+                return ready;
+        }
+    }
 
     public (bool Ready, string Phase, string? Problem, DateTimeOffset UpdatedAtUtc) Snapshot()
     {
         lock (sync)
-            return (Ready, phase, problem, updatedAtUtc);
+            return (ready, phase, problem, updatedAtUtc);
     }
 
     public void MarkAttempt(string nextPhase)
     {
         lock (sync)
         {
-            Ready = false;
+            ready = false;
             phase = nextPhase;
             problem = null;
             updatedAtUtc = DateTimeOffset.UtcNow;
@@ -33,7 +41,7 @@ public sealed class EngagementsStartupState
     {
         lock (sync)
         {
-            Ready = true;
+            ready = true;
             phase = "ready";
             problem = null;
             updatedAtUtc = DateTimeOffset.UtcNow;
@@ -44,7 +52,7 @@ public sealed class EngagementsStartupState
     {
         lock (sync)
         {
-            Ready = false;
+            ready = false;
             phase = "initialization-failed";
             problem = Describe(exception);
             updatedAtUtc = DateTimeOffset.UtcNow;
@@ -140,6 +148,7 @@ public static class EngagementsHealthEndpoints
         endpoints.MapGet("/health", async (
             EngagementsStartupState startup,
             IServiceScopeFactory scopeFactory,
+            EngagementsEntitlementResolver entitlements,
             CancellationToken cancellationToken) =>
         {
             var snapshot = startup.Snapshot();
@@ -168,7 +177,7 @@ public static class EngagementsHealthEndpoints
                         service = "KingdomEngagements",
                         module = "engagements",
                         dependency = "database",
-                        problem = "KingdomEngagements cannot connect to its SQL database."
+                        problem = "Kingdom Engagements cannot connect to its SQL database."
                     }, statusCode: StatusCodes.Status503ServiceUnavailable);
                 }
             }
@@ -184,12 +193,29 @@ public static class EngagementsHealthEndpoints
                 }, statusCode: StatusCodes.Status503ServiceUnavailable);
             }
 
+            var entitlement = await entitlements.GetStateAsync(KingdomIdentity.DemoTenantId, cancellationToken);
+            if (entitlement != ModuleEntitlementState.Enabled)
+            {
+                return Results.Json(new
+                {
+                    status = "Unhealthy",
+                    service = "KingdomEngagements",
+                    module = "engagements",
+                    dependency = "platform-entitlement",
+                    entitlement = entitlement.ToString(),
+                    problem = entitlement == ModuleEntitlementState.Disabled
+                        ? "Kingdom Platform reports that Engagements is disabled for this organization."
+                        : "Kingdom Platform could not verify the Engagements entitlement."
+                }, statusCode: StatusCodes.Status503ServiceUnavailable);
+            }
+
             return Results.Ok(new
             {
                 status = "Healthy",
                 service = "KingdomEngagements",
                 module = "engagements",
-                database = "ready"
+                database = "ready",
+                platformEntitlement = "enabled"
             });
         }).AllowAnonymous();
 

@@ -12,22 +12,34 @@
       <a class="brand" id="platform-link" href="http://localhost:5100"><span>K</span><strong>KingdomOS<small>Engagements</small></strong></a>
       <nav>
         <a class="active" href="#overview">Overview</a>
+        <a href="#requests">Invitations</a>
         <a href="#assignments">Assignments</a>
         <a href="#readiness">Readiness</a>
         <a href="#coordination">Travel & host</a>
         <a href="#documents">Documents</a>
         <a href="#closeout">Closeout</a>
       </nav>
-      <p class="boundary">Engagements owns traveler-facing logistics. Operations receives only governed status, risk, owner, and requested help.</p>
+      <p class="boundary">Engagements owns invitation intake through closeout. Operations receives only governed status, risk, owner, and requested help.</p>
     </aside>
     <main>
       <header class="topbar"><span id="tenant-name">Cynthia Thompson Global</span><b><i></i> Entitlement verified</b></header>
       <section class="hero" id="overview">
-        <div><p class="eyebrow">Approved assignments · prepared hosts · ready travelers</p><h1>Every engagement, ready before arrival.</h1><p>Coordinate host details, travel, lodging, transportation, documents, readiness, and closeout in one independently entitled workspace.</p></div>
-        <button id="refresh">Refresh workspace</button>
+        <div><p class="eyebrow">Invitations · approved assignments · prepared hosts · ready travelers</p><h1>Every engagement, ready before arrival.</h1><p>Review invitations, coordinate host details, travel, lodging, transportation, documents, readiness, and closeout in one independently entitled workspace.</p></div>
+        <div class="hero-actions"><a class="secondary-action" href="/invite/apostle-cynthia" target="_blank" rel="noopener">Open host invitation</a><button id="refresh">Refresh workspace</button></div>
       </section>
       <section class="metrics" id="metrics"></section>
       <p id="message" class="message" hidden></p>
+
+      <section class="request-workspace" id="requests">
+        <article class="panel request-panel">
+          <header><div><p class="eyebrow">Invitation review</p><h2>Speaking requests</h2></div><span id="request-count">0</span></header>
+          <div id="request-list" class="request-list"></div>
+        </article>
+        <article class="panel request-detail-panel" id="request-detail">
+          <div class="empty request-empty">Select an invitation to review its details and ministry-team conversation.</div>
+        </article>
+      </section>
+
       <section class="workspace-grid" id="assignments">
         <article class="panel assignment-panel">
           <header><div><p class="eyebrow">Assignment inbox</p><h2>Approved engagements</h2></div><span id="assignment-count">0</span></header>
@@ -40,7 +52,7 @@
       <section class="boundary-grid">
         <article><strong>Operations</strong><p>Owns organizational oversight, dependencies, support requests, and exceptions—not itinerary details.</p></article>
         <article><strong>Missions</strong><p>Owns trip-specific passport, visa, and mission readiness when the engagement belongs to a missions trip.</p></article>
-        <article><strong>Engagements</strong><p>Owns host coordination, travel, lodging, transportation, documents, readiness, and closeout.</p></article>
+        <article><strong>Engagements</strong><p>Owns invitation review, host coordination, travel, lodging, transportation, documents, readiness, and closeout.</p></article>
       </section>
     </main>
   </div>

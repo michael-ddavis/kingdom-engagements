@@ -38,3 +38,7 @@ jobs:
       - name: Verify connected SQL and strict entitlement runtime
         shell: bash
         run: bash .github/scripts/connected-smoke.sh
+
+      - name: Verify event response follow-up and closeout lifecycle
+        shell: bash
+        run: bash .github/scripts/completion-smoke.sh

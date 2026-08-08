@@ -125,6 +125,7 @@ public sealed class SpeakingRequestLifecycleTests
             .UseInMemoryDatabase($"engagements-lifecycle-{Guid.NewGuid():N}")
             .Options;
         var requestOptions = new DbContextOptionsBuilder<SpeakingRequestsDbContext>()
+            .ReplaceService<IModelCustomizer, SpeakingRequestsModelCustomizer>()
             .UseInMemoryDatabase($"engagement-requests-{Guid.NewGuid():N}")
             .Options;
         var engagements = new EngagementsDbContext(engagementOptions);

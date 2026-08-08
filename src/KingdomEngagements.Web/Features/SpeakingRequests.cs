@@ -1,5 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 using KingdomEngagements.Web.Platform;
 using Microsoft.EntityFrameworkCore;
 
@@ -51,7 +49,7 @@ public sealed class SpeakingRequestsDbContext(DbContextOptions<SpeakingRequestsD
         communication.ToTable("EngagementSpeakingRequestCommunications");
         communication.HasKey(x => x.Id);
         communication.Property(x => x.Type).HasMaxLength(60).IsRequired();
-        communication.Property(x => x.Message).HasMaxLength(5000).IsRequired();
+        communication.Property(x => x.Message).HasMaxLength(4000).IsRequired();
         communication.Property(x => x.Actor).HasMaxLength(180).IsRequired();
     }
 
@@ -118,7 +116,7 @@ BEGIN
         [Id] uniqueidentifier NOT NULL,
         [RequestId] uniqueidentifier NOT NULL,
         [Type] nvarchar(60) NOT NULL,
-        [Message] nvarchar(5000) NOT NULL,
+        [Message] nvarchar(4000) NOT NULL,
         [Actor] nvarchar(180) NOT NULL,
         [CreatedAtUtc] datetimeoffset NOT NULL,
         CONSTRAINT [PK_EngagementSpeakingRequestCommunications] PRIMARY KEY ([Id]),

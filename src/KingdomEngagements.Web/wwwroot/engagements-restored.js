@@ -70,7 +70,9 @@
     if (!header || typeof state === 'undefined' || !state.selected) return;
     ensureBackButton();
 
-    header.querySelector('.eyebrow')?.replaceChildren(document.createTextNode('Ministry engagement'));
+    const eyebrow = header.querySelector('.eyebrow');
+    if (eyebrow && eyebrow.textContent !== 'Ministry engagement') eyebrow.textContent = 'Ministry engagement';
+
     let summary = assignmentDetail.querySelector('.engagement-heading-summary');
     if (!summary) {
       summary = document.createElement('section');
@@ -80,6 +82,10 @@
 
     const item = state.selected;
     const readiness = Math.max(0, Math.min(100, Number(item.summary?.readinessPercent || 0)));
+    const openItems = item.tasks?.filter(task => !['complete', 'waived'].includes(task.status)).length || 0;
+    const signature = [item.summary?.id || state.selectedId, item.summary?.startsAtUtc, item.endsAtUtc, item.summary?.location, item.summary?.hostOrganization, item.hostContactName, readiness, openItems].join('|');
+    if (summary.dataset.signature === signature) return;
+    summary.dataset.signature = signature;
     summary.innerHTML = `
       <article>
         <small>Event dates</small>
@@ -94,7 +100,7 @@
       <article class="engagement-heading-readiness">
         <div><small>Overall readiness</small><strong>${readiness}%</strong></div>
         <div class="engagement-heading-progress"><i style="width:${readiness}%"></i></div>
-        <span>${item.tasks?.filter(task => !['complete','waived'].includes(task.status)).length || 0} open preparation items</span>
+        <span>${openItems} open preparation ${openItems === 1 ? 'item' : 'items'}</span>
       </article>`;
   }
 
@@ -131,8 +137,11 @@
     if (window.location.hash !== '#assignments') assignmentGrid?.classList.remove('is-workspace-open');
   });
 
+  let detailFrame = 0;
   const detailObserver = new MutationObserver(() => {
-    if (assignmentGrid?.classList.contains('is-workspace-open')) requestAnimationFrame(enhanceAssignmentHeader);
+    if (!assignmentGrid?.classList.contains('is-workspace-open')) return;
+    cancelAnimationFrame(detailFrame);
+    detailFrame = requestAnimationFrame(enhanceAssignmentHeader);
   });
   if (assignmentDetail) detailObserver.observe(assignmentDetail, { childList: true, subtree: true });
 })();

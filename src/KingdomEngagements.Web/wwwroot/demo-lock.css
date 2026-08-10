@@ -1,0 +1,39 @@
+:root{--kos-action-primary:#172a46;--kos-action-secondary:#6d5bd0;--kos-action-primary-hover:color-mix(in srgb,var(--kos-action-primary) 88%,black);--kos-action-primary-soft:color-mix(in srgb,var(--kos-action-primary) 10%,white);--kos-action-secondary-soft:color-mix(in srgb,var(--kos-action-secondary) 10%,white);--kos-action-focus:color-mix(in srgb,var(--kos-action-primary) 28%,transparent);--kos-motion-fast:160ms;--kos-motion:240ms;--kos-ease:cubic-bezier(.2,.75,.25,1)}
+
+button,a,input,select,textarea{transition:border-color var(--kos-motion-fast) ease,background-color var(--kos-motion-fast) ease,color var(--kos-motion-fast) ease,box-shadow var(--kos-motion) var(--kos-ease),opacity var(--kos-motion-fast) ease,transform var(--kos-motion-fast) var(--kos-ease)}
+:focus-visible{outline:0!important;box-shadow:0 0 0 3px var(--kos-action-focus)!important}
+
+.topbar{background:rgba(250,251,253,.76)!important;border-bottom:1px solid rgba(255,255,255,.62)!important;backdrop-filter:blur(22px) saturate(1.16);-webkit-backdrop-filter:blur(22px) saturate(1.16)}
+.sidebar{box-shadow:18px 0 48px rgba(28,39,58,.06)}
+
+/* Only actual primary actions consume the profile primary color. Tabs, status pills, row controls, and workflow navigation keep their existing information hierarchy. */
+.primary,.primary-save,#refresh,.hero-actions button:not(.secondary-action),button[value="submit"]{border-color:transparent!important;background:var(--kos-action-primary)!important;color:#fff!important;box-shadow:0 8px 22px color-mix(in srgb,var(--kos-action-primary) 17%,transparent)!important}
+.primary:hover:not(:disabled),.primary-save:hover:not(:disabled),#refresh:hover:not(:disabled),.hero-actions button:not(.secondary-action):hover:not(:disabled),button[value="submit"]:hover:not(:disabled){background:var(--kos-action-primary-hover)!important;transform:translateY(-1px)}
+.secondary-action,.secondary-save,.quiet-action,.assignment-workspace__link-actions a,.assignment-workspace__link-actions button{border-color:color-mix(in srgb,var(--kos-action-secondary) 25%,#d6d9df)!important;background:color-mix(in srgb,var(--kos-action-secondary) 6%,rgba(255,255,255,.9))!important;color:var(--kos-action-secondary)!important;box-shadow:none!important}
+.secondary-action:hover,.secondary-save:hover,.quiet-action:hover,.assignment-workspace__link-actions a:hover,.assignment-workspace__link-actions button:hover{background:var(--kos-action-secondary-soft)!important;transform:translateY(-1px)}
+
+/* Keep the proven two-pane Engagements dossier. Only transient create/edit work floats. */
+dialog#task-dialog{position:fixed;inset:0 0 0 auto;width:min(500px,92vw);height:100dvh;max-height:none;margin:0;border:0;border-left:1px solid rgba(255,255,255,.7);border-radius:0;background:rgba(249,250,252,.9);box-shadow:-24px 0 70px rgba(23,35,56,.2);backdrop-filter:blur(28px) saturate(1.16);-webkit-backdrop-filter:blur(28px) saturate(1.16);animation:kos-drawer-in var(--kos-motion) var(--kos-ease) both}
+dialog#task-dialog::backdrop{background:rgba(20,29,43,.2);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);animation:kos-fade-in var(--kos-motion-fast) ease both}
+dialog#task-dialog form{min-height:100%;box-sizing:border-box;padding:max(24px,env(safe-area-inset-top)) 26px 28px;overflow:auto}
+dialog#task-dialog header{position:sticky;top:0;z-index:2;background:rgba(249,250,252,.93);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+
+.assignment-workspace,.request-workspace,.workspace-grid,.metrics{animation:kos-page-in var(--kos-motion) var(--kos-ease) both}
+.assignment-list>*,.request-list>*,.task-list>*,.workspace-document-list>article,.assignment-activity>article{animation:kos-list-in var(--kos-motion) var(--kos-ease) both}
+.assignment-workspace__tabs button{transition:background var(--kos-motion-fast) ease,color var(--kos-motion-fast) ease,box-shadow var(--kos-motion-fast) ease!important}
+.assignment-workspace__tabs button.is-active{color:var(--kos-action-primary)!important;box-shadow:inset 0 -2px var(--kos-action-primary)!important}
+
+.document-upload-row input[type="file"]{border:1px dashed color-mix(in srgb,var(--kos-action-secondary) 24%,#cbc7bf);border-radius:10px;background:rgba(255,255,255,.78);padding:9px}
+.document-upload-row input[type="file"]::file-selector-button{margin-right:10px;border:0;border-radius:8px;background:var(--kos-action-secondary-soft);padding:8px 11px;color:var(--kos-action-secondary);font:inherit;font-weight:800;cursor:pointer}
+
+/* Demo-lock removes architecture/marketing repetition from the operating surface. */
+.sidebar .boundary,.boundary-grid{display:none!important}
+.hero{padding-bottom:24px!important}
+.hero>div:first-child>p:last-child{max-width:760px}
+
+@keyframes kos-drawer-in{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:translateX(0)}}
+@keyframes kos-fade-in{from{opacity:0}to{opacity:1}}
+@keyframes kos-page-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+@keyframes kos-list-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:720px){dialog#task-dialog{width:100vw}}
+@media(prefers-reduced-motion:reduce){dialog#task-dialog,dialog#task-dialog::backdrop,.assignment-workspace,.request-workspace,.workspace-grid,.metrics,.assignment-list>*,.request-list>*,.task-list>*,.workspace-document-list>article,.assignment-activity>article{animation:none!important}button,a,input,select,textarea{transition:none!important}}

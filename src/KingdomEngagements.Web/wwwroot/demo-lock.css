@@ -14,7 +14,7 @@ button,a,input,select,textarea{transition:border-color var(--kos-motion-fast) ea
 
 /* Keep the proven two-pane Engagements dossier. Only transient create/edit work floats. */
 dialog#task-dialog{position:fixed;inset:0 0 0 auto;width:min(500px,92vw);height:100dvh;max-height:none;margin:0;border:0;border-left:1px solid rgba(255,255,255,.7);border-radius:0;background:rgba(249,250,252,.9);box-shadow:-24px 0 70px rgba(23,35,56,.2);backdrop-filter:blur(28px) saturate(1.16);-webkit-backdrop-filter:blur(28px) saturate(1.16);animation:kos-drawer-in var(--kos-motion) var(--kos-ease) both}
-dialog#task-dialog::backdrop{background:rgba(20,29,43,.2);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);animation:kos-fade-in var(--kos-motion-fast) ease both}
+dialog#task-dialog::backdrop{background:rgba(20,29,43,.2);animation:kos-fade-in var(--kos-motion-fast) ease both}
 dialog#task-dialog form{min-height:100%;box-sizing:border-box;padding:max(24px,env(safe-area-inset-top)) 26px 28px;overflow:auto}
 dialog#task-dialog header{position:sticky;top:0;z-index:2;background:rgba(249,250,252,.93);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
 
@@ -31,9 +31,26 @@ dialog#task-dialog header{position:sticky;top:0;z-index:2;background:rgba(249,25
 .hero{padding-bottom:24px!important}
 .hero>div:first-child>p:last-child{max-width:760px}
 
+/* Engagements uses one visible work area at a time instead of stacking invitations and assignments. */
+.engagements-workspace-tabs{display:flex;gap:4px;margin:4px 0 18px;overflow-x:auto;border-bottom:1px solid #dfe4ec}
+.engagements-workspace-tabs button{min-height:50px;padding:0 16px;border:0;border-bottom:2px solid transparent;background:transparent;color:#6c7688;font:inherit;font-size:.82rem;font-weight:780;white-space:nowrap}
+.engagements-workspace-tabs button.is-active{border-color:var(--kos-action-secondary);color:var(--kos-action-secondary)}
+#requests[hidden],#assignments[hidden]{display:none!important}
+
+/* The original preparation and completion lifecycles now share one assignment tab strip. */
+.assignment-workspace.is-unified>.assignment-workspace__tabs{position:sticky;top:0;z-index:5;display:flex;gap:2px;overflow-x:auto;margin:0;border-top:1px solid #e4e7ec;border-bottom:1px solid #dfe4ec;background:rgba(255,255,255,.97)}
+.assignment-workspace.is-unified>.assignment-workspace__tabs>button{min-height:50px;padding:0 13px;border:0;border-bottom:2px solid transparent;background:transparent;color:#697386;font:inherit;font-size:.76rem;font-weight:780;white-space:nowrap;box-shadow:none!important}
+.assignment-workspace.is-unified>.assignment-workspace__tabs>button.is-active{border-color:var(--kos-action-primary);color:var(--kos-action-primary)!important;box-shadow:none!important}
+.assignment-workspace.is-unified>.assignment-editor{border-top:0}
+.assignment-workspace.is-unified>.completion-workspace{margin:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+.assignment-workspace.is-unified>.completion-workspace[hidden],.assignment-workspace.is-unified>.assignment-editor[hidden]{display:none!important}
+.assignment-workspace.is-unified>.completion-workspace>.completion-workspace__header,.assignment-workspace.is-unified>.completion-workspace>.completion-tabs{display:none!important}
+.assignment-workspace.is-unified>.completion-workspace>.completion-pane{padding:26px 28px}
+.assignment-workspace.is-unified>.completion-workspace>.completion-pane:not(.is-active){display:none}
+
 @keyframes kos-drawer-in{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:translateX(0)}}
 @keyframes kos-fade-in{from{opacity:0}to{opacity:1}}
 @keyframes kos-page-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
 @keyframes kos-list-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
-@media(max-width:720px){dialog#task-dialog{width:100vw}}
+@media(max-width:720px){dialog#task-dialog{width:100vw}.assignment-workspace.is-unified>.completion-workspace>.completion-pane{padding:20px 16px}}
 @media(prefers-reduced-motion:reduce){dialog#task-dialog,dialog#task-dialog::backdrop,.assignment-workspace,.request-workspace,.workspace-grid,.metrics,.assignment-list>*,.request-list>*,.task-list>*,.workspace-document-list>article,.assignment-activity>article{animation:none!important}button,a,input,select,textarea{transition:none!important}}

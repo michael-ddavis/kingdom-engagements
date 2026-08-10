@@ -26,8 +26,9 @@
 
     const eyebrow = hero.querySelector('.eyebrow');
     const title = hero.querySelector('h1');
-    if (eyebrow) eyebrow.textContent = 'Kingdom Engagements';
-    if (title) title.textContent = mode === 'requests' ? 'Invitations' : mode === 'assignments' ? 'Assignments' : 'Engagements';
+    const nextTitle = mode === 'requests' ? 'Invitations' : mode === 'assignments' ? 'Assignments' : 'Engagements';
+    if (eyebrow && eyebrow.textContent !== 'Kingdom Engagements') eyebrow.textContent = 'Kingdom Engagements';
+    if (title && title.textContent !== nextTitle) title.textContent = nextTitle;
 
     document.querySelectorAll('.sidebar nav a').forEach(link => {
       const href = link.getAttribute('href');
@@ -116,6 +117,10 @@
   window.addEventListener('hashchange', () => applyTopLevelMode(modeFromHash()));
   document.addEventListener('DOMContentLoaded', reconcile);
 
-  const observer = new MutationObserver(() => requestAnimationFrame(reconcile));
+  let frame = 0;
+  const observer = new MutationObserver(() => {
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(reconcile);
+  });
   observer.observe(document.documentElement, { childList: true, subtree: true });
 })();

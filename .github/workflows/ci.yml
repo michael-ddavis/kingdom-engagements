@@ -25,11 +25,12 @@ jobs:
           container_id="$(docker run --detach -e ASPNETCORE_ENVIRONMENT=Development kingdom-engagements:ci)"
           trap 'docker logs "$container_id" || true; docker rm --force "$container_id" >/dev/null 2>&1 || true' EXIT
           for attempt in {1..30}; do
-            if docker exec "$container_id" curl --fail --silent http://localhost:8080/health \
-              | grep --quiet '"module":"engagements"'; then
-              docker exec "$container_id" curl --fail --silent http://localhost:8080/invite/apostle-cynthia \
-                | grep --quiet 'Invite Cynthia Thompson'
-              exit 0
+            if health_payload="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/health 2>/dev/null)"; then
+              if grep --quiet '"module":"engagements"' <<<"$health_payload"; then
+                invite_payload="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/invite/apostle-cynthia)"
+                grep --quiet 'Invite Cynthia Thompson' <<<"$invite_payload"
+                exit 0
+              fi
             fi
             sleep 2
           done

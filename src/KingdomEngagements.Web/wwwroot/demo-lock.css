@@ -6,8 +6,9 @@ button,a,input,select,textarea{transition:border-color var(--kos-motion-fast) ea
 .topbar{background:rgba(250,251,253,.76)!important;border-bottom:1px solid rgba(255,255,255,.62)!important;backdrop-filter:blur(22px) saturate(1.16);-webkit-backdrop-filter:blur(22px) saturate(1.16)}
 .sidebar{box-shadow:18px 0 48px rgba(28,39,58,.06)}
 
-button:not(.quiet-action):not(.row-remove):not([aria-label="Close"]),.primary-save,.hero-actions button,.hero-actions a:first-child{border-color:transparent!important;background:var(--kos-action-primary)!important;color:#fff!important;box-shadow:0 8px 22px color-mix(in srgb,var(--kos-action-primary) 17%,transparent)!important}
-button:not(.quiet-action):not(.row-remove):not([aria-label="Close"]):hover:not(:disabled),.primary-save:hover:not(:disabled),.hero-actions button:hover,.hero-actions a:first-child:hover{background:var(--kos-action-primary-hover)!important;transform:translateY(-1px)}
+/* Only actual primary actions consume the profile primary color. Tabs, status pills, row controls, and workflow navigation keep their existing information hierarchy. */
+.primary,.primary-save,#refresh,.hero-actions button:not(.secondary-action),button[value="submit"]{border-color:transparent!important;background:var(--kos-action-primary)!important;color:#fff!important;box-shadow:0 8px 22px color-mix(in srgb,var(--kos-action-primary) 17%,transparent)!important}
+.primary:hover:not(:disabled),.primary-save:hover:not(:disabled),#refresh:hover:not(:disabled),.hero-actions button:not(.secondary-action):hover:not(:disabled),button[value="submit"]:hover:not(:disabled){background:var(--kos-action-primary-hover)!important;transform:translateY(-1px)}
 .secondary-action,.secondary-save,.quiet-action,.assignment-workspace__link-actions a,.assignment-workspace__link-actions button{border-color:color-mix(in srgb,var(--kos-action-secondary) 25%,#d6d9df)!important;background:color-mix(in srgb,var(--kos-action-secondary) 6%,rgba(255,255,255,.9))!important;color:var(--kos-action-secondary)!important;box-shadow:none!important}
 .secondary-action:hover,.secondary-save:hover,.quiet-action:hover,.assignment-workspace__link-actions a:hover,.assignment-workspace__link-actions button:hover{background:var(--kos-action-secondary-soft)!important;transform:translateY(-1px)}
 

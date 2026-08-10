@@ -9,27 +9,25 @@
   <link rel="stylesheet" href="/preparation.css" />
   <link rel="stylesheet" href="/completion.css" />
   <link rel="stylesheet" href="/demo-lock.css" />
+  <link rel="stylesheet" href="/engagements-restored.css" />
+  <link rel="stylesheet" href="/engagements-restored-components.css" />
 </head>
 <body>
   <div class="shell">
     <aside class="sidebar">
-      <a class="brand" id="platform-link" href="http://localhost:5100"><span>K</span><strong>KingdomOS<small>Engagements</small></strong></a>
-      <nav>
+      <a class="brand" id="platform-link" href="http://localhost:5100"><span>K</span><strong>Kingdom Engagements<small>Invitations through closeout</small></strong></a>
+      <nav aria-label="Kingdom Engagements">
         <a class="active" href="#overview">Overview</a>
         <a href="#requests">Invitations</a>
         <a href="#assignments">Assignments</a>
-        <a href="#readiness">Readiness</a>
-        <a href="#coordination">Travel & host</a>
-        <a href="#documents">Documents</a>
-        <a href="#closeout">Closeout</a>
       </nav>
-      <p class="boundary">Engagements owns invitation intake through ministry outcomes, follow-up, and closeout. Operations receives only governed status, risk, owner, and requested help.</p>
+      <div class="sidebar-utility"><strong>KingdomOS</strong><span>Return to the platform for cross-module work and profile settings.</span></div>
     </aside>
     <main>
-      <header class="topbar"><span id="tenant-name">Cynthia Thompson Global</span><b><i></i> Entitlement verified</b></header>
+      <header class="topbar"><span id="tenant-name">Cynthia Thompson Global</span><b><i></i> Engagements ready</b></header>
       <section class="hero" id="overview">
-        <div><p class="eyebrow">Kingdom Engagements</p><h1>Engagement coordination</h1><p>Invitation review, assignment preparation, travel, host coordination, ministry responses, follow-up, and closeout in one working record.</p></div>
-        <div class="hero-actions"><a class="secondary-action" href="/invite/apostle-cynthia" target="_blank" rel="noopener">Open host invitation</a><button id="refresh">Refresh workspace</button></div>
+        <div><p class="eyebrow">Kingdom Engagements</p><h1>Engagements</h1><p>Invitation review, assignment preparation, travel, host coordination, ministry responses, follow-up, and closeout in one working record.</p></div>
+        <div class="hero-actions"><a class="secondary-action" href="/invite/apostle-cynthia" target="_blank" rel="noopener">Open host invitation</a><button id="refresh">Refresh</button></div>
       </section>
       <section class="metrics" id="metrics"></section>
       <p id="message" class="message" hidden></p>
@@ -46,22 +44,17 @@
 
       <section class="workspace-grid" id="assignments">
         <article class="panel assignment-panel">
-          <header><div><p class="eyebrow">Assignment inbox</p><h2>Approved engagements</h2></div><span id="assignment-count">0</span></header>
+          <header><div><p class="eyebrow">Itinerant ministry</p><h2>Approved engagements</h2></div><span id="assignment-count">0</span></header>
           <div id="assignment-list" class="assignment-list"></div>
         </article>
         <article class="panel detail-panel" id="assignment-detail">
           <div class="empty">Select an engagement to open its coordination workspace.</div>
         </article>
       </section>
-      <section class="boundary-grid">
-        <article><strong>Operations</strong><p>Owns organizational oversight, dependencies, support requests, and exceptions—not itinerary or ministry-response details.</p></article>
-        <article><strong>Missions</strong><p>Owns trip-specific passport, visa, and mission readiness when the engagement belongs to a missions trip.</p></article>
-        <article><strong>Engagements</strong><p>Owns invitation review, accepted terms, host coordination, readiness, event outcomes, follow-up, and closeout.</p></article>
-      </section>
     </main>
   </div>
   <template id="detail-template">
-    <header class="detail-header"><div><p class="eyebrow">Engagement workspace</p><h2 data-field="title"></h2><p data-field="subtitle"></p></div><span data-field="status"></span></header>
+    <header class="detail-header"><div><p class="eyebrow">Ministry engagement</p><h2 data-field="title"></h2><p data-field="subtitle"></p></div><span data-field="status"></span></header>
     <section class="readiness-card" id="readiness"><div><strong data-field="readiness"></strong><small>overall readiness</small></div><progress data-field="progress" max="100"></progress></section>
     <section class="status-grid" id="coordination"></section>
     <section class="detail-section"><header><div><p class="eyebrow">Host coordination</p><h3>Assignment details</h3></div></header><dl class="details-list"></dl></section>
@@ -85,5 +78,6 @@
   <script src="/preparation.js" defer></script>
   <script src="/completion.js" defer></script>
   <script src="/workflow-tabs.js" defer></script>
+  <script src="/engagements-restored.js" defer></script>
 </body>
 </html>

@@ -64,11 +64,55 @@
     return end && end !== start ? `${start} – ${end}` : start;
   }
 
+  function restoreChecklistTab() {
+    const workspace = assignmentDetail?.querySelector('.assignment-workspace.is-unified');
+    if (!workspace) return;
+    const editor = workspace.querySelector('#assignment-coordination-form');
+    const nav = workspace.querySelector('.assignment-workspace__tabs');
+    if (!editor || !nav) return;
+
+    const legacyCloseout = Array.from(assignmentDetail.children).find(element => element.matches?.('.detail-section#closeout'));
+    if (legacyCloseout) legacyCloseout.hidden = true;
+
+    let checklistPane = editor.querySelector('[data-workspace-pane="checklist"]');
+    if (!checklistPane) {
+      const taskSection = Array.from(assignmentDetail.children).find(element =>
+        element.matches?.('.detail-section') && element.querySelector('h3')?.textContent.trim() === 'Readiness tasks');
+      if (taskSection) {
+        checklistPane = taskSection;
+        checklistPane.classList.add('assignment-pane', 'restored-checklist-pane');
+        checklistPane.dataset.workspacePane = 'checklist';
+        const footer = editor.querySelector('.assignment-editor__actions');
+        editor.insertBefore(checklistPane, footer || null);
+      }
+    }
+
+    if (!checklistPane || nav.querySelector('[data-workspace-tab="checklist"]')) return;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.workspaceTab = 'checklist';
+    button.textContent = 'Checklist';
+    const travelButton = nav.querySelector('[data-workspace-tab="travel"]');
+    nav.insertBefore(button, travelButton || null);
+    button.addEventListener('click', () => {
+      const completion = workspace.querySelector('.completion-workspace');
+      editor.hidden = false;
+      if (completion) completion.hidden = true;
+      nav.querySelectorAll('button').forEach(item => {
+        const active = item === button;
+        item.classList.toggle('is-active', active);
+        item.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      editor.querySelectorAll('[data-workspace-pane]').forEach(pane => pane.classList.toggle('is-active', pane === checklistPane));
+    });
+  }
+
   function enhanceAssignmentHeader() {
     if (!assignmentDetail || !assignmentGrid?.classList.contains('is-workspace-open')) return;
     const header = assignmentDetail.querySelector('.detail-header');
     if (!header || typeof state === 'undefined' || !state.selected) return;
     ensureBackButton();
+    restoreChecklistTab();
 
     const eyebrow = header.querySelector('.eyebrow');
     if (eyebrow && eyebrow.textContent !== 'Ministry engagement') eyebrow.textContent = 'Ministry engagement';

@@ -6,49 +6,36 @@
     ['closeout', 'Closeout'],
   ];
 
-  function ensureTopLevelTabs() {
-    const requests = document.querySelector('#requests');
-    const assignments = document.querySelector('#assignments');
-    if (!requests || !assignments) return;
-
-    let nav = document.querySelector('.engagements-workspace-tabs');
-    if (!nav) {
-      nav = document.createElement('nav');
-      nav.className = 'engagements-workspace-tabs';
-      nav.setAttribute('aria-label', 'Engagements workspace');
-      nav.innerHTML = `
-        <button type="button" data-engagements-mode="assignments">Assignments</button>
-        <button type="button" data-engagements-mode="requests">Invitations</button>`;
-      requests.insertAdjacentElement('beforebegin', nav);
-      nav.querySelectorAll('[data-engagements-mode]').forEach(button => {
-        button.addEventListener('click', () => {
-          const mode = button.dataset.engagementsMode;
-          window.location.hash = mode === 'requests' ? '#requests' : '#assignments';
-          applyTopLevelMode(mode);
-        });
-      });
-    }
-
-    applyTopLevelMode(modeFromHash());
-  }
-
   function modeFromHash() {
     const hash = (window.location.hash || '').toLowerCase();
-    return hash === '#requests' ? 'requests' : 'assignments';
+    if (hash === '#requests') return 'requests';
+    if (hash === '#assignments') return 'assignments';
+    return 'overview';
   }
 
   function applyTopLevelMode(mode) {
+    const hero = document.querySelector('#overview');
+    const metrics = document.querySelector('#metrics');
     const requests = document.querySelector('#requests');
     const assignments = document.querySelector('#assignments');
-    const nav = document.querySelector('.engagements-workspace-tabs');
-    if (!requests || !assignments || !nav) return;
+    if (!hero || !metrics || !requests || !assignments) return;
 
     requests.hidden = mode !== 'requests';
     assignments.hidden = mode !== 'assignments';
-    nav.querySelectorAll('[data-engagements-mode]').forEach(button => {
-      const active = button.dataset.engagementsMode === mode;
-      button.classList.toggle('is-active', active);
-      button.setAttribute('aria-current', active ? 'page' : 'false');
+    metrics.hidden = mode !== 'overview';
+
+    const eyebrow = hero.querySelector('.eyebrow');
+    const title = hero.querySelector('h1');
+    const nextTitle = mode === 'requests' ? 'Invitations' : mode === 'assignments' ? 'Assignments' : 'Engagements';
+    if (eyebrow && eyebrow.textContent !== 'Kingdom Engagements') eyebrow.textContent = 'Kingdom Engagements';
+    if (title && title.textContent !== nextTitle) title.textContent = nextTitle;
+
+    document.querySelectorAll('.sidebar nav a').forEach(link => {
+      const href = link.getAttribute('href');
+      const active = mode === 'overview' ? href === '#overview' : href === `#${mode}`;
+      link.classList.toggle('active', active);
+      if (active) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
     });
   }
 
@@ -123,13 +110,17 @@
   }
 
   function reconcile() {
-    ensureTopLevelTabs();
+    applyTopLevelMode(modeFromHash());
     unifyAssignmentWorkspace();
   }
 
   window.addEventListener('hashchange', () => applyTopLevelMode(modeFromHash()));
   document.addEventListener('DOMContentLoaded', reconcile);
 
-  const observer = new MutationObserver(() => requestAnimationFrame(reconcile));
+  let frame = 0;
+  const observer = new MutationObserver(() => {
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(reconcile);
+  });
   observer.observe(document.documentElement, { childList: true, subtree: true });
 })();

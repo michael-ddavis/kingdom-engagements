@@ -13,6 +13,10 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+      - run: node --check src/KingdomEngagements.Web/wwwroot/exact-18df.js
       - run: dotnet restore KingdomEngagements.slnx
       - run: dotnet build KingdomEngagements.slnx --configuration Release --no-restore
       - run: dotnet test KingdomEngagements.slnx --configuration Release --no-build

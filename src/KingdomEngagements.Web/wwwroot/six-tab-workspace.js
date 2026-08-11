@@ -16,98 +16,65 @@
   ];
 
   const recordKeys = new Set(recordTabs.map(([key]) => key));
+  let activeKey = 'overview';
+  let activeAssignmentId = '';
   let frame = 0;
 
-  function detailRoot() {
-    return document.querySelector('#assignment-detail');
+  function roots() {
+    const detail = document.querySelector('#assignment-detail');
+    const grid = document.querySelector('#assignments');
+    const workspace = detail?.querySelector('.assignment-workspace') || null;
+    const editor = workspace?.querySelector('#assignment-coordination-form') || null;
+    const completion = detail?.querySelector('.completion-workspace') || null;
+    return { detail, grid, workspace, editor, completion };
   }
 
-  function workspaceRoot() {
-    return detailRoot()?.querySelector('.assignment-workspace') || null;
+  function assignmentIsOpen(grid) {
+    return !!grid?.classList.contains('is-workspace-open');
   }
 
-  function nativeButtonFor(key) {
-    const workspace = workspaceRoot();
-    if (!workspace) return null;
-    return workspace.querySelector(`[data-workspace-tab="${key}"]`) ||
-      workspace.querySelector(`[data-unified-completion-tab="${key}"]`);
+  function selectedAssignmentId() {
+    return typeof state !== 'undefined' ? String(state.selectedId || '') : '';
   }
 
-  function setActive(key) {
-    const nav = workspaceRoot()?.querySelector('.legacy-six-tabs');
-    if (!nav) return;
+  function ensureChecklistPane({ detail, editor }) {
+    if (!detail || !editor) return null;
 
-    nav.querySelectorAll('[data-six-tab]').forEach(button => {
-      const active = button.dataset.sixTab === key;
-      button.classList.toggle('is-active', active);
-      button.setAttribute('aria-current', active ? 'page' : 'false');
-    });
+    let pane = editor.querySelector('[data-workspace-pane="checklist"]');
+    if (pane) return pane;
 
-    const record = nav.querySelector('.legacy-record-menu');
-    const recordActive = recordKeys.has(key);
-    record?.classList.toggle('is-active', recordActive);
-    const summary = record?.querySelector('summary');
-    if (summary) summary.setAttribute('aria-current', recordActive ? 'page' : 'false');
+    const legacy = Array.from(detail.children).find(element =>
+      element.matches?.('.detail-section') &&
+      element.querySelector('h3')?.textContent.trim() === 'Readiness tasks');
 
-    nav.querySelectorAll('[data-record-tab]').forEach(button => {
-      button.classList.toggle('is-active', button.dataset.recordTab === key);
-    });
+    if (!legacy) return null;
+
+    legacy.classList.add('assignment-pane', 'restored-checklist-pane');
+    legacy.dataset.workspacePane = 'checklist';
+    legacy.hidden = true;
+    editor.insertBefore(legacy, editor.querySelector('.assignment-editor__actions') || null);
+    return legacy;
   }
 
-  function activate(key, closeRecord = true) {
-    const button = nativeButtonFor(key);
-    if (!button) return false;
-    button.click();
-    setActive(key);
+  function ensureNavigation(current) {
+    const { detail, workspace, editor } = current;
+    if (!detail || !workspace || !editor) return null;
 
-    if (closeRecord) {
-      const record = workspaceRoot()?.querySelector('.legacy-record-menu');
-      if (record) record.open = false;
-    }
-    return true;
-  }
-
-  function currentNativeKey() {
-    const workspace = workspaceRoot();
-    if (!workspace) return 'overview';
-
-    const activePreparation = workspace.querySelector('.assignment-workspace__tabs [data-workspace-tab].is-active');
-    if (activePreparation?.dataset.workspaceTab) return activePreparation.dataset.workspaceTab;
-
-    const activeCompletion = workspace.querySelector('.assignment-workspace__tabs [data-unified-completion-tab].is-active');
-    if (activeCompletion?.dataset.unifiedCompletionTab) return activeCompletion.dataset.unifiedCompletionTab;
-
-    return 'overview';
-  }
-
-  function buildNavigation() {
-    const workspace = workspaceRoot();
-    const editor = workspace?.querySelector('#assignment-coordination-form');
-    if (!workspace || !editor) return;
-
-    const availablePrimary = primaryTabs.filter(([key]) => nativeButtonFor(key));
-    const availableRecord = recordTabs.filter(([key]) => nativeButtonFor(key));
-    if (!availablePrimary.length) return;
-
-    workspace.querySelector('.foundation-tabs')?.setAttribute('hidden', '');
-
-    let nav = workspace.querySelector('.legacy-six-tabs');
+    let nav = detail.querySelector('.legacy-six-tabs');
     if (!nav) {
       nav = document.createElement('nav');
       nav.className = 'legacy-six-tabs';
       nav.setAttribute('aria-label', 'Assignment sections');
-      editor.insertAdjacentElement('beforebegin', nav);
+
+      const anchor = detail.querySelector('.foundation-heading-summary') || detail.querySelector('.detail-header');
+      if (anchor) anchor.insertAdjacentElement('afterend', nav);
+      else detail.prepend(nav);
     }
 
-    const signature = JSON.stringify([
-      availablePrimary.map(([key]) => key),
-      availableRecord.map(([key]) => key),
-    ]);
-
-    if (nav.dataset.signature !== signature) {
-      nav.dataset.signature = signature;
+    if (nav.dataset.built !== 'true') {
+      nav.dataset.built = 'true';
       nav.innerHTML = `
-        ${availablePrimary.map(([key, label, description]) => `
+        ${primaryTabs.map(([key, label, description]) => `
           <button type="button" class="legacy-six-tab" data-six-tab="${key}">
             <strong>${label}</strong>
             <small>${description}</small>
@@ -121,7 +88,7 @@
             <i aria-hidden="true"></i>
           </summary>
           <div class="legacy-record-popover">
-            ${availableRecord.map(([key, label, description]) => `
+            ${recordTabs.map(([key, label, description]) => `
               <button type="button" data-record-tab="${key}">
                 <strong>${label}</strong>
                 <small>${description}</small>
@@ -138,32 +105,165 @@
       });
     }
 
-    const selectedId = typeof state !== 'undefined' ? String(state.selectedId || '') : '';
-    if (selectedId && nav.dataset.assignmentId !== selectedId) {
-      nav.dataset.assignmentId = selectedId;
-      requestAnimationFrame(() => activate('overview'));
-      return;
-    }
+    return nav;
+  }
 
-    setActive(currentNativeKey());
+  function setNavigationState(nav, key) {
+    if (!nav) return;
+
+    nav.querySelectorAll('[data-six-tab]').forEach(button => {
+      const isActive = button.dataset.sixTab === key;
+      button.classList.toggle('is-active', isActive);
+      if (isActive) button.setAttribute('aria-current', 'page');
+      else button.removeAttribute('aria-current');
+    });
+
+    const record = nav.querySelector('.legacy-record-menu');
+    const recordActive = recordKeys.has(key);
+    record?.classList.toggle('is-active', recordActive);
+
+    nav.querySelectorAll('[data-record-tab]').forEach(button => {
+      button.classList.toggle('is-active', button.dataset.recordTab === key);
+    });
+  }
+
+  function showPreparation(current, key) {
+    const { editor, completion } = current;
+    if (!editor) return false;
+
+    ensureChecklistPane(current);
+
+    const pane = editor.querySelector(`[data-workspace-pane="${key}"]`);
+    if (!pane) return false;
+
+    editor.hidden = false;
+    if (completion) completion.hidden = true;
+
+    editor.querySelectorAll('[data-workspace-pane]').forEach(candidate => {
+      const isActive = candidate === pane;
+      candidate.classList.toggle('is-active', isActive);
+      candidate.hidden = !isActive;
+    });
+
+    editor.querySelectorAll('[data-workspace-tab]').forEach(button => {
+      button.classList.toggle('is-active', button.dataset.workspaceTab === key);
+    });
+
+    return true;
+  }
+
+  function showCompletion(current, key) {
+    const { editor, completion } = current;
+    if (!completion) return false;
+
+    if (editor) editor.hidden = true;
+    completion.hidden = false;
+    completion.classList.add('legacy-record-workspace');
+
+    const pane = completion.querySelector(`[data-completion-pane="${key}"]`);
+    if (!pane) return false;
+
+    completion.querySelectorAll('[data-completion-pane]').forEach(candidate => {
+      const isActive = candidate === pane;
+      candidate.classList.toggle('is-active', isActive);
+      candidate.hidden = !isActive;
+    });
+
+    completion.querySelectorAll('[data-completion-tab]').forEach(button => {
+      button.classList.toggle('is-active', button.dataset.completionTab === key);
+    });
+
+    return true;
+  }
+
+  function activate(key) {
+    const current = roots();
+    if (!assignmentIsOpen(current.grid)) return;
+
+    let shown = false;
+    if (key === 'activity') shown = showPreparation(current, 'activity');
+    else if (recordKeys.has(key)) shown = showCompletion(current, key);
+    else shown = showPreparation(current, key);
+
+    if (!shown) return;
+
+    activeKey = key;
+    const nav = ensureNavigation(current);
+    setNavigationState(nav, key);
+
+    const record = nav?.querySelector('.legacy-record-menu');
+    if (record && recordKeys.has(key)) record.open = false;
+  }
+
+  function hideLegacyWorkspaceChrome(current) {
+    const { detail, workspace } = current;
+    if (!detail || !workspace) return;
+
+    workspace.querySelector('.assignment-workspace__header')?.setAttribute('hidden', '');
+    workspace.querySelector('.assignment-progress')?.setAttribute('hidden', '');
+    workspace.querySelector('.readiness-radar')?.setAttribute('hidden', '');
+    workspace.querySelector('.assignment-workspace__links')?.setAttribute('hidden', '');
+    workspace.querySelector('.assignment-workspace__tabs')?.setAttribute('hidden', '');
+    detail.querySelector('.foundation-tabs')?.setAttribute('hidden', '');
+
+    const readiness = detail.querySelector('.readiness-card');
+    const status = detail.querySelector('.status-grid');
+    const details = detail.querySelector('.details-list')?.closest('.detail-section');
+    const documents = detail.querySelector('.detail-section#documents');
+    const closeout = detail.querySelector('.detail-section#closeout');
+    if (readiness) readiness.hidden = true;
+    if (status) status.hidden = true;
+    if (details) details.hidden = true;
+    if (documents) documents.hidden = true;
+    if (closeout) closeout.hidden = true;
   }
 
   function reconcile() {
-    const grid = document.querySelector('#assignments');
-    if (!grid?.classList.contains('is-workspace-open')) return;
-    buildNavigation();
+    const current = roots();
+    const open = assignmentIsOpen(current.grid);
+    document.body.classList.toggle('engagement-assignment-open', open);
+    if (!open) return;
+    if (!current.workspace || !current.editor) return;
+
+    ensureChecklistPane(current);
+    hideLegacyWorkspaceChrome(current);
+    const nav = ensureNavigation(current);
+
+    const id = selectedAssignmentId();
+    if (id && id !== activeAssignmentId) {
+      activeAssignmentId = id;
+      activeKey = 'overview';
+    }
+
+    if (activeKey === 'activity') showPreparation(current, 'activity');
+    else if (recordKeys.has(activeKey)) {
+      if (!showCompletion(current, activeKey)) showPreparation(current, 'overview');
+    } else if (!showPreparation(current, activeKey)) {
+      activeKey = 'overview';
+      showPreparation(current, 'overview');
+    }
+
+    setNavigationState(nav, activeKey);
   }
 
   document.addEventListener('click', event => {
-    const native = event.target.closest('[data-workspace-tab], [data-unified-completion-tab]');
-    if (native) {
-      const key = native.dataset.workspaceTab || native.dataset.unifiedCompletionTab;
-      if (key) requestAnimationFrame(() => setActive(key));
-    }
-
-    const record = workspaceRoot()?.querySelector('.legacy-record-menu');
+    const record = document.querySelector('#assignment-detail .legacy-record-menu');
     if (record?.open && !event.target.closest('.legacy-record-menu')) record.open = false;
+
+    if (event.target.closest('.foundation-back')) {
+      document.body.classList.remove('engagement-assignment-open');
+      activeKey = 'overview';
+      activeAssignmentId = '';
+    }
   }, true);
+
+  window.addEventListener('hashchange', () => {
+    if (window.location.hash !== '#assignments') {
+      document.body.classList.remove('engagement-assignment-open');
+      activeKey = 'overview';
+      activeAssignmentId = '';
+    }
+  });
 
   document.addEventListener('DOMContentLoaded', reconcile);
 

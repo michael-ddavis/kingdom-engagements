@@ -3,12 +3,17 @@
   const assignmentPanel = assignmentGrid?.querySelector('.assignment-panel');
   const assignmentList = document.querySelector('#assignment-list');
   const assignmentDetail = document.querySelector('#assignment-detail');
+  const requestWorkspace = document.querySelector('#requests');
+  const requestPanel = requestWorkspace?.querySelector('.request-panel');
+  const requestListNode = document.querySelector('#request-list');
+  const requestDetailNode = document.querySelector('#request-detail');
   const terminal = new Set(['complete', 'completed', 'waived']);
   let assignmentOpen = false;
   let activePane = 'overview';
   let selectedFilter = 'all';
   let workspaceResult = null;
   let closeoutResult = null;
+  let requestOpen = false;
 
   const norm = value => String(value || '').trim().toLowerCase();
   const clamp = value => Math.max(0, Math.min(100, Number(value || 0)));
@@ -27,6 +32,7 @@
     document.body.classList.remove('exact18-mode-overview', 'exact18-mode-requests', 'exact18-mode-assignments');
     document.body.classList.add(`exact18-mode-${mode}`);
     document.body.classList.toggle('exact18-assignment-open', assignmentOpen);
+    document.body.classList.toggle('legacy18-request-open', requestOpen);
     document.querySelectorAll('.sidebar nav a').forEach(link => {
       const href = link.getAttribute('href');
       const on = mode === 'overview' ? href === '#overview' : mode === 'requests' ? href === '#requests' : href === '#assignments';
@@ -513,40 +519,139 @@
     requestAnimationFrame(() => assignmentGrid?.scrollIntoView({ behavior:'smooth', block:'start' }));
   }
 
-  if (typeof renderAssignments === 'function') renderAssignments = renderLegacyAssignments;
+  function requestStatus(value) {
+    const status = norm(value);
+    if (status === 'approved') return ['Approved','approved'];
+    if (status === 'declined') return ['Declined','declined'];
+    if (status === 'information-needed') return ['Information needed','attention'];
+    return ['Awaiting review','review'];
+  }
 
-  if (typeof selectAssignment === 'function') {
-    selectAssignment = async function(id) {
-      state.selectedId = id;
-      state.selected = await api(`/api/engagements/assignments/${id}`);
-      if (assignmentOpen) {
-        workspaceResult = await api(`/api/engagements/assignments/${id}/workspace`).catch(() => null);
-        closeoutResult = null;
-        renderShell();
+  function requestReadinessTone(value) {
+    const number = Number(value || 0);
+    return number >= 80 ? 'ready' : number >= 55 ? 'progress' : 'attention';
+  }
+
+  function renderLegacyRequests() {
+    if (!requestPanel || !requestListNode || typeof state === 'undefined') return;
+    requestWorkspace.classList.toggle('legacy18-request-open', requestOpen);
+    if (requestOpen) return;
+
+    const header = requestPanel.querySelector(':scope > header');
+    if (header) {
+      header.className = 'legacy18-request-heading';
+      header.innerHTML = `<div><p class="eyebrow">Itinerant ministry</p><h1>Speaking requests</h1><p>Review invitations, identify missing information and prepare approved ministry engagements.</p></div><a href="/invite/apostle-cynthia" target="_blank" rel="noopener"><span>+</span> Open invitation form</a>`;
+    }
+
+    requestPanel.querySelector('.legacy18-request-summary')?.remove();
+    const awaiting = state.requests.filter(item => !['approved','declined'].includes(norm(item.status))).length;
+    const approved = state.requests.filter(item => norm(item.status) === 'approved').length;
+    const summary = document.createElement('section');
+    summary.className = 'legacy18-request-summary';
+    summary.innerHTML = `${summaryCard('R','navy',state.requests.length,'Total requests','Currently in the system')}${summaryCard('!','violet',awaiting,'Awaiting review','A decision is needed')}${summaryCard('✓','green',approved,'Approved','Moving toward readiness')}`;
+    requestPanel.insertBefore(summary, requestListNode);
+
+    requestListNode.className = 'legacy18-request-list';
+    requestListNode.innerHTML = state.requests.length ? state.requests.map(item => {
+      const [label,tone] = requestStatus(item.status);
+      const readiness = clamp(item.readinessPercentage);
+      const location = [item.city,item.state || item.region,item.country].filter(Boolean).join(', ');
+      return `<button type="button" class="legacy18-request-card" data-legacy-request="${item.id}">
+        <span class="legacy18-request-mark">${esc((item.organizationName || '?').charAt(0).toUpperCase())}</span>
+        <span class="legacy18-request-copy"><span class="legacy18-request-title"><span><strong>${esc(item.eventName)}</strong><small>${esc(item.organizationName)}</small></span><em class="legacy18-request-status legacy18-request-status--${tone}">${esc(label)}</em></span><span class="legacy18-request-facts"><span><small>Event dates</small><strong>${esc(formatDate(item.startDate))}</strong></span><span><small>Location</small><strong>${esc(location || 'Pending')}</strong></span><span><small>Expected attendance</small><strong>${Number(item.expectedAttendance || 0).toLocaleString()}</strong></span><span><small>Host readiness</small><strong>${readiness}%</strong></span></span><span class="legacy18-request-progress legacy18-request-progress--${requestReadinessTone(readiness)}"><i style="width:${readiness}%"></i></span></span>
+        <span class="legacy18-request-arrow">→</span>
+      </button>`;
+    }).join('') : '<p class="legacy18-empty">No speaking requests have been submitted yet.</p>';
+
+    requestListNode.querySelectorAll('[data-legacy-request]').forEach(button => button.addEventListener('click', async () => {
+      requestOpen = true;
+      state.selectedRequestId = button.dataset.legacyRequest;
+      state.selectedRequest = await api(`/api/engagements/requests/${button.dataset.legacyRequest}`);
+      renderLegacyRequests();
+      renderLegacyRequestDetail();
+      requestWorkspace?.scrollIntoView({block:'start'});
+    }));
+    if (requestDetailNode) requestDetailNode.hidden = true;
+  }
+
+  function communicationLabel(type) {
+    return ({submitted:'Invitation submitted','information-requested':'Information requested','host-responded':'Host resubmitted',approved:'Invitation approved',declined:'Invitation declined'})[type] || formatStatus(type);
+  }
+
+  function renderLegacyRequestDetail() {
+    if (!requestOpen || !requestDetailNode || !state.selectedRequest) return;
+    const item = state.selectedRequest;
+    requestPanel.hidden = true;
+    requestDetailNode.hidden = false;
+    requestDetailNode.className = 'legacy18-request-detail';
+    const [statusLabelValue,statusTone] = requestStatus(item.status);
+    const location = [item.city,item.state || item.region,item.country].filter(Boolean).join(', ');
+    const canReview = !['approved','declined'].includes(norm(item.status));
+    const hostLink = norm(item.status) === 'information-needed' && item.editToken ? `${window.location.origin}/invite/apostle-cynthia/requests/${encodeURIComponent(item.editToken)}` : null;
+    const communications = item.communications || [];
+
+    requestDetailNode.innerHTML = `
+      <button type="button" class="exact18-back-link" data-request-back><span>←</span> Back to speaking requests</button>
+      <header class="legacy18-request-detail-heading"><div><div><p class="eyebrow">Speaking request</p><span class="legacy18-request-status legacy18-request-status--${statusTone}">${esc(statusLabelValue)}</span></div><h1>${esc(item.eventName)}</h1><p>${esc(item.organizationName)}</p></div><div class="legacy18-request-actions">${canReview ? `<button type="button" data-request-mode="rfi">Request information</button><button type="button" class="danger" data-request-mode="decline">Decline</button><button type="button" class="primary" data-request-mode="approve">Approve & create assignment</button>` : norm(item.status) === 'approved' && item.assignmentId ? `<button type="button" class="primary" data-open-approved-assignment="${item.assignmentId}">Open assignment</button>` : ''}</div></header>
+      <section class="legacy18-request-summary-grid"><article><small>Event dates</small><strong>${esc(formatDate(item.startDate))}${item.endDate && item.endDate !== item.startDate ? ` – ${esc(formatDate(item.endDate))}` : ''}</strong><span>${esc(item.eventType)}</span></article><article><small>Location</small><strong>${esc(location || 'Pending')}</strong><span>${esc(item.venueName || '')}</span></article><article><small>Expected attendance</small><strong>${Number(item.expectedAttendance || 0).toLocaleString()}</strong><span>Estimated participants</span></article><article><small>Host readiness</small><strong>${clamp(item.readinessPercentage)}%</strong><span>Invitation preparation</span><div><i style="width:${clamp(item.readinessPercentage)}%"></i></div></article></section>
+      ${hostLink ? `<section class="legacy18-request-banner"><div><strong>Waiting for the host</strong><p>${esc((communications.filter(x => x.type === 'information-requested').slice(-1)[0]?.message) || 'Additional information has been requested.')}</p></div><a href="${esc(hostLink)}" target="_blank" rel="noopener">Open host response page</a></section>` : ''}
+      <section class="legacy18-request-layout"><div class="legacy18-request-main"><article class="legacy18-request-content"><p class="eyebrow">Ministry assignment</p><h2>What the host is requesting</h2><p class="legacy18-ministry-request">${esc(item.ministryRequest)}</p></article><article class="legacy18-request-content"><p class="eyebrow">Communication history</p><h2>Request conversation</h2><div class="legacy18-communication">${communications.length ? communications.map(entry => `<article><span>${entry.type === 'host-responded' ? 'H' : 'A'}</span><div><header><strong>${esc(communicationLabel(entry.type))}</strong><time>${esc(formatDateTime(entry.createdAtUtc))}</time></header><p>${esc(entry.message)}</p><small>${esc(entry.actor)}</small></div></article>`).join('') : '<p class="legacy18-empty">No communication history yet.</p>'}</div></article></div><aside class="legacy18-request-side"><article class="legacy18-request-content"><p class="eyebrow">Host contact</p><h2>Primary coordinator</h2><div class="legacy18-contact-summary"><span>${esc((item.contactName || '?').charAt(0).toUpperCase())}</span><div><strong>${esc(item.contactName)}</strong><small>${esc(item.organizationName)}</small></div></div><dl><div><dt>Email</dt><dd>${esc(item.contactEmail)}</dd></div><div><dt>Phone</dt><dd>${esc(item.contactPhone)}</dd></div><div><dt>Submitted</dt><dd>${esc(formatDate(item.submittedUtc))}</dd></div></dl></article><article class="legacy18-request-content"><p class="eyebrow">Logistics</p><h2>Coverage summary</h2><dl><div><dt>Travel</dt><dd>${esc(formatStatus(item.travelCoverageStatus))}</dd></div><div><dt>Lodging</dt><dd>${esc(formatStatus(item.lodgingCoverageStatus))}</dd></div><div><dt>Honorarium</dt><dd>${esc(formatStatus(item.honorariumStatus))}${item.honorariumAmount ? ` · ${Number(item.honorariumAmount).toLocaleString()} ${esc(item.honorariumCurrency)}` : ''}</dd></div><div><dt>Agreement</dt><dd>${esc(formatStatus(item.agreementStatus))}</dd></div><div><dt>Payment</dt><dd>${esc(formatStatus(item.paymentStatus))}</dd></div></dl></article></aside></section>
+      ${canReview ? `<form class="legacy18-decision" data-request-decision hidden><div><p class="eyebrow" data-decision-eyebrow>Host communication</p><h2 data-decision-title>What information is needed?</h2><p>This message becomes part of the request history.</p></div><label><span>Message to host</span><textarea id="review-message" rows="4"></textarea></label><div><button type="button" data-decision-cancel>Cancel</button><button type="button" class="primary" data-decision-submit>Continue</button></div></form>` : ''}`;
+
+    requestDetailNode.querySelector('[data-request-back]').addEventListener('click', () => { requestOpen = false; state.selectedRequestId = null; state.selectedRequest = null; requestPanel.hidden = false; renderLegacyRequests(); requestWorkspace?.scrollIntoView({block:'start'}); });
+    requestDetailNode.querySelector('[data-open-approved-assignment]')?.addEventListener('click', async event => { requestOpen = false; requestPanel.hidden = false; window.location.hash = 'assignments'; await loadAssignments(false); await openAssignment(event.currentTarget.dataset.openApprovedAssignment); });
+
+    const decision = requestDetailNode.querySelector('[data-request-decision]');
+    let decisionMode = null;
+    requestDetailNode.querySelectorAll('[data-request-mode]').forEach(button => button.addEventListener('click', async () => {
+      const mode = button.dataset.requestMode;
+      if (mode === 'approve') {
+        if (!window.confirm('Approve this invitation and create the Engagements assignment?')) return;
+        try { const result = await api(`/api/engagements/requests/${item.id}/approve`, {method:'POST',body:'{}'}); showMessage('Invitation approved. The assignment was created from the host intake.'); await loadRequests(true); state.selectedId = result.assignmentId; return; } catch (error) { return showMessage(error.message,true); }
       }
-    };
+      decisionMode = mode;
+      decision.hidden = false;
+      decision.querySelector('[data-decision-eyebrow]').textContent = mode === 'rfi' ? 'Host communication' : 'Decision reason';
+      decision.querySelector('[data-decision-title]').textContent = mode === 'rfi' ? 'What information is needed?' : 'Why is this invitation being declined?';
+      decision.querySelector('#review-message').value = '';
+      decision.querySelector('#review-message').focus();
+    }));
+    decision?.querySelector('[data-decision-cancel]')?.addEventListener('click', () => { decision.hidden = true; decisionMode = null; });
+    decision?.querySelector('[data-decision-submit]')?.addEventListener('click', async () => {
+      const messageText = decision.querySelector('#review-message').value.trim();
+      if (!messageText) return showMessage('Enter a message before continuing.', true);
+      try {
+        if (decisionMode === 'rfi') { await api(`/api/engagements/requests/${item.id}/request-information`, {method:'POST',body:JSON.stringify({message:messageText})}); showMessage('Information requested from the host.'); }
+        else { if (!window.confirm('Decline this invitation and record the reason?')) return; await api(`/api/engagements/requests/${item.id}/decline`, {method:'POST',body:JSON.stringify({reason:messageText})}); showMessage('Invitation declined and the decision was recorded.'); }
+        state.selectedRequest = await api(`/api/engagements/requests/${item.id}`);
+        renderLegacyRequestDetail();
+      } catch (error) { showMessage(error.message,true); }
+    });
+  }
+
+  if (typeof renderRequests === 'function') renderRequests = renderLegacyRequests;
+  if (typeof renderRequestDetail === 'function') renderRequestDetail = renderLegacyRequestDetail;
+  if (typeof selectRequest === 'function') {
+    selectRequest = async function(id) { requestOpen = true; state.selectedRequestId = id; state.selectedRequest = await api(`/api/engagements/requests/${id}`); renderLegacyRequests(); renderLegacyRequestDetail(); };
+  }
+
+  if (typeof renderAssignments === 'function') renderAssignments = renderLegacyAssignments;
+  if (typeof selectAssignment === 'function') {
+    selectAssignment = async function(id) { state.selectedId = id; state.selected = await api(`/api/engagements/assignments/${id}`); if (assignmentOpen) { workspaceResult = await api(`/api/engagements/assignments/${id}/workspace`).catch(() => null); closeoutResult = null; renderShell(); } };
   }
 
   document.addEventListener('click', event => {
     const nav = event.target.closest('.sidebar nav a');
     if (!nav) return;
     const href = nav.getAttribute('href');
-    if (href === '#assignments' && assignmentOpen) {
-      event.preventDefault();
-      window.location.hash = 'assignments';
-      closeAssignment();
-    } else if (href !== '#assignments') {
-      assignmentOpen = false;
-      activePane = 'overview';
-      applyMode();
-    }
+    if (href === '#assignments' && assignmentOpen) { event.preventDefault(); window.location.hash = 'assignments'; closeAssignment(); }
+    else if (href !== '#assignments') { assignmentOpen = false; activePane = 'overview'; if (href !== '#requests') requestOpen = false; applyMode(); }
   }, true);
 
   window.addEventListener('hashchange', () => {
-    if ((window.location.hash || '#overview').toLowerCase() !== '#assignments') {
-      assignmentOpen = false;
-      activePane = 'overview';
-    }
+    const hash = (window.location.hash || '#overview').toLowerCase();
+    if (hash !== '#assignments') { assignmentOpen = false; activePane = 'overview'; }
+    if (hash !== '#requests') requestOpen = false;
     applyMode();
   });
 

@@ -1,0 +1,52 @@
+/* Assignment workspace state must have one owner. */
+[hidden] {
+  display: none !important;
+}
+
+body.engagement-assignment-open #overview,
+body.engagement-assignment-open #metrics {
+  display: none !important;
+}
+
+body.engagement-assignment-open .workspace-grid {
+  padding-top: 28px;
+}
+
+body.engagement-assignment-open .assignment-editor[hidden],
+body.engagement-assignment-open .completion-workspace[hidden],
+body.engagement-assignment-open .assignment-pane[hidden],
+body.engagement-assignment-open .completion-pane[hidden] {
+  display: none !important;
+}
+
+body.engagement-assignment-open .legacy-six-tabs {
+  margin-top: 4px;
+}
+
+body.engagement-assignment-open .legacy-record-workspace {
+  margin: 0 !important;
+  border: 1px solid var(--foundation-border, #e2e3e0) !important;
+  border-radius: 15px !important;
+  background: #fff !important;
+  box-shadow: none !important;
+  overflow: hidden;
+}
+
+body.engagement-assignment-open .legacy-record-workspace .completion-workspace__header,
+body.engagement-assignment-open .legacy-record-workspace .completion-tabs {
+  display: none !important;
+}
+
+body.engagement-assignment-open .legacy-record-workspace .completion-pane {
+  padding: 22px !important;
+}
+
+body.engagement-assignment-open .legacy-record-workspace .completion-pane.is-active {
+  display: block;
+}
+
+@media (max-width: 720px) {
+  body.engagement-assignment-open .workspace-grid {
+    padding-top: 18px;
+  }
+}

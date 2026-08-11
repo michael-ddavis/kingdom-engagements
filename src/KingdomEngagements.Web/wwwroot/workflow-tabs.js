@@ -51,7 +51,6 @@
     workspace.dataset.unifiedTabs = 'true';
     workspace.classList.add('is-unified');
 
-    // Keep the tab strip outside either form so completion forms never become nested.
     editor.insertAdjacentElement('beforebegin', nav);
     editor.insertAdjacentElement('afterend', completion);
     completion.classList.add('completion-workspace--unified');
@@ -102,7 +101,7 @@
   }
 
   function setUnifiedActive(workspace, activeButton) {
-    workspace.querySelectorAll('.assignment-workspace__tabs > button').forEach(button => {
+    workspace.querySelectorAll('.assignment-workspace__tabs button').forEach(button => {
       const active = button === activeButton;
       button.classList.toggle('is-active', active);
       button.setAttribute('aria-selected', active ? 'true' : 'false');

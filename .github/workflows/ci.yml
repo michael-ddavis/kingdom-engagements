@@ -19,6 +19,7 @@ jobs:
       - run: node --check src/KingdomEngagements.Web/wwwroot/legacy18-product.js
       - run: node --check src/KingdomEngagements.Web/wwwroot/engagements-polish.js
       - run: node --check src/KingdomEngagements.Web/wwwroot/engagements-brief.js
+      - run: node --check src/KingdomEngagements.Web/wwwroot/engagements-earned-ui.js
       - run: dotnet restore KingdomEngagements.slnx
       - run: dotnet build KingdomEngagements.slnx --configuration Release --no-restore
       - run: dotnet test KingdomEngagements.slnx --configuration Release --no-build
@@ -42,6 +43,8 @@ jobs:
                 grep --quiet '/engagements-polish.css' <<<"$index_payload"
                 grep --quiet '/engagements-brief.js' <<<"$index_payload"
                 grep --quiet '/engagements-brief.css' <<<"$index_payload"
+                grep --quiet '/engagements-earned-ui.js' <<<"$index_payload"
+                grep --quiet '/engagements-earned-ui.css' <<<"$index_payload"
                 grep --quiet 'engagement-nav-root' <<<"$index_payload"
                 grep --quiet 'href="#requests">Invitations' <<<"$index_payload"
                 grep --quiet 'href="#assignments">Assignments' <<<"$index_payload"
@@ -63,6 +66,10 @@ jobs:
                 grep --quiet 'Assignment brief' <<<"$brief_payload"
                 grep --quiet 'Readiness by work area' <<<"$brief_payload"
                 grep --quiet 'data-brief-pane' <<<"$brief_payload"
+                earned_payload="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/engagements-earned-ui.js)"
+                grep --quiet 'DEFAULT_VOLUME_THRESHOLD = 5' <<<"$earned_payload"
+                grep --quiet 'earned-ui-inline-signal' <<<"$earned_payload"
+                grep --quiet 'exact18-summary-grid' <<<"$earned_payload"
                 exit 0
               fi
             fi

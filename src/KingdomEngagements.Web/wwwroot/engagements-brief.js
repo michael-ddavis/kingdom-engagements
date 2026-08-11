@@ -58,15 +58,17 @@
     </button>`;
   }
 
+  function setText(node, value) {
+    if (node && node.textContent !== value) node.textContent = value;
+  }
+
   function enhanceBrief(overview) {
     if (!(overview instanceof HTMLElement) || overview.dataset.assignmentBrief === 'true') return;
     overview.dataset.assignmentBrief = 'true';
 
     const tab = document.querySelector('[data-legacy-pane="overview"]');
-    const tabTitle = tab?.querySelector('strong');
-    const tabDescription = tab?.querySelector('small');
-    if (tabTitle) tabTitle.textContent = 'Brief';
-    if (tabDescription) tabDescription.textContent = 'Assignment brief';
+    setText(tab?.querySelector('strong'), 'Brief');
+    setText(tab?.querySelector('small'), 'Assignment brief');
 
     if (!overview.querySelector('.engagements-brief-heading')) {
       const heading = document.createElement('header');
@@ -82,17 +84,17 @@
       const eyebrow = summary?.querySelector('small');
       const title = summary?.querySelector('strong');
       const note = summary?.querySelector('em');
-      if (eyebrow) eyebrow.textContent = 'Engagement details';
-      if (title) title.textContent = title.textContent.replace('Approved terms retained', 'Accepted invitation and terms');
-      if (note) note.textContent = 'View source record';
+      setText(eyebrow, 'Engagement details');
+      if (title?.textContent.includes('Approved terms retained')) {
+        title.textContent = title.textContent.replace('Approved terms retained', 'Accepted invitation and terms');
+      }
+      setText(note, 'View source record');
     }
 
     const radar = overview.querySelector('.legacy18-readiness-panel');
     if (radar) {
-      const eyebrow = radar.querySelector('header .eyebrow');
-      const title = radar.querySelector('header h2');
-      if (eyebrow) eyebrow.textContent = 'Preparation status';
-      if (title) title.textContent = 'Readiness by work area';
+      setText(radar.querySelector('header .eyebrow'), 'Preparation status');
+      setText(radar.querySelector('header h2'), 'Readiness by work area');
     }
 
     if (!overview.querySelector('.engagements-brief-shortcuts')) {
@@ -119,10 +121,8 @@
 
   function sync() {
     document.querySelectorAll('[data-legacy-pane="overview"]').forEach(tab => {
-      const title = tab.querySelector('strong');
-      const description = tab.querySelector('small');
-      if (title) title.textContent = 'Brief';
-      if (description) description.textContent = 'Assignment brief';
+      setText(tab.querySelector('strong'), 'Brief');
+      setText(tab.querySelector('small'), 'Assignment brief');
     });
     document.querySelectorAll('.exact18-overview').forEach(enhanceBrief);
   }

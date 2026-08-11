@@ -16,13 +16,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22.x
-      - run: node --check src/KingdomEngagements.Web/wwwroot/exact-18df.js
+      - run: node --check src/KingdomEngagements.Web/wwwroot/legacy18-product.js
       - run: dotnet restore KingdomEngagements.slnx
       - run: dotnet build KingdomEngagements.slnx --configuration Release --no-restore
       - run: dotnet test KingdomEngagements.slnx --configuration Release --no-build
       - run: docker build --tag kingdom-engagements:ci .
 
-      - name: Verify standalone development health
+      - name: Verify standalone development health and visible legacy shell
         shell: bash
         run: |
           set -euo pipefail
@@ -33,6 +33,19 @@ jobs:
               if grep --quiet '"module":"engagements"' <<<"$health_payload"; then
                 invite_payload="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/invite/apostle-cynthia)"
                 grep --quiet 'Invite Cynthia Thompson' <<<"$invite_payload"
+                index_payload="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/)"
+                grep --quiet '/legacy18-product.js' <<<"$index_payload"
+                grep --quiet '/legacy18-product.css' <<<"$index_payload"
+                if grep --quiet '/completion.js' <<<"$index_payload"; then exit 1; fi
+                if grep --quiet '/preparation.js' <<<"$index_payload"; then exit 1; fi
+                legacy_payload="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/legacy18-product.js)"
+                grep --quiet 'Overview' <<<"$legacy_payload"
+                grep --quiet 'Checklist' <<<"$legacy_payload"
+                grep --quiet 'Travel' <<<"$legacy_payload"
+                grep --quiet 'Contacts' <<<"$legacy_payload"
+                grep --quiet 'Documents' <<<"$legacy_payload"
+                grep --quiet 'Record' <<<"$legacy_payload"
+                if grep --quiet 'Event day' <<<"$legacy_payload"; then exit 1; fi
                 exit 0
               fi
             fi
@@ -44,6 +57,6 @@ jobs:
         shell: bash
         run: bash .github/scripts/connected-smoke.sh
 
-      - name: Verify event response follow-up and closeout lifecycle
+      - name: Verify retained response follow-up and closeout backend lifecycle
         shell: bash
         run: bash .github/scripts/completion-smoke.sh

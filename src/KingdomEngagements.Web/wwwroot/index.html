@@ -6,26 +6,33 @@
   <title>Kingdom Engagements</title>
   <link rel="stylesheet" href="/app.css" />
   <link rel="stylesheet" href="/requests.css" />
-  <link rel="stylesheet" href="/preparation.css" />
-  <link rel="stylesheet" href="/completion.css" />
   <link rel="stylesheet" href="/exact-18df.css" />
+  <link rel="stylesheet" href="/legacy18-product.css" />
 </head>
 <body>
   <div class="shell">
     <aside class="sidebar">
-      <a class="brand" id="platform-link" href="http://localhost:5100"><span>K</span><strong>KingdomOS<small>Engagements</small></strong></a>
+      <a class="brand" id="platform-link" href="http://localhost:5100"><span>K</span><strong>Kingdom Engagements<small>by KingdomOS</small></strong></a>
       <nav aria-label="Kingdom Engagements">
         <a class="active" href="#overview">Overview</a>
         <a href="#requests">Invitations</a>
         <a href="#assignments">Assignments</a>
       </nav>
-      <p class="boundary">Engagements owns invitation intake through ministry outcomes, follow-up, and closeout. Operations receives only governed status, risk, owner, and requested help.</p>
+      <p class="boundary">Invitation review, assignment preparation, travel, host coordination, records and closeout.</p>
     </aside>
     <main>
-      <header class="topbar"><span id="tenant-name">Cynthia Thompson Global</span><b><i></i> Entitlement verified</b></header>
+      <header class="topbar"><span id="tenant-name">Cynthia Thompson Global</span><b><i></i> Engagements ready</b></header>
+
       <section class="hero" id="overview">
-        <div><p class="eyebrow">Invitations · assignments · preparation · ministry outcomes · follow-up</p><h1>Steward every engagement from invitation through closeout.</h1><p>Review invitations, confirm terms, coordinate travel and host details, prepare for arrival, record ministry outcomes, complete follow-up, and close the assignment in one independently entitled workspace.</p></div>
-        <div class="hero-actions"><a class="secondary-action" href="/invite/apostle-cynthia" target="_blank" rel="noopener">Open host invitation</a><button id="refresh">Refresh workspace</button></div>
+        <div>
+          <p class="eyebrow">Kingdom Engagements</p>
+          <h1>Steward every ministry assignment from invitation through closeout.</h1>
+          <p>Review invitations, coordinate travel and host details, prepare the assignment, keep the working record together, and close it responsibly.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="secondary-action" href="/invite/apostle-cynthia" target="_blank" rel="noopener">Open invitation form</a>
+          <button id="refresh">Refresh</button>
+        </div>
       </section>
       <section class="metrics" id="metrics"></section>
       <p id="message" class="message" hidden></p>
@@ -46,11 +53,12 @@
           <div id="assignment-list" class="assignment-list"></div>
         </article>
         <article class="panel detail-panel" id="assignment-detail">
-          <div class="empty">Select an engagement to open its coordination workspace.</div>
+          <div class="empty">Select an engagement to open its assignment workspace.</div>
         </article>
       </section>
     </main>
   </div>
+
   <template id="detail-template">
     <header class="detail-header"><div><p class="eyebrow">Ministry engagement</p><h2 data-field="title"></h2><p data-field="subtitle"></p></div><span data-field="status"></span></header>
     <section class="readiness-card" id="readiness"><div><strong data-field="readiness"></strong><small>overall readiness</small></div><progress data-field="progress" max="100"></progress></section>
@@ -60,6 +68,7 @@
     <section class="detail-section" id="documents"><header><div><p class="eyebrow">Required records</p><h3>Documents</h3></div></header><div class="document-list"></div></section>
     <section class="detail-section" id="closeout"><header><div><p class="eyebrow">After the engagement</p><h3>Closeout</h3></div></header><p class="closeout-copy"></p></section>
   </template>
+
   <dialog id="task-dialog">
     <form method="dialog" id="task-form">
       <header><div><p class="eyebrow">New readiness item</p><h2>Add a task</h2></div><button value="cancel" aria-label="Close">×</button></header>
@@ -71,9 +80,8 @@
       <button class="primary" value="submit">Add task</button>
     </form>
   </dialog>
+
   <script src="/app.js" defer></script>
-  <script src="/preparation.js" defer></script>
-  <script src="/completion.js" defer></script>
-  <script src="/exact-18df.js" defer></script>
+  <script src="/legacy18-product.js" defer></script>
 </body>
 </html>

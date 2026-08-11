@@ -8,20 +8,25 @@
   <link rel="stylesheet" href="/requests.css" />
   <link rel="stylesheet" href="/exact-18df.css" />
   <link rel="stylesheet" href="/legacy18-product.css" />
+  <link rel="stylesheet" href="/engagements-polish.css" />
 </head>
 <body>
   <div class="shell">
     <aside class="sidebar">
       <a class="brand" id="platform-link" href="http://localhost:5100"><span>K</span><strong>Kingdom Engagements<small>by KingdomOS</small></strong></a>
       <nav aria-label="Kingdom Engagements">
-        <a class="active" href="#overview">Overview</a>
-        <a href="#requests">Invitations</a>
-        <a href="#assignments">Assignments</a>
+        <a class="engagement-nav-root active" href="#overview"><span>Engagements</span><small>Overview · Invitations · Assignments</small></a>
       </nav>
       <p class="boundary">Invitation review, assignment preparation, travel, host coordination, records and closeout.</p>
     </aside>
     <main>
       <header class="topbar"><span id="tenant-name">Cynthia Thompson Global</span><b><i></i> Engagements ready</b></header>
+
+      <nav class="engagements-section-nav" aria-label="Engagement sections">
+        <a class="is-active" data-engagements-mode href="#overview">Overview</a>
+        <a data-engagements-mode href="#requests">Invitations</a>
+        <a data-engagements-mode href="#assignments">Assignments</a>
+      </nav>
 
       <section class="hero" id="overview">
         <div>
@@ -83,5 +88,6 @@
 
   <script src="/app.js" defer></script>
   <script src="/legacy18-product.js" defer></script>
+  <script src="/engagements-polish.js" defer></script>
 </body>
 </html>

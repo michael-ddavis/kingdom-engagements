@@ -17,6 +17,7 @@ jobs:
         with:
           node-version: 22.x
       - run: node --check src/KingdomEngagements.Web/wwwroot/legacy18-product.js
+      - run: node --check src/KingdomEngagements.Web/wwwroot/engagements-polish.js
       - run: dotnet restore KingdomEngagements.slnx
       - run: dotnet build KingdomEngagements.slnx --configuration Release --no-restore
       - run: dotnet test KingdomEngagements.slnx --configuration Release --no-build
@@ -36,6 +37,10 @@ jobs:
                 index_payload="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/)"
                 grep --quiet '/legacy18-product.js' <<<"$index_payload"
                 grep --quiet '/legacy18-product.css' <<<"$index_payload"
+                grep --quiet '/engagements-polish.js' <<<"$index_payload"
+                grep --quiet '/engagements-polish.css' <<<"$index_payload"
+                grep --quiet 'engagement-nav-root' <<<"$index_payload"
+                grep --quiet 'data-engagements-mode' <<<"$index_payload"
                 if grep --quiet '/completion.js' <<<"$index_payload"; then exit 1; fi
                 if grep --quiet '/preparation.js' <<<"$index_payload"; then exit 1; fi
                 legacy_payload="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/legacy18-product.js)"
@@ -46,6 +51,9 @@ jobs:
                 grep --quiet 'Documents' <<<"$legacy_payload"
                 grep --quiet 'Record' <<<"$legacy_payload"
                 if grep --quiet 'Event day' <<<"$legacy_payload"; then exit 1; fi
+                polish_payload="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/engagements-polish.js)"
+                grep --quiet 'animateAccordion' <<<"$polish_payload"
+                grep --quiet 'contactDrafts' <<<"$polish_payload"
                 exit 0
               fi
             fi

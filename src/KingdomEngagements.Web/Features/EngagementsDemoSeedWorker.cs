@@ -16,7 +16,7 @@ public sealed class EngagementsDemoSeedWorker(
             return;
 
         while (!stoppingToken.IsCancellationRequested && !startup.Ready)
-            await Task.Delay(TimeSpan.FromSeconds(2), stoppingToken);
+            await System.Threading.Tasks.Task.Delay(TimeSpan.FromSeconds(2), stoppingToken);
 
         for (var attempt = 1; attempt <= 20 && !stoppingToken.IsCancellationRequested; attempt++)
         {
@@ -42,7 +42,7 @@ public sealed class EngagementsDemoSeedWorker(
                     "Engagements demo seed attempt {Attempt} failed. Retrying in {DelaySeconds} seconds.",
                     attempt,
                     delay.TotalSeconds);
-                await Task.Delay(delay, stoppingToken);
+                await System.Threading.Tasks.Task.Delay(delay, stoppingToken);
             }
         }
     }

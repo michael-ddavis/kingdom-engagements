@@ -122,6 +122,7 @@ builder.Services.AddScoped<EngagementCompletionService>();
 builder.Services.AddSingleton<EngagementsStartupState>();
 builder.Services.AddHostedService<EngagementsStartupWorker>();
 builder.Services.AddHostedService<EngagementsDemoSeedWorker>();
+builder.Services.AddHostedService<EngagementsDemoDepthWorker>();
 
 var app = builder.Build();
 

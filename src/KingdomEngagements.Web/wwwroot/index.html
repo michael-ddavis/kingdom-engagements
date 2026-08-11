@@ -4,18 +4,24 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Kingdom Engagements</title>
+  <script>
+    if (!window.location.hash || window.location.hash.toLowerCase() === '#overview') {
+      window.location.replace('#assignments');
+    }
+  </script>
   <link rel="stylesheet" href="/app.css" />
   <link rel="stylesheet" href="/requests.css" />
   <link rel="stylesheet" href="/exact-18df.css" />
   <link rel="stylesheet" href="/legacy18-product.css" />
   <link rel="stylesheet" href="/engagements-polish.css" />
+  <link rel="stylesheet" href="/engagements-brief.css" />
 </head>
 <body>
   <div class="shell">
     <aside class="sidebar">
       <a class="brand" id="platform-link" href="http://localhost:5100"><span>K</span><strong>Kingdom Engagements<small>by KingdomOS</small></strong></a>
       <nav aria-label="Kingdom Engagements">
-        <a class="engagement-nav-root active" href="#overview"><span>Engagements</span><small>Overview · Invitations · Assignments</small></a>
+        <a class="engagement-nav-root active" href="#assignments"><span>Engagements</span><small>Invitations · Assignments</small></a>
       </nav>
       <p class="boundary">Invitation review, assignment preparation, travel, host coordination, records and closeout.</p>
     </aside>
@@ -23,23 +29,11 @@
       <header class="topbar"><span id="tenant-name">Cynthia Thompson Global</span><b><i></i> Engagements ready</b></header>
 
       <nav class="engagements-section-nav" aria-label="Engagement sections">
-        <a class="is-active" data-engagements-mode href="#overview">Overview</a>
         <a data-engagements-mode href="#requests">Invitations</a>
-        <a data-engagements-mode href="#assignments">Assignments</a>
+        <a class="is-active" data-engagements-mode href="#assignments">Assignments</a>
       </nav>
 
-      <section class="hero" id="overview">
-        <div>
-          <p class="eyebrow">Kingdom Engagements</p>
-          <h1>Steward every ministry assignment from invitation through closeout.</h1>
-          <p>Review invitations, coordinate travel and host details, prepare the assignment, keep the working record together, and close it responsibly.</p>
-        </div>
-        <div class="hero-actions">
-          <a class="secondary-action" href="/invite/apostle-cynthia" target="_blank" rel="noopener">Open invitation form</a>
-          <button id="refresh">Refresh</button>
-        </div>
-      </section>
-      <section class="metrics" id="metrics"></section>
+      <section class="metrics" id="metrics" hidden></section>
       <p id="message" class="message" hidden></p>
 
       <section class="request-workspace" id="requests">
@@ -89,5 +83,6 @@
   <script src="/app.js" defer></script>
   <script src="/legacy18-product.js" defer></script>
   <script src="/engagements-polish.js" defer></script>
+  <script src="/engagements-brief.js" defer></script>
 </body>
 </html>

@@ -17,9 +17,7 @@
     ['activity', 'Ministry Log', 'Updates, decisions and activity'],
   ];
 
-  function clampPercent(value) {
-    return Math.max(0, Math.min(100, Number(value || 0)));
-  }
+  const clampPercent = value => Math.max(0, Math.min(100, Number(value || 0)));
 
   function assignmentStage(item) {
     const statuses = [
@@ -83,14 +81,11 @@
       button.addEventListener('click', async () => {
         openAssignmentWorkspace();
         await selectAssignment(button.dataset.id);
-        reconcileAssignment();
       });
     });
   }
 
-  if (typeof renderAssignments === 'function') {
-    renderAssignments = renderFoundationAssignments;
-  }
+  if (typeof renderAssignments === 'function') renderAssignments = renderFoundationAssignments;
 
   function openAssignmentWorkspace() {
     assignmentGrid?.classList.add('is-workspace-open');
@@ -112,19 +107,13 @@
     assignmentDetail.prepend(button);
   }
 
-  function currentWorkspace() {
-    return state?.assignmentWorkspace || null;
-  }
-
   function coordinationInfo() {
-    const result = currentWorkspace();
+    const result = typeof state === 'undefined' ? null : state.assignmentWorkspace;
     const preparation = result?.workspace?.preparation;
     return {
       url: result?.coordinationUrl || null,
-      termsUrl: result?.termsUrl || null,
       termsAccepted: preparation?.termsStatus === 'accepted',
       status: preparation?.coordinationStatus || 'not-started',
-      preparation,
       readiness: result?.workspace?.readiness || null,
     };
   }
@@ -142,27 +131,25 @@
     if (info.url) {
       return `<a class="${cssClass}" href="${escapeHtml(info.url)}" target="_blank" rel="noopener"><span class="foundation-host-button-icon" aria-hidden="true">H</span>Host Coordination</a>`;
     }
-    return `<button type="button" class="${cssClass}" aria-disabled="true" title="Accepted terms are required before Host Coordination opens"><span class="foundation-host-button-icon" aria-hidden="true">H</span>Host Coordination</button>`;
+    return `<button type="button" class="${cssClass}" aria-disabled="true" disabled title="Accepted terms are required before Host Coordination opens"><span class="foundation-host-button-icon" aria-hidden="true">H</span>Host Coordination</button>`;
   }
 
   function enhanceHeading() {
     const header = assignmentDetail?.querySelector('.detail-header');
-    if (!header || !state?.selected) return;
+    if (!header || typeof state === 'undefined' || !state.selected) return;
 
-    ensureBackButton();
     const info = coordinationInfo();
+    const readiness = clampPercent(state.selected.summary?.readinessPercent);
+    const openItems = Number(state.selected.tasks?.filter(task => !['complete', 'waived'].includes(task.status)).length || 0);
+    const signature = [state.selectedId, info.url, info.status, readiness, openItems, state.selected.summary?.startsAtUtc, state.selected.summary?.location].join('|');
+
     let meta = header.querySelector('.foundation-heading-meta');
     if (!meta) {
       meta = document.createElement('div');
       meta.className = 'foundation-heading-meta';
       const eyebrow = header.querySelector('.eyebrow');
-      if (eyebrow) {
-        eyebrow.insertAdjacentElement('afterend', meta);
-      } else {
-        header.prepend(meta);
-      }
+      eyebrow ? eyebrow.insertAdjacentElement('afterend', meta) : header.prepend(meta);
     }
-    meta.innerHTML = `<span class="foundation-status">${escapeHtml(formatStatus(state.selected.summary?.status || 'active'))}</span>${hostControl(info)}`;
 
     let summary = assignmentDetail.querySelector('.foundation-heading-summary');
     if (!summary) {
@@ -170,10 +157,13 @@
       summary.className = 'foundation-heading-summary';
       header.insertAdjacentElement('afterend', summary);
     }
-    const readiness = clampPercent(state.selected.summary?.readinessPercent);
+
+    if (summary.dataset.signature === signature) return;
+    summary.dataset.signature = signature;
+    meta.innerHTML = `<span class="foundation-status">${escapeHtml(formatStatus(state.selected.summary?.status || 'active'))}</span>${hostControl(info)}`;
     summary.innerHTML = `
-      <article><small>Event dates</small><strong>${escapeHtml(formatDate(state.selected.summary?.startsAtUtc || ''))}</strong><span>${escapeHtml(state.selected.summary?.location || 'Location pending')}</span></article>
-      <article class="foundation-heading-readiness"><div><small>Overall readiness</small><strong>${readiness}%</strong></div><div class="foundation-heading-progress"><i style="width:${readiness}%"></i></div><span>${Number(state.selected.tasks?.filter(task => !['complete','waived'].includes(task.status)).length || 0)} open items</span></article>`;
+      <article><small>Event dates</small><strong>${escapeHtml(state.selected.summary?.startsAtUtc ? formatDate(state.selected.summary.startsAtUtc) : 'Date pending')}</strong><span>${escapeHtml(state.selected.summary?.location || 'Location pending')}</span></article>
+      <article class="foundation-heading-readiness"><div><small>Overall readiness</small><strong>${readiness}%</strong></div><div class="foundation-heading-progress"><i style="width:${readiness}%"></i></div><span>${openItems} open ${openItems === 1 ? 'item' : 'items'}</span></article>`;
   }
 
   function ensureChecklistPane() {
@@ -190,8 +180,7 @@
         pane = legacyTaskSection;
         pane.classList.add('assignment-pane', 'restored-checklist-pane');
         pane.dataset.workspacePane = 'checklist';
-        const footer = editor.querySelector('.assignment-editor__actions');
-        editor.insertBefore(pane, footer || null);
+        editor.insertBefore(pane, editor.querySelector('.assignment-editor__actions') || null);
       }
     }
 
@@ -200,8 +189,7 @@
       button.type = 'button';
       button.dataset.workspaceTab = 'checklist';
       button.textContent = 'Checklist';
-      const travel = nativeNav.querySelector('[data-workspace-tab="travel"]');
-      nativeNav.insertBefore(button, travel || null);
+      nativeNav.insertBefore(button, nativeNav.querySelector('[data-workspace-tab="travel"]') || null);
       button.addEventListener('click', () => {
         const completion = workspace.querySelector('.completion-workspace');
         editor.hidden = false;
@@ -212,14 +200,20 @@
     }
   }
 
+  function overviewSignature() {
+    if (typeof state === 'undefined' || !state.selected) return '';
+    const info = coordinationInfo();
+    const tasks = (state.selected.tasks || []).map(task => [task.id, task.status, task.title]);
+    const lanes = (info.readiness?.lanes || []).map(lane => [lane.label, lane.percent, lane.detail]);
+    return JSON.stringify([state.selectedId, info.url, info.termsAccepted, info.status, state.selected.summary?.startsAtUtc, state.selected.summary?.location, tasks, lanes]);
+  }
+
   function foundationOverviewMarkup() {
     const info = coordinationInfo();
-    const selected = state?.selected;
-    if (!selected) return '';
+    const selected = state.selected;
     const tasks = selected.tasks || [];
     const nextTask = tasks.find(task => !['complete', 'waived'].includes(task.status));
-    const readiness = info.readiness;
-    const lanes = readiness?.lanes || [];
+    const lanes = info.readiness?.lanes || [];
     const starts = selected.summary?.startsAtUtc ? new Date(selected.summary.startsAtUtc) : null;
     const days = starts && !Number.isNaN(starts.getTime()) ? Math.ceil((starts.getTime() - Date.now()) / 86400000) : null;
     const stageLane = lanes.find(lane => Number(lane.percent || 0) < 100) || lanes[lanes.length - 1];
@@ -260,11 +254,15 @@
   }
 
   function ensureFoundationOverview() {
-    const workspace = assignmentDetail?.querySelector('.assignment-workspace');
-    const overviewPane = workspace?.querySelector('[data-workspace-pane="overview"]');
-    if (!overviewPane) return;
-    overviewPane.querySelector('[data-foundation-overview]')?.remove();
+    const overviewPane = assignmentDetail?.querySelector('.assignment-workspace [data-workspace-pane="overview"]');
+    if (!overviewPane || typeof state === 'undefined' || !state.selected) return;
+    let overview = overviewPane.querySelector('[data-foundation-overview]');
+    const signature = overviewSignature();
+    if (overview?.dataset.signature === signature) return;
+    overview?.remove();
     overviewPane.insertAdjacentHTML('afterbegin', foundationOverviewMarkup());
+    overview = overviewPane.querySelector('[data-foundation-overview]');
+    if (overview) overview.dataset.signature = signature;
     overviewPane.querySelectorAll('[data-foundation-tab]').forEach(button => {
       button.addEventListener('click', () => activateProxyTab(button.dataset.foundationTab));
     });
@@ -280,21 +278,27 @@
     const button = nativeButtonFor(key);
     if (!button) return;
     button.click();
-    const proxy = assignmentDetail?.querySelector('.foundation-tabs');
-    proxy?.querySelectorAll('button').forEach(item => item.classList.toggle('is-active', item.dataset.foundationProxyTab === key));
+    assignmentDetail?.querySelectorAll('.foundation-tabs [data-foundation-proxy-tab]').forEach(item => {
+      item.classList.toggle('is-active', item.dataset.foundationProxyTab === key);
+    });
   }
 
   function ensureFoundationTabs() {
     const workspace = assignmentDetail?.querySelector('.assignment-workspace');
-    if (!workspace || !workspace.querySelector('#assignment-coordination-form')) return;
+    const editor = workspace?.querySelector('#assignment-coordination-form');
+    if (!workspace || !editor) return;
+
+    const visibleTabs = proxyTabs.filter(([key]) => !!nativeButtonFor(key));
+    const signature = visibleTabs.map(([key]) => key).join('|');
     let nav = workspace.querySelector('.foundation-tabs');
     if (!nav) {
       nav = document.createElement('nav');
       nav.className = 'foundation-tabs';
       nav.setAttribute('aria-label', 'Assignment sections');
-      workspace.insertBefore(nav, workspace.querySelector('#assignment-coordination-form'));
+      workspace.insertBefore(nav, editor);
     }
-    const visibleTabs = proxyTabs.filter(([key]) => !!nativeButtonFor(key));
+    if (nav.dataset.signature === signature) return;
+    nav.dataset.signature = signature;
     nav.innerHTML = visibleTabs.map(([key, label, description], index) => `<button type="button" data-foundation-proxy-tab="${key}" class="${index === 0 ? 'is-active' : ''}"><strong>${escapeHtml(label)}</strong><small>${escapeHtml(description)}</small></button>`).join('');
     nav.querySelectorAll('[data-foundation-proxy-tab]').forEach(button => {
       button.addEventListener('click', () => activateProxyTab(button.dataset.foundationProxyTab));
@@ -315,8 +319,7 @@
   }
 
   function reconcileAssignment() {
-    if (!assignmentGrid?.classList.contains('is-workspace-open')) return;
-    if (!state?.selected) return;
+    if (!assignmentGrid?.classList.contains('is-workspace-open') || typeof state === 'undefined' || !state.selected) return;
     ensureBackButton();
     hideLegacyDuplicates();
     ensureChecklistPane();
@@ -325,21 +328,25 @@
     ensureFoundationOverview();
   }
 
+  const nextPaint = () => new Promise(resolve => requestAnimationFrame(() => resolve()));
+
   if (typeof selectAssignment === 'function') {
     const existingSelectAssignment = selectAssignment;
     selectAssignment = async function(id) {
       await existingSelectAssignment(id);
       renderFoundationAssignments();
-      if (assignmentGrid?.classList.contains('is-workspace-open')) reconcileAssignment();
+      if (assignmentGrid?.classList.contains('is-workspace-open')) {
+        await nextPaint();
+        await nextPaint();
+        reconcileAssignment();
+      }
     };
   }
 
   document.addEventListener('click', event => {
     const fromInvitation = event.target.closest('[data-open-assignment]');
-    if (fromInvitation) {
-      openAssignmentWorkspace();
-      setTimeout(reconcileAssignment, 0);
-    }
+    if (fromInvitation) openAssignmentWorkspace();
+
     const assignmentNav = event.target.closest('.sidebar nav a[href="#assignments"]');
     if (assignmentNav && assignmentGrid?.classList.contains('is-workspace-open')) closeAssignmentWorkspace();
   }, true);
@@ -347,14 +354,6 @@
   window.addEventListener('hashchange', () => {
     if (window.location.hash !== '#assignments') assignmentGrid?.classList.remove('is-workspace-open');
   });
-
-  let frame = 0;
-  const observer = new MutationObserver(() => {
-    if (!assignmentGrid?.classList.contains('is-workspace-open')) return;
-    cancelAnimationFrame(frame);
-    frame = requestAnimationFrame(reconcileAssignment);
-  });
-  if (assignmentDetail) observer.observe(assignmentDetail, { childList: true, subtree: true });
 
   if (typeof state !== 'undefined' && state.assignments?.length) renderFoundationAssignments();
 })();

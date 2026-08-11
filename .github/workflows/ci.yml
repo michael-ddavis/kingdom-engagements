@@ -16,7 +16,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22.x
-      - run: node --check src/KingdomEngagements.Web/wwwroot/exact-18df.js
+      - run: node --check src/KingdomEngagements.Web/wwwroot/legacy18-product.js
       - run: dotnet restore KingdomEngagements.slnx
       - run: dotnet build KingdomEngagements.slnx --configuration Release --no-restore
       - run: dotnet test KingdomEngagements.slnx --configuration Release --no-build
@@ -44,6 +44,6 @@ jobs:
         shell: bash
         run: bash .github/scripts/connected-smoke.sh
 
-      - name: Verify event response follow-up and closeout lifecycle
+      - name: Verify retained response follow-up and closeout backend lifecycle
         shell: bash
         run: bash .github/scripts/completion-smoke.sh

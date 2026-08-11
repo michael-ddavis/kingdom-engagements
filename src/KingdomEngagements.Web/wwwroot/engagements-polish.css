@@ -1,0 +1,134 @@
+/* Kingdom Engagements polish layer.
+   Keeps the 18dfaa7 information architecture while bringing the surface treatment
+   back to the KingdomOS grounded-intelligence direction. */
+
+:root{
+  --eng-border:rgb(17 26 41 / 11%);
+  --eng-border-strong:rgb(17 26 41 / 18%);
+  --eng-surface:#fff;
+  --eng-surface-soft:#f8f9fb;
+  --eng-page:#f4f5f7;
+  --eng-ink:#111a29;
+  --eng-muted:#6d7480;
+  --eng-accent:#355b9f;
+  --eng-accent-soft:#eef3fb;
+  --eng-shadow:0 8px 26px rgb(17 26 41 / 6%);
+  --eng-shadow-open:0 12px 32px rgb(17 26 41 / 8%);
+  --eng-radius:14px;
+  --eng-motion:220ms cubic-bezier(.2,0,0,1);
+}
+
+body{background:var(--eng-page)!important}
+
+/* Sidebar: one product entry. Section navigation lives with the product content. */
+.sidebar nav{display:block!important}
+.sidebar .engagement-nav-root{display:flex!important;min-height:56px!important;padding:10px 14px!important;flex-direction:column;align-items:flex-start!important;justify-content:center;gap:3px;border:1px solid rgb(255 255 255 / 7%);border-radius:12px!important;color:#fff!important;background:rgb(255 255 255 / 8%)!important}
+.sidebar .engagement-nav-root>span{font-size:.9rem;font-weight:760}
+.sidebar .engagement-nav-root>small{color:rgb(235 240 249 / 62%);font-size:.68rem;font-weight:550;line-height:1.35}
+
+.engagements-section-nav{display:flex;width:min(100% - 64px,var(--kos-content-max));min-height:48px;margin:18px auto 0;padding:4px;border:1px solid var(--eng-border);border-radius:12px;gap:4px;background:rgb(255 255 255 / 78%);box-shadow:0 2px 10px rgb(17 26 41 / 3%)}
+.engagements-section-nav a{display:flex;min-height:38px;padding:0 14px;border:1px solid transparent;border-radius:9px;align-items:center;justify-content:center;color:var(--eng-muted);font-size:.78rem;font-weight:720;text-decoration:none;transition:background var(--eng-motion),border-color var(--eng-motion),color var(--eng-motion)}
+.engagements-section-nav a:hover{border-color:rgb(53 91 159 / 16%);color:var(--eng-ink);background:var(--eng-accent-soft)}
+.engagements-section-nav a.is-active{border-color:var(--eng-border-strong);color:#fff;background:var(--kos-navy-900)}
+body.exact18-assignment-open .engagements-section-nav,body.legacy18-request-open .engagements-section-nav{display:none}
+
+/* Assignment section strip: same hierarchy, better breathing room. */
+.exact18-assignment-tabs{grid-template-columns:minmax(180px,.9fr) minmax(0,4fr) minmax(190px,1fr)!important;gap:10px!important;padding:9px!important;border-color:var(--eng-border)!important;border-radius:14px!important;background:var(--eng-surface)!important;box-shadow:0 5px 20px rgb(17 26 41 / 5%)!important}
+.exact18-tab-group{padding-left:10px!important;gap:6px!important}
+.exact18-tab-group:first-child{padding-left:0!important}
+.exact18-tab-label{padding:2px 8px 1px!important;color:#727987!important;font-size:.65rem!important}
+.exact18-tab-items{gap:7px!important}
+.exact18-tab-group--preparation .exact18-tab-items{grid-template-columns:repeat(4,minmax(145px,1fr))!important}
+.exact18-tab{min-height:76px!important;padding:12px 15px!important;border-radius:11px!important;transition:background var(--eng-motion),border-color var(--eng-motion),box-shadow var(--eng-motion),transform var(--eng-motion)!important}
+.exact18-tab:hover{transform:translateY(-1px)}
+.exact18-tab strong{overflow:visible!important;font-size:.82rem!important;line-height:1.25!important;text-overflow:clip!important;white-space:normal!important}
+.exact18-tab small{display:-webkit-box!important;margin-top:5px!important;overflow:hidden!important;line-height:1.35!important;white-space:normal!important;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+.exact18-tab.is-active,.exact18-tab.is-active:hover,.exact18-record-menu.is-active>summary{border-color:#172235!important;background:#111a29!important;box-shadow:0 8px 20px rgb(17 26 41 / 13%)!important}
+.exact18-tab.is-active:after,.exact18-record-menu.is-active>summary:after{right:15px!important;left:15px!important;height:2px!important}
+.exact18-record-trigger>span{display:flex;min-width:0;flex:1;flex-direction:column;align-items:flex-start}
+.exact18-record-trigger{gap:14px!important}
+.exact18-record-chevron{flex:0 0 auto}
+
+/* Ground the working surfaces without changing the layout. */
+.exact18-overview-card,.legacy18-readiness-panel,.legacy18-form-section,.legacy18-contact-card,.legacy18-upload,.legacy18-document-list,.legacy18-record-ledger,.legacy18-activity{border-color:var(--eng-border)!important;border-radius:var(--eng-radius)!important;background:var(--eng-surface)!important;box-shadow:var(--eng-shadow)!important}
+.exact18-overview-card{background:linear-gradient(180deg,#fff,#fbfcfd)!important}
+.legacy18-page-heading h2{color:var(--eng-ink)!important}
+.legacy18-page-heading p{color:var(--eng-muted)!important}
+
+/* Accordion affordance + states. JS handles true open AND close motion. */
+.legacy18-stage,.legacy18-form-section,.legacy18-contact-card,.legacy18-source-panel{transition:border-color var(--eng-motion),box-shadow var(--eng-motion),background var(--eng-motion)}
+.legacy18-stage[open],.legacy18-form-section[open],.legacy18-contact-card[open],.legacy18-source-panel[open],.legacy18-stage[data-accordion-expanded="true"],.legacy18-form-section[data-accordion-expanded="true"],.legacy18-contact-card[data-accordion-expanded="true"],.legacy18-source-panel[data-accordion-expanded="true"]{border-color:rgb(53 91 159 / 24%)!important;box-shadow:var(--eng-shadow-open)!important}
+.legacy18-stage>summary,.legacy18-form-section>summary,.legacy18-contact-card>summary,.legacy18-source-panel>summary{position:relative;padding-right:50px!important;background:#fbfcfd!important;transition:background var(--eng-motion),color var(--eng-motion)}
+.legacy18-stage>summary:hover,.legacy18-form-section>summary:hover,.legacy18-contact-card>summary:hover,.legacy18-source-panel>summary:hover{background:#f5f7fa!important}
+.legacy18-stage>summary::after,.legacy18-form-section>summary::after,.legacy18-contact-card>summary::after,.legacy18-source-panel>summary::after{position:absolute;right:20px;top:50%;width:9px;height:9px;border-right:2px solid #78808c;border-bottom:2px solid #78808c;content:"";transform:translateY(-65%) rotate(45deg);transform-origin:center;transition:transform var(--eng-motion),border-color var(--eng-motion)}
+.legacy18-stage[open]>summary::after,.legacy18-form-section[open]>summary::after,.legacy18-contact-card[open]>summary::after,.legacy18-source-panel[open]>summary::after,.legacy18-stage[data-accordion-expanded="true"]>summary::after,.legacy18-form-section[data-accordion-expanded="true"]>summary::after,.legacy18-contact-card[data-accordion-expanded="true"]>summary::after,.legacy18-source-panel[data-accordion-expanded="true"]>summary::after{border-color:var(--eng-accent);transform:translateY(-35%) rotate(225deg)}
+.legacy18-stage[data-accordion-animating],.legacy18-form-section[data-accordion-animating],.legacy18-contact-card[data-accordion-animating],.legacy18-source-panel[data-accordion-animating]{will-change:height;overflow:hidden}
+
+/* Contacts: expanded fields stay visible and drafts survive controller rerenders. */
+.legacy18-contact-grid{align-items:start!important;gap:16px!important}
+.legacy18-contact-card[open]>.legacy18-field-grid,.legacy18-contact-card[data-accordion-expanded="true"]>.legacy18-field-grid{display:grid!important;visibility:visible!important;opacity:1!important}
+.legacy18-contact-card>summary{min-height:88px!important}
+.legacy18-contact-card>summary>div{min-width:0;flex:1}
+.legacy18-field-grid{padding:20px!important;gap:16px!important;background:#fff}
+.legacy18-field>span{color:#525a66!important;font-size:.72rem!important;letter-spacing:.015em}
+.legacy18-field input,.legacy18-field textarea,.legacy18-field select{min-height:46px!important;border-color:#d7dae0!important;border-radius:10px!important;background:#fff!important;transition:border-color var(--eng-motion),box-shadow var(--eng-motion),background var(--eng-motion)}
+.legacy18-field input:hover,.legacy18-field textarea:hover,.legacy18-field select:hover{border-color:#b7bdc8!important}
+.legacy18-field input:focus,.legacy18-field textarea:focus,.legacy18-field select:focus{border-color:var(--eng-accent)!important;box-shadow:0 0 0 3px rgb(53 91 159 / 11%)!important}
+.legacy18-reuse{border-color:rgb(53 91 159 / 20%)!important;border-radius:9px!important;background:var(--eng-accent-soft)!important;transition:background var(--eng-motion),border-color var(--eng-motion),transform var(--eng-motion)}
+.legacy18-reuse:hover{border-color:rgb(53 91 159 / 38%)!important;background:#e4ecf8!important;transform:translateY(-1px)}
+
+/* Host coordination: contextual, not a giant disabled slab. */
+.exact18-host-coordination,.legacy18-host-strip{border-color:rgb(53 91 159 / 18%)!important;background:linear-gradient(90deg,#f2f6fc,#fff)!important;box-shadow:none!important}
+.exact18-host-coordination button:disabled,.legacy18-host-strip>button:disabled,.exact18-card-action:disabled{border-color:#d9dde4!important;color:#737b87!important;background:#f1f3f6!important;box-shadow:none!important;opacity:1!important}
+
+/* Documents: make the file control intentional and desktop/mobile friendly. */
+.legacy18-upload{grid-template-columns:minmax(0,1fr) auto!important;padding:18px!important;align-items:center!important;gap:14px!important;background:linear-gradient(180deg,#fff,#fafbfc)!important}
+.legacy18-upload label{gap:9px!important}
+.legacy18-upload label span{color:#525a66!important;font-size:.72rem!important;font-weight:760!important}
+.legacy18-upload input[type="file"]{min-height:48px;padding:5px;border:1px dashed #c8ced8;border-radius:11px;color:var(--eng-muted);font:inherit;font-size:.78rem;background:#f8fafc;cursor:pointer}
+.legacy18-upload input[type="file"]::file-selector-button{min-height:36px;margin-right:12px;padding:0 13px;border:1px solid rgb(53 91 159 / 20%);border-radius:8px;color:var(--eng-accent);font:inherit;font-size:.76rem;font-weight:760;background:#fff;cursor:pointer;transition:background var(--eng-motion),border-color var(--eng-motion)}
+.legacy18-upload input[type="file"]::file-selector-button:hover{border-color:rgb(53 91 159 / 38%);background:var(--eng-accent-soft)}
+.legacy18-upload>button{min-height:46px!important;padding:0 18px!important;border-radius:10px!important;background:#111a29!important;box-shadow:none!important;transition:transform var(--eng-motion),background var(--eng-motion)}
+.legacy18-upload>button:hover{background:#172235!important;transform:translateY(-1px)}
+.legacy18-upload small{margin-top:-2px!important}
+
+/* Sticky save: structured toolbar, not glass. */
+.legacy18-save{border-color:var(--eng-border)!important;border-radius:13px!important;background:#fff!important;box-shadow:0 -5px 18px rgb(17 26 41 / 5%)!important}
+
+@media(max-width:1320px){
+  .exact18-assignment-tabs{display:flex!important;padding:8px!important;gap:10px!important;overflow-x:auto!important;scroll-snap-type:x proximity;scroll-padding-inline:8px;-webkit-overflow-scrolling:touch}
+  .exact18-assignment-tabs::-webkit-scrollbar{height:6px}.exact18-assignment-tabs::-webkit-scrollbar-thumb{border-radius:999px;background:#cfd4dc}
+  .exact18-tab-group{display:flex!important;flex:0 0 auto!important;padding-left:10px!important;flex-direction:column!important;gap:5px!important}
+  .exact18-tab-group:first-child{padding-left:0!important}
+  .exact18-tab-items,.exact18-tab-group--preparation .exact18-tab-items{display:flex!important;gap:7px!important}
+  .exact18-tab{flex:0 0 180px!important;scroll-snap-align:start}
+  .exact18-record-menu{width:180px}
+}
+
+@media(max-width:900px){
+  .legacy18-contact-grid{grid-template-columns:1fr!important}
+  .legacy18-field-grid{grid-template-columns:1fr!important}
+  .legacy18-field.wide{grid-column:auto!important}
+  .engagements-section-nav{width:calc(100% - 32px)}
+}
+
+@media(max-width:720px){
+  .engagements-section-nav{position:sticky;z-index:18;top:0;margin-top:8px;overflow-x:auto;justify-content:flex-start;background:#fff}
+  .engagements-section-nav a{flex:0 0 auto;min-width:92px}
+  .exact18-assignment-tabs{position:sticky!important;top:0!important;margin:14px 0!important;border-radius:12px!important}
+  .exact18-tab-group{padding-left:8px!important}
+  .exact18-tab-label{display:none!important}
+  .exact18-tab{min-height:48px!important;padding:0 13px!important;flex-basis:auto!important;min-width:112px!important}
+  .exact18-tab strong{font-size:.78rem!important;white-space:nowrap!important}
+  .exact18-tab small{display:none!important}
+  .exact18-record-menu{width:auto;min-width:112px}
+  .legacy18-upload{grid-template-columns:1fr!important;align-items:stretch!important}
+  .legacy18-upload>button{width:100%}
+  .legacy18-upload small{grid-column:auto!important;margin-top:0!important}
+  .legacy18-save{position:static!important;align-items:stretch!important;flex-direction:column!important}
+  .legacy18-save>button,.legacy18-save>div:last-child button{width:100%}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .legacy18-stage,.legacy18-form-section,.legacy18-contact-card,.legacy18-source-panel,.exact18-tab,.legacy18-reuse,.legacy18-upload>button{transition:none!important}
+}

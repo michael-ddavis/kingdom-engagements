@@ -1,0 +1,190 @@
+/* Exact pre-redesign assignment navigation marker:
+   Overview → Checklist → Travel → Contacts → Documents → Record. */
+
+.detail-header > span {
+  display: none !important;
+}
+
+.foundation-tabs {
+  display: none !important;
+}
+
+.legacy-six-tabs {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 5px;
+  width: 100%;
+  margin: 0 0 16px;
+  padding: 5px;
+  overflow: visible;
+  border: 1px solid var(--foundation-border, #e2e3e0);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.legacy-six-tab {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 58px;
+  padding: 10px 13px;
+  border: 0;
+  border-radius: 10px;
+  align-items: flex-start;
+  justify-content: center;
+  flex-direction: column;
+  color: #717b8b;
+  text-align: left;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.legacy-six-tab:hover {
+  color: #263249;
+  background: #f7f7f4;
+}
+
+.legacy-six-tab strong {
+  color: inherit;
+  font-size: .7rem;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.legacy-six-tab small {
+  display: block;
+  margin-top: 4px;
+  overflow: hidden;
+  color: #969ca6;
+  font-size: .6rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.legacy-six-tab.is-active,
+.legacy-record-menu.is-active > summary {
+  color: #fff;
+  background: var(--foundation-navy, #101d35);
+}
+
+.legacy-six-tab.is-active small,
+.legacy-record-menu.is-active > summary small {
+  color: #94a3bd;
+}
+
+.legacy-record-menu {
+  position: relative;
+  min-width: 0;
+  margin: 0;
+}
+
+.legacy-record-menu > summary {
+  width: 100%;
+  list-style: none;
+}
+
+.legacy-record-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.legacy-record-trigger {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.legacy-record-trigger > span {
+  min-width: 0;
+}
+
+.legacy-record-trigger i {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform 140ms ease;
+}
+
+.legacy-record-menu[open] .legacy-record-trigger i {
+  transform: rotate(225deg) translate(-1px, -1px);
+}
+
+.legacy-record-popover {
+  position: absolute;
+  z-index: 50;
+  top: calc(100% + 8px);
+  right: 0;
+  display: grid;
+  width: 270px;
+  padding: 6px;
+  border: 1px solid #dde1e7;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 16px 40px rgba(16, 29, 53, .12);
+}
+
+.legacy-record-popover button {
+  display: flex;
+  width: 100%;
+  min-height: 52px;
+  padding: 9px 11px;
+  border: 0;
+  border-radius: 8px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  color: #5f697b;
+  text-align: left;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.legacy-record-popover button:hover,
+.legacy-record-popover button.is-active {
+  color: #263249;
+  background: #f5f6f8;
+}
+
+.legacy-record-popover strong {
+  font-size: .69rem;
+}
+
+.legacy-record-popover small {
+  margin-top: 3px;
+  color: #9299a5;
+  font-size: .59rem;
+}
+
+@media (max-width: 1050px) {
+  .legacy-six-tabs {
+    display: flex;
+    overflow-x: auto;
+    overflow-y: visible;
+  }
+
+  .legacy-six-tabs > .legacy-six-tab,
+  .legacy-record-menu {
+    flex: 0 0 150px;
+  }
+}
+
+@media (max-width: 680px) {
+  .legacy-record-popover {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    top: auto;
+    left: 16px;
+    width: auto;
+    max-height: 65vh;
+    overflow-y: auto;
+  }
+}

@@ -1,0 +1,18 @@
+/* Earned UI: reveal aggregate chrome only when workload makes it useful. */
+.legacy18-request-summary[hidden],.exact18-summary-grid[hidden],.exact18-toolbar[hidden]{display:none!important}
+
+.earned-ui-inline-signal{display:inline-flex;width:auto;max-width:100%;margin:0 0 18px;padding:9px 12px;border:1px solid rgb(104 84 120 / 18%);border-radius:10px;align-items:center;gap:10px;color:var(--eng-ink,#111a29);background:#f7f3f8}
+.earned-ui-inline-signal__mark{display:grid;width:26px;height:26px;flex:0 0 auto;border-radius:8px;place-items:center;color:#685478;font-size:.75rem;font-weight:850;background:#eee7f1}
+.earned-ui-inline-signal>div{display:flex;min-width:0;align-items:baseline;flex-wrap:wrap;gap:4px 8px}
+.earned-ui-inline-signal strong{font-size:.76rem}
+.earned-ui-inline-signal small{color:var(--eng-muted,#6d7480);font-size:.7rem}
+
+.assignment-panel[data-earned-ui-volume="focused"] .exact18-list-utility{margin-bottom:0}
+.assignment-panel[data-earned-ui-volume="focused"] .exact18-attention{display:inline-flex;width:auto;max-width:100%;margin-bottom:18px;padding:10px 12px;border-radius:10px;box-shadow:none}
+.assignment-panel[data-earned-ui-volume="focused"] .exact18-attention-mark{width:28px;height:28px}
+.assignment-panel[data-earned-ui-volume="focused"] .exact18-attention p{margin-top:2px}
+
+@media(max-width:720px){
+  .earned-ui-inline-signal,.assignment-panel[data-earned-ui-volume="focused"] .exact18-attention{display:flex;width:100%}
+  .earned-ui-inline-signal>div{align-items:flex-start;flex-direction:column;gap:2px}
+}

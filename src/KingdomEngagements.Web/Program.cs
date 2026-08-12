@@ -139,6 +139,7 @@ app.Use(async (context, next) =>
 app.UseMiddleware<EngagementsReadinessMiddleware>();
 app.UseMiddleware<EngagementsEntitlementMiddleware>();
 app.UseAuthorization();
+app.UseMiddleware<EngagementApprovalOperationsBridge>();
 
 app.MapEngagementsHealth();
 app.MapGet("/api/product", (IConfiguration configuration) => Results.Ok(new

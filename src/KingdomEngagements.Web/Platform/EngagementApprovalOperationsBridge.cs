@@ -36,7 +36,7 @@ public sealed class EngagementApprovalOperationsBridge(
             var eventId = assignment.Id;
             var occurredAtUtc = DateTimeOffset.UtcNow;
             var sourceUrl = configuration["KingdomOS:EngagementsBrowserUrl"]
-                ?? $"http://localhost:5110/#assignments";
+                ?? "http://localhost:5110/#assignments";
             var eventDate = assignment.StartsAtUtc;
             var eventEnd = assignment.EndsAtUtc;
 
@@ -133,23 +133,23 @@ public sealed class EngagementApprovalOperationsBridge(
         var serviceKey = configuration["KingdomOS:Integration:ServiceKey"]
             ?? "local-kingdomos-integration";
 
-        using (var platformResponse = await client.PostAsJsonAsync(
-                   $"{platformUrl}/api/integration/events",
-                   envelope,
-                   cancellationToken))
+        using (var operationsRequest = new HttpRequestMessage(
+                   HttpMethod.Post,
+                   $"{operationsUrl}/api/integration/events")
+               {
+                   Content = JsonContent.Create(envelope)
+               })
         {
-            platformResponse.EnsureSuccessStatusCode();
+            operationsRequest.Headers.TryAddWithoutValidation("X-Kingdom-Service-Key", serviceKey);
+            using var operationsResponse = await client.SendAsync(operationsRequest, cancellationToken);
+            operationsResponse.EnsureSuccessStatusCode();
         }
 
-        using var operationsRequest = new HttpRequestMessage(
-            HttpMethod.Post,
-            $"{operationsUrl}/api/integration/events")
-        {
-            Content = JsonContent.Create(envelope)
-        };
-        operationsRequest.Headers.TryAddWithoutValidation("X-Kingdom-Service-Key", serviceKey);
-        using var operationsResponse = await client.SendAsync(operationsRequest, cancellationToken);
-        operationsResponse.EnsureSuccessStatusCode();
+        using var platformResponse = await client.PostAsJsonAsync(
+            $"{platformUrl}/api/integration/events",
+            envelope,
+            cancellationToken);
+        platformResponse.EnsureSuccessStatusCode();
     }
 
     private static Guid? ApprovalRequestId(HttpRequest request)

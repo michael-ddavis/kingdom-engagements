@@ -76,6 +76,24 @@ public sealed class EngagementApprovalOperationsBridge(
                         new
                         {
                             ministry = "Hospitality",
+                            kind = "checklist",
+                            title = $"{assignment.Title} coordination checklist",
+                            summary = "Shared internal readiness for the approved engagement. Engagements remains the authoritative assignment record.",
+                            startsAtUtc = eventDate?.AddDays(-21),
+                            dueAtUtc = eventDate?.AddDays(-1),
+                            steps = new[]
+                            {
+                                "Confirm travel itinerary and lodging",
+                                "Confirm ground transportation and arrival contact",
+                                "Confirm final host schedule and ministry expectations",
+                                "Confirm communications and approved promotional assets",
+                                "Confirm prayer covering and ministry preparation",
+                                "Complete final Operations readiness review"
+                            }
+                        },
+                        new
+                        {
+                            ministry = "Hospitality",
                             kind = "support-request",
                             title = $"Confirm travel and lodging for {assignment.Title}",
                             summary = "Verify itinerary, lodging, ground transportation, arrival details, and the internal point of contact.",

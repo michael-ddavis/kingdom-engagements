@@ -119,10 +119,12 @@ builder.Services.AddScoped<SpeakingRequestsService>();
 builder.Services.AddScoped<EngagementPreparationService>();
 builder.Services.AddScoped<AssignmentWorkspaceService>();
 builder.Services.AddScoped<EngagementCompletionService>();
+builder.Services.AddScoped<EngagementOperationsCoordinationPublisher>();
 builder.Services.AddSingleton<EngagementsStartupState>();
 builder.Services.AddHostedService<EngagementsStartupWorker>();
 builder.Services.AddHostedService<EngagementsDemoSeedWorker>();
 builder.Services.AddHostedService<EngagementsDemoDepthWorker>();
+builder.Services.AddHostedService<EngagementsDemoConnectedStoryWorker>();
 
 var app = builder.Build();
 

@@ -15,8 +15,7 @@ public sealed class EngagementOperationsCoordinationPublisher(
     {
         var eventId = assignment.Id;
         var occurredAtUtc = DateTimeOffset.UtcNow;
-        var sourceUrl = configuration["KingdomOS:EngagementsBrowserUrl"]
-            ?? "http://localhost:5110/#assignments";
+        var sourceUrl = AssignmentSourceUrl(assignment.Id);
         var eventDate = assignment.StartsAtUtc;
         var eventEnd = assignment.EndsAtUtc;
 
@@ -127,6 +126,21 @@ public sealed class EngagementOperationsCoordinationPublisher(
         platformResponse.EnsureSuccessStatusCode();
     }
 
+    private string AssignmentSourceUrl(Guid assignmentId)
+    {
+        var configured = configuration["KingdomOS:EngagementsBrowserUrl"]
+            ?? "http://localhost:5110";
+        if (!Uri.TryCreate(configured, UriKind.Absolute, out var source))
+            source = new Uri("http://localhost:5110");
+
+        var builder = new UriBuilder(source)
+        {
+            Query = $"assignment={Uri.EscapeDataString(assignmentId.ToString("D"))}",
+            Fragment = "assignments"
+        };
+        return builder.Uri.ToString();
+    }
+
     private static string LocationSuffix(string? location) =>
         string.IsNullOrWhiteSpace(location) ? string.Empty : $" in {location.Trim()}";
 }
@@ -164,8 +178,6 @@ public sealed class EngagementApprovalOperationsBridge(
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            // The approved assignment is authoritative and must never be rolled back because a
-            // secondary coordination handoff is temporarily unavailable.
             logger.LogWarning(
                 exception,
                 "Approved engagement request {RequestId} could not publish its Operations coordination handoff yet.",

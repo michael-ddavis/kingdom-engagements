@@ -612,7 +612,7 @@ public static class SpeakingRequestEndpoints
             }
             catch (ArgumentException exception) { return Results.ValidationProblem(new Dictionary<string, string[]> { ["message"] = [exception.Message] }); }
             catch (InvalidOperationException exception) { return Results.Conflict(new { message = exception.Message }); }
-        }).RequireAuthorization(policy => policy.RequireRole(Coordinators));
+        }).RequireAuthorization("EngagementsWrite");
         reviewGroup.MapPost("/{id:guid}/decline", async (Guid id, DeclineSpeakingRequest request, HttpContext context, SpeakingRequestsService service, CancellationToken ct) =>
         {
             try
@@ -622,7 +622,7 @@ public static class SpeakingRequestEndpoints
             }
             catch (ArgumentException exception) { return Results.ValidationProblem(new Dictionary<string, string[]> { ["reason"] = [exception.Message] }); }
             catch (InvalidOperationException exception) { return Results.Conflict(new { message = exception.Message }); }
-        }).RequireAuthorization(policy => policy.RequireRole(Coordinators));
+        }).RequireAuthorization("EngagementsWrite");
         reviewGroup.MapPost("/{id:guid}/approve", async (Guid id, HttpContext context, SpeakingRequestsService service, CancellationToken ct) =>
         {
             try
@@ -631,7 +631,7 @@ public static class SpeakingRequestEndpoints
                 return result is null ? Results.NotFound() : Results.Ok(new { request = result.Value.Request, assignmentId = result.Value.AssignmentId });
             }
             catch (InvalidOperationException exception) { return Results.Conflict(new { message = exception.Message }); }
-        }).RequireAuthorization(policy => policy.RequireRole(Coordinators));
+        }).RequireAuthorization("EngagementsWrite");
 
         return endpoints;
     }

@@ -132,3 +132,12 @@ body.exact18-assignment-open .engagements-section-nav,body.legacy18-request-open
 @media(prefers-reduced-motion:reduce){
   .legacy18-stage,.legacy18-form-section,.legacy18-contact-card,.legacy18-source-panel,.exact18-tab,.legacy18-reuse,.legacy18-upload>button{transition:none!important}
 }
+
+.engagement-confirm-dialog{width:min(460px,calc(100vw - 32px));padding:0;border:1px solid #d9dde5;border-radius:18px;color:#111a29;background:#fff;box-shadow:0 28px 80px rgb(17 26 41 / 28%)}
+.engagement-confirm-dialog::backdrop{background:rgb(17 26 41 / 48%);backdrop-filter:blur(3px)}
+.engagement-confirm-dialog form{padding:26px;display:grid;gap:18px}
+.engagement-confirm-dialog h2{margin:2px 0 0;font-size:1.35rem}
+.engagement-confirm-dialog>form>p{margin:0;color:#5d6673;line-height:1.55}
+.engagement-confirm-dialog footer{display:flex;justify-content:flex-end;gap:10px}
+.engagement-confirm-dialog button{min-height:44px;padding:0 17px;border:1px solid #cfd5de;border-radius:10px;font:inherit;font-weight:750;background:#fff;cursor:pointer}
+.engagement-confirm-dialog button.primary{border-color:#172b49;color:#fff;background:#172b49}

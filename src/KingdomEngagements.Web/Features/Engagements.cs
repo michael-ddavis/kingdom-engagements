@@ -496,7 +496,7 @@ public static class EngagementsEndpoints
             try { return Results.Ok(await service.CreateAsync(KingdomIdentity.TenantId(context.User, context.Request), request, ct)); }
             catch (ArgumentException exception) { return Results.ValidationProblem(new Dictionary<string, string[]> { ["assignment"] = [exception.Message] }); }
             catch (InvalidOperationException exception) { return Results.Conflict(new { message = exception.Message }); }
-        }).RequireAuthorization(policy => policy.RequireRole(Coordinators));
+        }).RequireAuthorization("EngagementsWrite");
         group.MapPut("/assignments/{id:guid}", async (Guid id, UpdateEngagementRequest request, HttpContext context, EngagementsService service, CancellationToken ct) =>
         {
             try
@@ -505,7 +505,7 @@ public static class EngagementsEndpoints
                 return item is null ? Results.NotFound() : Results.Ok(item);
             }
             catch (ArgumentException exception) { return Results.ValidationProblem(new Dictionary<string, string[]> { ["assignment"] = [exception.Message] }); }
-        }).RequireAuthorization(policy => policy.RequireRole(Coordinators));
+        }).RequireAuthorization("EngagementsWrite");
         group.MapPost("/assignments/{id:guid}/tasks", async (Guid id, CreateEngagementTaskRequest request, HttpContext context, EngagementsService service, CancellationToken ct) =>
         {
             try
@@ -514,7 +514,7 @@ public static class EngagementsEndpoints
                 return item is null ? Results.NotFound() : Results.Ok(item);
             }
             catch (ArgumentException exception) { return Results.ValidationProblem(new Dictionary<string, string[]> { ["task"] = [exception.Message] }); }
-        }).RequireAuthorization(policy => policy.RequireRole(Coordinators));
+        }).RequireAuthorization("EngagementsWrite");
         group.MapPut("/assignments/{id:guid}/tasks/{taskId:guid}", async (Guid id, Guid taskId, UpdateEngagementTaskRequest request, HttpContext context, EngagementsService service, CancellationToken ct) =>
         {
             try
@@ -523,7 +523,7 @@ public static class EngagementsEndpoints
                 return item is null ? Results.NotFound() : Results.Ok(item);
             }
             catch (ArgumentException exception) { return Results.ValidationProblem(new Dictionary<string, string[]> { ["task"] = [exception.Message] }); }
-        }).RequireAuthorization(policy => policy.RequireRole(Coordinators));
+        }).RequireAuthorization("EngagementsWrite");
         group.MapPost("/assignments/{id:guid}/documents", async (Guid id, CreateEngagementDocumentRequest request, HttpContext context, EngagementsService service, CancellationToken ct) =>
         {
             try
@@ -532,7 +532,7 @@ public static class EngagementsEndpoints
                 return item is null ? Results.NotFound() : Results.Ok(item);
             }
             catch (ArgumentException exception) { return Results.ValidationProblem(new Dictionary<string, string[]> { ["document"] = [exception.Message] }); }
-        }).RequireAuthorization(policy => policy.RequireRole(Coordinators));
+        }).RequireAuthorization("EngagementsWrite");
 
         endpoints.MapPost("/api/integration/events", async (
             IntegrationEventEnvelope envelope,

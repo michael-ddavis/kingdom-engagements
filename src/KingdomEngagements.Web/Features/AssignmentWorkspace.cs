@@ -715,7 +715,7 @@ public static class AssignmentWorkspaceEndpoints
             {
                 return Results.Conflict(new { message = exception.Message });
             }
-        }).RequireAuthorization(policy => policy.RequireRole(Coordinators));
+        }).RequireAuthorization("EngagementsWrite");
 
         group.MapPost("/{id:guid}/workspace/documents", async (
             Guid id,
@@ -746,7 +746,7 @@ public static class AssignmentWorkspaceEndpoints
             {
                 return Results.ValidationProblem(new Dictionary<string, string[]> { ["document"] = [exception.Message] });
             }
-        }).DisableAntiforgery().RequireAuthorization(policy => policy.RequireRole(Coordinators));
+        }).DisableAntiforgery().RequireAuthorization("EngagementsWrite");
 
         group.MapDelete("/{id:guid}/workspace/documents/{documentId:guid}", async (
             Guid id,
@@ -762,7 +762,7 @@ public static class AssignmentWorkspaceEndpoints
                 context.User.Identity?.Name ?? "Ministry team",
                 ct);
             return deleted ? Results.NoContent() : Results.NotFound();
-        }).RequireAuthorization(policy => policy.RequireRole(Coordinators));
+        }).RequireAuthorization("EngagementsWrite");
 
         return endpoints;
     }

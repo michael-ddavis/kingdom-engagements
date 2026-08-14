@@ -7,6 +7,7 @@ public static class KingdomIdentity
 {
     public const string Scheme = "KingdomOS.Identity";
     public const string TenantClaim = "kingdom:tenant";
+    public const string TenantRoleClaim = "kingdom:tenant-role";
     public const string PermissionClaim = "kingdom:permission";
     public const string ProductRoleClaim = "kingdom:product-role";
     public static readonly Guid DemoTenantId = Guid.Parse("a1ab45e2-1746-4d91-9de0-9cf70ae75d3a");
@@ -22,6 +23,18 @@ public static class KingdomIdentity
         principal.FindFirstValue(ClaimTypes.NameIdentifier)
         ?? request.Headers["X-Kingdom-Subject"].FirstOrDefault()
         ?? "unknown";
+
+    public static bool CanWriteEngagements(ClaimsPrincipal principal)
+    {
+        static bool Matches(string value, params string[] accepted) =>
+            accepted.Contains(value, StringComparer.OrdinalIgnoreCase);
+
+        return principal.Claims.Any(claim =>
+            claim.Type == PermissionClaim && Matches(claim.Value, "engagements:assignments:write") ||
+            claim.Type == ProductRoleClaim && Matches(claim.Value, "engagements:administrator", "engagements:coordinator") ||
+            claim.Type == TenantRoleClaim && Matches(claim.Value, "owner", "administrator", "organization-administrator", "super-admin") ||
+            claim.Type == ClaimTypes.Role && Matches(claim.Value, "Administrator", "Coordinator", "OrganizationAdministrator", "Organization Administrator", "SuperAdmin", "Super Administrator"));
+    }
 
     public static ClaimsPrincipal CreateDevelopmentPrincipal()
     {

@@ -785,10 +785,13 @@ public static class EngagementPreparationEndpoints
                 return Results.ValidationProblem(new Dictionary<string, string[]> { ["document"] = [exception.Message] });
             }
         }).DisableAntiforgery();
-        publicGroup.MapGet("/coordination/{token}/documents/{documentId:guid}", async (string token, Guid documentId, EngagementPreparationService service, CancellationToken ct) =>
+        publicGroup.MapGet("/coordination/{token}/documents/{documentId:guid}", async (string token, Guid documentId, bool? download, EngagementPreparationService service, CancellationToken ct) =>
         {
             var document = await service.GetDocumentForHostAsync(token, documentId, ct);
-            return document is null ? Results.NotFound() : Results.File(document.Content, document.ContentType, document.FileName);
+            if (document is null) return Results.NotFound();
+            return download is true
+                ? Results.File(document.Content, document.ContentType, document.FileName, enableRangeProcessing: true)
+                : Results.File(document.Content, document.ContentType, enableRangeProcessing: true);
         });
 
         var internalGroup = endpoints.MapGroup("/api/engagements/assignments").RequireAuthorization();
@@ -802,10 +805,13 @@ public static class EngagementPreparationEndpoints
                 : null;
             return Results.Ok(new { preparation = item, termsUrl, coordinationUrl });
         });
-        internalGroup.MapGet("/{id:guid}/preparation/documents/{documentId:guid}", async (Guid id, Guid documentId, HttpContext context, EngagementPreparationService service, CancellationToken ct) =>
+        internalGroup.MapGet("/{id:guid}/preparation/documents/{documentId:guid}", async (Guid id, Guid documentId, bool? download, HttpContext context, EngagementPreparationService service, CancellationToken ct) =>
         {
             var document = await service.GetDocumentForAssignmentAsync(KingdomIdentity.TenantId(context.User, context.Request), id, documentId, ct);
-            return document is null ? Results.NotFound() : Results.File(document.Content, document.ContentType, document.FileName);
+            if (document is null) return Results.NotFound();
+            return download is true
+                ? Results.File(document.Content, document.ContentType, document.FileName, enableRangeProcessing: true)
+                : Results.File(document.Content, document.ContentType, enableRangeProcessing: true);
         });
         return endpoints;
     }

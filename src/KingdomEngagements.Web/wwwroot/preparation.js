@@ -275,8 +275,8 @@ function documentsPane(coordinationDocuments, assignmentDocuments) {
     <div class="workspace-document-list">
       ${coordinationDocuments.length ? coordinationDocuments.map(doc => `
         <article>
-          <div><span class="document-mark">DOC</span><div><a href="/api/engagements/assignments/${state.selectedId}/preparation/documents/${doc.id}" target="_blank" rel="noopener">${escapeHtml(doc.fileName)}</a><small>${formatBytes(doc.length)} · ${formatDateTime(doc.uploadedAtUtc)}</small></div></div>
-          <button type="button" data-delete-document="${doc.id}">Remove</button>
+          <div><span class="document-mark">DOC</span><div><a href="/api/engagements/assignments/${state.selectedId}/preparation/documents/${doc.id}?download=false" target="_blank" rel="noopener">${escapeHtml(doc.fileName)}</a><small>${formatBytes(doc.length)} · ${formatDateTime(doc.uploadedAtUtc)}</small></div></div>
+          <div class="workspace-document-actions"><a href="/api/engagements/assignments/${state.selectedId}/preparation/documents/${doc.id}?download=true" download>Download</a><button type="button" data-delete-document="${doc.id}">Remove</button></div>
         </article>`).join('') : '<p class="editor-empty">No coordination files have been uploaded yet.</p>'}
     </div>
     ${otherRecords.length ? `<section class="record-ledger"><p class="eyebrow">Tracked records</p>${otherRecords.map(doc => `<div><span>${escapeHtml(doc.name)}</span><strong>${escapeHtml(formatStatus(doc.status))}</strong><small>${escapeHtml(formatStatus(doc.category))}</small></div>`).join('')}</section>` : ''}`;

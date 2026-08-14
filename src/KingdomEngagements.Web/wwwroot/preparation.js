@@ -453,7 +453,11 @@ async function uploadAssignmentDocument(panel) {
 }
 
 async function deleteAssignmentDocument(documentId) {
-  if (!window.confirm('Remove this file from the assignment?')) return;
+  if (!await window.kingdomConfirm({
+    title: 'Remove this file?',
+    message: 'The file will be removed from this assignment record. This cannot be undone.',
+    confirmLabel: 'Remove file',
+  })) return;
   try {
     await api(`/api/engagements/assignments/${state.selectedId}/workspace/documents/${documentId}`, { method: 'DELETE' });
     showMessage('Assignment document removed.');

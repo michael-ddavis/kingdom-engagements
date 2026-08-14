@@ -141,7 +141,11 @@ function bindCompletionWorkspace(panel) {
   }));
   panel.querySelector('#closeout-form')?.addEventListener('submit', async event => {
     event.preventDefault(); const data=new FormData(event.currentTarget); const complete=event.submitter?.dataset.closeoutComplete==='true';
-    if(complete && !window.confirm('Complete this engagement assignment?')) return;
+    if (complete && !await window.kingdomConfirm({
+      title: 'Complete this assignment?',
+      message: 'This closes the active work and moves the assignment into the archive. The record remains available for reference.',
+      confirmLabel: 'Complete & archive',
+    })) return;
     try { await api(`/api/engagements/assignments/${state.selectedId}/closeout`, {method:'PUT',body:JSON.stringify({eventNotes:data.get('eventNotes')||null,testimonySummary:data.get('testimonySummary')||null,hostFollowUpComplete:data.get('hostFollowUpComplete')==='on',hostFollowUpNotes:data.get('hostFollowUpNotes')||null,finalDocumentsComplete:data.get('finalDocumentsComplete')==='on',paymentComplete:data.get('paymentComplete')==='on',administrativeFollowUpComplete:data.get('administrativeFollowUpComplete')==='on',outcomesRecorded:data.get('outcomesRecorded')==='on',complete})}); showMessage(complete?'Assignment completed and closed out.':'Closeout saved.'); await loadAssignments(true); }
     catch(error){showMessage(error.message,true);}
   });

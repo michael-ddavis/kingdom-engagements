@@ -154,13 +154,21 @@ async function reviewRequest(action) {
       showMessage(`Information requested. Host update link: ${result.editUrl}`);
     } else if (action === 'decline') {
       if (!reviewMessage) throw new Error('A decline reason is required.');
-      if (!window.confirm('Decline this invitation and record the reason?')) return;
+      if (!await window.kingdomConfirm({
+        title: 'Decline this invitation?',
+        message: 'The reason will be recorded in the request history for the ministry team.',
+        confirmLabel: 'Decline invitation',
+      })) return;
       await api(`/api/engagements/requests/${item.id}/decline`, {
         method: 'POST', body: JSON.stringify({ reason: reviewMessage }),
       });
       showMessage('Invitation declined and the decision was recorded.');
     } else if (action === 'approve') {
-      if (!window.confirm('Approve this invitation and create the Engagements assignment?')) return;
+      if (!await window.kingdomConfirm({
+        title: 'Approve this invitation?',
+        message: 'An Engagements assignment will be created from the host intake without duplicate entry.',
+        confirmLabel: 'Approve & create assignment',
+      })) return;
       const result = await api(`/api/engagements/requests/${item.id}/approve`, { method: 'POST', body: '{}' });
       showMessage('Invitation approved. The assignment was created from the host intake without duplicate entry.');
       state.selectedId = result.assignmentId;

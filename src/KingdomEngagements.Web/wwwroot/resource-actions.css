@@ -1,0 +1,28 @@
+.workspace-document-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.workspace-document-actions > a {
+  display: inline-flex;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--kos-border-strong, #c9cfd9);
+  border-radius: var(--kos-radius-sm, 6px);
+  align-items: center;
+  color: var(--kos-blue-600, #28496e);
+  font-size: var(--kos-text-xs, .72rem);
+  font-weight: 750;
+  text-decoration: none;
+  background: #fff;
+}
+
+@media (max-width: 650px) {
+  .workspace-document-list article,
+  .legacy18-document-list article {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

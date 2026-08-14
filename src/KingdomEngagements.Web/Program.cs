@@ -110,11 +110,7 @@ builder.Services.AddAuthentication(KingdomIdentity.Scheme)
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("EngagementsWrite", policy => policy.RequireAssertion(context =>
-        context.User.IsInRole("Administrator") ||
-        context.User.IsInRole("Coordinator") ||
-        context.User.HasClaim(KingdomIdentity.PermissionClaim, "engagements:assignments:write") ||
-        context.User.HasClaim(KingdomIdentity.ProductRoleClaim, "engagements:administrator") ||
-        context.User.HasClaim(KingdomIdentity.ProductRoleClaim, "engagements:coordinator")));
+        KingdomIdentity.CanWriteEngagements(context.User)));
 });
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient<EngagementsEntitlementResolver>(client =>

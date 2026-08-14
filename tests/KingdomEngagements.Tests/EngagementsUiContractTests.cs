@@ -19,6 +19,28 @@ public sealed class EngagementsUiContractTests
         Assert.Contains("autofocus", product, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Assignment_documents_offer_explicit_preview_and_download_actions()
+    {
+        var wwwroot = FindWwwroot();
+        foreach (var fileName in new[] { "preparation.js", "legacy18-product.js" })
+        {
+            var source = File.ReadAllText(Path.Combine(wwwroot, fileName));
+            Assert.Contains("?download=false", source, StringComparison.Ordinal);
+            Assert.Contains("?download=true", source, StringComparison.Ordinal);
+            Assert.Contains("rel=\\\"noopener\\\"", source, StringComparison.Ordinal);
+        }
+
+        var feature = File.ReadAllText(FindRepositoryFile(
+            "src",
+            "KingdomEngagements.Web",
+            "Features",
+            "EngagementPreparation.cs"));
+        Assert.Contains("bool? download", feature, StringComparison.Ordinal);
+        Assert.Contains("download is true", feature, StringComparison.Ordinal);
+        Assert.Contains("enableRangeProcessing: true", feature, StringComparison.Ordinal);
+    }
+
     private static string FindWwwroot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

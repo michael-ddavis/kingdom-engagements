@@ -61,4 +61,21 @@ public sealed class EngagementsUiContractTests
 
         throw new DirectoryNotFoundException("Could not locate the Engagements wwwroot directory.");
     }
+
+    private static string FindRepositoryFile(params string[] parts)
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null)
+        {
+            var candidate = Path.Combine(new[] { directory.FullName }.Concat(parts).ToArray());
+            if (File.Exists(candidate))
+            {
+                return candidate;
+            }
+
+            directory = directory.Parent;
+        }
+
+        throw new FileNotFoundException($"Could not locate {Path.Combine(parts)}.");
+    }
 }

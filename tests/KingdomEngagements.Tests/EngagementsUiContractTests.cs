@@ -28,7 +28,7 @@ public sealed class EngagementsUiContractTests
             var source = File.ReadAllText(Path.Combine(wwwroot, fileName));
             Assert.Contains("?download=false", source, StringComparison.Ordinal);
             Assert.Contains("?download=true", source, StringComparison.Ordinal);
-            Assert.Contains("rel=\"noopener\", source, StringComparison.Ordinal);
+            Assert.Contains("rel=\"noopener\"", source, StringComparison.Ordinal);
         }
 
         var feature = File.ReadAllText(FindRepositoryFile(

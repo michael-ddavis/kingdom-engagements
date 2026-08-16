@@ -249,7 +249,7 @@
         }
         button.disabled = true;
         try {
-          await api(`/api/engagements/assignments/${state.selectedId}/responses/${button.dataset.careHandoffId}/handoff-to-care`, { method:'POST', body:JSON.stringify({ consentConfirmed:true }) });
+          await api(`/api/engagements/assignments/${state.selectedId}/responses/${button.dataset.careHandoffId}/handoff-to-care`, { method:'POST', body:JSON.stringify({ consentConfirmed: true }) });
           closeoutResult = null; showMessage('Follow-up securely transferred to Kingdom Care.'); await renderFollowup(target);
         } catch (error) { button.disabled = false; showMessage(error.message, true); }
       }));

@@ -83,8 +83,14 @@ function responseCard(item) {
 
 function followUpPane(responses) {
   const items = responses.filter(item => item.requiresFollowUp);
-  return `<div class="section-intro"><p class="eyebrow">Responsible follow-up</p><h4>People should not disappear after the altar</h4><p>Track ownership and completion without turning every aggregate ministry count into a person record.</p></div>
-    <div class="followup-list">${items.length ? items.map(item => `
+  const careUrl = state.product?.careUrl || 'http://localhost:5104';
+  return `<div class="section-intro"><p class="eyebrow">Responsible follow-up</p><h4>Move personal care to the right team</h4><p>Engagements records the ministry response. With the person's consent, Kingdom Care becomes responsible for private follow-up.</p></div>
+    <div class="followup-list">${items.length ? items.map(item => item.careHandoffCreated ? `
+      <article class="followup-card care-handoff-complete">
+        <header><div><span>${escapeHtml(formatStatus(item.type))}</span><strong>${escapeHtml(item.personName || 'Follow-up response')}</strong></div><b>With Kingdom Care</b></header>
+        <p>Responsibility was securely transferred. Ongoing notes and care activity belong in Kingdom Care.</p>
+        <a class="secondary-save care-open-link" href="${escapeHtml(careUrl)}" target="_blank" rel="noopener">Open Kingdom Care</a>
+      </article>` : `
       <form class="followup-card" data-followup-id="${item.id}">
         <header><div><span>${escapeHtml(formatStatus(item.type))}</span><strong>${escapeHtml(item.personName || 'Follow-up response')}</strong></div><b>${escapeHtml(formatStatus(item.followUpStatus))}</b></header>
         <div class="followup-grid">
@@ -92,7 +98,13 @@ function followUpPane(responses) {
           <label><span>Owner</span><input name="owner" value="${escapeHtml(item.followUpOwner || '')}" /></label>
           <label><span>Due</span><input type="datetime-local" name="dueAtUtc" value="${dateTimeLocal(item.followUpDueAtUtc)}" /></label>
           <label class="followup-notes"><span>Follow-up notes</span><textarea name="notes" rows="2">${escapeHtml(item.followUpNotes || '')}</textarea></label>
-        </div><button type="submit" class="secondary-save">Save follow-up</button>
+        </div>
+        <div class="followup-actions"><button type="submit" class="secondary-save">Save follow-up</button></div>
+        <section class="care-handoff">
+          <div><strong>Kingdom Care handoff</strong><p>Transfer this private follow-up to the Care team without duplicating the assignment record.</p></div>
+          <label><input type="checkbox" name="careConsent" /><span>I confirm this person consented to share these details with Kingdom Care.</span></label>
+          <button type="button" class="primary-save" data-care-handoff-id="${item.id}">Send to Kingdom Care</button>
+        </section>
       </form>`).join('') : '<p class="completion-empty">There are no individual follow-ups waiting.</p>'}</div>`;
 }
 
@@ -138,6 +150,26 @@ function bindCompletionWorkspace(panel) {
     event.preventDefault(); const data=new FormData(form);
     try { await api(`/api/engagements/assignments/${state.selectedId}/responses/${form.dataset.followupId}/follow-up`, {method:'PUT',body:JSON.stringify({status:data.get('status'),owner:data.get('owner')||null,dueAtUtc:data.get('dueAtUtc')?new Date(data.get('dueAtUtc')).toISOString():null,notes:data.get('notes')||null})}); showMessage('Follow-up updated.'); await selectAssignment(state.selectedId); }
     catch(error){showMessage(error.message,true);}
+  }));
+  panel.querySelectorAll('[data-care-handoff-id]').forEach(button => button.addEventListener('click', async () => {
+    const form = button.closest('[data-followup-id]');
+    const consentConfirmed = form?.querySelector('[name="careConsent"]')?.checked === true;
+    if (!consentConfirmed) {
+      showMessage("Confirm the person's consent before sending details to Kingdom Care.", true);
+      return;
+    }
+    button.disabled = true;
+    try {
+      await api(`/api/engagements/assignments/${state.selectedId}/responses/${button.dataset.careHandoffId}/handoff-to-care`, {
+        method: 'POST',
+        body: JSON.stringify({ consentConfirmed: true }),
+      });
+      showMessage('Follow-up securely transferred to Kingdom Care.');
+      await selectAssignment(state.selectedId);
+    } catch(error) {
+      button.disabled = false;
+      showMessage(error.message, true);
+    }
   }));
   panel.querySelector('#closeout-form')?.addEventListener('submit', async event => {
     event.preventDefault(); const data=new FormData(event.currentTarget); const complete=event.submitter?.dataset.closeoutComplete==='true';

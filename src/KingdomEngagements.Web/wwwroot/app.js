@@ -1,4 +1,4 @@
-const state = { assignments: [], selectedId: null, selected: null, requests: [], selectedRequestId: null, selectedRequest: null };
+const state = { assignments: [], selectedId: null, selected: null, requests: [], selectedRequestId: null, selectedRequest: null, product: null };
 const list = document.querySelector('#assignment-list');
 const count = document.querySelector('#assignment-count');
 const detail = document.querySelector('#assignment-detail');
@@ -33,6 +33,7 @@ function showMessage(text, error = false) {
 
 async function loadProduct() {
   const product = await api('/api/product');
+  state.product = product;
   document.querySelector('#tenant-name').textContent = product.tenantName;
   document.querySelector('#platform-link').href = product.platformUrl;
 }

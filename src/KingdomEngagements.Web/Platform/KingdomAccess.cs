@@ -93,11 +93,23 @@ public sealed class EngagementsEntitlementResolver(
     IConfiguration configuration,
     IWebHostEnvironment environment)
 {
-    public async Task<ModuleEntitlementState> GetStateAsync(
+    public Task<ModuleEntitlementState> GetStateAsync(
         Guid tenantId,
+        CancellationToken cancellationToken) =>
+        GetModuleStateAsync(
+            "engagements",
+            tenantId,
+            allowDevelopmentBypass: true,
+            cancellationToken);
+
+    public async Task<ModuleEntitlementState> GetModuleStateAsync(
+        string moduleKey,
+        Guid tenantId,
+        bool allowDevelopmentBypass,
         CancellationToken cancellationToken)
     {
-        if (environment.IsDevelopment() &&
+        if (allowDevelopmentBypass &&
+            environment.IsDevelopment() &&
             configuration.GetValue("KingdomOS:Entitlements:BypassInDevelopment", true))
             return ModuleEntitlementState.Enabled;
 
@@ -115,7 +127,7 @@ public sealed class EngagementsEntitlementResolver(
 
             await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
             using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
-            return FindEngagements(document.RootElement, out var enabled)
+            return FindModule(document.RootElement, moduleKey, out var enabled)
                 ? enabled ? ModuleEntitlementState.Enabled : ModuleEntitlementState.Disabled
                 : ModuleEntitlementState.Disabled;
         }
@@ -133,19 +145,22 @@ public sealed class EngagementsEntitlementResolver(
         }
     }
 
-    private static bool FindEngagements(JsonElement element, out bool enabled)
+    private static bool FindModule(
+        JsonElement element,
+        string moduleKey,
+        out bool enabled)
     {
         enabled = false;
         if (element.ValueKind == JsonValueKind.Array)
         {
             foreach (var item in element.EnumerateArray())
-                if (FindEngagements(item, out enabled)) return true;
+                if (FindModule(item, moduleKey, out enabled)) return true;
             return false;
         }
 
         if (element.ValueKind != JsonValueKind.Object) return false;
         var key = Property(element, "moduleKey") ?? Property(element, "key") ?? Property(element, "id");
-        if (string.Equals(key, "engagements", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(key, moduleKey, StringComparison.OrdinalIgnoreCase))
         {
             if (element.TryGetProperty("enabled", out var enabledProperty) &&
                 enabledProperty.ValueKind is JsonValueKind.True or JsonValueKind.False)
@@ -160,7 +175,7 @@ public sealed class EngagementsEntitlementResolver(
         }
 
         foreach (var property in element.EnumerateObject())
-            if (FindEngagements(property.Value, out enabled)) return true;
+            if (FindModule(property.Value, moduleKey, out enabled)) return true;
         return false;
     }
 

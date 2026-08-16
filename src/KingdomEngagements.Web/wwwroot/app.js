@@ -306,7 +306,19 @@ document.querySelector('#refresh').addEventListener('click', () => Promise.all([
 document.querySelectorAll('.sidebar nav a').forEach(link => link.addEventListener('click', () => {
   document.querySelectorAll('.sidebar nav a').forEach(item => item.classList.remove('active'));
   link.classList.add('active');
+  if (link.getAttribute('href') === '#requests') {
+    loadRequests(true).catch(error => showMessage(error.message, true));
+  }
 }));
+
+let lastRequestRefreshAt = 0;
+function refreshRequestsAfterReturn() {
+  if (document.visibilityState !== 'visible' || Date.now() - lastRequestRefreshAt < 1000) return;
+  lastRequestRefreshAt = Date.now();
+  loadRequests(true).catch(error => showMessage(error.message, true));
+}
+window.addEventListener('focus', refreshRequestsAfterReturn);
+document.addEventListener('visibilitychange', refreshRequestsAfterReturn);
 
 function statusEntries(item) {
   return [

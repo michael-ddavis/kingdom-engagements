@@ -135,9 +135,10 @@ public sealed class EngagementCloseoutRecord
 
 public sealed record CreateMinistryResponseRequest(string Type, int Count, string? PersonName, string? Email, string? Phone, string? Notes, bool RequiresFollowUp, string? FollowUpOwner, DateTimeOffset? FollowUpDueAtUtc);
 public sealed record UpdateFollowUpRequest(string Status, string? Owner, DateTimeOffset? DueAtUtc, string? Notes);
+public sealed record CreateCareHandoffRequest(bool ConsentConfirmed);
 public sealed record UpdateCloseoutRequest(string? EventNotes, string? TestimonySummary, bool HostFollowUpComplete, string? HostFollowUpNotes, bool FinalDocumentsComplete, bool PaymentComplete, bool AdministrativeFollowUpComplete, bool OutcomesRecorded, bool Complete);
 
-public sealed record MinistryResponseDto(Guid Id, string Type, int Count, string? PersonName, string? Email, string? Phone, string? Notes, bool RequiresFollowUp, string FollowUpStatus, string? FollowUpOwner, DateTimeOffset? FollowUpDueAtUtc, string? FollowUpNotes, DateTimeOffset? FollowUpCompletedAtUtc, DateTimeOffset CreatedAtUtc);
+public sealed record MinistryResponseDto(Guid Id, string Type, int Count, string? PersonName, string? Email, string? Phone, string? Notes, bool RequiresFollowUp, string FollowUpStatus, string? FollowUpOwner, DateTimeOffset? FollowUpDueAtUtc, string? FollowUpNotes, DateTimeOffset? FollowUpCompletedAtUtc, DateTimeOffset CreatedAtUtc, bool CareHandoffCreated);
 public sealed record CloseoutDto(string? EventNotes, string? TestimonySummary, bool HostFollowUpComplete, string? HostFollowUpNotes, bool FinalDocumentsComplete, bool PaymentComplete, bool AdministrativeFollowUpComplete, bool OutcomesRecorded, bool AllFollowUpsComplete, bool AllReadinessTasksResolved, DateTimeOffset? CompletedAtUtc);
 public sealed record EngagementCompletionDetails(IReadOnlyList<MinistryResponseDto> Responses, CloseoutDto Closeout, int TotalResponses, int FollowUpsOpen, bool CanComplete);
 
@@ -195,6 +196,49 @@ public sealed class EngagementCompletionService(EngagementCompletionDbContext da
         response.FollowUpCompletedAtUtc = status == "completed" ? DateTimeOffset.UtcNow : null;
         response.UpdatedAtUtc = DateTimeOffset.UtcNow;
         await database.SaveChangesAsync(cancellationToken);
+        return await GetAsync(tenantId, assignmentId, cancellationToken);
+    }
+
+    public async Task<EngagementCompletionDetails?> HandoffToCareAsync(
+        Guid tenantId,
+        Guid assignmentId,
+        Guid responseId,
+        CreateCareHandoffRequest input,
+        EngagementCareHandoffPublisher publisher,
+        CancellationToken cancellationToken)
+    {
+        if (!input.ConsentConfirmed)
+            throw new ArgumentException("Confirm the person's consent before sending private follow-up information to Kingdom Care.");
+
+        await database.EnsureSchemaAsync(cancellationToken);
+        var assignment = await engagementsDatabase.Assignments.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.TenantId == tenantId && x.Id == assignmentId, cancellationToken);
+        if (assignment is null) return null;
+
+        var response = await database.Responses.SingleOrDefaultAsync(
+            x => x.TenantId == tenantId && x.AssignmentId == assignmentId && x.Id == responseId,
+            cancellationToken);
+        if (response is null) return null;
+        if (!response.RequiresFollowUp)
+            throw new InvalidOperationException("Only responses marked for individual follow-up can be sent to Kingdom Care.");
+
+        var alreadyHandedOff =
+            string.Equals(response.FollowUpOwner, "Kingdom Care", StringComparison.OrdinalIgnoreCase) &&
+            response.FollowUpCompletedAtUtc.HasValue;
+        if (!alreadyHandedOff)
+        {
+            await publisher.PublishAsync(assignment, response, cancellationToken);
+            var now = DateTimeOffset.UtcNow;
+            response.FollowUpStatus = "completed";
+            response.FollowUpOwner = "Kingdom Care";
+            response.FollowUpCompletedAtUtc = now;
+            response.FollowUpNotes = string.IsNullOrWhiteSpace(response.FollowUpNotes)
+                ? "Responsibility transferred to Kingdom Care with confirmed consent."
+                : $"{response.FollowUpNotes.Trim()}\nResponsibility transferred to Kingdom Care with confirmed consent.";
+            response.UpdatedAtUtc = now;
+            await database.SaveChangesAsync(cancellationToken);
+        }
+
         return await GetAsync(tenantId, assignmentId, cancellationToken);
     }
 
@@ -263,7 +307,12 @@ public sealed class EngagementCompletionService(EngagementCompletionDbContext da
     private async Task<bool> AssignmentExists(Guid tenantId, Guid assignmentId, CancellationToken cancellationToken) =>
         await engagementsDatabase.Assignments.AsNoTracking().AnyAsync(x => x.TenantId == tenantId && x.Id == assignmentId, cancellationToken);
 
-    private static MinistryResponseDto Map(MinistryResponseRecord x) => new(x.Id, x.Type, x.Count, x.PersonName, x.Email, x.Phone, x.Notes, x.RequiresFollowUp, x.FollowUpStatus, x.FollowUpOwner, x.FollowUpDueAtUtc, x.FollowUpNotes, x.FollowUpCompletedAtUtc, x.CreatedAtUtc);
+    private static MinistryResponseDto Map(MinistryResponseRecord x) => new(
+        x.Id, x.Type, x.Count, x.PersonName, x.Email, x.Phone, x.Notes,
+        x.RequiresFollowUp, x.FollowUpStatus, x.FollowUpOwner, x.FollowUpDueAtUtc,
+        x.FollowUpNotes, x.FollowUpCompletedAtUtc, x.CreatedAtUtc,
+        string.Equals(x.FollowUpOwner, "Kingdom Care", StringComparison.OrdinalIgnoreCase) &&
+        x.FollowUpCompletedAtUtc.HasValue);
     private static bool IsResolved(string status) => status is "complete" or "confirmed" or "received" or "waived";
     private static string Required(string? value, string field) => string.IsNullOrWhiteSpace(value) ? throw new ArgumentException($"{field} is required.") : value.Trim();
     private static string? Trim(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
@@ -288,6 +337,41 @@ public static class EngagementCompletionEndpoints
         {
             try { var item = await service.UpdateFollowUpAsync(KingdomIdentity.TenantId(context.User, context.Request), id, responseId, request, ct); return item is null ? Results.NotFound() : Results.Ok(item); }
             catch (ArgumentException ex) { return Results.ValidationProblem(new Dictionary<string, string[]> { ["followUp"] = [ex.Message] }); }
+        });
+        group.MapPost("/{id:guid}/responses/{responseId:guid}/handoff-to-care", async (
+            Guid id,
+            Guid responseId,
+            CreateCareHandoffRequest request,
+            HttpContext context,
+            EngagementCompletionService service,
+            EngagementCareHandoffPublisher publisher,
+            CancellationToken ct) =>
+        {
+            try
+            {
+                var item = await service.HandoffToCareAsync(
+                    KingdomIdentity.TenantId(context.User, context.Request),
+                    id,
+                    responseId,
+                    request,
+                    publisher,
+                    ct);
+                return item is null ? Results.NotFound() : Results.Ok(item);
+            }
+            catch (ArgumentException ex)
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["consent"] = [ex.Message] });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.Conflict(new { message = ex.Message });
+            }
+            catch (HttpRequestException)
+            {
+                return Results.Problem(
+                    "Kingdom Care could not receive the handoff. Nothing was marked as transferred; please try again.",
+                    statusCode: StatusCodes.Status503ServiceUnavailable);
+            }
         });
         group.MapPut("/{id:guid}/closeout", async (Guid id, UpdateCloseoutRequest request, HttpContext context, EngagementCompletionService service, CancellationToken ct) =>
         {

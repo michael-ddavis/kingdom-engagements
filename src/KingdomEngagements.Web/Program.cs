@@ -170,16 +170,30 @@ app.UseAuthorization();
 app.UseMiddleware<EngagementApprovalOperationsBridge>();
 
 app.MapEngagementsHealth();
-app.MapGet("/api/product", (IConfiguration configuration) => Results.Ok(new
+app.MapGet("/api/product", async (
+    HttpContext context,
+    IConfiguration configuration,
+    EngagementsEntitlementResolver entitlements,
+    CancellationToken cancellationToken) =>
 {
-    moduleKey = "engagements",
-    shortName = "Engagements",
-    name = "Kingdom Engagements",
-    tenantName = configuration["KingdomOS:TenantName"] ?? "Cynthia Thompson Global",
-    platformUrl = configuration["KingdomOS:PlatformBrowserUrl"] ?? "http://localhost:5100",
-    careUrl = configuration["KingdomOS:CareBrowserUrl"] ?? "http://localhost:5104",
-    boundary = "Invitation intake, review, accepted terms, host coordination, travel, lodging, transportation, documents, readiness, event outcomes, follow-up, and closeout."
-}));
+    var tenantId = KingdomIdentity.TenantId(context.User, context.Request);
+    var careState = await entitlements.GetModuleStateAsync(
+        "care",
+        tenantId,
+        allowDevelopmentBypass: false,
+        cancellationToken);
+    return Results.Ok(new
+    {
+        moduleKey = "engagements",
+        shortName = "Engagements",
+        name = "Kingdom Engagements",
+        tenantName = configuration["KingdomOS:TenantName"] ?? "Cynthia Thompson Global",
+        platformUrl = configuration["KingdomOS:PlatformBrowserUrl"] ?? "http://localhost:5100",
+        careUrl = configuration["KingdomOS:CareBrowserUrl"] ?? "http://localhost:5104",
+        careEnabled = careState == ModuleEntitlementState.Enabled,
+        boundary = "Invitation intake, review, accepted terms, host coordination, travel, lodging, transportation, documents, readiness, event outcomes, follow-up, and closeout."
+    });
+});
 app.MapGet("/api/capabilities", async (
     HttpContext context,
     EngagementsEntitlementResolver entitlements,

@@ -138,8 +138,29 @@ app.UseStaticFiles();
 app.UseAuthentication();
 app.Use(async (context, next) =>
 {
-    if (app.Environment.IsDevelopment() && context.User.Identity?.IsAuthenticated != true)
-        context.User = KingdomIdentity.CreateDevelopmentPrincipal();
+    if (app.Environment.IsDevelopment())
+    {
+        var organizationKey =
+            context.Request.Headers[KingdomIdentity.DemoOrganizationHeader].FirstOrDefault()
+            ?? context.Request.Cookies[KingdomIdentity.DemoOrganizationCookie]
+            ?? "ctg";
+        if (!KingdomIdentity.TryResolveDevelopmentOrganization(
+                organizationKey,
+                out var resolvedOrganizationKey,
+                out _))
+        {
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            await context.Response.WriteAsJsonAsync(new
+            {
+                message = "The selected demo organization is not available."
+            });
+            return;
+        }
+
+        // The selected organization is authoritative in development. This replaces a
+        // stale shared auth cookie after the user switches organizations in Platform.
+        context.User = KingdomIdentity.CreateDevelopmentPrincipal(resolvedOrganizationKey);
+    }
     await next();
 });
 app.UseMiddleware<EngagementsReadinessMiddleware>();

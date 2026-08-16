@@ -32,8 +32,10 @@ public sealed class EngagementsUiContractTests
     [Fact]
     public void Follow_up_workspace_exposes_a_consent_gated_kingdom_care_handoff()
     {
-        var source = File.ReadAllText(Path.Combine(FindWwwroot(), "completion.js"));
+        var source = File.ReadAllText(Path.Combine(FindWwwroot(), "legacy18-product.js"));
 
+        Assert.Contains("Follow-up &amp; Care", source, StringComparison.Ordinal);
+        Assert.Contains("data-legacy-pane=\"followup\"", source, StringComparison.Ordinal);
         Assert.Contains("data-care-handoff-id", source, StringComparison.Ordinal);
         Assert.Contains("careConsent", source, StringComparison.Ordinal);
         Assert.Contains("consentConfirmed: true", source, StringComparison.Ordinal);

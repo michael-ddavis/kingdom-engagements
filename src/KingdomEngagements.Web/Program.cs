@@ -124,6 +124,7 @@ builder.Services.AddScoped<EngagementPreparationService>();
 builder.Services.AddScoped<AssignmentWorkspaceService>();
 builder.Services.AddScoped<EngagementCompletionService>();
 builder.Services.AddScoped<EngagementOperationsCoordinationPublisher>();
+builder.Services.AddScoped<EngagementCareHandoffPublisher>();
 builder.Services.AddSingleton<EngagementsStartupState>();
 builder.Services.AddHostedService<EngagementsStartupWorker>();
 builder.Services.AddHostedService<EngagementsDemoSeedWorker>();
@@ -176,6 +177,7 @@ app.MapGet("/api/product", (IConfiguration configuration) => Results.Ok(new
     name = "Kingdom Engagements",
     tenantName = configuration["KingdomOS:TenantName"] ?? "Cynthia Thompson Global",
     platformUrl = configuration["KingdomOS:PlatformBrowserUrl"] ?? "http://localhost:5100",
+    careUrl = configuration["KingdomOS:CareBrowserUrl"] ?? "http://localhost:5104",
     boundary = "Invitation intake, review, accepted terms, host coordination, travel, lodging, transportation, documents, readiness, event outcomes, follow-up, and closeout."
 }));
 app.MapGet("/api/capabilities", async (

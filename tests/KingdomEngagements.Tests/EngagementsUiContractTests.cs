@@ -20,6 +20,16 @@ public sealed class EngagementsUiContractTests
     }
 
     [Fact]
+    public void Invitation_queue_refreshes_when_staff_return_from_the_public_form()
+    {
+        var source = File.ReadAllText(Path.Combine(FindWwwroot(), "app.js"));
+
+        Assert.Contains("window.addEventListener('focus', refreshRequestsAfterReturn)", source, StringComparison.Ordinal);
+        Assert.Contains("document.addEventListener('visibilitychange', refreshRequestsAfterReturn)", source, StringComparison.Ordinal);
+        Assert.Contains("link.getAttribute('href') === '#requests'", source, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Assignment_documents_offer_explicit_preview_and_download_actions()
     {
         var wwwroot = FindWwwroot();

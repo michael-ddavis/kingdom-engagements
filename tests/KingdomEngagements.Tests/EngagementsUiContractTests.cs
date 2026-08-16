@@ -30,12 +30,19 @@ public sealed class EngagementsUiContractTests
     }
 
     [Fact]
-    public void Follow_up_workspace_exposes_a_consent_gated_kingdom_care_handoff()
+    public void Kingdom_care_is_a_first_class_assignment_tab_with_a_consent_gated_handoff()
     {
         var source = File.ReadAllText(Path.Combine(FindWwwroot(), "legacy18-product.js"));
 
-        Assert.Contains("Follow-up &amp; Care", source, StringComparison.Ordinal);
-        Assert.Contains("data-legacy-pane=\"followup\"", source, StringComparison.Ordinal);
+        var contactsIndex = source.IndexOf("navButton('contacts'", StringComparison.Ordinal);
+        var careIndex = source.IndexOf("navButton('care','Kingdom Care'", StringComparison.Ordinal);
+        var documentsIndex = source.IndexOf("navButton('documents'", StringComparison.Ordinal);
+
+        Assert.True(contactsIndex >= 0 && contactsIndex < careIndex);
+        Assert.True(careIndex < documentsIndex);
+        Assert.Contains("activePane === 'care'", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("data-legacy-pane=\"followup\"", source, StringComparison.Ordinal);
+        Assert.Contains("Accountable follow-up", source, StringComparison.Ordinal);
         Assert.Contains("data-care-handoff-id", source, StringComparison.Ordinal);
         Assert.Contains("careConsent", source, StringComparison.Ordinal);
         Assert.Contains("consentConfirmed: true", source, StringComparison.Ordinal);

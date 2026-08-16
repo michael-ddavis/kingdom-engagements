@@ -30,6 +30,18 @@ public sealed class EngagementsUiContractTests
     }
 
     [Fact]
+    public void Follow_up_workspace_exposes_a_consent_gated_kingdom_care_handoff()
+    {
+        var source = File.ReadAllText(Path.Combine(FindWwwroot(), "completion.js"));
+
+        Assert.Contains("data-care-handoff-id", source, StringComparison.Ordinal);
+        Assert.Contains("careConsent", source, StringComparison.Ordinal);
+        Assert.Contains("consentConfirmed: true", source, StringComparison.Ordinal);
+        Assert.Contains("Open Kingdom Care", source, StringComparison.Ordinal);
+        Assert.Contains("rel=\"noopener\"", source, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Assignment_documents_offer_explicit_preview_and_download_actions()
     {
         var wwwroot = FindWwwroot();

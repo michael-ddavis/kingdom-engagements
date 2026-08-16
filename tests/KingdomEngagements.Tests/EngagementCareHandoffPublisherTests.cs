@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using KingdomEngagements.Web.Features;
 using KingdomEngagements.Web.Platform;
+using Microsoft.Extensions.Configuration;
 
 namespace KingdomEngagements.Tests;
 

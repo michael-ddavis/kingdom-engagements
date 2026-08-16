@@ -40,6 +40,10 @@ public sealed class EngagementsUiContractTests
 
         Assert.True(contactsIndex >= 0 && contactsIndex < careIndex);
         Assert.True(careIndex < documentsIndex);
+        Assert.Contains(
+            "state.product?.careEnabled ? navButton('care','Kingdom Care'",
+            source,
+            StringComparison.Ordinal);
         Assert.Contains("activePane === 'care'", source, StringComparison.Ordinal);
         Assert.DoesNotContain("data-legacy-pane=\"followup\"", source, StringComparison.Ordinal);
         Assert.Contains("Accountable follow-up", source, StringComparison.Ordinal);

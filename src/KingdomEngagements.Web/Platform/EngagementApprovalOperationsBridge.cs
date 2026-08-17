@@ -120,9 +120,17 @@ public sealed class EngagementOperationsCoordinationPublisher(
             operationsResponse.EnsureSuccessStatusCode();
         }
 
-        using var platformResponse = await client.PostAsJsonAsync(
-            $"{platformUrl}/api/integration/events",
-            envelope,
+        using var platformRequest = new HttpRequestMessage(
+            HttpMethod.Post,
+            $"{platformUrl}/api/integration/events")
+        {
+            Content = JsonContent.Create(envelope)
+        };
+        platformRequest.Headers.TryAddWithoutValidation(
+            "X-Kingdom-Service-Key",
+            serviceKey);
+        using var platformResponse = await client.SendAsync(
+            platformRequest,
             cancellationToken);
         platformResponse.EnsureSuccessStatusCode();
     }

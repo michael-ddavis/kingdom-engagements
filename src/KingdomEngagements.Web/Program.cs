@@ -167,6 +167,27 @@ app.Use(async (context, next) =>
 app.UseMiddleware<EngagementsReadinessMiddleware>();
 app.UseMiddleware<EngagementsEntitlementMiddleware>();
 app.UseAuthorization();
+app.Use(async (context, next) =>
+{
+    var assignmentMutation =
+        context.Request.Path.StartsWithSegments("/api/engagements/assignments") &&
+        !HttpMethods.IsGet(context.Request.Method) &&
+        !HttpMethods.IsHead(context.Request.Method) &&
+        !HttpMethods.IsOptions(context.Request.Method);
+    if (assignmentMutation &&
+        (context.User.Identity?.IsAuthenticated != true ||
+         !KingdomIdentity.CanWriteEngagements(context.User)))
+    {
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        await context.Response.WriteAsJsonAsync(new
+        {
+            message = "Engagements write access is required for assignment changes."
+        });
+        return;
+    }
+
+    await next();
+});
 app.UseMiddleware<EngagementApprovalOperationsBridge>();
 
 app.MapEngagementsHealth();

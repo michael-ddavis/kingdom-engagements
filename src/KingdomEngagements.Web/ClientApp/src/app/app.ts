@@ -12,7 +12,7 @@ import { ProductInfo } from './core/models';
       <aside class="eng-sidebar">
         <a class="eng-brand" [href]="product()?.platformUrl || 'http://localhost:5100'" aria-label="Back to KingdomOS">
           <span class="eng-brand__mark">K</span>
-          <span><strong>KingdomOS</strong><small>Engagements</small></span>
+          <span class="eng-brand__text"><strong>KingdomOS</strong><small>Engagements</small></span>
         </a>
 
         <a class="eng-module-link" [href]="product()?.platformUrl || 'http://localhost:5100'">← All KingdomOS modules</a>
@@ -26,13 +26,12 @@ import { ProductInfo } from './core/models';
         </div>
 
         <nav class="eng-nav" aria-label="Engagements navigation">
-          <a routerLink="/invitations" routerLinkActive="active">Invitations</a>
-          <a routerLink="/assignments" routerLinkActive="active">Assignments</a>
+          <a routerLink="/assignments" routerLinkActive="active">Engagements</a>
         </nav>
 
         <div class="eng-sidebar__footer">
-          <strong>Kingdom Engagements</strong>
-          <span>Invitation → assignment → ministry → closeout</span>
+          <strong>Engagement lifecycle</strong>
+          <span>Invitation → preparation → ministry → closeout</span>
         </div>
       </aside>
 

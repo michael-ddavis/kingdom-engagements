@@ -1,6 +1,6 @@
 {
   "name": "kingdom-engagements-client",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "engines": {
     "node": "^20.19.0 || ^22.12.0 || ^24.0.0"
@@ -8,8 +8,8 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve --proxy-config proxy.conf.json",
-    "build": "ng build --base-href /app/",
-    "build:production": "ng build --configuration production --base-href /app/",
+    "build": "ng build",
+    "build:production": "ng build --configuration production",
     "test": "ng test",
     "test:ci": "ng test --watch=false"
   },

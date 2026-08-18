@@ -10,10 +10,10 @@ import { ProductInfo } from './core/models';
   template: `
     <div class="eng-app">
       <aside class="eng-sidebar">
-        <div class="eng-brand">
+        <a class="eng-brand" [href]="product()?.platformUrl || 'http://localhost:5100'" aria-label="Back to KingdomOS">
           <span class="eng-brand__mark">K</span>
           <span><strong>KingdomOS</strong><small>Engagements</small></span>
-        </div>
+        </a>
 
         <a class="eng-module-link" [href]="product()?.platformUrl || 'http://localhost:5100'">← All KingdomOS modules</a>
 
@@ -26,19 +26,23 @@ import { ProductInfo } from './core/models';
         </div>
 
         <nav class="eng-nav" aria-label="Engagements navigation">
-          <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Assignments</a>
-          <a href="/#requests">Invitations <small>legacy during migration</small></a>
+          <a routerLink="/invitations" routerLinkActive="active">Invitations</a>
+          <a routerLink="/assignments" routerLinkActive="active">Assignments</a>
         </nav>
 
         <div class="eng-sidebar__footer">
-          Angular migration preview · current APIs, new client architecture
+          <strong>Kingdom Engagements</strong>
+          <span>Invitation → assignment → ministry → closeout</span>
         </div>
       </aside>
 
       <main class="eng-main">
         <header class="eng-topbar">
-          <strong>{{ product()?.name || 'Kingdom Engagements' }}</strong>
-          <span>Angular 21 migration preview</span>
+          <div>
+            <span class="eng-presence"></span>
+            <strong>{{ product()?.tenantName || 'Cynthia Thompson Global' }}</strong>
+          </div>
+          <a [href]="product()?.platformUrl || 'http://localhost:5100'">KingdomOS</a>
         </header>
         <router-outlet />
       </main>
@@ -52,7 +56,7 @@ export class App implements OnInit {
 
   ngOnInit(): void {
     this.api.getProduct().subscribe({
-      next: (product) => this.product.set(product),
+      next: product => this.product.set(product),
     });
   }
 }

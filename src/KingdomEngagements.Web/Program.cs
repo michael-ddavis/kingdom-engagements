@@ -158,8 +158,6 @@ app.Use(async (context, next) =>
             return;
         }
 
-        // The selected organization is authoritative in development. This replaces a
-        // stale shared auth cookie after the user switches organizations in Platform.
         context.User = KingdomIdentity.CreateDevelopmentPrincipal(resolvedOrganizationKey);
     }
     await next();
@@ -239,6 +237,14 @@ app.MapEngagementPreparationEndpoints();
 app.MapAssignmentWorkspaceEndpoints();
 app.MapEngagementCompletionEndpoints();
 app.MapEngagementsEndpoints();
+
+// Keep the certified static client at / while the Angular application reaches parity.
+// The new client is available side-by-side at /app and uses the same authenticated APIs.
+app.MapGet("/app", (IWebHostEnvironment environment) =>
+    Results.File(Path.Combine(environment.WebRootPath, "app", "index.html"), "text/html; charset=utf-8"));
+app.MapGet("/app/{*path}", (IWebHostEnvironment environment) =>
+    Results.File(Path.Combine(environment.WebRootPath, "app", "index.html"), "text/html; charset=utf-8"));
+
 app.MapFallbackToFile("index.html");
 app.Run();
 

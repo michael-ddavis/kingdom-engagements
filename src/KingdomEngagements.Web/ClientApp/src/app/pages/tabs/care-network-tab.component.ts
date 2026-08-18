@@ -1,4 +1,4 @@
-import { Component, Input, computed, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, computed, signal } from '@angular/core';
 import { EngagementsApiService } from '../../core/engagements-api.service';
 import {
   EngagementCompletion,
@@ -223,6 +223,8 @@ export class CareNetworkTabComponent {
     }
   }
 
+  @Output() readonly completionUpdated = new EventEmitter<EngagementCompletion>();
+
   readonly selectedResponseId = signal<string | null>(null);
   readonly sendingResponseId = signal<string | null>(null);
   readonly consentByResponse = signal<ReadonlySet<string>>(new Set<string>());
@@ -282,6 +284,7 @@ export class CareNetworkTabComponent {
     this.api.handoffToCare(assignmentId, response.id).subscribe({
       next: completion => {
         this.completionState.set(completion);
+        this.completionUpdated.emit(completion);
         this.sendingResponseId.set(null);
         this.message.set('Responsibility transferred to Kingdom Care. Care now owns follow-up and the local church connection.');
       },

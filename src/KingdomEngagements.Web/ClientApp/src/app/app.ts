@@ -16,7 +16,9 @@ import { ProductInfo } from './core/models';
             [href]="product()?.platformUrl || 'http://localhost:5100'"
             aria-label="Return to KingdomOS"
             title="Return to KingdomOS">
-            <span class="eng-brand__mark" aria-hidden="true">▦</span>
+            <span class="eng-brand__mark" aria-hidden="true">
+              <img src="/kingdomos-mark.svg" alt="" />
+            </span>
             <span class="eng-brand__text">
               <strong>KingdomOS</strong>
               <small>Engagements</small>

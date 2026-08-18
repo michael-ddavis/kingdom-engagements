@@ -124,6 +124,7 @@ builder.Services.AddScoped<EngagementPreparationService>();
 builder.Services.AddScoped<AssignmentWorkspaceService>();
 builder.Services.AddScoped<EngagementCompletionService>();
 builder.Services.AddScoped<EngagementOperationsCoordinationPublisher>();
+builder.Services.AddScoped<EngagementCareHandoffPublisher>();
 builder.Services.AddSingleton<EngagementsStartupState>();
 builder.Services.AddHostedService<EngagementsStartupWorker>();
 builder.Services.AddHostedService<EngagementsDemoSeedWorker>();
@@ -138,25 +139,82 @@ app.UseStaticFiles();
 app.UseAuthentication();
 app.Use(async (context, next) =>
 {
-    if (app.Environment.IsDevelopment() && context.User.Identity?.IsAuthenticated != true)
-        context.User = KingdomIdentity.CreateDevelopmentPrincipal();
+    if (app.Environment.IsDevelopment())
+    {
+        var organizationKey =
+            context.Request.Headers[KingdomIdentity.DemoOrganizationHeader].FirstOrDefault()
+            ?? context.Request.Cookies[KingdomIdentity.DemoOrganizationCookie]
+            ?? "ctg";
+        if (!KingdomIdentity.TryResolveDevelopmentOrganization(
+                organizationKey,
+                out var resolvedOrganizationKey,
+                out _))
+        {
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            await context.Response.WriteAsJsonAsync(new
+            {
+                message = "The selected demo organization is not available."
+            });
+            return;
+        }
+
+        // The selected organization is authoritative in development. This replaces a
+        // stale shared auth cookie after the user switches organizations in Platform.
+        context.User = KingdomIdentity.CreateDevelopmentPrincipal(resolvedOrganizationKey);
+    }
     await next();
 });
 app.UseMiddleware<EngagementsReadinessMiddleware>();
 app.UseMiddleware<EngagementsEntitlementMiddleware>();
 app.UseAuthorization();
+app.Use(async (context, next) =>
+{
+    var assignmentMutation =
+        context.Request.Path.StartsWithSegments("/api/engagements/assignments") &&
+        !HttpMethods.IsGet(context.Request.Method) &&
+        !HttpMethods.IsHead(context.Request.Method) &&
+        !HttpMethods.IsOptions(context.Request.Method);
+    if (assignmentMutation &&
+        (context.User.Identity?.IsAuthenticated != true ||
+         !KingdomIdentity.CanWriteEngagements(context.User)))
+    {
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        await context.Response.WriteAsJsonAsync(new
+        {
+            message = "Engagements write access is required for assignment changes."
+        });
+        return;
+    }
+
+    await next();
+});
 app.UseMiddleware<EngagementApprovalOperationsBridge>();
 
 app.MapEngagementsHealth();
-app.MapGet("/api/product", (IConfiguration configuration) => Results.Ok(new
+app.MapGet("/api/product", async (
+    HttpContext context,
+    IConfiguration configuration,
+    EngagementsEntitlementResolver entitlements,
+    CancellationToken cancellationToken) =>
 {
-    moduleKey = "engagements",
-    shortName = "Engagements",
-    name = "Kingdom Engagements",
-    tenantName = configuration["KingdomOS:TenantName"] ?? "Cynthia Thompson Global",
-    platformUrl = configuration["KingdomOS:PlatformBrowserUrl"] ?? "http://localhost:5100",
-    boundary = "Invitation intake, review, accepted terms, host coordination, travel, lodging, transportation, documents, readiness, event outcomes, follow-up, and closeout."
-}));
+    var tenantId = KingdomIdentity.TenantId(context.User, context.Request);
+    var careState = await entitlements.GetModuleStateAsync(
+        "care",
+        tenantId,
+        allowDevelopmentBypass: false,
+        cancellationToken);
+    return Results.Ok(new
+    {
+        moduleKey = "engagements",
+        shortName = "Engagements",
+        name = "Kingdom Engagements",
+        tenantName = configuration["KingdomOS:TenantName"] ?? "Cynthia Thompson Global",
+        platformUrl = configuration["KingdomOS:PlatformBrowserUrl"] ?? "http://localhost:5100",
+        careUrl = configuration["KingdomOS:CareBrowserUrl"] ?? "http://localhost:5104",
+        careEnabled = careState == ModuleEntitlementState.Enabled,
+        boundary = "Invitation intake, review, accepted terms, host coordination, travel, lodging, transportation, documents, readiness, event outcomes, follow-up, and closeout."
+    });
+});
 app.MapGet("/api/capabilities", async (
     HttpContext context,
     EngagementsEntitlementResolver entitlements,

@@ -29,6 +29,34 @@ public sealed class EngagementsAuthorizationTests
         Assert.False(KingdomIdentity.CanWriteEngagements(principal));
     }
 
+    [Theory]
+    [InlineData(null, "a1ab45e2-1746-4d91-9de0-9cf70ae75d3a")]
+    [InlineData("ctg", "a1ab45e2-1746-4d91-9de0-9cf70ae75d3a")]
+    [InlineData("divine-world-changers", "d1c00000-0000-4000-8000-000000000001")]
+    [InlineData("heyy-king", "e1100000-0000-4000-8000-000000000001")]
+    public void Development_principal_uses_the_selected_organization(
+        string? organizationKey,
+        string expectedTenantId)
+    {
+        var principal = KingdomIdentity.CreateDevelopmentPrincipal(organizationKey);
+
+        Assert.Equal(expectedTenantId, principal.FindFirstValue(KingdomIdentity.TenantClaim));
+        Assert.Equal(
+            organizationKey ?? "ctg",
+            principal.FindFirstValue(KingdomIdentity.DemoOrganizationClaim));
+    }
+
+    [Fact]
+    public void Unknown_demo_organization_is_rejected()
+    {
+        Assert.False(KingdomIdentity.TryResolveDevelopmentOrganization(
+            "not-an-organization",
+            out _,
+            out _));
+        Assert.Throws<ArgumentException>(() =>
+            KingdomIdentity.CreateDevelopmentPrincipal("not-an-organization"));
+    }
+
     private static ClaimsPrincipal Principal(params Claim[] claims) =>
         new(new ClaimsIdentity(claims, KingdomIdentity.Scheme));
 }

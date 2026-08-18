@@ -1,4 +1,4 @@
-const state = { assignments: [], selectedId: null, selected: null, requests: [], selectedRequestId: null, selectedRequest: null };
+const state = { assignments: [], selectedId: null, selected: null, requests: [], selectedRequestId: null, selectedRequest: null, product: null };
 const list = document.querySelector('#assignment-list');
 const count = document.querySelector('#assignment-count');
 const detail = document.querySelector('#assignment-detail');
@@ -33,6 +33,7 @@ function showMessage(text, error = false) {
 
 async function loadProduct() {
   const product = await api('/api/product');
+  state.product = product;
   document.querySelector('#tenant-name').textContent = product.tenantName;
   document.querySelector('#platform-link').href = product.platformUrl;
 }
@@ -306,7 +307,19 @@ document.querySelector('#refresh').addEventListener('click', () => Promise.all([
 document.querySelectorAll('.sidebar nav a').forEach(link => link.addEventListener('click', () => {
   document.querySelectorAll('.sidebar nav a').forEach(item => item.classList.remove('active'));
   link.classList.add('active');
+  if (link.getAttribute('href') === '#requests') {
+    loadRequests(true).catch(error => showMessage(error.message, true));
+  }
 }));
+
+let lastRequestRefreshAt = 0;
+function refreshRequestsAfterReturn() {
+  if (document.visibilityState !== 'visible' || Date.now() - lastRequestRefreshAt < 1000) return;
+  lastRequestRefreshAt = Date.now();
+  loadRequests(true).catch(error => showMessage(error.message, true));
+}
+window.addEventListener('focus', refreshRequestsAfterReturn);
+document.addEventListener('visibilitychange', refreshRequestsAfterReturn);
 
 function statusEntries(item) {
   return [

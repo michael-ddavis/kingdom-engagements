@@ -10,7 +10,12 @@ public static class KingdomIdentity
     public const string TenantRoleClaim = "kingdom:tenant-role";
     public const string PermissionClaim = "kingdom:permission";
     public const string ProductRoleClaim = "kingdom:product-role";
+    public const string DemoOrganizationHeader = "X-Kingdom-Demo-Organization";
+    public const string DemoOrganizationCookie = "KingdomOS.DemoOrganization";
+    public const string DemoOrganizationClaim = "kingdom:demo-organization";
     public static readonly Guid DemoTenantId = Guid.Parse("a1ab45e2-1746-4d91-9de0-9cf70ae75d3a");
+    public static readonly Guid DivineWorldChangersTenantId = Guid.Parse("d1c00000-0000-4000-8000-000000000001");
+    public static readonly Guid HeyyKingTenantId = Guid.Parse("e1100000-0000-4000-8000-000000000001");
 
     public static Guid TenantId(ClaimsPrincipal principal, HttpRequest request)
     {
@@ -36,20 +41,43 @@ public static class KingdomIdentity
             claim.Type == ClaimTypes.Role && Matches(claim.Value, "Administrator", "Coordinator", "OrganizationAdministrator", "Organization Administrator", "SuperAdmin", "Super Administrator"));
     }
 
-    public static ClaimsPrincipal CreateDevelopmentPrincipal()
+    public static ClaimsPrincipal CreateDevelopmentPrincipal(string? organizationKey = null)
     {
+        if (!TryResolveDevelopmentOrganization(organizationKey, out var key, out var tenantId))
+            throw new ArgumentException("The selected demo organization is not available.", nameof(organizationKey));
+
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, "demo-engagements-admin"),
             new(ClaimTypes.Name, "Michael Davis"),
-            new(ClaimTypes.Email, "michael@ctg.local"),
-            new(TenantClaim, DemoTenantId.ToString()),
+            new(ClaimTypes.Email, "michael@kingdomos.local"),
+            new(TenantClaim, tenantId.ToString("D")),
+            new(TenantRoleClaim, "owner"),
+            new(DemoOrganizationClaim, key),
             new(PermissionClaim, "engagements:assignments:write"),
             new(ProductRoleClaim, "engagements:administrator"),
             new(ClaimTypes.Role, "Administrator"),
             new(ClaimTypes.Role, "Coordinator"),
         };
         return new ClaimsPrincipal(new ClaimsIdentity(claims, Scheme));
+    }
+
+    public static bool TryResolveDevelopmentOrganization(
+        string? organizationKey,
+        out string key,
+        out Guid tenantId)
+    {
+        key = string.IsNullOrWhiteSpace(organizationKey)
+            ? "ctg"
+            : organizationKey.Trim().ToLowerInvariant();
+        tenantId = key switch
+        {
+            "ctg" => DemoTenantId,
+            "divine-world-changers" => DivineWorldChangersTenantId,
+            "heyy-king" => HeyyKingTenantId,
+            _ => Guid.Empty
+        };
+        return tenantId != Guid.Empty;
     }
 }
 
@@ -65,11 +93,23 @@ public sealed class EngagementsEntitlementResolver(
     IConfiguration configuration,
     IWebHostEnvironment environment)
 {
-    public async Task<ModuleEntitlementState> GetStateAsync(
+    public Task<ModuleEntitlementState> GetStateAsync(
         Guid tenantId,
+        CancellationToken cancellationToken) =>
+        GetModuleStateAsync(
+            "engagements",
+            tenantId,
+            allowDevelopmentBypass: true,
+            cancellationToken);
+
+    public async Task<ModuleEntitlementState> GetModuleStateAsync(
+        string moduleKey,
+        Guid tenantId,
+        bool allowDevelopmentBypass,
         CancellationToken cancellationToken)
     {
-        if (environment.IsDevelopment() &&
+        if (allowDevelopmentBypass &&
+            environment.IsDevelopment() &&
             configuration.GetValue("KingdomOS:Entitlements:BypassInDevelopment", true))
             return ModuleEntitlementState.Enabled;
 
@@ -87,7 +127,7 @@ public sealed class EngagementsEntitlementResolver(
 
             await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
             using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
-            return FindEngagements(document.RootElement, out var enabled)
+            return FindModule(document.RootElement, moduleKey, out var enabled)
                 ? enabled ? ModuleEntitlementState.Enabled : ModuleEntitlementState.Disabled
                 : ModuleEntitlementState.Disabled;
         }
@@ -105,19 +145,22 @@ public sealed class EngagementsEntitlementResolver(
         }
     }
 
-    private static bool FindEngagements(JsonElement element, out bool enabled)
+    private static bool FindModule(
+        JsonElement element,
+        string moduleKey,
+        out bool enabled)
     {
         enabled = false;
         if (element.ValueKind == JsonValueKind.Array)
         {
             foreach (var item in element.EnumerateArray())
-                if (FindEngagements(item, out enabled)) return true;
+                if (FindModule(item, moduleKey, out enabled)) return true;
             return false;
         }
 
         if (element.ValueKind != JsonValueKind.Object) return false;
         var key = Property(element, "moduleKey") ?? Property(element, "key") ?? Property(element, "id");
-        if (string.Equals(key, "engagements", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(key, moduleKey, StringComparison.OrdinalIgnoreCase))
         {
             if (element.TryGetProperty("enabled", out var enabledProperty) &&
                 enabledProperty.ValueKind is JsonValueKind.True or JsonValueKind.False)
@@ -132,7 +175,7 @@ public sealed class EngagementsEntitlementResolver(
         }
 
         foreach (var property in element.EnumerateObject())
-            if (FindEngagements(property.Value, out enabled)) return true;
+            if (FindModule(property.Value, moduleKey, out enabled)) return true;
         return false;
     }
 

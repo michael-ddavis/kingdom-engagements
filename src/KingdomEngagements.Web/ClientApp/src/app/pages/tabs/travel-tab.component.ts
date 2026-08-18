@@ -18,7 +18,6 @@ import {
           <h2>Travel itinerary</h2>
           <span>Keep flights, lodging and local transportation together in the assignment record.</span>
         </div>
-        <button type="button" [disabled]="saving()" (click)="save()">{{ saving() ? 'Saving…' : 'Save travel' }}</button>
       </header>
 
       @if (message()) { <div class="message">{{ message() }}</div> }
@@ -71,14 +70,21 @@ import {
           </div>
         </section>
       </div>
+
+      <div class="save-dock" role="region" aria-label="Travel save actions">
+        <div>
+          <strong>Travel coordination</strong>
+          <span>Save flights, lodging and local transportation together.</span>
+        </div>
+        <button type="button" [disabled]="saving()" (click)="save()">{{ saving() ? 'Saving…' : 'Save travel' }}</button>
+      </div>
     </section>
   `,
   styles: [`
-    .travel-workspace{margin-top:1rem;border:1px solid var(--eng-line);border-radius:12px;background:var(--eng-surface);overflow:hidden}
+    .travel-workspace{position:relative;margin-top:1rem;padding-bottom:5.5rem;border:1px solid var(--eng-line);border-radius:9px;background:var(--eng-surface);overflow:visible}
     header{display:flex;justify-content:space-between;gap:1rem;padding:1.25rem 1.4rem;border-bottom:1px solid var(--eng-line)}
     header p{margin:0 0 .35rem;color:var(--eng-blue);font-size:.7rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase}
     header h2{margin:0;font-size:1.55rem} header span{display:block;margin-top:.3rem;color:var(--eng-muted);font-size:.78rem}
-    header button{align-self:start;min-height:40px;padding:.6rem .85rem;border:0;border-radius:8px;color:#fff;background:var(--eng-ink);font-weight:800;cursor:pointer}
     .message{padding:.7rem 1.4rem;color:#25684d;background:#edf7f1;font-size:.75rem;font-weight:750}.message.error{color:var(--eng-danger);background:#fff0ef}
     .trip-grid{display:grid;grid-template-columns:1fr 1fr}
     .trip-grid>section{padding:1.2rem 1.3rem;border-right:1px solid var(--eng-line);border-bottom:1px solid var(--eng-line)}
@@ -87,8 +93,9 @@ import {
     .section-title strong,.section-title small{display:block}.section-title strong{font-size:.92rem}.section-title small{margin-top:.1rem;color:var(--eng-muted);font-size:.66rem}
     .fields{display:grid;grid-template-columns:1fr 1fr;gap:.65rem}.fields label{display:grid;gap:.3rem}.fields label.wide{grid-column:1/-1}.fields label>span{font-size:.65rem;font-weight:800;color:#596476}
     input,textarea{width:100%;padding:.62rem .68rem;border:1px solid #ccd2db;border-radius:7px;color:var(--eng-ink);background:#fff}textarea{resize:vertical}
+    .save-dock{position:sticky;bottom:.8rem;z-index:15;display:flex;align-items:center;justify-content:space-between;gap:1rem;width:calc(100% - 2rem);margin:1rem 1rem -4.65rem;padding:.8rem .9rem;border:1px solid rgba(18,26,44,.12);border-radius:9px;background:rgba(255,253,250,.96);box-shadow:0 12px 36px rgba(18,26,44,.13);backdrop-filter:blur(14px)}.save-dock strong,.save-dock span{display:block}.save-dock strong{font-size:.72rem}.save-dock span{margin-top:.12rem;color:var(--eng-muted);font-size:.62rem}.save-dock button{min-height:42px;padding:.58rem .9rem;border:0;border-radius:7px;color:#fff;background:var(--eng-ink);font-size:.72rem;font-weight:850;cursor:pointer}.save-dock button:disabled{opacity:.55;cursor:wait}
     @media(max-width:900px){.trip-grid{grid-template-columns:1fr}.trip-grid>section{border-right:0}.trip-grid>section:nth-last-child(-n+2){border-bottom:1px solid var(--eng-line)}.trip-grid>section:last-child{border-bottom:0}}
-    @media(max-width:560px){.fields{grid-template-columns:1fr}.fields label.wide{grid-column:auto}header{display:grid}header button{justify-self:start}}
+    @media(max-width:560px){.fields{grid-template-columns:1fr}.fields label.wide{grid-column:auto}header{display:grid}.save-dock{display:grid;bottom:.5rem}.save-dock button{width:100%}}
   `],
 })
 export class TravelTabComponent {

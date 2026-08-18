@@ -12,6 +12,11 @@ import {
   HostCoordinationDocument,
   ProductInfo,
 } from './models';
+import {
+  ApproveSpeakingRequestResult,
+  RequestInformationResult,
+  SpeakingRequestDetails,
+} from './speaking-request.models';
 
 @Injectable({ providedIn: 'root' })
 export class EngagementsApiService {
@@ -19,6 +24,37 @@ export class EngagementsApiService {
 
   getProduct(): Observable<ProductInfo> {
     return this.http.get<ProductInfo>('/api/product');
+  }
+
+  getRequests(): Observable<readonly SpeakingRequestDetails[]> {
+    return this.http.get<readonly SpeakingRequestDetails[]>('/api/engagements/requests');
+  }
+
+  getRequest(id: string): Observable<SpeakingRequestDetails> {
+    return this.http.get<SpeakingRequestDetails>(
+      `/api/engagements/requests/${encodeURIComponent(id)}`,
+    );
+  }
+
+  requestInformation(id: string, message: string): Observable<RequestInformationResult> {
+    return this.http.post<RequestInformationResult>(
+      `/api/engagements/requests/${encodeURIComponent(id)}/request-information`,
+      { message },
+    );
+  }
+
+  declineRequest(id: string, reason: string): Observable<SpeakingRequestDetails> {
+    return this.http.post<SpeakingRequestDetails>(
+      `/api/engagements/requests/${encodeURIComponent(id)}/decline`,
+      { reason },
+    );
+  }
+
+  approveRequest(id: string): Observable<ApproveSpeakingRequestResult> {
+    return this.http.post<ApproveSpeakingRequestResult>(
+      `/api/engagements/requests/${encodeURIComponent(id)}/approve`,
+      {},
+    );
   }
 
   getAssignments(): Observable<readonly EngagementSummary[]> {

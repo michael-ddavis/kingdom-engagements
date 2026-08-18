@@ -39,6 +39,8 @@ jobs:
               if grep --quiet '"module":"engagements"' <<<"$health_payload"; then
                 index_payload="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/)"
                 grep --quiet '<app-root' <<<"$index_payload"
+                grep --quiet '<base href="/">' <<<"$index_payload"
+                if grep --quiet '<base href="/app/">' <<<"$index_payload"; then exit 1; fi
                 if grep --quiet '/legacy18-product.js' <<<"$index_payload"; then exit 1; fi
                 if grep --quiet 'engagement-nav-root' <<<"$index_payload"; then exit 1; fi
 

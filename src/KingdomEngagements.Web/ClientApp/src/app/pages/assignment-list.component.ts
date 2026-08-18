@@ -12,102 +12,169 @@ type EngagementView = 'upcoming' | 'review' | 'attention' | 'completed';
   standalone: true,
   imports: [RouterLink],
   template: `
-    <section class="eng-page engagements-page">
-      <header class="engagements-heading">
+    <section class="eng-page legacy-assignment-index">
+      <header class="legacy-assignment-hero">
         <div>
           <p class="eng-eyebrow">Itinerant ministry</p>
-          <h1 class="eng-title">Engagements</h1>
-          <p class="eng-subtitle">
-            Move ministry invitations through preparation, travel, ministry response,
-            Care Network handoff, and closeout from one working queue.
+          <h1>Engagements</h1>
+          <p>
+            Invitations, host preparation, ministry travel, responses, Care Network handoff,
+            and closeout in one assignment record.
           </p>
-        </div>
-        <div class="engagements-context">
-          <strong>{{ activeAssignments().length }} active</strong>
-          <span>{{ withinThirtyDays() }} in the next 30 days</span>
-          @if (attentionAssignments().length > 0) {
-            <span>{{ attentionAssignments().length }} need attention</span>
-          }
         </div>
       </header>
 
-      <nav class="engagement-filters" aria-label="Engagement views">
-        <button type="button" [class.active]="view() === 'upcoming'" (click)="view.set('upcoming')">
-          Upcoming <span>{{ activeAssignments().length }}</span>
-        </button>
-        <button type="button" [class.active]="view() === 'review'" (click)="view.set('review')">
-          Needs review <span>{{ reviewRequests().length }}</span>
-        </button>
-        <button type="button" [class.active]="view() === 'attention'" (click)="view.set('attention')">
-          Needs attention <span>{{ attentionAssignments().length }}</span>
-        </button>
-        <button type="button" [class.active]="view() === 'completed'" (click)="view.set('completed')">
-          Completed <span>{{ completedAssignments().length }}</span>
-        </button>
-      </nav>
+      <section class="legacy-assignment-summary" aria-label="Engagement summary">
+        <article>
+          <span class="legacy-summary-icon legacy-summary-icon--navy">ACT</span>
+          <div><strong>{{ activeAssignments().length }}</strong><span>Active assignments</span><small>Upcoming ministry work</small></div>
+        </article>
+        <article>
+          <span class="legacy-summary-icon legacy-summary-icon--gold">30</span>
+          <div><strong>{{ withinThirtyDays() }}</strong><span>Next 30 days</span><small>Assignments approaching</small></div>
+        </article>
+        <article>
+          <span class="legacy-summary-icon legacy-summary-icon--violet">!</span>
+          <div><strong>{{ attentionAssignments().length }}</strong><span>Need attention</span><small>Readiness work still open</small></div>
+        </article>
+        <article>
+          <span class="legacy-summary-icon legacy-summary-icon--green">%</span>
+          <div><strong>{{ averageReadiness() }}%</strong><span>Average readiness</span><small>Across active assignments</small></div>
+        </article>
+      </section>
 
-      <section class="engagement-list" aria-live="polite">
+      @if (attentionAssignments().length > 0) {
+        <section class="legacy-attention-banner" aria-live="polite">
+          <span aria-hidden="true">!</span>
+          <div>
+            <strong>{{ attentionAssignments().length }} assignment{{ attentionAssignments().length === 1 ? '' : 's' }} need movement.</strong>
+            <p>Open the assignment record to resolve preparation, travel, contacts, Care, or closeout responsibilities.</p>
+          </div>
+        </section>
+      }
+
+      <div class="legacy-assignment-toolbar">
+        <div class="legacy-filter-group" aria-label="Engagement views">
+          <button type="button" [class.selected]="view() === 'upcoming'" (click)="view.set('upcoming')">
+            Upcoming <span>{{ activeAssignments().length }}</span>
+          </button>
+          <button type="button" [class.selected]="view() === 'review'" (click)="view.set('review')">
+            Needs review <span>{{ reviewRequests().length }}</span>
+          </button>
+          <button type="button" [class.selected]="view() === 'attention'" (click)="view.set('attention')">
+            Needs attention <span>{{ attentionAssignments().length }}</span>
+          </button>
+          <button type="button" [class.selected]="view() === 'completed'" (click)="view.set('completed')">
+            Completed <span>{{ completedAssignments().length }}</span>
+          </button>
+        </div>
+        <span class="legacy-result-count">
+          {{ view() === 'review' ? reviewRequests().length : visibleAssignments().length }} result{{ (view() === 'review' ? reviewRequests().length : visibleAssignments().length) === 1 ? '' : 's' }}
+        </span>
+      </div>
+
+      <section class="assignment-list" aria-live="polite">
         @if (loading()) {
-          <div class="state">Loading engagements…</div>
+          <div class="legacy-empty-state"><span>...</span><h2>Loading engagements</h2><p>Opening the current ministry assignment queue.</p></div>
         } @else if (error()) {
-          <div class="state state--error">{{ error() }}</div>
+          <div class="legacy-empty-state"><span>!</span><h2>Engagements could not be loaded</h2><p>{{ error() }}</p></div>
         } @else if (view() === 'review') {
-          <header class="list-heading">
-            <div><p class="eng-eyebrow">Invitation review</p><h2>Requests waiting on a ministry decision</h2></div>
-            <span>{{ reviewRequests().length }}</span>
-          </header>
           @if (reviewRequests().length === 0) {
-            <div class="state">No invitations need review right now.</div>
+            <div class="legacy-empty-state"><span>✓</span><h2>No invitations need review</h2><p>The ministry decision queue is clear.</p></div>
           } @else {
             @for (item of reviewRequests(); track item.id) {
-              <a class="lifecycle-row" routerLink="/invitations" [queryParams]="{ request: item.id }">
-                <span class="lifecycle-row__primary">
-                  <small>Invitation · {{ statusLabel(item.status) }}</small>
-                  <strong>{{ item.eventName }}</strong>
-                  <span>{{ item.organizationName }} · {{ requestLocation(item) }}</span>
-                </span>
-                <span class="lifecycle-row__meta">
-                  <small>Requested date</small>
-                  <strong>{{ dateLabelFromDate(item.startDate) }}</strong>
-                </span>
-                <span class="lifecycle-row__next">
-                  <small>Next</small>
-                  <strong>{{ requestNextStep(item) }}</strong>
-                </span>
-                <span class="lifecycle-state lifecycle-state--review">Review</span>
+              <a class="legacy-assignment-card" routerLink="/invitations" [queryParams]="{ request: item.id }">
+                <header class="legacy-assignment-card-heading">
+                  <div>
+                    <span class="legacy-assignment-status legacy-assignment-status--active">Needs review</span>
+                    <span class="legacy-assignment-reference">INVITATION</span>
+                  </div>
+                  <time class="legacy-event-timing">{{ dateLabelFromDate(item.startDate) }}</time>
+                </header>
+                <div class="legacy-assignment-card-body">
+                  <div class="legacy-assignment-main">
+                    <p class="legacy-event-type">Ministry invitation</p>
+                    <h2>{{ item.eventName }}</h2>
+                    <p class="legacy-organization-name">{{ item.organizationName }}</p>
+                    <div class="legacy-event-details">
+                      <span><strong>Location</strong>{{ requestLocation(item) }}</span>
+                      <span><strong>Status</strong>{{ statusLabel(item.status) }}</span>
+                    </div>
+                  </div>
+                  <aside class="legacy-current-stage">
+                    <small>Current stage</small>
+                    <strong>Invitation review</strong>
+                    <span>{{ requestNextStep(item) }}</span>
+                  </aside>
+                </div>
+                <footer class="legacy-assignment-card-footer">
+                  <div class="legacy-assignment-progress">
+                    <div><span>Invitation decision</span><strong>Review needed</strong></div>
+                    <div class="legacy-progress-bar"><i style="width:35%"></i></div>
+                    <small>Approve, request information, or decline before assignment preparation begins.</small>
+                  </div>
+                  <div class="legacy-assignment-meta">
+                    <span class="legacy-next-task"><small>Next action</small><strong>{{ requestNextStep(item) }}</strong><span>Open invitation</span></span>
+                    <span class="legacy-open-arrow" aria-hidden="true">→</span>
+                  </div>
+                </footer>
               </a>
             }
           }
         } @else {
-          <header class="list-heading">
-            <div>
-              <p class="eng-eyebrow">Engagement record</p>
-              <h2>{{ listTitle() }}</h2>
-            </div>
-            <span>{{ visibleAssignments().length }}</span>
-          </header>
           @if (visibleAssignments().length === 0) {
-            <div class="state">{{ emptyMessage() }}</div>
+            <div class="legacy-empty-state"><span>✓</span><h2>{{ emptyTitle() }}</h2><p>{{ emptyMessage() }}</p></div>
           } @else {
             @for (item of visibleAssignments(); track item.id) {
-              <a class="lifecycle-row" [routerLink]="['/assignments', item.id]">
-                <span class="lifecycle-row__primary">
-                  <small>Assignment</small>
-                  <strong>{{ item.title }}</strong>
-                  <span>{{ item.hostOrganization }} · {{ item.location || 'Location pending' }}</span>
-                </span>
-                <span class="lifecycle-row__meta">
-                  <small>Ministry date</small>
-                  <strong>{{ dateLabel(item.startsAtUtc) }}</strong>
-                </span>
-                <span class="lifecycle-row__next">
-                  <small>{{ item.openTasks > 0 ? 'Needs attention' : 'Next' }}</small>
-                  <strong>{{ nextStep(item) }}</strong>
-                  <span>{{ item.readinessPercent }}% ready</span>
-                </span>
-                <span class="lifecycle-state" [attr.data-status]="item.status">
-                  {{ assignmentState(item) }}
-                </span>
+              <a class="legacy-assignment-card" [routerLink]="['/assignments', item.id]">
+                <header class="legacy-assignment-card-heading">
+                  <div>
+                    <span class="legacy-assignment-status" [class]="'legacy-assignment-status legacy-assignment-status--' + statusClass(item)">
+                      {{ assignmentState(item) }}
+                    </span>
+                    <span class="legacy-assignment-reference">{{ item.externalAssignmentId }}</span>
+                  </div>
+                  <time class="legacy-event-timing" [class.legacy-event-timing--soon]="isWithinThirtyDays(item)">
+                    {{ dateLabel(item.startsAtUtc) }}
+                  </time>
+                </header>
+
+                <div class="legacy-assignment-card-body">
+                  <div class="legacy-assignment-main">
+                    <p class="legacy-event-type">Ministry assignment</p>
+                    <h2>{{ item.title }}</h2>
+                    <p class="legacy-organization-name">{{ item.hostOrganization }}</p>
+                    <div class="legacy-event-details">
+                      <span><strong>Location</strong>{{ item.location || 'Location pending' }}</span>
+                      <span><strong>Speaker</strong>{{ item.speakerName }}</span>
+                    </div>
+                  </div>
+
+                  <aside class="legacy-current-stage">
+                    <small>Current stage</small>
+                    <strong>{{ currentStage(item) }}</strong>
+                    <span>{{ stageDetail(item) }}</span>
+                  </aside>
+                </div>
+
+                <footer class="legacy-assignment-card-footer">
+                  <div class="legacy-assignment-progress">
+                    <div><span>Overall readiness</span><strong>{{ item.readinessPercent }}%</strong></div>
+                    <div class="legacy-progress-bar"><i [style.width.%]="item.readinessPercent"></i></div>
+                    <small>{{ nextStep(item) }}</small>
+                  </div>
+                  <div class="legacy-assignment-meta">
+                    @if (item.openTasks > 0) {
+                      <span class="legacy-blocked-count"><b>{{ item.openTasks }}</b> open</span>
+                    }
+                    <span class="legacy-next-task">
+                      <small>Next action</small>
+                      <strong>{{ nextStep(item) }}</strong>
+                      <span>Open assignment record</span>
+                    </span>
+                    <span class="legacy-open-arrow" aria-hidden="true">→</span>
+                  </div>
+                </footer>
               </a>
             }
           }
@@ -115,15 +182,6 @@ type EngagementView = 'upcoming' | 'review' | 'attention' | 'completed';
       </section>
     </section>
   `,
-  styles: [`
-    .engagements-page{padding-top:1.7rem}.engagements-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:2rem;padding-bottom:1.25rem;border-bottom:1px solid var(--eng-line)}
-    .engagements-context{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:.35rem .85rem;max-width:420px;color:var(--eng-muted);font-size:.72rem}.engagements-context strong{color:var(--eng-ink)}
-    .engagement-filters{display:flex;gap:.25rem;margin:1rem 0;padding:.2rem;border-bottom:1px solid var(--eng-line);overflow:auto}.engagement-filters button{display:flex;align-items:center;gap:.4rem;min-height:38px;padding:.45rem .65rem;border:0;border-bottom:2px solid transparent;color:#697181;background:transparent;font-size:.74rem;font-weight:800;white-space:nowrap;cursor:pointer}.engagement-filters button span{display:grid;min-width:20px;height:20px;place-items:center;border-radius:999px;background:#eceef2;font-size:.62rem}.engagement-filters button.active{border-bottom-color:var(--eng-violet);color:var(--eng-ink)}
-    .engagement-list{overflow:hidden;border:1px solid var(--eng-line);border-radius:9px;background:var(--eng-surface)}.list-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;padding:1rem 1.15rem;border-bottom:1px solid var(--eng-line);background:#fbfaf8}.list-heading h2{margin:0;font-size:1.05rem}.list-heading>span{color:var(--eng-muted);font-size:.72rem;font-weight:800}
-    .lifecycle-row{display:grid;grid-template-columns:minmax(300px,1.35fr) minmax(130px,.45fr) minmax(190px,.75fr) auto;align-items:center;gap:1rem;padding:.9rem 1.15rem;border-bottom:1px solid rgba(18,26,44,.08);text-decoration:none}.lifecycle-row:last-child{border-bottom:0}.lifecycle-row:hover{background:#f8f6f2}.lifecycle-row__primary,.lifecycle-row__meta,.lifecycle-row__next{display:grid;gap:.15rem}.lifecycle-row small{color:#89909c;font-size:.61rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em}.lifecycle-row strong{font-size:.8rem}.lifecycle-row__primary>strong{font-size:.9rem}.lifecycle-row__primary>span,.lifecycle-row__next>span{color:var(--eng-muted);font-size:.69rem}.lifecycle-state{justify-self:end;padding:.3rem .48rem;border-radius:999px;color:#4d586b;background:#eef1f4;font-size:.64rem;font-weight:850}.lifecycle-state[data-status='complete']{color:var(--eng-green);background:#e7f4ec}.lifecycle-state[data-status='planning']{color:#604abe;background:#eeeafd}.lifecycle-state--review{color:#855f16;background:#fff2d9}.state{padding:2.5rem;color:var(--eng-muted);text-align:center}.state--error{color:var(--eng-danger)}
-    @media(max-width:900px){.engagements-heading{display:grid;align-items:start}.engagements-context{justify-content:flex-start}.lifecycle-row{grid-template-columns:1fr auto}.lifecycle-row__meta,.lifecycle-row__next{grid-column:1}.lifecycle-state{grid-column:2;grid-row:1/3}}
-    @media(max-width:560px){.eng-title{font-size:2.7rem}.engagement-filters{margin-inline:-.25rem}.lifecycle-row{padding:.85rem}.engagements-context{display:none}}
-  `],
 })
 export class AssignmentListComponent implements OnInit {
   readonly assignments = signal<readonly EngagementSummary[]>([]);
@@ -153,24 +211,13 @@ export class AssignmentListComponent implements OnInit {
     if (this.view() === 'attention') return this.attentionAssignments();
     return this.activeAssignments();
   });
-  readonly withinThirtyDays = computed(() => {
-    const now = Date.now();
-    const horizon = now + 30 * 24 * 60 * 60 * 1000;
-    return this.activeAssignments().filter(item => {
-      if (!item.startsAtUtc) return false;
-      const value = new Date(item.startsAtUtc).getTime();
-      return value >= now && value <= horizon;
-    }).length;
-  });
-  readonly listTitle = computed(() => {
-    if (this.view() === 'completed') return 'Completed ministry records';
-    if (this.view() === 'attention') return 'Engagements that need something to move';
-    return 'Upcoming and active ministry';
-  });
-  readonly emptyMessage = computed(() => {
-    if (this.view() === 'completed') return 'No completed engagement records yet.';
-    if (this.view() === 'attention') return 'No active engagements need attention right now.';
-    return 'No active engagements are currently scheduled.';
+  readonly withinThirtyDays = computed(() =>
+    this.activeAssignments().filter(item => this.isWithinThirtyDays(item)).length,
+  );
+  readonly averageReadiness = computed(() => {
+    const items = this.activeAssignments();
+    if (items.length === 0) return 0;
+    return Math.round(items.reduce((sum, item) => sum + item.readinessPercent, 0) / items.length);
   });
 
   constructor(private readonly api: EngagementsApiService) {}
@@ -183,20 +230,43 @@ export class AssignmentListComponent implements OnInit {
         this.loading.set(false);
       },
       error: () => {
-        this.error.set('Engagements could not be loaded.');
+        this.error.set('The assignment queue could not be loaded.');
         this.loading.set(false);
       },
     });
   }
 
   assignmentState(item: EngagementSummary): string {
-    if (item.status === 'complete') return 'Complete';
-    if (item.openTasks > 0) return `${item.openTasks} open`;
+    if (item.status === 'complete') return 'Completed';
+    if (item.openTasks > 0) return 'Active';
     return item.readinessPercent === 100 ? 'Ready' : this.statusLabel(item.status);
   }
 
+  statusClass(item: EngagementSummary): 'active' | 'completed' | 'cancelled' {
+    if (item.status === 'complete') return 'completed';
+    if (item.status === 'cancelled') return 'cancelled';
+    return 'active';
+  }
+
+  currentStage(item: EngagementSummary): string {
+    if (item.status === 'complete') return 'Assignment complete';
+    if (item.closeoutStatus === 'complete') return 'Closeout complete';
+    if (item.readinessPercent === 100) return 'Ready for ministry';
+    if (item.travelStatus !== 'complete' || item.lodgingStatus !== 'complete') return 'Travel preparation';
+    if (item.hostStatus !== 'complete') return 'Host coordination';
+    return 'Assignment preparation';
+  }
+
+  stageDetail(item: EngagementSummary): string {
+    if (item.status === 'complete') return 'The ministry record is closed and available for reference.';
+    if (item.openTasks > 0) return `${item.openTasks} preparation item${item.openTasks === 1 ? '' : 's'} still need attention.`;
+    if (item.readinessPercent === 100) return 'Travel, host preparation, and assignment responsibilities are ready.';
+    return 'Continue the assignment record until readiness is complete.';
+  }
+
   nextStep(item: EngagementSummary): string {
-    if (item.openTasks > 0) return `${item.openTasks} readiness item${item.openTasks === 1 ? '' : 's'}`;
+    if (item.status === 'complete') return 'Review completed record';
+    if (item.openTasks > 0) return `${item.openTasks} readiness item${item.openTasks === 1 ? '' : 's'} to resolve`;
     if (item.readinessPercent === 100) return 'Ready for ministry';
     return 'Continue preparation';
   }
@@ -220,6 +290,25 @@ export class AssignmentListComponent implements OnInit {
 
   dateLabelFromDate(value: string): string {
     return new Date(`${value}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  isWithinThirtyDays(item: EngagementSummary): boolean {
+    if (!item.startsAtUtc) return false;
+    const now = Date.now();
+    const value = new Date(item.startsAtUtc).getTime();
+    return value >= now && value <= now + 30 * 24 * 60 * 60 * 1000;
+  }
+
+  emptyTitle(): string {
+    if (this.view() === 'completed') return 'No completed assignments yet';
+    if (this.view() === 'attention') return 'Nothing needs attention';
+    return 'No active assignments';
+  }
+
+  emptyMessage(): string {
+    if (this.view() === 'completed') return 'Completed ministry records will appear here.';
+    if (this.view() === 'attention') return 'Every active assignment is currently moving without an open readiness signal.';
+    return 'Approved ministry assignments will appear here when they are scheduled.';
   }
 
   private sortDate(value: string | null): number {

@@ -16,10 +16,8 @@
     Name="BuildAngularForPublish"
     BeforeTargets="Publish"
     Condition="'$(Configuration)' == 'Release' and '$(BuildAngular)' != 'false'">
-    <Message Importance="high" Text="Building Kingdom Engagements Angular migration application..." />
+    <Message Importance="high" Text="Building Kingdom Engagements Angular application..." />
     <Exec WorkingDirectory="$(SpaRoot)" Command="npm install" />
-    <RemoveDir Directories="$(MSBuildProjectDirectory)\wwwroot\app" />
-    <MakeDir Directories="$(MSBuildProjectDirectory)\wwwroot\app" />
     <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build:production" />
 
     <ItemGroup>
@@ -28,6 +26,6 @@
 
     <Copy
       SourceFiles="@(ClientAppAssets)"
-      DestinationFiles="@(ClientAppAssets->'$(MSBuildProjectDirectory)\wwwroot\app\%(RecursiveDir)%(Filename)%(Extension)')" />
+      DestinationFiles="@(ClientAppAssets->'$(MSBuildProjectDirectory)\wwwroot\%(RecursiveDir)%(Filename)%(Extension)')" />
   </Target>
 </Project>

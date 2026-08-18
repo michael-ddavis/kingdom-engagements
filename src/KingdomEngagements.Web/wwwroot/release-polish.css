@@ -1,0 +1,166 @@
+/* Pre-lock visual polish: keep Engagements executive and grounded without changing behavior. */
+:root {
+  --eng-ink: #18202c;
+  --eng-muted: #687183;
+  --eng-canvas: #f3f1ec;
+  --eng-surface: #fcfbf8;
+  --eng-border: rgba(24, 32, 44, .12);
+  --eng-accent: #6650a4;
+  --eng-gold: #a98447;
+}
+
+html,
+body {
+  background: var(--eng-canvas) !important;
+  color: var(--eng-ink) !important;
+}
+
+main {
+  background: transparent !important;
+}
+
+.topbar {
+  min-height: 64px !important;
+  background: rgba(243, 241, 236, .97) !important;
+  border-bottom: 1px solid var(--eng-border) !important;
+  backdrop-filter: blur(8px) saturate(108%) !important;
+  -webkit-backdrop-filter: blur(8px) saturate(108%) !important;
+}
+
+.topbar b {
+  border-radius: 4px !important;
+  font-weight: 700 !important;
+}
+
+.engagements-section-nav {
+  gap: 0 !important;
+  border-bottom: 1px solid var(--eng-border) !important;
+}
+
+.engagements-section-nav a {
+  min-height: 42px !important;
+  padding-inline: 16px !important;
+  border-radius: 0 !important;
+  border-bottom: 2px solid transparent !important;
+}
+
+.engagements-section-nav a.is-active {
+  border-bottom-color: var(--eng-accent) !important;
+  background: transparent !important;
+}
+
+.request-workspace,
+.workspace-grid {
+  gap: 14px !important;
+}
+
+.panel,
+.readiness-card,
+.detail-section,
+.status-grid > *,
+.task-list > *,
+.document-list > * {
+  border-radius: 8px !important;
+  box-shadow: none !important;
+}
+
+.panel {
+  border: 1px solid var(--eng-border) !important;
+  background: var(--eng-surface) !important;
+}
+
+.panel > header,
+.detail-header,
+.detail-section > header {
+  padding-bottom: 14px !important;
+  border-bottom: 1px solid var(--eng-border) !important;
+}
+
+.panel > header h2,
+.detail-header h2,
+.detail-section h3 {
+  letter-spacing: -.025em !important;
+}
+
+.eyebrow {
+  color: var(--eng-gold) !important;
+  font-size: .65rem !important;
+  font-weight: 800 !important;
+  letter-spacing: .1em !important;
+}
+
+.assignment-list,
+.request-list,
+.task-list,
+.document-list {
+  gap: 0 !important;
+}
+
+.assignment-list > *,
+.request-list > *,
+.task-list > *,
+.document-list > * {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border-width: 0 0 1px !important;
+  border-color: var(--eng-border) !important;
+}
+
+.assignment-list > *:hover,
+.request-list > *:hover,
+.task-list > *:hover,
+.document-list > *:hover {
+  background: rgba(102, 80, 164, .035) !important;
+}
+
+.readiness-card {
+  border: 1px solid var(--eng-border) !important;
+  background: #f8f6f1 !important;
+}
+
+button,
+.button,
+.primary,
+.secondary,
+[role='button'] {
+  border-radius: 6px !important;
+}
+
+button:not([aria-label]) {
+  min-height: 38px;
+}
+
+.badge,
+.pill,
+.chip,
+.status,
+[data-field='status'] {
+  border-radius: 4px !important;
+}
+
+dialog {
+  border-radius: 10px !important;
+  box-shadow: 0 22px 58px rgba(24, 32, 44, .2) !important;
+}
+
+/* Engagements should feel distinct without a decorative hero. */
+.assignment-panel,
+.request-panel {
+  border-top: 2px solid color-mix(in srgb, var(--eng-accent) 70%, transparent) !important;
+}
+
+.detail-panel,
+.request-detail-panel {
+  border-top: 2px solid color-mix(in srgb, var(--eng-gold) 72%, transparent) !important;
+}
+
+@media (max-width: 760px) {
+  .request-workspace,
+  .workspace-grid {
+    gap: 10px !important;
+  }
+
+  .panel {
+    border-radius: 6px !important;
+  }
+}

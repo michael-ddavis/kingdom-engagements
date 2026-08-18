@@ -16,17 +16,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22.x
-      - run: node --check src/KingdomEngagements.Web/wwwroot/legacy18-product.js
-      - run: node --check src/KingdomEngagements.Web/wwwroot/engagements-polish.js
-      - run: node --check src/KingdomEngagements.Web/wwwroot/engagements-brief.js
-      - run: node --check src/KingdomEngagements.Web/wwwroot/engagements-earned-ui.js
-      - run: node --check src/KingdomEngagements.Web/wwwroot/assignment-care-network.js
+
+      - name: Build Angular Engagements client
+        working-directory: src/KingdomEngagements.Web/ClientApp
+        run: |
+          npm install
+          npm run build:production
+
       - run: dotnet restore KingdomEngagements.slnx
       - run: dotnet build KingdomEngagements.slnx --configuration Release --no-restore
       - run: dotnet test KingdomEngagements.slnx --configuration Release --no-build
       - run: docker build --tag kingdom-engagements:ci .
 
-      - name: Verify standalone development health and visible legacy shell
+      - name: Verify standalone Angular shell and public host flows
         shell: bash
         run: |
           set -euo pipefail
@@ -35,49 +37,27 @@ jobs:
           for attempt in {1..30}; do
             if health_payload="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/health 2>/dev/null)"; then
               if grep --quiet '"module":"engagements"' <<<"$health_payload"; then
+                index_payload="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/)"
+                grep --quiet '<app-root' <<<"$index_payload"
+                if grep --quiet '/legacy18-product.js' <<<"$index_payload"; then exit 1; fi
+                if grep --quiet 'engagement-nav-root' <<<"$index_payload"; then exit 1; fi
+
+                invitations_payload="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/invitations)"
+                grep --quiet '<app-root' <<<"$invitations_payload"
+                assignments_page="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/assignments)"
+                grep --quiet '<app-root' <<<"$assignments_page"
+
                 invite_payload="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/invite/apostle-cynthia)"
                 grep --quiet 'Invite Cynthia Thompson' <<<"$invite_payload"
-                index_payload="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/)"
-                grep --quiet '/legacy18-product.js' <<<"$index_payload"
-                grep --quiet '/legacy18-product.css' <<<"$index_payload"
-                grep --quiet '/engagements-polish.js' <<<"$index_payload"
-                grep --quiet '/engagements-polish.css' <<<"$index_payload"
-                grep --quiet '/engagements-brief.js' <<<"$index_payload"
-                grep --quiet '/engagements-brief.css' <<<"$index_payload"
-                grep --quiet '/engagements-earned-ui.js' <<<"$index_payload"
-                grep --quiet '/engagements-earned-ui.css' <<<"$index_payload"
-                grep --quiet '/assignment-care-network.js' <<<"$index_payload"
-                grep --quiet '/assignment-care-network.css' <<<"$index_payload"
-                grep --quiet 'engagement-nav-root' <<<"$index_payload"
-                grep --quiet 'href="#requests">Invitations' <<<"$index_payload"
-                grep --quiet 'href="#assignments">Assignments' <<<"$index_payload"
-                if grep --quiet 'href="#overview">Overview' <<<"$index_payload"; then exit 1; fi
-                if grep --quiet '/completion.js' <<<"$index_payload"; then exit 1; fi
-                if grep --quiet '/preparation.js' <<<"$index_payload"; then exit 1; fi
-                legacy_payload="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/legacy18-product.js)"
-                grep --quiet 'Overview' <<<"$legacy_payload"
-                grep --quiet 'Checklist' <<<"$legacy_payload"
-                grep --quiet 'Travel' <<<"$legacy_payload"
-                grep --quiet 'Contacts' <<<"$legacy_payload"
-                grep --quiet 'Documents' <<<"$legacy_payload"
-                grep --quiet 'Record' <<<"$legacy_payload"
-                if grep --quiet 'Event day' <<<"$legacy_payload"; then exit 1; fi
-                care_payload="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/assignment-care-network.js)"
-                grep --quiet 'Care Network' <<<"$care_payload"
-                grep --quiet 'Responses, referrals and handoffs' <<<"$care_payload"
-                grep --quiet 'Accept care responsibility' <<<"$care_payload"
-                grep --quiet 'Unable to accept' <<<"$care_payload"
-                polish_payload="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/engagements-polish.js)"
-                grep --quiet 'animateAccordion' <<<"$polish_payload"
-                grep --quiet 'contactDrafts' <<<"$polish_payload"
-                brief_payload="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/engagements-brief.js)"
-                grep --quiet 'Assignment brief' <<<"$brief_payload"
-                grep --quiet 'Readiness by work area' <<<"$brief_payload"
-                grep --quiet 'data-brief-pane' <<<"$brief_payload"
-                earned_payload="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/engagements-earned-ui.js)"
-                grep --quiet 'DEFAULT_VOLUME_THRESHOLD = 5' <<<"$earned_payload"
-                grep --quiet 'earned-ui-inline-signal' <<<"$earned_payload"
-                grep --quiet 'exact18-summary-grid' <<<"$earned_payload"
+                terms_status="$(docker exec "$container_id" sh -c "curl -o /dev/null -s -w '%{http_code}' http://localhost:8080/host/terms/not-a-real-token")"
+                test "$terms_status" = "200"
+                coordination_status="$(docker exec "$container_id" sh -c "curl -o /dev/null -s -w '%{http_code}' http://localhost:8080/host/coordination/not-a-real-token")"
+                test "$coordination_status" = "200"
+
+                assignments_payload="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/api/engagements/assignments)"
+                grep --quiet 'Kingdom Leadership Gathering' <<<"$assignments_payload"
+                requests_payload="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/api/engagements/requests)"
+                grep --quiet 'eventName' <<<"$requests_payload"
                 exit 0
               fi
             fi

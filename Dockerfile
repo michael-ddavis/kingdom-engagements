@@ -22,7 +22,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /app/publish .
-COPY --from=client /client/dist/ClientApp/browser ./wwwroot/app
+COPY --from=client /client/dist/ClientApp/browser ./wwwroot
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=18 \

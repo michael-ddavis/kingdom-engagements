@@ -26,10 +26,10 @@ import { EngagementSummary } from '../core/models';
       <section class="eng-section">
         <header class="eng-section__header">
           <div>
-            <h2>Assignment record</h2>
-            <p>This Angular page is reading the same certified Engagements APIs as the current client.</p>
+            <p class="eng-eyebrow">Assignment record</p>
+            <h2>Approved engagements</h2>
+            <p>Open an assignment to coordinate preparation, ministry care, records, and closeout.</p>
           </div>
-          <a class="eng-button secondary" href="/#assignments">Open legacy view</a>
         </header>
 
         @if (loading()) {
@@ -61,37 +61,19 @@ import { EngagementSummary } from '../core/models';
     </section>
   `,
   styles: [`
-    .metrics {
-      display:grid;
-      grid-template-columns:repeat(4,minmax(0,1fr));
-      gap:.9rem;
-      margin-top:1.5rem;
-    }
-    .metrics article {
-      padding:1.1rem 1.2rem;
-      border:1px solid var(--eng-line);
-      border-radius:11px;
-      background:var(--eng-surface);
-    }
-    .metrics span,.metrics small { display:block; color:var(--eng-muted); }
-    .metrics span { font-size:.78rem; }
-    .metrics strong { display:block; margin:.35rem 0 .2rem; font-size:2rem; letter-spacing:-.03em; }
-    .metrics small { font-size:.75rem; }
-    .state { padding:2.5rem; color:var(--eng-muted); text-align:center; }
-    .state--error { color:var(--eng-danger); }
-    @media (max-width:900px) { .metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } }
-    @media (max-width:560px) { .metrics { grid-template-columns:1fr; } }
+    .metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.9rem;margin-top:1.5rem}.metrics article{padding:1.1rem 1.2rem;border:1px solid var(--eng-line);border-radius:11px;background:var(--eng-surface)}.metrics span,.metrics small{display:block;color:var(--eng-muted)}.metrics span{font-size:.78rem}.metrics strong{display:block;margin:.35rem 0 .2rem;font-size:2rem;letter-spacing:-.03em}.metrics small{font-size:.75rem}.state{padding:2.5rem;color:var(--eng-muted);text-align:center}.state--error{color:var(--eng-danger)}
+    @media(max-width:900px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:560px){.metrics{grid-template-columns:1fr}}
   `],
 })
 export class AssignmentListComponent implements OnInit {
   readonly assignments = signal<readonly EngagementSummary[]>([]);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
-  readonly activeCount = computed(() => this.assignments().filter((item) => item.status !== 'complete').length);
+  readonly activeCount = computed(() => this.assignments().filter(item => item.status !== 'complete').length);
   readonly withinThirtyDays = computed(() => {
     const now = Date.now();
     const horizon = now + 30 * 24 * 60 * 60 * 1000;
-    return this.assignments().filter((item) => {
+    return this.assignments().filter(item => {
       if (!item.startsAtUtc) return false;
       const value = new Date(item.startsAtUtc).getTime();
       return value >= now && value <= horizon;
@@ -99,31 +81,20 @@ export class AssignmentListComponent implements OnInit {
   });
   readonly averageReadiness = computed(() => {
     const items = this.assignments();
-    if (!items.length) return 0;
-    return Math.round(items.reduce((total, item) => total + item.readinessPercent, 0) / items.length);
+    return items.length ? Math.round(items.reduce((total, item) => total + item.readinessPercent, 0) / items.length) : 0;
   });
 
   constructor(private readonly api: EngagementsApiService) {}
 
   ngOnInit(): void {
     this.api.getAssignments().subscribe({
-      next: (items) => {
-        this.assignments.set(items);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.error.set('Assignments could not be loaded.');
-        this.loading.set(false);
-      },
+      next: items => { this.assignments.set(items); this.loading.set(false); },
+      error: () => { this.error.set('Assignments could not be loaded.'); this.loading.set(false); },
     });
   }
 
   dateLabel(value: string | null): string {
     if (!value) return 'Date pending';
-    return new Date(value).toLocaleDateString(undefined, {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
+    return new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
   }
 }

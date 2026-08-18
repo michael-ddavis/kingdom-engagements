@@ -64,6 +64,7 @@ export interface EngagementDetails {
 export interface MinistryResponse {
   id: string;
   type: string;
+  typeLabel?: string;
   count: number;
   personName: string | null;
   email: string | null;

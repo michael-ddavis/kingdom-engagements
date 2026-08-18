@@ -11,8 +11,12 @@ import { ProductInfo } from './core/models';
     <div class="eng-app">
       <header class="eng-modulebar">
         <div class="eng-modulebar__identity">
-          <a class="eng-brand" [href]="product()?.platformUrl || 'http://localhost:5100'" aria-label="Back to KingdomOS Home">
-            <span class="eng-brand__mark" aria-hidden="true">K</span>
+          <a
+            class="eng-brand"
+            [href]="product()?.platformUrl || 'http://localhost:5100'"
+            aria-label="Return to KingdomOS"
+            title="Return to KingdomOS">
+            <span class="eng-brand__mark" aria-hidden="true">▦</span>
             <span class="eng-brand__text">
               <strong>KingdomOS</strong>
               <small>Engagements</small>
@@ -31,7 +35,6 @@ import { ProductInfo } from './core/models';
         </div>
 
         <nav class="eng-modulebar__actions" aria-label="Engagements utilities">
-          <a [href]="product()?.platformUrl || 'http://localhost:5100'">Home</a>
           <a [href]="(product()?.platformUrl || 'http://localhost:5100') + '/appearance'">Settings</a>
           <span class="eng-avatar" aria-label="Signed in as Michael Davis">MD</span>
         </nav>

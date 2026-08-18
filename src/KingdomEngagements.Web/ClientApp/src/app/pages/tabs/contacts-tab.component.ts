@@ -44,24 +44,53 @@ import {
         </div>
       </section>
 
-      <section class="work-section">
+      <section class="work-section schedule-section">
         <div class="section-heading">
           <div><p>Event schedule</p><h3>What happens when?</h3></div>
-          <button type="button" (click)="addScheduleItem()">＋ Add schedule item</button>
+          <div class="schedule-actions">
+            @if (editingSchedule()) {
+              <button type="button" (click)="addScheduleItem()">＋ Add item</button>
+              <button type="button" class="schedule-done" (click)="editingSchedule.set(false)">Done editing</button>
+            } @else {
+              <button type="button" (click)="editingSchedule.set(true)">Edit schedule</button>
+            }
+          </div>
         </div>
+
         @if (draft.schedule.length === 0) {
           <div class="empty">No event schedule has been added yet.</div>
+        } @else if (!editingSchedule()) {
+          <div class="schedule-record">
+            @for (item of draft.schedule; track $index) {
+              <article>
+                <time>
+                  <strong>{{ timeLabel(item.startsAt) }}</strong>
+                  <small>{{ dateLabel(item.date) }}</small>
+                </time>
+                <div class="schedule-record__body">
+                  <strong>{{ item.title || 'Untitled schedule item' }}</strong>
+                  <span>{{ item.location || 'Location pending' }}</span>
+                  @if (item.notes) { <p>{{ item.notes }}</p> }
+                </div>
+                @if (item.endsAt) { <small class="schedule-record__end">to {{ timeLabel(item.endsAt) }}</small> }
+              </article>
+            }
+          </div>
         } @else {
-          <div class="schedule-list">
+          <div class="schedule-editor">
             @for (item of draft.schedule; track $index; let index = $index) {
               <article>
-                <label class="title"><span>Title</span><input [(ngModel)]="item.title" /></label>
-                <label><span>Date</span><input type="date" [(ngModel)]="item.date" /></label>
-                <label><span>Start</span><input type="time" [(ngModel)]="item.startsAt" /></label>
-                <label><span>End</span><input type="time" [(ngModel)]="item.endsAt" /></label>
-                <label class="location"><span>Location</span><input [(ngModel)]="item.location" /></label>
+                <div class="schedule-editor__top">
+                  <label class="title"><span>Title</span><input [(ngModel)]="item.title" /></label>
+                  <button type="button" class="remove" aria-label="Remove schedule item" (click)="removeScheduleItem(index)">×</button>
+                </div>
+                <div class="schedule-editor__grid">
+                  <label><span>Date</span><input type="date" [(ngModel)]="item.date" /></label>
+                  <label><span>Start</span><input type="time" [(ngModel)]="item.startsAt" /></label>
+                  <label><span>End</span><input type="time" [(ngModel)]="item.endsAt" /></label>
+                  <label class="location"><span>Location</span><input [(ngModel)]="item.location" /></label>
+                </div>
                 <label class="notes"><span>Notes</span><input [(ngModel)]="item.notes" /></label>
-                <button type="button" class="remove" aria-label="Remove schedule item" (click)="removeScheduleItem(index)">×</button>
               </article>
             }
           </div>
@@ -76,23 +105,23 @@ import {
     </section>
   `,
   styles: [`
-    .contacts-workspace{margin-top:1rem;border:1px solid var(--eng-line);border-radius:12px;background:var(--eng-surface);overflow:hidden}
-    header{display:flex;justify-content:space-between;gap:1rem;padding:1.25rem 1.4rem;border-bottom:1px solid var(--eng-line)}
-    header p,.section-heading p{margin:0 0 .3rem;color:var(--eng-blue);font-size:.68rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase}
-    header h2{margin:0;font-size:1.55rem}header span{display:block;margin-top:.3rem;color:var(--eng-muted);font-size:.76rem}
-    header button,.section-heading button{align-self:start;min-height:38px;padding:.55rem .75rem;border:1px solid var(--eng-line);border-radius:7px;color:var(--eng-ink);background:#fff;font-weight:800;cursor:pointer}
+    .contacts-workspace{margin-top:1rem;border:1px solid var(--eng-line);border-radius:9px;background:var(--eng-surface);overflow:hidden}
+    header{display:flex;justify-content:space-between;gap:1rem;padding:1.2rem 1.35rem;border-bottom:1px solid var(--eng-line)}
+    header p,.section-heading p{margin:0 0 .3rem;color:var(--eng-blue);font-size:.65rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase}
+    header h2{margin:0;font-size:1.45rem}header span{display:block;margin-top:.3rem;color:var(--eng-muted);font-size:.74rem}
+    header button,.section-heading button{align-self:start;min-height:36px;padding:.48rem .7rem;border:1px solid var(--eng-line);border-radius:6px;color:var(--eng-ink);background:#fff;font-size:.72rem;font-weight:800;cursor:pointer}
     header>button{color:#fff;border-color:transparent;background:var(--eng-ink)}
-    .message{padding:.7rem 1.4rem;color:#25684d;background:#edf7f1;font-size:.75rem;font-weight:750}.message.error{color:var(--eng-danger);background:#fff0ef}
-    .work-section{padding:1.2rem 1.3rem;border-bottom:1px solid var(--eng-line)}
-    .section-heading{display:flex;align-items:start;justify-content:space-between;gap:1rem;margin-bottom:.8rem}.section-heading h3{margin:0;font-size:1.05rem}
-    .contact-list,.schedule-list{display:grid;gap:.5rem}.contact-list article{display:grid;grid-template-columns:120px 1fr 1fr 150px 34px;gap:.55rem;align-items:end;padding:.7rem;border:1px solid rgba(18,26,44,.09);border-radius:8px;background:#fbfaf8}
-    label{display:grid;gap:.28rem}label>span{color:#596476;font-size:.63rem;font-weight:800}input,select,textarea{width:100%;padding:.58rem .62rem;border:1px solid #ccd2db;border-radius:7px;background:#fff;color:var(--eng-ink)}textarea{resize:vertical}
-    .remove{display:grid;width:32px;height:32px;place-items:center;border:1px solid #e2c2c0;border-radius:7px;color:#a34843;background:#fff;cursor:pointer;font-size:1rem}
-    .schedule-list article{display:grid;grid-template-columns:minmax(180px,1.1fr) 130px 100px 100px minmax(160px,.8fr) minmax(180px,1fr) 34px;gap:.5rem;align-items:end;padding:.7rem;border-bottom:1px solid rgba(18,26,44,.08)}
-    .empty{padding:1rem;color:var(--eng-muted);text-align:center;background:#faf9f7;border-radius:8px}
-    .context-grid{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;padding:1.2rem 1.3rem}.context-grid .wide{grid-column:1/-1}
-    @media(max-width:1100px){.contact-list article{grid-template-columns:1fr 1fr}.contact-list .remove{grid-column:2;justify-self:end}.schedule-list article{grid-template-columns:1fr 1fr}.schedule-list .remove{grid-column:2;justify-self:end}}
-    @media(max-width:650px){header,.section-heading{display:grid}.contact-list article,.schedule-list article,.context-grid{grid-template-columns:1fr}.contact-list .remove,.schedule-list .remove,.context-grid .wide{grid-column:auto}.remove{justify-self:end}}
+    .message{padding:.7rem 1.35rem;color:#25684d;background:#edf7f1;font-size:.73rem;font-weight:750}.message.error{color:var(--eng-danger);background:#fff0ef}
+    .work-section{padding:1.15rem 1.3rem;border-bottom:1px solid var(--eng-line)}
+    .section-heading{display:flex;align-items:start;justify-content:space-between;gap:1rem;margin-bottom:.8rem}.section-heading h3{margin:0;font-size:1rem}.schedule-actions{display:flex;gap:.4rem}.schedule-actions .schedule-done{color:#fff;background:var(--eng-ink)}
+    .contact-list{display:grid;gap:.5rem}.contact-list article{display:grid;grid-template-columns:120px 1fr 1fr 150px 34px;gap:.55rem;align-items:end;padding:.7rem;border:1px solid rgba(18,26,44,.09);border-radius:7px;background:#fbfaf8}
+    label{display:grid;gap:.28rem}label>span{color:#596476;font-size:.61rem;font-weight:800}input,select,textarea{width:100%;padding:.56rem .6rem;border:1px solid #ccd2db;border-radius:6px;background:#fff;color:var(--eng-ink)}textarea{resize:vertical}
+    .remove{display:grid!important;width:32px!important;height:32px!important;min-height:32px!important;padding:0!important;place-items:center;border:1px solid #e2c2c0!important;border-radius:6px!important;color:#a34843!important;background:#fff!important;cursor:pointer;font-size:1rem!important}
+    .schedule-record{display:grid;border-top:1px solid rgba(18,26,44,.08)}.schedule-record article{display:grid;grid-template-columns:105px minmax(0,1fr) auto;gap:1rem;align-items:start;padding:.85rem .1rem;border-bottom:1px solid rgba(18,26,44,.08)}.schedule-record article:last-child{border-bottom:0}.schedule-record time{display:grid;gap:.12rem}.schedule-record time strong{font-size:.82rem}.schedule-record time small,.schedule-record__end{color:#858d9a;font-size:.62rem}.schedule-record__body{display:grid;gap:.14rem}.schedule-record__body>strong{font-size:.8rem}.schedule-record__body>span{color:#6c7585;font-size:.68rem}.schedule-record__body p{margin:.25rem 0 0;color:#6f7785;font-size:.66rem;line-height:1.4}.schedule-record__end{padding-top:.1rem;white-space:nowrap}
+    .schedule-editor{display:grid;gap:.55rem}.schedule-editor>article{padding:.8rem;border:1px solid rgba(18,26,44,.1);border-radius:7px;background:#fbfaf8}.schedule-editor__top{display:grid;grid-template-columns:1fr 34px;gap:.55rem;align-items:end}.schedule-editor__grid{display:grid;grid-template-columns:130px 110px 110px minmax(180px,1fr);gap:.55rem;margin-top:.55rem}.schedule-editor .notes{margin-top:.55rem}
+    .empty{padding:1rem;color:var(--eng-muted);text-align:center;background:#faf9f7;border-radius:7px}.context-grid{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;padding:1.15rem 1.3rem}.context-grid .wide{grid-column:1/-1}
+    @media(max-width:1100px){.contact-list article{grid-template-columns:1fr 1fr}.contact-list .remove{grid-column:2;justify-self:end}.schedule-editor__grid{grid-template-columns:1fr 1fr}}
+    @media(max-width:650px){header,.section-heading{display:grid}.schedule-actions{justify-content:start}.contact-list article,.context-grid,.schedule-editor__grid{grid-template-columns:1fr}.contact-list .remove,.context-grid .wide{grid-column:auto}.remove{justify-self:end}.schedule-record article{grid-template-columns:78px 1fr}.schedule-record__end{grid-column:2}}
   `],
 })
 export class ContactsTabComponent {
@@ -108,6 +137,7 @@ export class ContactsTabComponent {
 
   @Output() workspaceUpdated = new EventEmitter<AssignmentWorkspaceDetails>();
   readonly saving = signal(false);
+  readonly editingSchedule = signal(false);
   readonly message = signal<string | null>(null);
   readonly error = signal<string | null>(null);
 
@@ -151,6 +181,17 @@ export class ContactsTabComponent {
         this.saving.set(false);
       },
     });
+  }
+
+  timeLabel(value: string | null): string {
+    if (!value) return 'Time pending';
+    const [hours, minutes] = value.split(':').map(Number);
+    const date = new Date(2000, 0, 1, hours, minutes);
+    return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  }
+
+  dateLabel(value: string): string {
+    return new Date(`${value}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   }
 
   private clone(value: HostCoordinationDetails): HostCoordinationDetails {

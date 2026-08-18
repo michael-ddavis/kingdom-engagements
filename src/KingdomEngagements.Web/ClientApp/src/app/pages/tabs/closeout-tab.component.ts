@@ -57,22 +57,29 @@ import { Closeout, EngagementCompletion } from '../../core/models';
         </aside>
       </div>
 
-      <footer>
-        <button type="button" class="secondary" [disabled]="saving()" (click)="save(false)">{{ saving() ? 'Saving…' : 'Save closeout' }}</button>
-        <button type="button" class="primary" [disabled]="saving() || !completion.canComplete" (click)="save(true)">Complete assignment</button>
-      </footer>
+      <div class="save-dock" role="region" aria-label="Closeout save actions">
+        <div>
+          <strong>Closeout record</strong>
+          <span>Save progress at any time, or complete the assignment when every required item is resolved.</span>
+        </div>
+        <div class="save-dock__actions">
+          <button type="button" class="secondary" [disabled]="saving()" (click)="save(false)">{{ saving() ? 'Saving…' : 'Save closeout' }}</button>
+          <button type="button" class="primary" [disabled]="saving() || !completion.canComplete" (click)="save(true)">Complete assignment</button>
+        </div>
+      </div>
     </section>
   `,
   styles: [`
-    .closeout-workspace{margin-top:1rem;border:1px solid var(--eng-line);border-radius:12px;background:var(--eng-surface);overflow:hidden}
+    .closeout-workspace{position:relative;margin-top:1rem;padding-bottom:5.7rem;border:1px solid var(--eng-line);border-radius:9px;background:var(--eng-surface);overflow:visible}
     header{display:flex;justify-content:space-between;gap:1rem;padding:1.25rem 1.4rem;border-bottom:1px solid var(--eng-line)}header p{margin:0 0 .35rem;color:var(--eng-blue);font-size:.68rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase}header h2{margin:0;font-size:1.55rem}header span:not(.completion-state){display:block;margin-top:.3rem;color:var(--eng-muted);font-size:.76rem}
     .completion-state{align-self:start;padding:.42rem .6rem;border-radius:999px;color:#70551f;background:#f7eddc;font-size:.68rem;font-weight:850}.completion-state.ready{color:#266d50;background:#e7f4ec}
     .message{padding:.7rem 1.4rem;color:#25684d;background:#edf7f1;font-size:.75rem;font-weight:750}.message.error{color:var(--eng-danger);background:#fff0ef}
     .closeout-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(320px,.75fr)}.narrative{display:grid;gap:.8rem;padding:1.2rem 1.3rem;border-right:1px solid var(--eng-line)}label{display:grid;gap:.3rem}label>span{color:#5d6879;font-size:.66rem;font-weight:800}textarea{width:100%;padding:.7rem;border:1px solid #ccd2db;border-radius:7px;color:var(--eng-ink);background:#fff;resize:vertical}
     .closeout-checks{padding:1.2rem}.closeout-checks>p{margin:0 0 .65rem;color:var(--eng-blue);font-size:.68rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase}.closeout-checks label{display:grid;grid-template-columns:20px minmax(0,1fr);gap:.55rem;padding:.7rem 0;border-bottom:1px solid rgba(18,26,44,.08);cursor:pointer}.closeout-checks input{margin-top:.15rem}.closeout-checks label strong,.closeout-checks label small{display:block}.closeout-checks label strong{color:var(--eng-ink);font-size:.76rem}.closeout-checks label small{margin-top:.2rem;color:var(--eng-muted);font-size:.65rem;line-height:1.4}
     .system-check{display:flex;gap:.6rem;align-items:center;padding:.7rem 0;border-bottom:1px solid rgba(18,26,44,.08)}.system-check>span{display:grid;width:25px;height:25px;place-items:center;border-radius:50%;color:#7f8794;background:#eceff2;font-weight:900}.system-check>span.ok{color:#fff;background:#2d7d5c}.system-check strong,.system-check small{display:block}.system-check strong{font-size:.73rem}.system-check small{margin-top:.15rem;color:var(--eng-muted);font-size:.64rem}
-    footer{display:flex;justify-content:flex-end;gap:.6rem;padding:1rem 1.3rem;border-top:1px solid var(--eng-line);background:#faf9f7}footer button{min-height:42px;padding:.62rem .85rem;border-radius:8px;font-weight:850;cursor:pointer}.secondary{border:1px solid var(--eng-line);color:var(--eng-ink);background:#fff}.primary{border:1px solid transparent;color:#fff;background:var(--eng-ink)}button:disabled{cursor:default;opacity:.45}
-    @media(max-width:850px){.closeout-grid{grid-template-columns:1fr}.narrative{border-right:0;border-bottom:1px solid var(--eng-line)}}
+    .save-dock{position:sticky;bottom:.8rem;z-index:15;display:flex;align-items:center;justify-content:space-between;gap:1rem;width:calc(100% - 2rem);margin:1rem 1rem -4.85rem;padding:.8rem .9rem;border:1px solid rgba(18,26,44,.12);border-radius:9px;background:rgba(255,253,250,.96);box-shadow:0 12px 36px rgba(18,26,44,.13);backdrop-filter:blur(14px)}.save-dock>div:first-child strong,.save-dock>div:first-child span{display:block}.save-dock>div:first-child strong{font-size:.72rem}.save-dock>div:first-child span{max-width:620px;margin-top:.12rem;color:var(--eng-muted);font-size:.62rem}.save-dock__actions{display:flex;gap:.5rem}.save-dock button{min-height:42px;padding:.58rem .85rem;border-radius:7px;font-size:.72rem;font-weight:850;cursor:pointer}.secondary{border:1px solid var(--eng-line);color:var(--eng-ink);background:#fff}.primary{border:1px solid transparent;color:#fff;background:var(--eng-ink)}button:disabled{cursor:default;opacity:.45}
+    @media(max-width:850px){.closeout-grid{grid-template-columns:1fr}.narrative{border-right:0;border-bottom:1px solid var(--eng-line)}.save-dock{display:grid;bottom:.5rem}.save-dock__actions{display:grid;grid-template-columns:1fr 1fr}.save-dock button{width:100%}}
+    @media(max-width:560px){header{display:grid}.save-dock__actions{grid-template-columns:1fr}}
   `],
 })
 export class CloseoutTabComponent {

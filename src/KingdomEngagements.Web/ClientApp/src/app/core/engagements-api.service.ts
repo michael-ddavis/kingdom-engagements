@@ -18,6 +18,18 @@ import {
   SpeakingRequestDetails,
 } from './speaking-request.models';
 
+export interface CreateMinistryResponseInput {
+  type: string;
+  count: number;
+  personName: string | null;
+  email: string | null;
+  phone: string | null;
+  notes: string | null;
+  requiresFollowUp: boolean;
+  followUpOwner: string | null;
+  followUpDueAtUtc: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class EngagementsApiService {
   constructor(private readonly http: HttpClient) {}
@@ -148,6 +160,16 @@ export class EngagementsApiService {
   getCompletion(id: string): Observable<EngagementCompletion> {
     return this.http.get<EngagementCompletion>(
       `/api/engagements/assignments/${encodeURIComponent(id)}/completion`,
+    );
+  }
+
+  createResponse(
+    assignmentId: string,
+    input: CreateMinistryResponseInput,
+  ): Observable<EngagementCompletion> {
+    return this.http.post<EngagementCompletion>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/responses`,
+      input,
     );
   }
 

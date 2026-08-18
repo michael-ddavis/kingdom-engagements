@@ -20,6 +20,7 @@ jobs:
       - run: node --check src/KingdomEngagements.Web/wwwroot/engagements-polish.js
       - run: node --check src/KingdomEngagements.Web/wwwroot/engagements-brief.js
       - run: node --check src/KingdomEngagements.Web/wwwroot/engagements-earned-ui.js
+      - run: node --check src/KingdomEngagements.Web/wwwroot/assignment-care-network.js
       - run: dotnet restore KingdomEngagements.slnx
       - run: dotnet build KingdomEngagements.slnx --configuration Release --no-restore
       - run: dotnet test KingdomEngagements.slnx --configuration Release --no-build
@@ -45,6 +46,8 @@ jobs:
                 grep --quiet '/engagements-brief.css' <<<"$index_payload"
                 grep --quiet '/engagements-earned-ui.js' <<<"$index_payload"
                 grep --quiet '/engagements-earned-ui.css' <<<"$index_payload"
+                grep --quiet '/assignment-care-network.js' <<<"$index_payload"
+                grep --quiet '/assignment-care-network.css' <<<"$index_payload"
                 grep --quiet 'engagement-nav-root' <<<"$index_payload"
                 grep --quiet 'href="#requests">Invitations' <<<"$index_payload"
                 grep --quiet 'href="#assignments">Assignments' <<<"$index_payload"
@@ -59,6 +62,11 @@ jobs:
                 grep --quiet 'Documents' <<<"$legacy_payload"
                 grep --quiet 'Record' <<<"$legacy_payload"
                 if grep --quiet 'Event day' <<<"$legacy_payload"; then exit 1; fi
+                care_payload="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/assignment-care-network.js)"
+                grep --quiet 'Care Network' <<<"$care_payload"
+                grep --quiet 'Responses, referrals and handoffs' <<<"$care_payload"
+                grep --quiet 'Accept care responsibility' <<<"$care_payload"
+                grep --quiet 'Unable to accept' <<<"$care_payload"
                 polish_payload="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/engagements-polish.js)"
                 grep --quiet 'animateAccordion' <<<"$polish_payload"
                 grep --quiet 'contactDrafts' <<<"$polish_payload"

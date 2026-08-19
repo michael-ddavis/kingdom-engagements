@@ -184,6 +184,13 @@ type EngagementView = 'upcoming' | 'review' | 'attention' | 'completed';
   `,
 })
 export class AssignmentListComponent implements OnInit {
+  private readonly curatedDemoAssignments = new Set([
+    'assignment-demo-001',
+    'assignment-demo-002',
+    'assignment-demo-007',
+  ]);
+  private readonly curatedDemoRequests = new Set(['CTG-DEMO-001']);
+
   readonly assignments = signal<readonly EngagementSummary[]>([]);
   readonly requests = signal<readonly SpeakingRequestDetails[]>([]);
   readonly loading = signal(true);
@@ -192,11 +199,13 @@ export class AssignmentListComponent implements OnInit {
 
   readonly activeAssignments = computed(() =>
     [...this.assignments()]
+      .filter(item => this.shouldShowAssignment(item))
       .filter(item => item.status !== 'complete')
       .sort((a, b) => this.sortDate(a.startsAtUtc) - this.sortDate(b.startsAtUtc)),
   );
   readonly completedAssignments = computed(() =>
     [...this.assignments()]
+      .filter(item => this.shouldShowAssignment(item))
       .filter(item => item.status === 'complete')
       .sort((a, b) => this.sortDate(b.startsAtUtc) - this.sortDate(a.startsAtUtc)),
   );
@@ -204,7 +213,9 @@ export class AssignmentListComponent implements OnInit {
     this.activeAssignments().filter(item => item.openTasks > 0 || item.readinessPercent < 100),
   );
   readonly reviewRequests = computed(() =>
-    this.requests().filter(item => !['approved', 'declined'].includes(item.status)),
+    this.requests()
+      .filter(item => this.shouldShowRequest(item))
+      .filter(item => !['approved', 'declined'].includes(item.status)),
   );
   readonly visibleAssignments = computed(() => {
     if (this.view() === 'completed') return this.completedAssignments();
@@ -309,6 +320,18 @@ export class AssignmentListComponent implements OnInit {
     if (this.view() === 'completed') return 'Completed ministry records will appear here.';
     if (this.view() === 'attention') return 'Every active assignment is currently moving without an open readiness signal.';
     return 'Approved ministry assignments will appear here when they are scheduled.';
+  }
+
+  private shouldShowAssignment(item: EngagementSummary): boolean {
+    if (item.title.startsWith('Demo-lock Engagement ')) return false;
+    if (!item.externalAssignmentId.startsWith('assignment-demo-')) return true;
+    return this.curatedDemoAssignments.has(item.externalAssignmentId);
+  }
+
+  private shouldShowRequest(item: SpeakingRequestDetails): boolean {
+    if (item.eventName.startsWith('Demo-lock Engagement ')) return false;
+    if (!item.referenceNumber.startsWith('CTG-DEMO-')) return true;
+    return this.curatedDemoRequests.has(item.referenceNumber);
   }
 
   private sortDate(value: string | null): number {

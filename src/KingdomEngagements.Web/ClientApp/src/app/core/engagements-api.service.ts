@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import {
   AssignmentWorkspaceDetails,
   AssignmentWorkspaceEnvelope,
@@ -39,7 +39,9 @@ export class EngagementsApiService {
   }
 
   getRequests(): Observable<readonly SpeakingRequestDetails[]> {
-    return this.http.get<readonly SpeakingRequestDetails[]>('/api/engagements/requests');
+    return this.http.get<readonly SpeakingRequestDetails[]>('/api/engagements/requests').pipe(
+      map(items => items.filter(item => !this.isRehearsalRequest(item))),
+    );
   }
 
   getRequest(id: string): Observable<SpeakingRequestDetails> {
@@ -70,7 +72,9 @@ export class EngagementsApiService {
   }
 
   getAssignments(): Observable<readonly EngagementSummary[]> {
-    return this.http.get<readonly EngagementSummary[]>('/api/engagements/assignments');
+    return this.http.get<readonly EngagementSummary[]>('/api/engagements/assignments').pipe(
+      map(items => items.filter(item => !this.isRehearsalAssignment(item))),
+    );
   }
 
   getAssignment(id: string): Observable<EngagementDetails> {
@@ -200,5 +204,15 @@ export class EngagementsApiService {
       `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/responses/${encodeURIComponent(responseId)}/handoff-to-care`,
       { consentConfirmed: true },
     );
+  }
+
+  private isRehearsalAssignment(item: EngagementSummary): boolean {
+    return /^Demo-lock Engagement\b/i.test(item.title)
+      || /^Demo-lock Covenant Fellowship$/i.test(item.hostOrganization);
+  }
+
+  private isRehearsalRequest(item: SpeakingRequestDetails): boolean {
+    return /^Demo-lock Engagement\b/i.test(item.eventName)
+      || /^Demo-lock Covenant Fellowship$/i.test(item.organizationName);
   }
 }

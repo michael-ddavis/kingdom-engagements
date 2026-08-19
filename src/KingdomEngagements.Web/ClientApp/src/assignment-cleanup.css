@@ -1,0 +1,110 @@
+:root {
+  /* Keep the restored July 29 structure, but remove the warm/gold wash. */
+  --legacy-page: #f4f5f7;
+  --legacy-surface: #ffffff;
+  --legacy-surface-soft: #fafbfc;
+  --legacy-surface-muted: #edf0f3;
+  --legacy-gold: #355b9f;
+  --legacy-gold-light: #d7e0eb;
+  --legacy-gold-soft: #f2f5f8;
+}
+
+.eng-main {
+  background: radial-gradient(circle at 95% 0, rgba(53, 91, 159, .035), transparent 32rem), var(--legacy-page);
+}
+
+.eng-eyebrow,
+.legacy-workspace-heading .eng-eyebrow,
+.legacy-event-type,
+.legacy-current-stage strong,
+.legacy-open-arrow {
+  color: var(--legacy-blue) !important;
+}
+
+.legacy-assignment-summary article,
+.legacy-overview-card,
+.legacy-invitation-source-panel,
+.legacy-readiness-panel,
+.legacy-heading-summary article,
+.legacy-assignment-tabs,
+.legacy-exact-workspace .assignment-pane,
+.legacy-exact-workspace .completion-pane {
+  background: linear-gradient(145deg, #fff, #fafbfc) !important;
+}
+
+.legacy-summary-icon--navy,
+.legacy-summary-icon--gold,
+.legacy-action-mark {
+  border-color: #d7dde6 !important;
+  color: #23324a !important;
+  background: #eef2f6 !important;
+}
+
+.legacy-assignment-card-heading {
+  background: #fbfcfd !important;
+}
+
+.legacy-assignment-card:hover,
+.legacy-assignment-card.active {
+  border-color: #9aaabd !important;
+}
+
+.legacy-assignment-status--active,
+.legacy-heading-status {
+  border-color: #d7dee7 !important;
+  color: #4c5a6e !important;
+  background: #eef2f6 !important;
+}
+
+.legacy-filter-group button:hover {
+  border-color: #ccd5e0 !important;
+  background: #f4f6f8 !important;
+}
+
+.legacy-filter-group button.selected span {
+  color: #dce7f5 !important;
+}
+
+.legacy-heading-summary article::before,
+.legacy-overview-card--next::before,
+.legacy-assignment-tab.is-active::after {
+  background: linear-gradient(90deg, #b9c7d8, #647c9c, #b9c7d8) !important;
+}
+
+.legacy-overview-card--next {
+  border-color: #d8dee7 !important;
+  background: radial-gradient(circle at 100% 0, rgba(53, 91, 159, .07), transparent 15rem), linear-gradient(145deg, #fff, #fafbfc 68%) !important;
+}
+
+.legacy-coordinator-avatar {
+  color: #dbe7f7 !important;
+}
+
+.legacy-card-action b {
+  color: #dbe7f7 !important;
+}
+
+/* Responses still back Care handoff data, but they no longer get their own assignment tab. */
+.legacy-assignment-tab-group--record .legacy-assignment-tab-group-items {
+  grid-template-columns: 1fr 1fr !important;
+}
+
+.legacy-assignment-tab-group--record .legacy-assignment-tab-group-items > button:first-child {
+  display: none !important;
+}
+
+/* Remove remaining amber treatment from the Care handoff inside the assignment. */
+.transfer-card {
+  border-color: #d7dee8 !important;
+  background: #f7f9fb !important;
+}
+
+.transfer-card__copy > span,
+.consent-check small {
+  color: #667286 !important;
+}
+
+.consent-check {
+  border-color: rgba(53, 91, 159, .16) !important;
+  background: #fff !important;
+}

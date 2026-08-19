@@ -1,0 +1,48 @@
+/* Small assignment refinements: keep the restored structure, simplify the tab labels. */
+.legacy-assignment-tab small {
+  display: none !important;
+}
+
+/* Keep only the single host-invitation action injected beside the assignment heading. */
+.legacy-source-link {
+  display: none !important;
+}
+
+.legacy-workspace-title__actions {
+  display: flex;
+  margin-top: 14px;
+  align-items: center;
+  gap: 8px;
+}
+
+.legacy-host-invitation-action {
+  display: inline-flex;
+  min-height: 38px;
+  padding: 0 13px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  align-items: center;
+  gap: 9px;
+  color: #29364a;
+  background: #fff;
+  font-size: .69rem;
+  font-weight: 780;
+  text-decoration: none;
+  box-shadow: 0 3px 9px rgba(17, 28, 45, .04);
+}
+
+.legacy-host-invitation-action:hover {
+  border-color: #9fb0c5;
+  background: #f7f9fb;
+}
+
+.legacy-host-invitation-action span {
+  color: #355b9f;
+  font-size: .9rem;
+}
+
+@media (max-width: 720px) {
+  .legacy-workspace-title__actions {
+    margin-top: 10px;
+  }
+}

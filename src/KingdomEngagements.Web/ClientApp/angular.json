@@ -23,10 +23,16 @@
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
-            "assets": [],
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "public"
+              }
+            ],
             "styles": [
               "src/styles.scss",
-              "src/assignment-cleanup.css"
+              "src/assignment-cleanup.css",
+              "src/assignment-refinement.css"
             ],
             "scripts": [
               "src/host-preparation-link.js"

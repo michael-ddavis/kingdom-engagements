@@ -8,9 +8,21 @@ public sealed class EngagementOperationsCoordinationPublisher(
     IHttpClientFactory httpClientFactory,
     IConfiguration configuration)
 {
-    public async Task PublishAsync(
+    public Task PublishAsync(
         SpeakingRequestRecord request,
         EngagementAssignment assignment,
+        CancellationToken cancellationToken) =>
+        PublishAsync(assignment, request.Id, request.ReferenceNumber, cancellationToken);
+
+    public Task PublishAsync(
+        EngagementAssignment assignment,
+        CancellationToken cancellationToken) =>
+        PublishAsync(assignment, null, null, cancellationToken);
+
+    private async Task PublishAsync(
+        EngagementAssignment assignment,
+        Guid? requestId,
+        string? referenceNumber,
         CancellationToken cancellationToken)
     {
         var eventId = assignment.Id;
@@ -35,8 +47,8 @@ public sealed class EngagementOperationsCoordinationPublisher(
             {
                 subjectId = $"assignment:{assignment.Id:N}",
                 assignmentId = assignment.Id,
-                requestId = request.Id,
-                referenceNumber = request.ReferenceNumber,
+                requestId,
+                referenceNumber,
                 title = assignment.Title,
                 hostOrganization = assignment.HostOrganization,
                 location = assignment.Location,

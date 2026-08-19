@@ -1,5 +1,4 @@
 (() => {
-  const hostPreparationLabel = 'Open host preparation';
   let workspaceRequest = null;
 
   function assignmentIdFromPath() {
@@ -22,6 +21,54 @@
     }
 
     return workspaceRequest;
+  }
+
+  function hostCoordinationCard() {
+    return [...document.querySelectorAll('.legacy-overview-card')].find(card =>
+      card.querySelector('.eng-eyebrow')?.textContent?.trim().toLowerCase() === 'host coordination',
+    );
+  }
+
+  function statusLabel(value) {
+    if (value === 'locked') return 'Waiting on terms';
+    return String(value || 'not-started')
+      .replaceAll('-', ' ')
+      .replace(/\b\w/g, char => char.toUpperCase());
+  }
+
+  function syncHostCoordinationCard() {
+    const card = hostCoordinationCard();
+    if (!card || card.dataset.hostStateBound === 'true') return;
+    card.dataset.hostStateBound = 'true';
+
+    getWorkspaceEnvelope()
+      .then(envelope => {
+        const preparation = envelope?.workspace?.preparation;
+        if (!preparation) return;
+
+        const heading = card.querySelector('header h4');
+        if (heading) heading.textContent = statusLabel(preparation.coordinationStatus);
+
+        const action = card.querySelector('.legacy-card-action');
+        if (!(action instanceof HTMLButtonElement)) return;
+
+        if (envelope.coordinationUrl) {
+          action.innerHTML = 'Open host preparation <b aria-hidden="true">→</b>';
+          action.dataset.hostTarget = envelope.coordinationUrl;
+          action.dataset.hostMode = 'coordination';
+        } else if (envelope.termsUrl) {
+          action.innerHTML = 'Review engagement terms <b aria-hidden="true">→</b>';
+          action.dataset.hostTarget = envelope.termsUrl;
+          action.dataset.hostMode = 'terms';
+        } else {
+          action.textContent = 'Host preparation unavailable';
+          action.disabled = true;
+        }
+      })
+      .catch(error => {
+        card.dataset.hostStateBound = 'false';
+        console.error('Unable to load host coordination state.', error);
+      });
   }
 
   function addHostInvitationAction() {
@@ -55,34 +102,28 @@
   document.addEventListener('click', event => {
     const origin = event.target instanceof Element ? event.target : null;
     const button = origin?.closest('button.legacy-card-action');
-    if (!button || !button.textContent?.includes(hostPreparationLabel)) return;
+    if (!button || !hostCoordinationCard()?.contains(button)) return;
+
+    const target = button.dataset.hostTarget;
+    if (!target) return;
 
     event.preventDefault();
     event.stopImmediatePropagation();
 
-    const hostWindow = window.open('', '_blank');
-    if (hostWindow) {
-      hostWindow.opener = null;
-      hostWindow.document.title = 'Opening host preparation…';
-      hostWindow.document.body.innerHTML = '<p style="font-family:system-ui,sans-serif;padding:24px;color:#445166">Opening host preparation…</p>';
-    }
-
-    getWorkspaceEnvelope()
-      .then(envelope => {
-        if (!envelope?.coordinationUrl) throw new Error('Host preparation link is not available yet.');
-        if (hostWindow && !hostWindow.closed) {
-          hostWindow.location.replace(envelope.coordinationUrl);
-        } else {
-          window.location.assign(envelope.coordinationUrl);
-        }
-      })
-      .catch(error => {
-        if (hostWindow && !hostWindow.closed) hostWindow.close();
-        console.error('Unable to open host preparation.', error);
-      });
+    const hostWindow = window.open(target, '_blank', 'noopener,noreferrer');
+    if (!hostWindow) window.location.assign(target);
   }, true);
 
-  const observer = new MutationObserver(addHostInvitationAction);
+  function sync() {
+    addHostInvitationAction();
+    syncHostCoordinationCard();
+  }
+
+  const observer = new MutationObserver(sync);
   observer.observe(document.documentElement, { childList: true, subtree: true });
-  addHostInvitationAction();
+  window.addEventListener('popstate', () => {
+    workspaceRequest = null;
+    sync();
+  });
+  sync();
 })();

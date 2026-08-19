@@ -24,7 +24,13 @@
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [],
-            "styles": ["src/styles.scss"]
+            "styles": [
+              "src/styles.scss",
+              "src/assignment-cleanup.css"
+            ],
+            "scripts": [
+              "src/host-preparation-link.js"
+            ]
           },
           "configurations": {
             "production": {

@@ -1,5 +1,7 @@
 :root {
   /* Keep the restored July 29 structure, but remove the warm/gold wash. */
+  --eng-canvas: #f4f5f7;
+  --eng-surface: #ffffff;
   --legacy-page: #f4f5f7;
   --legacy-surface: #ffffff;
   --legacy-surface-soft: #fafbfc;
@@ -7,6 +9,15 @@
   --legacy-gold: #355b9f;
   --legacy-gold-light: #d7e0eb;
   --legacy-gold-soft: #f2f5f8;
+}
+
+html,
+body {
+  background: var(--eng-canvas);
+}
+
+.eng-modulebar {
+  background: rgba(249, 250, 252, .94);
 }
 
 .eng-main {

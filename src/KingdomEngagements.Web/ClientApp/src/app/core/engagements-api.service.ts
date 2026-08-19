@@ -33,19 +33,13 @@ export interface CreateMinistryResponseInput {
 @Injectable({ providedIn: 'root' })
 export class EngagementsApiService {
   private readonly visibleDemoAssignments = new Set([
-    'assignment-demo-001', // Kingdom Leadership Gathering · connected demo story
+    'assignment-demo-001', // Kingdom Leadership Gathering · active preparation
     'assignment-demo-002', // Women of Purpose Summit · strong readiness
-    'assignment-demo-003', // Apostolic Leadership Intensive · preparation depth
-    'assignment-demo-004', // Regional Pastors Gathering · nearly ready/local
     'assignment-demo-007', // Daughters Arise Conference · completed history
   ]);
 
   private readonly visibleDemoRequests = new Set([
-    'CTG-DEMO-001', // awaiting review
-    'CTG-DEMO-002', // information needed
-    'CTG-DEMO-003', // approved source for primary assignment story
-    'CTG-DEMO-005', // another clean pending invitation
-    'CTG-DEMO-007', // approved source for second assignment story
+    'CTG-DEMO-001', // one clean invitation awaiting review
   ]);
 
   constructor(private readonly http: HttpClient) {}

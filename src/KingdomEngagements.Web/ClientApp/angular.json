@@ -35,7 +35,8 @@
               "src/assignment-refinement.css"
             ],
             "scripts": [
-              "src/host-preparation-link.js"
+              "src/host-preparation-link.js",
+              "src/host-invitation-link.js"
             ]
           },
           "configurations": {

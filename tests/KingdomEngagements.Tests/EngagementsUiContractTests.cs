@@ -30,6 +30,60 @@ public sealed class EngagementsUiContractTests
     }
 
     [Fact]
+    public void Focused_demo_data_is_source_clean_instead_of_client_hidden()
+    {
+        var seeder = File.ReadAllText(FindRepositoryFile(
+            "src",
+            "KingdomEngagements.Web",
+            "Features",
+            "EngagementsDemoSeedWorker.cs"));
+        Assert.Contains("assignment-demo-001", seeder, StringComparison.Ordinal);
+        Assert.Contains("assignment-demo-002", seeder, StringComparison.Ordinal);
+        Assert.Contains("assignment-demo-007", seeder, StringComparison.Ordinal);
+        Assert.DoesNotContain("Assignment(\"assignment-demo-003\"", seeder, StringComparison.Ordinal);
+        Assert.DoesNotContain("Assignment(\"assignment-demo-004\"", seeder, StringComparison.Ordinal);
+        Assert.DoesNotContain("Assignment(\"assignment-demo-005\"", seeder, StringComparison.Ordinal);
+        Assert.DoesNotContain("Assignment(\"assignment-demo-006\"", seeder, StringComparison.Ordinal);
+        Assert.DoesNotContain("Assignment(\"assignment-demo-008\"", seeder, StringComparison.Ordinal);
+        Assert.Contains("\"CTG-DEMO-001\"", seeder, StringComparison.Ordinal);
+        Assert.DoesNotContain("Request(\"CTG-DEMO-002\"", seeder, StringComparison.Ordinal);
+        Assert.Contains("RemoveRetiredSourceRowsAsync", seeder, StringComparison.Ordinal);
+
+        var api = File.ReadAllText(FindRepositoryFile(
+            "src",
+            "KingdomEngagements.Web",
+            "ClientApp",
+            "src",
+            "app",
+            "core",
+            "engagements-api.service.ts"));
+        Assert.DoesNotContain("visibleDemoAssignments", api, StringComparison.Ordinal);
+        Assert.DoesNotContain("visibleDemoRequests", api, StringComparison.Ordinal);
+        Assert.DoesNotContain("shouldShowAssignment", api, StringComparison.Ordinal);
+        Assert.DoesNotContain("shouldShowRequest", api, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Connected_demo_story_uses_the_authoritative_assignment_deep_link()
+    {
+        var publisher = File.ReadAllText(FindRepositoryFile(
+            "src",
+            "KingdomEngagements.Web",
+            "Platform",
+            "EngagementApprovalOperationsBridge.cs"));
+        Assert.Contains("$\"{engagementsBrowserUrl}/assignments/{assignment.Id}\"", publisher, StringComparison.Ordinal);
+        Assert.Contains("public Task PublishAsync(\n        EngagementAssignment assignment", publisher, StringComparison.Ordinal);
+
+        var worker = File.ReadAllText(FindRepositoryFile(
+            "src",
+            "KingdomEngagements.Web",
+            "Features",
+            "EngagementsDemoConnectedStoryWorker.cs"));
+        Assert.Contains("await publisher.PublishAsync(assignment, stoppingToken)", worker, StringComparison.Ordinal);
+        Assert.DoesNotContain("StoryReference", worker, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Kingdom_care_is_a_first_class_assignment_tab_with_a_consent_gated_handoff()
     {
         var source = File.ReadAllText(Path.Combine(FindWwwroot(), "legacy18-product.js"));

@@ -1,0 +1,415 @@
+/* Assignment-level Care Network restored from the pre-split KingdomOS engagement workspace. */
+.exact18-assignment-tabs .exact18-tab-group--ministry {
+  min-width: 180px;
+}
+
+.exact18-assignment-tabs .exact18-tab-group--ministry .exact18-tab {
+  min-width: 180px;
+}
+
+.care-legacy-page {
+  display: grid;
+  gap: 20px;
+  color: #172033;
+}
+
+.care-legacy-page-heading,
+.care-response-panel,
+.care-referral-panel,
+.care-legacy-metric {
+  border: 1px solid #d9dde5;
+  background: #fff;
+}
+
+.care-legacy-page-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px;
+  border-radius: 10px;
+}
+
+.care-legacy-page-heading h2,
+.care-panel-heading h3,
+.care-referral-heading h3,
+.care-section-heading strong {
+  margin: 0;
+  color: #182033;
+}
+
+.care-legacy-page-heading h2 {
+  font-size: 1.65rem;
+  letter-spacing: -0.025em;
+}
+
+.care-legacy-page-heading p:last-child {
+  max-width: 760px;
+  margin: 7px 0 0;
+  color: #687181;
+  line-height: 1.55;
+}
+
+.care-page-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 9px;
+}
+
+.care-page-actions button,
+.care-referral-actions button,
+.care-case-plan button,
+.care-composer-footer button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid #cfd4de;
+  border-radius: 7px;
+  color: #263146;
+  background: #fff;
+  font: inherit;
+  font-size: .84rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.care-page-actions button:hover,
+.care-referral-actions button:hover,
+.care-case-plan button:hover {
+  border-color: #4567aa;
+  color: #315b9f;
+  background: #f4f7fc;
+}
+
+.care-primary,
+.partner-accept {
+  border-color: #111827 !important;
+  color: #fff !important;
+  background: #111827 !important;
+}
+
+.care-primary:disabled {
+  border-color: #d8dce4 !important;
+  color: #9299a5 !important;
+  background: #eef0f3 !important;
+  cursor: not-allowed !important;
+}
+
+.care-legacy-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.care-legacy-metric {
+  position: relative;
+  display: grid;
+  min-height: 112px;
+  padding: 17px 18px;
+  overflow: hidden;
+  border-radius: 9px;
+}
+
+.care-legacy-metric::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  content: '';
+  background: #4567aa;
+}
+
+.care-legacy-metric.is-success::before { background: #378362; }
+.care-legacy-metric > span { color: #697385; font-size: .78rem; font-weight: 750; }
+.care-legacy-metric > strong { margin: 8px 0 4px; font-size: 1.7rem; line-height: 1; }
+.care-legacy-metric > small { color: #8a92a0; font-size: .72rem; }
+
+.care-legacy-layout {
+  display: grid;
+  grid-template-columns: minmax(320px, .72fr) minmax(0, 1.45fr);
+  align-items: start;
+  gap: 20px;
+}
+
+.care-response-panel,
+.care-referral-panel {
+  min-width: 0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.care-response-panel { padding: 20px; }
+.care-referral-panel { padding: 22px; }
+
+.care-panel-heading,
+.care-referral-heading,
+.care-section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.care-panel-heading {
+  padding-bottom: 15px;
+  border-bottom: 1px solid #e4e6eb;
+}
+
+.care-panel-heading h3 { font-size: 1.05rem; }
+.care-panel-heading > span,
+.care-section-heading > span {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border-radius: 999px;
+  color: #355b9a;
+  background: #edf3fc;
+  font-size: .7rem;
+  font-weight: 800;
+}
+
+.care-queue-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 13px 0 10px;
+}
+
+.care-queue-filter button {
+  min-height: 32px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 6px;
+  color: #697282;
+  background: transparent;
+  font: inherit;
+  font-size: .72rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.care-queue-filter button.is-active {
+  color: #fff;
+  background: #172033;
+}
+
+.care-response-list { display: grid; gap: 7px; }
+.care-legacy-response {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 11px;
+  width: 100%;
+  padding: 13px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: inherit;
+  background: #f7f8fa;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.care-legacy-response:hover { border-color: #cdd2dc; background: #fff; }
+.care-legacy-response.is-selected { border-color: rgba(53,91,159,.42); background: #edf3fc; box-shadow: 0 0 0 2px rgba(53,91,159,.06); }
+.care-legacy-avatar {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: #243b64;
+  font-size: .82rem;
+  font-weight: 850;
+}
+.care-legacy-response-copy { display: grid; gap: 4px; min-width: 0; }
+.care-legacy-response-copy > span:not(.care-legacy-response-title):not(.care-legacy-case-meta) { color: #687181; font-size: .77rem; }
+.care-legacy-response-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.care-legacy-response-title strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .9rem; }
+.care-status { padding: 3px 6px; border-radius: 999px; color: #6c7481; background: #eceef2; font-size: .63rem; font-style: normal; font-weight: 800; white-space: nowrap; }
+.care-consent-line { color: #a44d47 !important; font-size: .68rem !important; font-weight: 750; }
+.care-consent-line.is-confirmed { color: #2d7a59 !important; }
+.care-legacy-case-meta { display: flex; flex-wrap: wrap; gap: 5px 10px; color: #8a92a0; }
+.care-legacy-case-meta small { font-size: .66rem; }
+.care-legacy-case-meta .active-referral { color: #355b9a; font-weight: 750; }
+
+.care-referral-heading {
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e4e6eb;
+}
+.care-referral-heading h3 { font-size: 1.25rem; }
+.care-consent-badge { padding: 6px 9px; border-radius: 999px; font-size: .7rem; font-weight: 800; }
+.care-consent-badge.is-confirmed { color: #276f51; background: #e7f4ed; }
+.care-consent-badge.is-missing { color: #9d453f; background: #faeae8; }
+
+.care-response-detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(240px, .8fr);
+  gap: 18px;
+  padding: 18px 0;
+  border-bottom: 1px solid #e4e6eb;
+}
+.care-response-detail > div > small,
+.care-response-detail dt,
+.care-section-heading small,
+.care-active-referral small { color: #7c8492; font-size: .7rem; font-weight: 750; text-transform: uppercase; letter-spacing: .05em; }
+.care-response-detail > div > strong { display: block; margin-top: 5px; font-size: 1rem; }
+.care-response-detail > div > p { margin: 7px 0 0; color: #5f6877; line-height: 1.52; }
+.care-response-detail dl { display: grid; margin: 0; }
+.care-response-detail dl div { display: grid; grid-template-columns: 100px minmax(0,1fr); gap: 10px; padding: 6px 0; }
+.care-response-detail dd { margin: 0; color: #30394b; font-size: .77rem; font-weight: 650; }
+
+.care-case-management,
+.care-partner-section,
+.care-email-composer,
+.care-active-referral,
+.care-referral-history {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid #e4e6eb;
+}
+.care-case-plan {
+  display: grid;
+  grid-template-columns: 1.2fr .7fr 1fr auto;
+  gap: 8px;
+  margin-top: 12px;
+  align-items: end;
+}
+.care-case-plan label,
+.care-email-composer label { display: grid; gap: 5px; color: #687181; font-size: .72rem; font-weight: 750; }
+.care-case-plan input,
+.care-case-plan select,
+.care-email-composer textarea {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid #ccd2dc;
+  border-radius: 7px;
+  padding: 8px 10px;
+  color: #172033;
+  background: #fff;
+  font: inherit;
+}
+
+.care-response-actions { margin-top: 13px; }
+.care-referral-actions { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
+.care-partner-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; margin-top: 12px; }
+.care-partner-card {
+  display: grid;
+  gap: 5px;
+  min-height: 122px;
+  padding: 12px;
+  border: 1px solid #d8dce4;
+  border-radius: 8px;
+  color: #263146;
+  background: #fafbfc;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.care-partner-card:hover { border-color: #7390c4; background: #f4f7fc; }
+.care-partner-card.is-selected { border-color: #4567aa; box-shadow: 0 0 0 2px rgba(69,103,170,.09); background: #edf3fc; }
+.care-partner-card.is-unavailable { opacity: .55; cursor: not-allowed; }
+.care-partner-heading { display: flex; justify-content: space-between; gap: 7px; }
+.care-partner-heading strong { font-size: .82rem; }
+.care-partner-heading small { color: #2d7a59; font-size: .62rem; text-transform: capitalize; }
+.care-partner-card > span:not(.care-partner-heading), .care-partner-card > small { color: #697282; font-size: .68rem; line-height: 1.35; }
+.care-partner-response-time { margin-top: auto; font-weight: 700; }
+
+.care-email-composer textarea { margin-top: 5px; min-height: 88px; resize: vertical; }
+.care-composer-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 10px; }
+.care-composer-footer small { max-width: 520px; color: #7a8391; font-size: .7rem; line-height: 1.45; }
+
+.care-active-referral { padding: 17px; border: 1px solid #d9dde5; border-radius: 8px; background: #f8fafc; }
+.care-active-referral--accepted, .care-active-referral--connected { border-color: #bcdccc; background: #f3faf6; }
+.care-active-referral-heading { display: flex; justify-content: space-between; align-items: center; gap: 15px; }
+.care-active-referral-heading div { display: grid; gap: 3px; }
+.care-active-referral-heading > span { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 50%; color: #355b9a; background: #e9f0fa; font-weight: 900; }
+.care-active-referral > p { color: #606a78; font-size: .78rem; line-height: 1.45; }
+.care-referral-deadline { display: flex; justify-content: space-between; gap: 12px; padding: 9px 10px; border-radius: 7px; color: #83533a; background: #fff3e9; font-size: .72rem; }
+.care-accepted-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+.care-accepted-detail span { display: grid; gap: 3px; padding: 9px; border: 1px solid #d8e5dd; border-radius: 7px; background: #fff; }
+.care-accepted-detail strong { font-size: .78rem; }
+.care-completed-message { color: #267153; font-weight: 800; }
+
+.care-referral-history article { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 10px; padding: 10px 0; border-top: 1px solid #edf0f3; }
+.care-referral-history article:first-of-type { margin-top: 10px; }
+.care-referral-history article div { display: grid; gap: 2px; }
+.care-referral-history article strong { font-size: .78rem; }
+.care-referral-history article small { color: #858d99; font-size: .66rem; }
+.care-referral-history article p { margin: 2px 0 0; color: #8d4a45; font-size: .7rem; }
+.care-history-status { align-self: start; padding: 4px 6px; border-radius: 999px; color: #586272; background: #eceff3; font-size: .62rem; font-weight: 800; }
+.care-history-status--accepted, .care-history-status--connected { color: #267153; background: #e5f4eb; }
+.care-history-status--declined, .care-history-status--expired { color: #9d453f; background: #fae8e6; }
+.care-closed-summary { display: grid; gap: 5px; margin-top: 16px; padding: 14px; border-radius: 8px; color: #676f7d; background: #f1f2f4; }
+.care-legacy-empty { padding: 28px; text-align: center; color: #747d8b; }
+
+/* Historical receiving-church response experience. */
+body.care-partner-portal-mode { margin: 0; min-height: 100vh; color: #172033; background: #f3f5f8; font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+.partner-response-page { width: min(1040px, calc(100% - 32px)); margin: 0 auto; padding: 24px 0 64px; }
+.partner-preview-banner { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px; padding: 12px 15px; border-radius: 8px; color: #dce5f5; background: #172033; }
+.partner-preview-banner div { display: grid; gap: 2px; }
+.partner-preview-banner span { color: #91a6cf; font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.partner-preview-banner strong { font-size: .82rem; }
+.partner-preview-banner button { border: 1px solid rgba(255,255,255,.2); border-radius: 6px; padding: 8px 11px; color: #fff; background: transparent; font: inherit; font-size: .75rem; cursor: pointer; }
+.partner-response-card { overflow: hidden; border: 1px solid #d8dde6; border-radius: 12px; background: #fff; box-shadow: 0 20px 50px rgba(33,42,61,.08); }
+.partner-church-heading { display: grid; grid-template-columns: 52px minmax(0,1fr) auto; align-items: center; gap: 14px; padding: 22px 24px; border-bottom: 1px solid #e1e5eb; }
+.partner-church-mark { display: grid; width: 52px; height: 52px; place-items: center; border-radius: 12px; color: #fff; background: #243b64; font-size: 1.15rem; font-weight: 900; }
+.partner-church-heading p { margin: 0 0 3px; color: #4769a7; font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.partner-church-heading h1 { margin: 0; font-size: 1.4rem; }
+.partner-church-heading div > span { color: #747d8b; font-size: .77rem; }
+.partner-status { padding: 6px 9px; border-radius: 999px; color: #5b6575; background: #eceff3; font-size: .7rem; font-weight: 800; }
+.partner-status--accepted, .partner-status--connected { color: #267153; background: #e5f4eb; }
+.partner-status--declined { color: #9d453f; background: #fae8e6; }
+.partner-trust-notice { display: flex; gap: 11px; margin: 18px 24px 0; padding: 13px 14px; border-left: 3px solid #3e7d62; color: #53645c; background: #eff8f3; }
+.partner-trust-notice > span { font-weight: 900; }
+.partner-trust-notice p { margin: 0; font-size: .8rem; line-height: 1.5; }
+.partner-referral-summary { padding: 22px 24px; }
+.partner-person-summary { display: flex; align-items: center; gap: 12px; padding-bottom: 18px; border-bottom: 1px solid #e6e9ee; }
+.partner-person-summary > span { display: grid; width: 46px; height: 46px; place-items: center; border-radius: 50%; color: #fff; background: #5a6f9b; font-weight: 900; }
+.partner-person-summary small, .partner-referral-summary article small { color: #7c8491; font-size: .68rem; font-weight: 750; text-transform: uppercase; letter-spacing: .05em; }
+.partner-person-summary h2 { margin: 3px 0; font-size: 1.2rem; }
+.partner-person-summary p { margin: 0; color: #707987; font-size: .76rem; }
+.partner-referral-summary dl { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 0; margin: 18px 0; border: 1px solid #e2e5ea; border-radius: 8px; overflow: hidden; }
+.partner-referral-summary dl div { padding: 12px; border-right: 1px solid #e2e5ea; }
+.partner-referral-summary dl div:last-child { border-right: 0; }
+.partner-referral-summary dt { color: #7b8491; font-size: .66rem; font-weight: 750; }
+.partner-referral-summary dd { margin: 5px 0 0; font-size: .78rem; font-weight: 750; }
+.partner-referral-summary article { margin-top: 10px; padding: 13px 14px; border-radius: 7px; background: #f6f7f9; }
+.partner-referral-summary article p { margin: 5px 0 0; color: #4f5969; font-size: .8rem; line-height: 1.52; }
+.partner-response-form { margin: 0 24px 24px; padding: 20px; border: 1px solid #d7dce5; border-radius: 9px; background: #fbfcfd; }
+.partner-response-form header p { margin: 0 0 3px; color: #4769a7; font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.partner-response-form header h2 { margin: 0; font-size: 1.2rem; }
+.partner-response-form header span { display: block; margin-top: 5px; color: #747d8b; font-size: .77rem; }
+.partner-field-grid { display: grid; grid-template-columns: 1fr 1.35fr; gap: 10px; margin-top: 16px; }
+.partner-response-form label { display: grid; gap: 5px; color: #5e6775; font-size: .72rem; font-weight: 750; }
+.partner-response-form input, .partner-response-form textarea { width: 100%; border: 1px solid #cdd3dd; border-radius: 7px; padding: 9px 10px; color: #172033; background: #fff; font: inherit; }
+.partner-decline-field { margin-top: 12px; }
+.partner-response-form footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+.partner-response-form button, .partner-response-recorded button { min-height: 42px; padding: 0 14px; border-radius: 7px; font: inherit; font-size: .78rem; font-weight: 800; cursor: pointer; }
+.partner-decline { border: 1px solid #e0b9b5; color: #9d453f; background: #fff; }
+.partner-accept { border: 1px solid #111827; }
+.partner-response-recorded { display: flex; gap: 14px; margin: 0 24px 24px; padding: 18px; border: 1px solid #bcdccc; border-radius: 9px; background: #f1f9f4; }
+.partner-response-recorded > span { display: grid; width: 36px; height: 36px; flex: 0 0 36px; place-items: center; border-radius: 50%; color: #fff; background: #378362; font-weight: 900; }
+.partner-response-recorded--declined { border-color: #e4c1bd; background: #fdf3f1; }
+.partner-response-recorded--declined > span { background: #aa5149; }
+.partner-response-recorded p { margin: 3px 0 0; color: #596474; font-size: .8rem; line-height: 1.5; }
+.partner-response-recorded h2 { margin: 2px 0 5px; font-size: 1.15rem; }
+.partner-response-recorded button { margin-top: 10px; border: 1px solid #2f7357; color: #2b674e; background: #fff; }
+.partner-response-not-found { margin: 14vh auto 0; max-width: 600px; padding: 30px; border: 1px solid #d8dde6; border-radius: 12px; background: #fff; text-align: center; }
+
+@media (max-width: 1050px) {
+  .care-legacy-layout { grid-template-columns: 1fr; }
+  .care-legacy-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .care-partner-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 720px) {
+  .care-legacy-page-heading, .care-panel-heading, .care-referral-heading, .care-section-heading { display: grid; }
+  .care-page-actions { flex-wrap: wrap; }
+  .care-legacy-metrics { grid-template-columns: 1fr 1fr; }
+  .care-response-detail, .care-case-plan { grid-template-columns: 1fr; }
+  .care-partner-grid { grid-template-columns: 1fr; }
+  .care-composer-footer { display: grid; }
+  .partner-preview-banner { display: grid; }
+  .partner-church-heading { grid-template-columns: 44px minmax(0,1fr); }
+  .partner-status { grid-column: 2; justify-self: start; }
+  .partner-referral-summary dl { grid-template-columns: 1fr 1fr; }
+  .partner-referral-summary dl div:nth-child(2) { border-right: 0; }
+  .partner-field-grid { grid-template-columns: 1fr; }
+}

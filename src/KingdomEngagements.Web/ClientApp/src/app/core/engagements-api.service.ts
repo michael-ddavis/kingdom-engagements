@@ -32,6 +32,22 @@ export interface CreateMinistryResponseInput {
 
 @Injectable({ providedIn: 'root' })
 export class EngagementsApiService {
+  private readonly visibleDemoAssignments = new Set([
+    'assignment-demo-001', // Kingdom Leadership Gathering · connected demo story
+    'assignment-demo-002', // Women of Purpose Summit · strong readiness
+    'assignment-demo-003', // Apostolic Leadership Intensive · preparation depth
+    'assignment-demo-004', // Regional Pastors Gathering · nearly ready/local
+    'assignment-demo-007', // Daughters Arise Conference · completed history
+  ]);
+
+  private readonly visibleDemoRequests = new Set([
+    'CTG-DEMO-001', // awaiting review
+    'CTG-DEMO-002', // information needed
+    'CTG-DEMO-003', // approved source for primary assignment story
+    'CTG-DEMO-005', // another clean pending invitation
+    'CTG-DEMO-007', // approved source for second assignment story
+  ]);
+
   constructor(private readonly http: HttpClient) {}
 
   getProduct(): Observable<ProductInfo> {
@@ -40,7 +56,7 @@ export class EngagementsApiService {
 
   getRequests(): Observable<readonly SpeakingRequestDetails[]> {
     return this.http.get<readonly SpeakingRequestDetails[]>('/api/engagements/requests').pipe(
-      map(items => items.filter(item => !this.isRehearsalRequest(item))),
+      map(items => items.filter(item => this.shouldShowRequest(item))),
     );
   }
 
@@ -73,7 +89,7 @@ export class EngagementsApiService {
 
   getAssignments(): Observable<readonly EngagementSummary[]> {
     return this.http.get<readonly EngagementSummary[]>('/api/engagements/assignments').pipe(
-      map(items => items.filter(item => !this.isRehearsalAssignment(item))),
+      map(items => items.filter(item => this.shouldShowAssignment(item))),
     );
   }
 
@@ -204,6 +220,18 @@ export class EngagementsApiService {
       `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/responses/${encodeURIComponent(responseId)}/handoff-to-care`,
       { consentConfirmed: true },
     );
+  }
+
+  private shouldShowAssignment(item: EngagementSummary): boolean {
+    if (this.isRehearsalAssignment(item)) return false;
+    if (!/^assignment-demo-\d+$/i.test(item.externalAssignmentId)) return true;
+    return this.visibleDemoAssignments.has(item.externalAssignmentId.toLowerCase());
+  }
+
+  private shouldShowRequest(item: SpeakingRequestDetails): boolean {
+    if (this.isRehearsalRequest(item)) return false;
+    if (!/^CTG-DEMO-\d+$/i.test(item.referenceNumber)) return true;
+    return this.visibleDemoRequests.has(item.referenceNumber.toUpperCase());
   }
 
   private isRehearsalAssignment(item: EngagementSummary): boolean {

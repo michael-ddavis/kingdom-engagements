@@ -8,15 +8,28 @@ public sealed class EngagementOperationsCoordinationPublisher(
     IHttpClientFactory httpClientFactory,
     IConfiguration configuration)
 {
-    public async Task PublishAsync(
+    public Task PublishAsync(
         SpeakingRequestRecord request,
         EngagementAssignment assignment,
+        CancellationToken cancellationToken) =>
+        PublishAsync(assignment, request.Id, request.ReferenceNumber, cancellationToken);
+
+    public Task PublishAsync(
+        EngagementAssignment assignment,
+        CancellationToken cancellationToken) =>
+        PublishAsync(assignment, null, null, cancellationToken);
+
+    private async Task PublishAsync(
+        EngagementAssignment assignment,
+        Guid? requestId,
+        string? referenceNumber,
         CancellationToken cancellationToken)
     {
         var eventId = assignment.Id;
         var occurredAtUtc = DateTimeOffset.UtcNow;
-        var sourceUrl = configuration["KingdomOS:EngagementsBrowserUrl"]
-            ?? "http://localhost:5110/#assignments";
+        var engagementsBrowserUrl = (configuration["KingdomOS:EngagementsBrowserUrl"]
+            ?? "http://localhost:5110").TrimEnd('/');
+        var sourceUrl = $"{engagementsBrowserUrl}/assignments/{assignment.Id}";
         var eventDate = assignment.StartsAtUtc;
         var eventEnd = assignment.EndsAtUtc;
 
@@ -34,8 +47,8 @@ public sealed class EngagementOperationsCoordinationPublisher(
             {
                 subjectId = $"assignment:{assignment.Id:N}",
                 assignmentId = assignment.Id,
-                requestId = request.Id,
-                referenceNumber = request.ReferenceNumber,
+                requestId,
+                referenceNumber,
                 title = assignment.Title,
                 hostOrganization = assignment.HostOrganization,
                 location = assignment.Location,
@@ -52,24 +65,6 @@ public sealed class EngagementOperationsCoordinationPublisher(
                         summary = $"Internal coordination for {assignment.SpeakerName} with {assignment.HostOrganization}{LocationSuffix(assignment.Location)}.",
                         startsAtUtc = eventDate,
                         dueAtUtc = eventEnd ?? eventDate
-                    },
-                    new
-                    {
-                        ministry = "Hospitality",
-                        kind = "checklist",
-                        title = $"{assignment.Title} coordination checklist",
-                        summary = "Shared internal readiness for the approved engagement. Engagements remains the authoritative assignment record.",
-                        startsAtUtc = eventDate?.AddDays(-21),
-                        dueAtUtc = eventDate?.AddDays(-1),
-                        steps = new[]
-                        {
-                            "Confirm travel itinerary and lodging",
-                            "Confirm ground transportation and arrival contact",
-                            "Confirm final host schedule and ministry expectations",
-                            "Confirm communications and approved promotional assets",
-                            "Confirm prayer covering and ministry preparation",
-                            "Complete final Operations readiness review"
-                        }
                     },
                     new
                     {

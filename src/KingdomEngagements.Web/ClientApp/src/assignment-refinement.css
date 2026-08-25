@@ -1,0 +1,114 @@
+/* Small assignment refinements: keep the restored structure, simplify the tab labels. */
+.legacy-assignment-tab small {
+  display: none !important;
+}
+
+/* Keep only the heading-level invitation actions; the duplicate source-panel action stays hidden. */
+.legacy-source-link {
+  display: none !important;
+}
+
+.legacy-workspace-title__actions {
+  display: flex;
+  margin-top: 14px;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.legacy-host-invitation-action,
+.legacy-booking-request-action {
+  display: inline-flex;
+  min-height: 38px;
+  padding: 0 13px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  align-items: center;
+  gap: 9px;
+  color: #29364a;
+  background: #fff;
+  font-size: .69rem;
+  font-weight: 780;
+  text-decoration: none;
+  box-shadow: 0 3px 9px rgba(17, 28, 45, .04);
+}
+
+.legacy-host-invitation-action:hover,
+.legacy-booking-request-action:hover {
+  border-color: #9fb0c5;
+  background: #f7f9fb;
+}
+
+.legacy-host-invitation-action span,
+.legacy-booking-request-action span {
+  color: #355b9f;
+  font-size: .9rem;
+}
+
+/* Shared KingdomOS brand surface: deep navy makes the ivory/blue/gold mark legible. */
+.eng-modulebar {
+  border-bottom-color: rgba(255, 255, 255, .09) !important;
+  background: linear-gradient(135deg, #172a46 0%, #101a2b 100%) !important;
+  box-shadow: 0 8px 24px rgba(12, 22, 38, .14);
+}
+
+.eng-brand__mark {
+  width: 42px !important;
+  height: 48px !important;
+  flex-basis: 42px !important;
+  filter: drop-shadow(0 5px 10px rgba(0, 0, 0, .18));
+}
+
+.eng-brand strong {
+  color: #fff !important;
+}
+
+.eng-brand small {
+  color: #aebbd0 !important;
+}
+
+.eng-modulebar__divider {
+  background: rgba(255, 255, 255, .14) !important;
+}
+
+.eng-tenant {
+  color: #d9e2ef !important;
+}
+
+.eng-tenant small {
+  color: #8fa0b8 !important;
+}
+
+.eng-tenant strong {
+  color: #e8eef7 !important;
+}
+
+.eng-presence {
+  box-shadow: 0 0 0 4px rgba(85, 179, 133, .12) !important;
+}
+
+.eng-modulebar__actions a {
+  color: #c5d1e1 !important;
+}
+
+.eng-modulebar__actions a:hover {
+  color: #fff !important;
+  background: rgba(255, 255, 255, .08) !important;
+}
+
+.eng-avatar {
+  border: 1px solid rgba(255, 255, 255, .16);
+  background: rgba(255, 255, 255, .1) !important;
+}
+
+@media (max-width: 720px) {
+  .legacy-workspace-title__actions {
+    margin-top: 10px;
+  }
+
+  .eng-brand__mark {
+    width: 38px !important;
+    height: 44px !important;
+    flex-basis: 38px !important;
+  }
+}

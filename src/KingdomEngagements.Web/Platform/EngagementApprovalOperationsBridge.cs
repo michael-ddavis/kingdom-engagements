@@ -29,7 +29,7 @@ public sealed class EngagementOperationsCoordinationPublisher(
         var occurredAtUtc = DateTimeOffset.UtcNow;
         var engagementsBrowserUrl = (configuration["KingdomOS:EngagementsBrowserUrl"]
             ?? "http://localhost:5110").TrimEnd('/');
-        var sourceUrl = $"{engagementsBrowserUrl}/assignments/{assignment.Id}";
+        var sourceUrl = $"{engagementsBrowserUrl}/app/assignments/{assignment.Id}";
         var eventDate = assignment.StartsAtUtc;
         var eventEnd = assignment.EndsAtUtc;
 
@@ -65,6 +65,22 @@ public sealed class EngagementOperationsCoordinationPublisher(
                         summary = $"Internal coordination for {assignment.SpeakerName} with {assignment.HostOrganization}{LocationSuffix(assignment.Location)}.",
                         startsAtUtc = eventDate,
                         dueAtUtc = eventEnd ?? eventDate
+                    },
+                    new
+                    {
+                        ministry = "Hospitality",
+                        kind = "checklist",
+                        title = $"{assignment.Title} coordination checklist",
+                        summary = "Shared Operations checklist for the host, itinerary, prayer, and communications dependencies.",
+                        startsAtUtc = (DateTimeOffset?)null,
+                        dueAtUtc = eventDate?.AddDays(-7),
+                        steps = new[]
+                        {
+                            "Confirm final itinerary and arrival details",
+                            "Confirm lodging and ground transportation",
+                            "Confirm host contact and event schedule",
+                            "Confirm prayer and communications readiness"
+                        }
                     },
                     new
                     {

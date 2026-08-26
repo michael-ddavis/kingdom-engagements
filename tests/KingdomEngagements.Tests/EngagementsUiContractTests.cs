@@ -46,6 +46,9 @@ public sealed class EngagementsUiContractTests
         Assert.DoesNotContain("Assignment(\"assignment-demo-006\"", seeder, StringComparison.Ordinal);
         Assert.DoesNotContain("Assignment(\"assignment-demo-008\"", seeder, StringComparison.Ordinal);
         Assert.Contains("\"CTG-DEMO-001\"", seeder, StringComparison.Ordinal);
+        Assert.Contains("record.Status = seed.Status", seeder, StringComparison.Ordinal);
+        Assert.Contains("record.AssignmentId = null", seeder, StringComparison.Ordinal);
+        Assert.Contains("record.Communications.Clear()", seeder, StringComparison.Ordinal);
         Assert.DoesNotContain("Request(\"CTG-DEMO-002\"", seeder, StringComparison.Ordinal);
         Assert.Contains("RemoveRetiredSourceRowsAsync", seeder, StringComparison.Ordinal);
 
@@ -71,7 +74,10 @@ public sealed class EngagementsUiContractTests
             "KingdomEngagements.Web",
             "Platform",
             "EngagementApprovalOperationsBridge.cs"));
-        Assert.Contains("$\"{engagementsBrowserUrl}/assignments/{assignment.Id}\"", publisher, StringComparison.Ordinal);
+        Assert.Contains("$\"{engagementsBrowserUrl}/app/assignments/{assignment.Id}\"", publisher, StringComparison.Ordinal);
+        Assert.Contains("kind = \"checklist\"", publisher, StringComparison.Ordinal);
+        Assert.Contains("$\"{assignment.Title} coordination checklist\"", publisher, StringComparison.Ordinal);
+        Assert.Contains("Confirm host contact and event schedule", publisher, StringComparison.Ordinal);
         Assert.Contains("public Task PublishAsync(\n        EngagementAssignment assignment", publisher, StringComparison.Ordinal);
 
         var worker = File.ReadAllText(FindRepositoryFile(

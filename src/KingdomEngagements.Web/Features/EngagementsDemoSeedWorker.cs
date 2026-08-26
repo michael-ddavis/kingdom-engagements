@@ -206,51 +206,63 @@ public sealed class EngagementsDemoSeedWorker(
             null,
             15);
 
-        if (await requests.Requests.AnyAsync(
-                x => x.TenantId == KingdomIdentity.DemoTenantId && x.ReferenceNumber == seed.Reference,
-                ct))
-            return;
-
+        var record = await requests.Requests
+            .Include(item => item.Communications)
+            .SingleOrDefaultAsync(
+                item => item.TenantId == KingdomIdentity.DemoTenantId &&
+                        item.ReferenceNumber == seed.Reference,
+                ct);
         var submitted = now.AddDays(-Math.Min(14, seed.StartDays / 4));
-        var record = new SpeakingRequestRecord
+
+        if (record is null)
         {
-            Id = Guid.NewGuid(),
-            TenantId = KingdomIdentity.DemoTenantId,
-            ReferenceNumber = seed.Reference,
-            EditToken = $"demo-{seed.Reference.ToLowerInvariant().Replace("-", string.Empty)}",
-            OrganizationName = seed.Organization,
-            EventName = seed.EventName,
-            EventType = seed.EventType,
-            ContactName = seed.ContactName,
-            ContactEmail = seed.ContactEmail,
-            ContactPhone = "(804) 555-01" + seed.Reference[^2..],
-            City = seed.City,
-            State = seed.State,
-            Country = "United States",
-            Region = "United States",
-            TimeZone = "America/New_York",
-            VenueAddress = $"{100 + seed.Readiness} Ministry Way",
-            VenueName = seed.Organization,
-            StartDate = DateOnly.FromDateTime(now.UtcDateTime.AddDays(seed.StartDays)),
-            EndDate = DateOnly.FromDateTime(now.UtcDateTime.AddDays(seed.EndDays)),
-            MinistryRequest = $"Invite Cynthia Thompson to minister at {seed.EventName}, with emphasis on leadership, prayer, formation, and Kingdom impact.",
-            ExpectedAttendance = seed.Attendance,
-            TravelCoverageStatus = "not-determined",
-            LodgingCoverageStatus = "not-determined",
-            HonorariumStatus = "yes",
-            TravelBookedBy = "not-determined",
-            HonorariumAmount = 1500,
-            HonorariumCurrency = "USD",
-            PaymentStatus = seed.PaymentStatus,
-            AgreementStatus = seed.AgreementStatus,
-            EngagementStatus = seed.EngagementStatus,
-            ReadinessPercentage = seed.Readiness,
-            Status = seed.Status,
-            DeclineReason = seed.DeclineReason,
-            AssignmentId = null,
-            SubmittedAtUtc = submitted,
-            UpdatedAtUtc = now
-        };
+            record = new SpeakingRequestRecord
+            {
+                Id = Guid.NewGuid(),
+                TenantId = KingdomIdentity.DemoTenantId,
+                ReferenceNumber = seed.Reference,
+                EditToken = $"demo-{seed.Reference.ToLowerInvariant().Replace("-", string.Empty)}",
+                SubmittedAtUtc = submitted
+            };
+            requests.Requests.Add(record);
+        }
+
+        // This is the incoming invitation used to demonstrate the review decision. Repair it
+        // on every development startup so a prior rehearsal or manual approval cannot leave
+        // the next demo in an already-approved, partially edited, or assignment-linked state.
+        record.OrganizationName = seed.Organization;
+        record.EventName = seed.EventName;
+        record.EventType = seed.EventType;
+        record.ContactName = seed.ContactName;
+        record.ContactEmail = seed.ContactEmail;
+        record.ContactPhone = "(804) 555-01" + seed.Reference[^2..];
+        record.City = seed.City;
+        record.State = seed.State;
+        record.Country = "United States";
+        record.Region = "United States";
+        record.TimeZone = "America/New_York";
+        record.VenueAddress = $"{100 + seed.Readiness} Ministry Way";
+        record.VenueName = seed.Organization;
+        record.StartDate = DateOnly.FromDateTime(now.UtcDateTime.AddDays(seed.StartDays));
+        record.EndDate = DateOnly.FromDateTime(now.UtcDateTime.AddDays(seed.EndDays));
+        record.MinistryRequest = $"Invite Cynthia Thompson to minister at {seed.EventName}, with emphasis on leadership, prayer, formation, and Kingdom impact.";
+        record.ExpectedAttendance = seed.Attendance;
+        record.TravelCoverageStatus = "not-determined";
+        record.LodgingCoverageStatus = "not-determined";
+        record.HonorariumStatus = "yes";
+        record.TravelBookedBy = "not-determined";
+        record.HonorariumAmount = 1500;
+        record.HonorariumCurrency = "USD";
+        record.PaymentStatus = seed.PaymentStatus;
+        record.AgreementStatus = seed.AgreementStatus;
+        record.EngagementStatus = seed.EngagementStatus;
+        record.ReadinessPercentage = seed.Readiness;
+        record.Status = seed.Status;
+        record.DeclineReason = seed.DeclineReason;
+        record.AssignmentId = null;
+        record.UpdatedAtUtc = now;
+
+        record.Communications.Clear();
         record.Communications.Add(new SpeakingRequestCommunicationRecord
         {
             Id = Guid.NewGuid(),
@@ -260,7 +272,7 @@ public sealed class EngagementsDemoSeedWorker(
             Actor = record.ContactName,
             CreatedAtUtc = submitted
         });
-        requests.Requests.Add(record);
+
         await requests.SaveChangesAsync(ct);
     }
 

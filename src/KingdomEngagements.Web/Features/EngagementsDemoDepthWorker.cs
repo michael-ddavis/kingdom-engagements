@@ -12,6 +12,9 @@ public sealed class EngagementsDemoDepthWorker(
     IConfiguration configuration,
     ILogger<EngagementsDemoDepthWorker> logger) : BackgroundService
 {
+    private static readonly Guid MalikResponseId = Guid.Parse("3d7ec5de-38f0-42c8-928b-27a01bb11043");
+    private static readonly Guid ReneeResponseId = Guid.Parse("68421985-e6b0-49cf-bd43-8b9022c11045");
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         if (!environment.IsDevelopment() || !configuration.GetValue("KingdomOS:DemoData:Enabled", true)) return;
@@ -168,6 +171,34 @@ public sealed class EngagementsDemoDepthWorker(
                 Response(assignment.Id, "healing-testimony", 3, false, null, "Three testimonies were submitted after the gathering.", now.AddDays(-1)));
         }
 
+        // These named handoffs make the cross-module Care story visible and stable on
+        // both fresh and preserved demo databases. Their IDs are also used by Care.
+        if (!await completion.Responses.AnyAsync(x => x.TenantId == KingdomIdentity.DemoTenantId && x.Id == MalikResponseId, ct))
+        {
+            completion.Responses.Add(PersonResponse(
+                MalikResponseId,
+                assignment.Id,
+                "Malik Robinson",
+                "malik.robinson@example.com",
+                "(804) 555-0143",
+                "pastoral-follow-up",
+                "Requested a personal call and a trusted local church connection after the gathering.",
+                now.AddDays(-2)));
+        }
+
+        if (!await completion.Responses.AnyAsync(x => x.TenantId == KingdomIdentity.DemoTenantId && x.Id == ReneeResponseId, ct))
+        {
+            completion.Responses.Add(PersonResponse(
+                ReneeResponseId,
+                assignment.Id,
+                "Renee Walker",
+                "renee.walker@example.com",
+                "(404) 555-0188",
+                "discipleship",
+                "Asked for a discipleship pathway and ongoing pastoral follow-up.",
+                now.AddDays(-1)));
+        }
+
         if (!await completion.Closeouts.AnyAsync(x => x.TenantId == KingdomIdentity.DemoTenantId && x.AssignmentId == assignment.Id, ct))
         {
             completion.Closeouts.Add(new EngagementCloseoutRecord
@@ -194,6 +225,35 @@ public sealed class EngagementsDemoDepthWorker(
         FollowUpOwner = owner, FollowUpDueAtUtc = followUp ? created.AddDays(3) : null,
         FollowUpNotes = completed ? "Follow-up completed and documented with the host care team." : null,
         FollowUpCompletedAtUtc = completed ? created.AddDays(2) : null, CreatedAtUtc = created, UpdatedAtUtc = completed ? created.AddDays(2) : created
+    };
+
+    private static MinistryResponseRecord PersonResponse(
+        Guid id,
+        Guid assignmentId,
+        string personName,
+        string email,
+        string phone,
+        string type,
+        string notes,
+        DateTimeOffset created) => new()
+    {
+        Id = id,
+        TenantId = KingdomIdentity.DemoTenantId,
+        AssignmentId = assignmentId,
+        Type = type,
+        Count = 1,
+        PersonName = personName,
+        Email = email,
+        Phone = phone,
+        Notes = notes,
+        RequiresFollowUp = true,
+        FollowUpStatus = "completed",
+        FollowUpOwner = "Kingdom Care",
+        FollowUpDueAtUtc = created.AddDays(2),
+        FollowUpNotes = "Consent confirmed. Responsibility transferred to Kingdom Care.",
+        FollowUpCompletedAtUtc = created.AddHours(3),
+        CreatedAtUtc = created,
+        UpdatedAtUtc = created.AddHours(3)
     };
 
     private static TravelSeed TravelFor(EngagementAssignment assignment)

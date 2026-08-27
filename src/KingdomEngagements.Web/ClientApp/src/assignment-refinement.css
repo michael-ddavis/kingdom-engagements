@@ -45,7 +45,7 @@
   font-size: .9rem;
 }
 
-/* Shared KingdomOS brand surface: deep navy makes the ivory/blue/gold mark legible. */
+/* Shared ApostolOS brand surface: deep navy makes the ivory/blue/gold mark legible. */
 .eng-modulebar {
   border-bottom-color: rgba(255, 255, 255, .09) !important;
   background: linear-gradient(135deg, #172a46 0%, #101a2b 100%) !important;
@@ -112,3 +112,4 @@
     flex-basis: 38px !important;
   }
 }
+

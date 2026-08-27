@@ -24,8 +24,8 @@ import {
         </label>
       </header>
 
-      @if (message()) { <div class="message">{{ message() }}</div> }
-      @if (error()) { <div class="message error">{{ error() }}</div> }
+      @if (message()) { <div class="message">{{ message() }}<button type="button" aria-label="Dismiss message" (click)="message.set(null)">×</button></div> }
+      @if (error()) { <div class="message error">{{ error() }}<button type="button" aria-label="Dismiss error" (click)="error.set(null)">×</button></div> }
 
       <section class="document-group">
         <div class="group-heading">
@@ -40,7 +40,7 @@ import {
               <article>
                 <span class="file-icon">DOC</span>
                 <div class="file-record">
-                  <strong>{{ document.fileName }}</strong>
+                  <a [href]="workspaceDocumentUrl(document.id)" target="_blank" rel="noopener"><strong>{{ document.fileName }}</strong></a>
                   <small>{{ fileSize(document.length) }} · {{ dateLabel(document.uploadedAtUtc) }} · {{ document.contentType }}</small>
                 </div>
                 <details class="file-menu">
@@ -63,15 +63,24 @@ import {
         } @else {
           <div class="record-list">
             @for (document of assignment.documents; track document.id) {
-              <article>
+              <a class="record-document" [href]="recordDocumentUrl(document.id)" target="_blank" rel="noopener">
                 <span class="record-type">{{ document.category }}</span>
                 <div><strong>{{ document.name }}</strong><small>{{ dateLabel(document.updatedAtUtc) }}</small></div>
                 <span class="record-status">{{ document.status.replace('-', ' ') }}</span>
-              </article>
+              </a>
             }
           </div>
         }
       </section>
+
+      @if (pendingRemoval(); as document) {
+        <button class="modal-scrim" type="button" aria-label="Cancel removal" (click)="pendingRemoval.set(null)"></button>
+        <section class="confirm-modal" role="alertdialog" aria-modal="true" aria-labelledby="remove-document-title">
+          <header><div><p>Assignment document</p><h2 id="remove-document-title">Remove {{ document.fileName }}?</h2></div><button type="button" aria-label="Close" (click)="pendingRemoval.set(null)">×</button></header>
+          <p>This removes the file from this assignment. This action cannot be undone.</p>
+          <footer><button type="button" class="cancel" (click)="pendingRemoval.set(null)">Cancel</button><button type="button" class="remove" [disabled]="saving()" (click)="confirmRemove()">{{ saving() ? 'Removing…' : 'Remove document' }}</button></footer>
+        </section>
+      }
     </section>
   `,
   styles: [`
@@ -85,6 +94,14 @@ import {
     .file-menu{position:relative}.file-menu summary{list-style:none;display:grid;width:32px;height:32px;place-items:center;border-radius:6px;color:#687284;cursor:pointer}.file-menu summary::-webkit-details-marker{display:none}.file-menu[open] summary{background:#f0f1f4}.file-menu button{position:absolute;right:0;z-index:2;width:145px;margin-top:.25rem;padding:.5rem .6rem;border:1px solid #e2c3c1;border-radius:6px;color:#a34742;background:#fff;font-size:.68rem;font-weight:800;box-shadow:0 8px 22px rgba(18,26,44,.1);cursor:pointer}
     .record-list article{display:grid;grid-template-columns:120px minmax(0,1fr) auto;align-items:center;gap:.8rem;padding:.72rem .15rem;border-bottom:1px solid rgba(18,26,44,.08)}.record-type{color:var(--eng-blue);font-size:.59rem;font-weight:900;text-transform:uppercase}.record-list strong,.record-list small{display:block}.record-list strong{font-size:.76rem}.record-list small{margin-top:.14rem;color:var(--eng-muted);font-size:.61rem}.record-status{color:#667080;font-size:.65rem;font-weight:750;text-transform:capitalize}.empty{margin-top:.7rem;padding:.9rem;color:var(--eng-muted);background:#faf9f7;text-align:center;font-size:.72rem}
     @media(max-width:620px){header{display:grid}.upload-button{justify-self:start}.record-list article{grid-template-columns:1fr auto}.record-type{grid-column:1/-1}}
+  `, `
+    .message{display:flex;align-items:center;justify-content:space-between;gap:1rem}.message button{width:28px;height:28px;border:0;border-radius:50%;color:inherit;background:rgba(255,255,255,.65);font-size:1rem;cursor:pointer}
+    .file-record a{color:inherit;text-decoration:none}.file-record a:hover{text-decoration:underline}
+    .record-document{display:grid;grid-template-columns:120px minmax(0,1fr) auto;align-items:center;gap:.8rem;padding:.72rem .15rem;border-bottom:1px solid rgba(18,26,44,.08);color:inherit;text-decoration:none}.record-document:hover{background:#fafbfc}
+    .modal-scrim{position:fixed;inset:0;z-index:70;border:0;background:rgba(12,18,32,.38);backdrop-filter:blur(3px)}
+    .confirm-modal{position:fixed;z-index:71;left:50%;top:50%;width:min(480px,calc(100vw - 32px));padding:1.25rem;border-radius:14px;background:#fff;box-shadow:0 28px 90px rgba(15,23,42,.28);transform:translate(-50%,-50%)}
+    .confirm-modal header{padding:0 0 1rem}.confirm-modal header p{margin:0;color:var(--eng-blue);font-size:.64rem;font-weight:900;text-transform:uppercase}.confirm-modal header h2{margin:.3rem 0 0}.confirm-modal header>button{width:38px;height:38px;border:0;border-radius:8px;font-size:1.15rem}.confirm-modal>p{color:var(--eng-muted);line-height:1.55}.confirm-modal footer{display:flex;justify-content:flex-end;gap:.6rem;margin-top:1.2rem}.confirm-modal footer button{min-height:40px;padding:0 .85rem;border-radius:7px;font-weight:800}.confirm-modal .cancel{border:1px solid var(--eng-line);background:#fff}.confirm-modal .remove{border:1px solid #a44843;color:#fff;background:#a44843}
+    @media(max-width:620px){.record-document{grid-template-columns:1fr auto}.record-document .record-type{grid-column:1/-1}}
   `],
 })
 export class DocumentsTabComponent {
@@ -95,6 +112,7 @@ export class DocumentsTabComponent {
   readonly saving = signal(false);
   readonly message = signal<string | null>(null);
   readonly error = signal<string | null>(null);
+  readonly pendingRemoval = signal<HostCoordinationDocument | null>(null);
 
   constructor(private readonly api: EngagementsApiService) {}
 
@@ -119,8 +137,14 @@ export class DocumentsTabComponent {
 
   remove(document: HostCoordinationDocument): void {
     if (this.saving()) return;
-    if (!window.confirm(`Remove ${document.fileName} from this assignment?`)) return;
+    this.pendingRemoval.set(document);
+  }
+
+  confirmRemove(): void {
+    const document = this.pendingRemoval();
+    if (!document || this.saving()) return;
     this.saving.set(true);
+    this.pendingRemoval.set(null);
     this.error.set(null);
     this.api.deleteWorkspaceDocument(this.assignment.summary.id, document.id).subscribe({
       next: () => this.refresh('Document removed.'),
@@ -130,6 +154,9 @@ export class DocumentsTabComponent {
       },
     });
   }
+
+  workspaceDocumentUrl(documentId: string): string { return `/api/engagements/assignments/${encodeURIComponent(this.assignment.summary.id)}/preparation/documents/${encodeURIComponent(documentId)}`; }
+  recordDocumentUrl(documentId: string): string { return `/api/engagements/assignments/${encodeURIComponent(this.assignment.summary.id)}/documents/${encodeURIComponent(documentId)}`; }
 
   fileSize(value: number): string {
     if (value < 1024) return `${value} B`;

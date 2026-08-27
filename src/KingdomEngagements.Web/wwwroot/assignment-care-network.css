@@ -1,4 +1,4 @@
-/* Assignment-level Care Network restored from the pre-split KingdomOS engagement workspace. */
+/* Assignment-level Care Network restored from the pre-split ApostolOS engagement workspace. */
 .exact18-assignment-tabs .exact18-tab-group--ministry {
   min-width: 180px;
 }
@@ -413,3 +413,4 @@ body.care-partner-portal-mode { margin: 0; min-height: 100vh; color: #172033; ba
   .partner-referral-summary dl div:nth-child(2) { border-right: 0; }
   .partner-field-grid { grid-template-columns: 1fr; }
 }
+

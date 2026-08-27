@@ -1,6 +1,6 @@
 /* Kingdom Engagements polish layer.
    Keeps the 18dfaa7 information architecture while bringing the surface treatment
-   back to the KingdomOS grounded-intelligence direction. */
+   back to the ApostolOS grounded-intelligence direction. */
 
 :root{
   --eng-border:rgb(17 26 41 / 11%);
@@ -141,3 +141,4 @@ body.exact18-assignment-open .engagements-section-nav,body.legacy18-request-open
 .engagement-confirm-dialog footer{display:flex;justify-content:flex-end;gap:10px}
 .engagement-confirm-dialog button{min-height:44px;padding:0 17px;border:1px solid #cfd5de;border-radius:10px;font:inherit;font-weight:750;background:#fff;cursor:pointer}
 .engagement-confirm-dialog button.primary{border-color:#172b49;color:#fff;background:#172b49}
+

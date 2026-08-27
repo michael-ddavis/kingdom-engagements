@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Net;
 using KingdomEngagements.Web.Platform;
 using Microsoft.EntityFrameworkCore;
 
@@ -383,6 +384,10 @@ public sealed class EngagementsService(EngagementsDbContext database)
         return MapDetails(assignment);
     }
 
+    public async Task<EngagementDocument?> GetDocumentAsync(Guid tenantId, Guid assignmentId, Guid documentId, CancellationToken cancellationToken) =>
+        await database.Documents.AsNoTracking()
+            .SingleOrDefaultAsync(item => item.AssignmentId == assignmentId && item.Id == documentId && item.Assignment != null && item.Assignment.TenantId == tenantId, cancellationToken);
+
     public async Task<(bool Duplicate, Guid? AssignmentId)> IngestAsync(IntegrationEventEnvelope envelope, CancellationToken cancellationToken)
     {
         if (await database.IntegrationReceipts.AnyAsync(x => x.EventId == envelope.EventId, cancellationToken))
@@ -533,6 +538,21 @@ public static class EngagementsEndpoints
             }
             catch (ArgumentException exception) { return Results.ValidationProblem(new Dictionary<string, string[]> { ["document"] = [exception.Message] }); }
         }).RequireAuthorization("EngagementsWrite");
+        group.MapGet("/assignments/{id:guid}/documents/{documentId:guid}", async (Guid id, Guid documentId, HttpContext context, EngagementsService service, CancellationToken ct) =>
+        {
+            var item = await service.GetDocumentAsync(KingdomIdentity.TenantId(context.User, context.Request), id, documentId, ct);
+            if (item is null) return Results.NotFound();
+            var title = WebUtility.HtmlEncode(item.Name);
+            var category = WebUtility.HtmlEncode(item.Category.Replace('-', ' '));
+            var status = WebUtility.HtmlEncode(item.Status.Replace('-', ' '));
+            var updated = WebUtility.HtmlEncode(item.UpdatedAtUtc.ToString("MMMM d, yyyy 'at' h:mm tt 'UTC'"));
+            var html = $"""
+                <!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{title}</title>
+                <style>body{{margin:0;background:#f4f2ed;color:#151c2f;font:16px/1.6 system-ui,sans-serif}}main{{width:min(760px,calc(100% - 36px));margin:48px auto;padding:42px;background:white;border:1px solid #dfe2e7;border-radius:14px;box-shadow:0 18px 50px #10182a12}}small{{color:#315faf;font-weight:800;text-transform:uppercase;letter-spacing:.1em}}h1{{margin:.4rem 0 1rem;font-size:2.3rem}}dl{{display:grid;grid-template-columns:160px 1fr;border-top:1px solid #e4e6ea}}div{{display:contents}}dt,dd{{margin:0;padding:14px 0;border-bottom:1px solid #e4e6ea}}dt{{color:#6c7586}}dd{{font-weight:700}}</style></head>
+                <body><main><small>ApostolOS Engagements record</small><h1>{title}</h1><p>This is the durable assignment record for this document. Uploaded source files open directly from Host coordination files.</p><dl><div><dt>Category</dt><dd>{category}</dd></div><div><dt>Status</dt><dd>{status}</dd></div><div><dt>Last updated</dt><dd>{updated}</dd></div></dl></main></body></html>
+                """;
+            return Results.Content(html, "text/html; charset=utf-8");
+        });
 
         endpoints.MapPost("/api/integration/events", async (
             IntegrationEventEnvelope envelope,

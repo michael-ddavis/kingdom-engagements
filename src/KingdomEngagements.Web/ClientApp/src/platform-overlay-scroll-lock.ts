@@ -1,6 +1,5 @@
 let installed = false;
 let locked = false;
-let scrollY = 0;
 let saved: Record<string, string> | null = null;
 
 const semanticOverlaySelector = '[role="dialog"][aria-modal="true"],dialog[open],[data-kos-scroll-lock="true"],[data-kos-overlay="drawer"],[data-kos-overlay="modal"],[data-kos-overlay="sheet"]';
@@ -24,18 +23,13 @@ function overlayOpen(): boolean {
 function lock(): void {
   if (locked || !document.body) return;
   locked = true;
-  scrollY = window.scrollY;
   const body = document.body;
   const html = document.documentElement;
   const gap = Math.max(0, innerWidth - html.clientWidth);
   const padding = Number.parseFloat(getComputedStyle(body).paddingRight) || 0;
-  saved = { htmlOverflow: html.style.overflow, position: body.style.position, top: body.style.top, left: body.style.left, right: body.style.right, width: body.style.width, overflow: body.style.overflow, paddingRight: body.style.paddingRight };
+  saved = { htmlOverflow: html.style.overflow, htmlOverscrollBehavior: html.style.overscrollBehavior, overflow: body.style.overflow, paddingRight: body.style.paddingRight };
   html.style.overflow = 'hidden';
-  body.style.position = 'fixed';
-  body.style.top = `-${scrollY}px`;
-  body.style.left = '0';
-  body.style.right = '0';
-  body.style.width = '100%';
+  html.style.overscrollBehavior = 'none';
   body.style.overflow = 'hidden';
   if (gap) body.style.paddingRight = `${padding + gap}px`;
   body.dataset['kosOverlayScrollLocked'] = 'true';
@@ -46,18 +40,12 @@ function unlock(): void {
   const body = document.body;
   const html = document.documentElement;
   html.style.overflow = saved['htmlOverflow'];
-  body.style.position = saved['position'];
-  body.style.top = saved['top'];
-  body.style.left = saved['left'];
-  body.style.right = saved['right'];
-  body.style.width = saved['width'];
+  html.style.overscrollBehavior = saved['htmlOverscrollBehavior'];
   body.style.overflow = saved['overflow'];
   body.style.paddingRight = saved['paddingRight'];
   delete body.dataset['kosOverlayScrollLocked'];
-  const y = scrollY;
   locked = false;
   saved = null;
-  window.scrollTo(0, y);
 }
 
 function sync(): void {

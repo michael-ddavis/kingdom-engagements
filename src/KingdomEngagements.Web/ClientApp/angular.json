@@ -34,10 +34,7 @@
               "src/assignment-cleanup.css",
               "src/assignment-refinement.css"
             ],
-            "scripts": [
-              "src/host-preparation-link.js",
-              "src/host-invitation-link.js"
-            ]
+            "scripts": []
           },
           "configurations": {
             "production": {

@@ -90,6 +90,25 @@ public sealed class EngagementsUiContractTests
     }
 
     [Fact]
+    public void Connected_demo_assignment_always_seeds_named_care_handoffs()
+    {
+        var worker = File.ReadAllText(FindRepositoryFile(
+            "src",
+            "KingdomEngagements.Web",
+            "Features",
+            "EngagementsDemoDepthWorker.cs"));
+
+        Assert.Contains(
+            "assignment.Status == \"complete\" || assignment.ExternalAssignmentId == \"assignment-demo-001\"",
+            worker,
+            StringComparison.Ordinal);
+        Assert.Contains("Malik Robinson", worker, StringComparison.Ordinal);
+        Assert.Contains("Renee Walker", worker, StringComparison.Ordinal);
+        Assert.Contains("UpsertPersonResponseAsync", worker, StringComparison.Ordinal);
+        Assert.Contains("response.AssignmentId = desired.AssignmentId", worker, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Kingdom_care_is_a_first_class_assignment_tab_with_a_consent_gated_handoff()
     {
         var source = File.ReadAllText(Path.Combine(FindWwwroot(), "legacy18-product.js"));

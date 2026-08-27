@@ -153,7 +153,8 @@ public sealed class EngagementsDemoDepthWorker(
                     Activity(assignment.Id, "readiness-reviewed", "Preparation readiness reviewed", assignment.Status == "complete" ? "Assignment preparation and closeout are complete." : "The ministry team reviewed remaining preparation items.", "Engagement Coordinator", now.AddHours(-8)));
             }
 
-            if (assignment.Status == "complete") await SeedCompletionAsync(completion, assignment, now, ct);
+            if (assignment.Status == "complete" || assignment.ExternalAssignmentId == "assignment-demo-001")
+                await SeedCompletionAsync(completion, assignment, now, ct);
         }
 
         await activities.SaveChangesAsync(ct);
@@ -173,9 +174,9 @@ public sealed class EngagementsDemoDepthWorker(
 
         // These named handoffs make the cross-module Care story visible and stable on
         // both fresh and preserved demo databases. Their IDs are also used by Care.
-        if (!await completion.Responses.AnyAsync(x => x.TenantId == KingdomIdentity.DemoTenantId && x.Id == MalikResponseId, ct))
-        {
-            completion.Responses.Add(PersonResponse(
+        await UpsertPersonResponseAsync(
+            completion,
+            PersonResponse(
                 MalikResponseId,
                 assignment.Id,
                 "Malik Robinson",
@@ -183,12 +184,12 @@ public sealed class EngagementsDemoDepthWorker(
                 "(804) 555-0143",
                 "pastoral-follow-up",
                 "Requested a personal call and a trusted local church connection after the gathering.",
-                now.AddDays(-2)));
-        }
+                now.AddDays(-2)),
+            ct);
 
-        if (!await completion.Responses.AnyAsync(x => x.TenantId == KingdomIdentity.DemoTenantId && x.Id == ReneeResponseId, ct))
-        {
-            completion.Responses.Add(PersonResponse(
+        await UpsertPersonResponseAsync(
+            completion,
+            PersonResponse(
                 ReneeResponseId,
                 assignment.Id,
                 "Renee Walker",
@@ -196,8 +197,8 @@ public sealed class EngagementsDemoDepthWorker(
                 "(404) 555-0188",
                 "discipleship",
                 "Asked for a discipleship pathway and ongoing pastoral follow-up.",
-                now.AddDays(-1)));
-        }
+                now.AddDays(-1)),
+            ct);
 
         if (!await completion.Closeouts.AnyAsync(x => x.TenantId == KingdomIdentity.DemoTenantId && x.AssignmentId == assignment.Id, ct))
         {
@@ -255,6 +256,37 @@ public sealed class EngagementsDemoDepthWorker(
         CreatedAtUtc = created,
         UpdatedAtUtc = created.AddHours(3)
     };
+
+    private static async Task UpsertPersonResponseAsync(
+        EngagementCompletionDbContext completion,
+        MinistryResponseRecord desired,
+        CancellationToken ct)
+    {
+        var response = await completion.Responses.SingleOrDefaultAsync(
+            x => x.TenantId == KingdomIdentity.DemoTenantId && x.Id == desired.Id,
+            ct);
+        if (response is null)
+        {
+            completion.Responses.Add(desired);
+            return;
+        }
+
+        response.AssignmentId = desired.AssignmentId;
+        response.Type = desired.Type;
+        response.Count = desired.Count;
+        response.PersonName = desired.PersonName;
+        response.Email = desired.Email;
+        response.Phone = desired.Phone;
+        response.Notes = desired.Notes;
+        response.RequiresFollowUp = desired.RequiresFollowUp;
+        response.FollowUpStatus = desired.FollowUpStatus;
+        response.FollowUpOwner = desired.FollowUpOwner;
+        response.FollowUpDueAtUtc = desired.FollowUpDueAtUtc;
+        response.FollowUpNotes = desired.FollowUpNotes;
+        response.FollowUpCompletedAtUtc = desired.FollowUpCompletedAtUtc;
+        response.CreatedAtUtc = desired.CreatedAtUtc;
+        response.UpdatedAtUtc = desired.UpdatedAtUtc;
+    }
 
     private static TravelSeed TravelFor(EngagementAssignment assignment)
     {

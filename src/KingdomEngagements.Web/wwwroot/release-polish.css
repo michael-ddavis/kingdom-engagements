@@ -164,3 +164,16 @@ dialog {
     border-radius: 6px !important;
   }
 }
+
+/* ApostolOS brand mark replaces the legacy letter tile in the fallback shell. */
+.brand > img {
+  display: block;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  object-fit: contain;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}

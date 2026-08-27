@@ -157,7 +157,9 @@ a { color: inherit; }
 .legacy-workspace-page { width: min(var(--legacy-content), calc(100% - 64px)); }
 
 .legacy-assignment-index { padding-top: 32px; }
-.legacy-assignment-hero { padding: 0 0 20px; }
+.legacy-assignment-hero { display:flex;justify-content:space-between;align-items:flex-end;gap:24px;padding:0 0 20px; }
+.invitation-actions{display:flex;flex-wrap:wrap;gap:8px}.invitation-actions a,.invitation-actions button{display:inline-flex;min-height:42px;align-items:center;padding:0 14px;border:1px solid var(--legacy-line);border-radius:8px;color:var(--legacy-ink);background:#fff;font:inherit;font-size:.7rem;font-weight:800;text-decoration:none;cursor:pointer}.invitation-actions a{color:#fff;background:#171d2d;border-color:#171d2d}
+@media(max-width:760px){.legacy-assignment-hero{display:grid;align-items:start}}
 .legacy-assignment-hero h1 { margin: 5px 0 7px; color: var(--legacy-ink); font-size: clamp(2rem, 3.5vw, 3rem); letter-spacing: -.045em; }
 .legacy-assignment-hero > div > p:last-child { max-width: 760px; margin: 0; color: var(--legacy-muted); font-size: .82rem; line-height: 1.6; }
 

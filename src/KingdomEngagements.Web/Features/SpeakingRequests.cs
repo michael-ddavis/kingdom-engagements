@@ -420,7 +420,7 @@ public sealed class SpeakingRequestsService(
                 HostStatus = "in-progress",
                 DocumentsStatus = request.AgreementStatus == "signed" ? "received" : "in-progress",
                 CloseoutStatus = "not-started",
-                Notes = $"Requested ministry: {request.MinistryRequest}\nReference: {request.ReferenceNumber}",
+                Notes = BuildHostSnapshot(request),
                 CreatedAtUtc = now,
                 UpdatedAtUtc = now
             };
@@ -442,6 +442,19 @@ public sealed class SpeakingRequestsService(
                 Status = request.AgreementStatus == "signed" ? "complete" : "open", UpdatedAtUtc = now
             });
             engagementsDatabase.Assignments.Add(assignment);
+            await engagementsDatabase.SaveChangesAsync(cancellationToken);
+        }
+        else
+        {
+            assignment.Title = request.EventName;
+            assignment.HostOrganization = request.OrganizationName;
+            assignment.HostContactName = request.ContactName;
+            assignment.HostContactEmail = request.ContactEmail;
+            assignment.Location = BuildLocation(request);
+            assignment.StartsAtUtc = new DateTimeOffset(request.StartDate.ToDateTime(new TimeOnly(12, 0)), TimeSpan.Zero);
+            assignment.EndsAtUtc = new DateTimeOffset(request.EndDate.ToDateTime(new TimeOnly(12, 0)), TimeSpan.Zero);
+            assignment.Notes = BuildHostSnapshot(request);
+            assignment.UpdatedAtUtc = now;
             await engagementsDatabase.SaveChangesAsync(cancellationToken);
         }
 
@@ -549,6 +562,27 @@ public sealed class SpeakingRequestsService(
         var region = string.IsNullOrWhiteSpace(request.State) ? request.Region : request.State;
         return string.Join(", ", new[] { request.VenueName, request.City, region, request.Country }.Where(x => !string.IsNullOrWhiteSpace(x)));
     }
+
+    private static string BuildHostSnapshot(SpeakingRequestRecord request) => $"""
+        Host invitation {request.ReferenceNumber}
+        Organization: {request.OrganizationName}
+        Event: {request.EventName} ({request.EventType})
+        Requested ministry: {request.MinistryRequest}
+        Dates: {request.StartDate:yyyy-MM-dd} through {request.EndDate:yyyy-MM-dd}
+        Venue: {request.VenueName}, {request.VenueAddress}
+        Location: {BuildLocation(request)}
+        Region / time zone: {request.Region ?? "Not provided"} / {request.TimeZone}
+        Primary contact: {request.ContactName} | {request.ContactEmail} | {request.ContactPhone}
+        Expected attendance: {request.ExpectedAttendance}
+        Travel coverage: {request.TravelCoverageStatus}
+        Lodging coverage: {request.LodgingCoverageStatus}
+        Travel booked by: {request.TravelBookedBy}
+        Honorarium: {request.HonorariumStatus} | {request.HonorariumCurrency} {request.HonorariumAmount:0.00}
+        Payment status: {request.PaymentStatus}
+        Agreement status: {request.AgreementStatus}
+        Engagement status: {request.EngagementStatus}
+        Host readiness: {request.ReadinessPercentage}%
+        """;
 
     private static SpeakingRequestDetails Map(SpeakingRequestRecord request) => new(
         request.Id, request.TenantId, request.ReferenceNumber, request.EditToken, request.EditTokenExpiresAtUtc,

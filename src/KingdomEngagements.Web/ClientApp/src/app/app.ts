@@ -14,13 +14,13 @@ import { ProductInfo } from './core/models';
           <a
             class="eng-brand"
             [href]="product()?.platformUrl || 'http://localhost:5100'"
-            aria-label="Return to KingdomOS"
-            title="Return to KingdomOS">
+            aria-label="Return to ApostolOS"
+            title="Return to ApostolOS">
             <span class="eng-brand__mark" aria-hidden="true">
               <img src="/kingdomos-mark.svg" alt="" />
             </span>
             <span class="eng-brand__text">
-              <strong>KingdomOS</strong>
+              <strong>ApostolOS</strong>
               <small>Engagements</small>
             </span>
           </a>
@@ -59,3 +59,4 @@ export class App implements OnInit {
     });
   }
 }
+

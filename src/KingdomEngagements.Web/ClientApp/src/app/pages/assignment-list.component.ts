@@ -22,6 +22,10 @@ type EngagementView = 'upcoming' | 'review' | 'attention' | 'completed';
             and closeout in one assignment record.
           </p>
         </div>
+        <div class="invitation-actions">
+          <a href="/invite/apostle-cynthia" target="_blank" rel="noopener">Open fresh invitation ↗</a>
+          <button type="button" (click)="copyInvitationLink()">{{ invitationCopied() ? 'Link copied' : 'Copy invitation link' }}</button>
+        </div>
       </header>
 
       <section class="legacy-assignment-summary" aria-label="Engagement summary">
@@ -184,6 +188,7 @@ type EngagementView = 'upcoming' | 'review' | 'attention' | 'completed';
   `,
 })
 export class AssignmentListComponent implements OnInit {
+  readonly invitationCopied = signal(false);
   private readonly curatedDemoAssignments = new Set([
     'assignment-demo-001',
     'assignment-demo-002',
@@ -232,6 +237,12 @@ export class AssignmentListComponent implements OnInit {
   });
 
   constructor(private readonly api: EngagementsApiService) {}
+
+  async copyInvitationLink(): Promise<void> {
+    await navigator.clipboard.writeText(`${window.location.origin}/invite/apostle-cynthia`);
+    this.invitationCopied.set(true);
+    window.setTimeout(() => this.invitationCopied.set(false), 2500);
+  }
 
   ngOnInit(): void {
     forkJoin({ assignments: this.api.getAssignments(), requests: this.api.getRequests() }).subscribe({

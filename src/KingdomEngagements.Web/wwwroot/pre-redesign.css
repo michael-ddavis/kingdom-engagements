@@ -1,4 +1,4 @@
-/* Pre-redesign KingdomOS foundation presentation.
+/* Pre-redesign ApostolOS foundation presentation.
    Source direction: feature/kingdomos-foundation — flatter navy/blue/violet UI,
    simple white surfaces, compact controls and one horizontal assignment tab row. */
 :root{
@@ -47,3 +47,4 @@ main{background:var(--foundation-page)!important}
 @media(max-width:1080px){.shell{grid-template-columns:1fr}.sidebar{position:relative;height:auto;min-height:auto}.sidebar nav{grid-template-columns:repeat(3,minmax(0,1fr));margin-top:16px}.sidebar-utility{display:none}.hero,.metrics,.message,.workspace-grid,.request-workspace{width:min(100% - 34px,var(--foundation-content))}.foundation-card-body,.foundation-card-footer{grid-template-columns:1fr}.foundation-current-stage{padding:17px 0 0;border-left:0;border-top:1px solid #e5e6e3}.foundation-heading-summary{max-width:none;margin-left:0}.foundation-overview-grid{grid-template-columns:1fr}}
 @media(max-width:680px){.sidebar nav{grid-template-columns:1fr 1fr}.hero{padding-top:22px!important}.metrics{grid-template-columns:1fr 1fr}.foundation-card-heading{align-items:flex-start;flex-direction:column}.foundation-event-details{flex-direction:column;gap:8px}.detail-header{flex-direction:column}.foundation-heading-summary{grid-template-columns:1fr;width:100%}.foundation-tabs button{min-width:124px}.foundation-readiness-row{grid-template-columns:1fr;gap:7px}.assignment-pane,.assignment-workspace.is-unified>.completion-workspace>.completion-pane{padding:17px!important}}
 @media(max-width:520px){.metrics{grid-template-columns:1fr}.hero,.metrics,.message,.workspace-grid,.request-workspace{width:calc(100% - 26px)}}
+

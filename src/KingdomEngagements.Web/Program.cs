@@ -238,12 +238,17 @@ app.MapAssignmentWorkspaceEndpoints();
 app.MapEngagementCompletionEndpoints();
 app.MapEngagementsEndpoints();
 
-// Keep the certified static client at / while the Angular application reaches parity.
-// The new client is available side-by-side at /app and uses the same authenticated APIs.
-app.MapGet("/app", (IWebHostEnvironment environment) =>
-    Results.File(Path.Combine(environment.WebRootPath, "app", "index.html"), "text/html; charset=utf-8"));
-app.MapGet("/app/{*path}", (IWebHostEnvironment environment) =>
-    Results.File(Path.Combine(environment.WebRootPath, "app", "index.html"), "text/html; charset=utf-8"));
+// Preserve legacy /app links while keeping the product on its canonical routes.
+app.MapGet("/app", (HttpRequest request) =>
+    Results.Redirect($"/assignments{request.QueryString}"));
+app.MapGet("/app/{*path}", (string? path, HttpRequest request) =>
+{
+    var canonicalPath = string.IsNullOrWhiteSpace(path)
+        ? "/assignments"
+        : $"/{path.TrimStart('/')}";
+
+    return Results.Redirect($"{canonicalPath}{request.QueryString}");
+});
 
 app.MapFallbackToFile("index.html");
 app.Run();

@@ -29,7 +29,7 @@ public sealed class EngagementOperationsCoordinationPublisher(
         var occurredAtUtc = DateTimeOffset.UtcNow;
         var engagementsBrowserUrl = (configuration["KingdomOS:EngagementsBrowserUrl"]
             ?? "http://localhost:5110").TrimEnd('/');
-        var sourceUrl = $"{engagementsBrowserUrl}/app/assignments/{assignment.Id}";
+        var sourceUrl = $"{engagementsBrowserUrl}/assignments/{assignment.Id}";
         var eventDate = assignment.StartsAtUtc;
         var eventEnd = assignment.EndsAtUtc;
 

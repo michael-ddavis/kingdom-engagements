@@ -74,7 +74,7 @@ public sealed class EngagementsUiContractTests
             "KingdomEngagements.Web",
             "Platform",
             "EngagementApprovalOperationsBridge.cs"));
-        Assert.Contains("$\"{engagementsBrowserUrl}/app/assignments/{assignment.Id}\"", publisher, StringComparison.Ordinal);
+        Assert.Contains("$\"{engagementsBrowserUrl}/assignments/{assignment.Id}\"", publisher, StringComparison.Ordinal);
         Assert.Contains("kind = \"checklist\"", publisher, StringComparison.Ordinal);
         Assert.Contains("$\"{assignment.Title} coordination checklist\"", publisher, StringComparison.Ordinal);
         Assert.Contains("Confirm host contact and event schedule", publisher, StringComparison.Ordinal);
@@ -87,6 +87,39 @@ public sealed class EngagementsUiContractTests
             "EngagementsDemoConnectedStoryWorker.cs"));
         Assert.Contains("await publisher.PublishAsync(assignment, stoppingToken)", worker, StringComparison.Ordinal);
         Assert.DoesNotContain("StoryReference", worker, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Legacy_app_links_redirect_to_the_canonical_product_routes()
+    {
+        var program = File.ReadAllText(FindRepositoryFile(
+            "src",
+            "KingdomEngagements.Web",
+            "Program.cs"));
+
+        Assert.Contains("Results.Redirect($\"/assignments{request.QueryString}\")", program, StringComparison.Ordinal);
+        Assert.Contains("app.MapGet(\"/app/{*path}\"", program, StringComparison.Ordinal);
+        Assert.Contains("$\"/{path.TrimStart('/')}\"", program, StringComparison.Ordinal);
+        Assert.DoesNotContain("Path.Combine(environment.WebRootPath, \"app\", \"index.html\")", program, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Connected_demo_assignment_always_seeds_named_care_handoffs()
+    {
+        var worker = File.ReadAllText(FindRepositoryFile(
+            "src",
+            "KingdomEngagements.Web",
+            "Features",
+            "EngagementsDemoDepthWorker.cs"));
+
+        Assert.Contains(
+            "assignment.Status == \"complete\" || assignment.ExternalAssignmentId == \"assignment-demo-001\"",
+            worker,
+            StringComparison.Ordinal);
+        Assert.Contains("Malik Robinson", worker, StringComparison.Ordinal);
+        Assert.Contains("Renee Walker", worker, StringComparison.Ordinal);
+        Assert.Contains("UpsertPersonResponseAsync", worker, StringComparison.Ordinal);
+        Assert.Contains("response.AssignmentId = desired.AssignmentId", worker, StringComparison.Ordinal);
     }
 
     [Fact]

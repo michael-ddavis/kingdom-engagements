@@ -256,7 +256,7 @@ function renderDetail() {
   node.querySelector('.document-list').innerHTML = item.documents.length ? item.documents.map(document => `
     <article class="document-item"><div><strong>${escapeHtml(document.name)}</strong><small>${escapeHtml(document.category)} · ${escapeHtml(document.status)}</small></div><b>${document.storageReference ? 'Stored' : 'Pending'}</b></article>`).join('') : '<p class="empty">No documents are being tracked.</p>';
   node.querySelector('.closeout-copy').textContent = item.summary.closeoutStatus === 'complete'
-    ? 'Closeout is complete. Outcomes may now be shared through governed KingdomOS events.'
+    ? 'Closeout is complete. Outcomes may now be shared through governed ApostolOS events.'
     : 'Closeout remains in Engagements until host follow-up, final documents, expense handoff, and outcome notes are complete.';
   node.querySelector('[data-action="add-task"]').addEventListener('click', () => dialog.showModal());
   detail.replaceChildren(node);

@@ -1,12 +1,12 @@
 import { Component, OnInit, signal } from '@angular/core';
-import { RouterLink, RouterOutlet } from '@angular/router';
+import { RouterOutlet } from '@angular/router';
 import { EngagementsApiService } from './core/engagements-api.service';
 import { ProductInfo } from './core/models';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, RouterLink],
+  imports: [RouterOutlet],
   template: `
     <div class="eng-app">
       <header class="eng-modulebar">
@@ -31,14 +31,12 @@ import { ProductInfo } from './core/models';
             <span class="eng-presence" aria-hidden="true"></span>
             <span>
               <small>Organization</small>
-              <strong>{{ product()?.tenantName || 'Cynthia Thompson Global' }}</strong>
+              <strong>{{ organizationName() }}</strong>
             </span>
           </div>
         </div>
 
         <nav class="eng-modulebar__actions" aria-label="Engagements utilities">
-          <a routerLink="/organization/dwc">DWC Groups</a>
-          <a routerLink="/organization/hey-king">Hey King</a>
           <a [href]="(product()?.platformUrl || 'http://localhost:5100') + '/appearance'">Settings</a>
           <span class="eng-avatar" aria-label="Signed in as Michael Davis">MD</span>
         </nav>
@@ -59,5 +57,23 @@ export class App implements OnInit {
     this.api.getProduct().subscribe({
       next: product => this.product.set(product),
     });
+  }
+
+  organizationName(): string {
+    const key = document.cookie
+      .split(';')
+      .map(value => value.trim())
+      .find(value => value.startsWith('KingdomOS.DemoOrganization='));
+    const organization = key
+      ? decodeURIComponent(key.substring(key.indexOf('=') + 1)).toLowerCase()
+      : 'ctg';
+
+    if (organization === 'divine-world-changers') {
+      return 'Divine World Changers International Ministries';
+    }
+    if (organization === 'heyy-king') {
+      return 'Heyy King, Inc.';
+    }
+    return this.product()?.tenantName || 'Cynthia Thompson Global';
   }
 }

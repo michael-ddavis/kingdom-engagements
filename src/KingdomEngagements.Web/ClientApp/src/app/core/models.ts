@@ -2,9 +2,14 @@ export interface ProductInfo {
   moduleKey: string;
   shortName: string;
   name: string;
+  organizationKey: string;
   tenantName: string;
   platformUrl: string;
+  operationsUrl: string;
+  academyUrl: string;
   careUrl: string;
+  peopleUrl: string;
+  impactUrl: string;
   careEnabled: boolean;
   boundary: string;
 }

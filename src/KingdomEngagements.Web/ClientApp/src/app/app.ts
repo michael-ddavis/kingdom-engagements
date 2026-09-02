@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { AfterViewInit, Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { EngagementsApiService } from './core/engagements-api.service';
 import { ProductInfo } from './core/models';
@@ -48,8 +48,9 @@ import { ProductInfo } from './core/models';
     </div>
   `,
 })
-export class App implements OnInit {
+export class App implements OnInit, AfterViewInit, OnDestroy {
   readonly product = signal<ProductInfo | null>(null);
+  private overlayObserver?: MutationObserver;
 
   constructor(private readonly api: EngagementsApiService) {}
 
@@ -59,7 +60,44 @@ export class App implements OnInit {
     });
   }
 
-  organizationName(): string {
+  ngAfterViewInit(): void {
+    this.overlayObserver = new MutationObserver(() => this.syncOrganizationDrawerPortal());
+    this.overlayObserver.observe(document.body, { childList: true, subtree: true });
+    queueMicrotask(() => this.syncOrganizationDrawerPortal());
+  }
+
+  ngOnDestroy(): void {
+    this.overlayObserver?.disconnect();
+    document.body.classList.remove('apostolos-org-drawer-open', 'apostolos-org-drawer-heyyking');
+  }
+
+  private syncOrganizationDrawerPortal(): void {
+    const routedBackdrop = document.querySelector<HTMLElement>('app-organization-programs .drawer-backdrop');
+    const routedDrawer = document.querySelector<HTMLElement>('app-organization-programs .demo-drawer');
+
+    // Routed content can establish its own containing block. Move the live overlay
+    // nodes to <body> so fixed positioning is always browser-viewport relative.
+    if (routedBackdrop && routedBackdrop.parentElement !== document.body) {
+      routedBackdrop.classList.add('apostolos-body-overlay');
+      document.body.appendChild(routedBackdrop);
+    }
+
+    if (routedDrawer && routedDrawer.parentElement !== document.body) {
+      routedDrawer.classList.add('apostolos-body-drawer');
+      const isHeyyKing = this.currentOrganizationKey() === 'heyy-king';
+      routedDrawer.style.setProperty('--accent', isHeyyKing ? '#9a6c23' : '#5a328a');
+      document.body.appendChild(routedDrawer);
+    }
+
+    const activeDrawer = document.body.querySelector(':scope > .demo-drawer.apostolos-body-drawer');
+    const hasDrawer = !!activeDrawer;
+    const isHeyyKing = hasDrawer && this.currentOrganizationKey() === 'heyy-king';
+
+    document.body.classList.toggle('apostolos-org-drawer-open', hasDrawer);
+    document.body.classList.toggle('apostolos-org-drawer-heyyking', isHeyyKing);
+  }
+
+  private currentOrganizationKey(): 'divine-world-changers' | 'heyy-king' | 'ctg' {
     const key = document.cookie
       .split(';')
       .map(value => value.trim())
@@ -67,6 +105,15 @@ export class App implements OnInit {
     const organization = key
       ? decodeURIComponent(key.substring(key.indexOf('=') + 1)).toLowerCase()
       : 'ctg';
+
+    if (organization === 'divine-world-changers' || organization === 'heyy-king') {
+      return organization;
+    }
+    return 'ctg';
+  }
+
+  organizationName(): string {
+    const organization = this.currentOrganizationKey();
 
     if (organization === 'divine-world-changers') {
       return 'Divine World Changers International Ministries';

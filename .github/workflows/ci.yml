@@ -28,7 +28,7 @@ jobs:
       - run: dotnet test KingdomEngagements.slnx --configuration Release --no-build
       - run: docker build --tag kingdom-engagements:ci .
 
-      - name: Verify standalone Angular shell and public host flows
+      - name: Verify standalone Angular shell, tenant spaces, and public host flows
         shell: bash
         run: |
           set -euo pipefail
@@ -43,6 +43,20 @@ jobs:
                 if grep --quiet '<base href="/app/">' <<<"$index_payload"; then exit 1; fi
                 if grep --quiet '/legacy18-product.js' <<<"$index_payload"; then exit 1; fi
                 if grep --quiet 'engagement-nav-root' <<<"$index_payload"; then exit 1; fi
+
+                dwc_product="$(docker exec "$container_id" curl --fail --silent -H 'X-Kingdom-Demo-Organization: divine-world-changers' http://localhost:8080/api/product)"
+                grep --quiet '"organizationKey":"divine-world-changers"' <<<"$dwc_product"
+                grep --quiet '"tenantName":"Divine World Changers"' <<<"$dwc_product"
+                grep --quiet 'Divine Empowerment Groups' <<<"$dwc_product"
+
+                heyy_king_product="$(docker exec "$container_id" curl --fail --silent -H 'X-Kingdom-Demo-Organization: heyy-king' http://localhost:8080/api/product)"
+                grep --quiet '"organizationKey":"heyy-king"' <<<"$heyy_king_product"
+                grep --quiet '"tenantName":"Hey King"' <<<"$heyy_king_product"
+                grep --quiet 'mentorship relationships' <<<"$heyy_king_product"
+
+                ctg_product="$(docker exec "$container_id" curl --fail --silent -H 'X-Kingdom-Demo-Organization: ctg' http://localhost:8080/api/product)"
+                grep --quiet '"organizationKey":"ctg"' <<<"$ctg_product"
+                grep --quiet '"tenantName":"Cynthia Thompson Global"' <<<"$ctg_product"
 
                 invitations_payload="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/invitations)"
                 grep --quiet '<app-root' <<<"$invitations_payload"

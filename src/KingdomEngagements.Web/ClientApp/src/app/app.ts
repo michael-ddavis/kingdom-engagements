@@ -1,12 +1,12 @@
 import { Component, OnInit, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { RouterLink, RouterOutlet } from '@angular/router';
 import { EngagementsApiService } from './core/engagements-api.service';
 import { ProductInfo } from './core/models';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, RouterLink],
   template: `
     <div class="eng-app">
       <header class="eng-modulebar">
@@ -37,6 +37,8 @@ import { ProductInfo } from './core/models';
         </div>
 
         <nav class="eng-modulebar__actions" aria-label="Engagements utilities">
+          <a routerLink="/organization/dwc">DWC Groups</a>
+          <a routerLink="/organization/hey-king">Hey King</a>
           <a [href]="(product()?.platformUrl || 'http://localhost:5100') + '/appearance'">Settings</a>
           <span class="eng-avatar" aria-label="Signed in as Michael Davis">MD</span>
         </nav>
@@ -59,4 +61,3 @@ export class App implements OnInit {
     });
   }
 }
-

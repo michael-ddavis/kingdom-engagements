@@ -1,40 +1,42 @@
 /*
- * DWC / Heyy King organization drawers use the same viewport overlay language as
- * ApostolOS workspace drawers: a fixed full-height sheet, restrained fade/slide
- * motion, stable scrolling, and a clear modal backdrop.
+ * DWC / Heyy King drawers are promoted to <body> by the Engagements app shell.
+ * This keeps them outside routed-page containing/stacking contexts so they cover
+ * the full browser viewport, including the module navbar.
  */
 
-body:has(app-organization-programs .demo-drawer) {
-  overflow: hidden;
+body.apostolos-org-drawer-open {
+  overflow: hidden !important;
 }
 
-/*
- * A drawer is the top-most interaction layer. While it is open, suppress the
- * Engagements module chrome entirely so the user is visually inside the task,
- * not looking at a panel underneath a persistent navbar.
- */
-body:has(app-organization-programs .demo-drawer) .eng-modulebar {
+body.apostolos-org-drawer-open .eng-modulebar {
   opacity: 0 !important;
   visibility: hidden !important;
   pointer-events: none !important;
 }
 
-app-organization-programs .drawer-backdrop {
+body > .drawer-backdrop.apostolos-body-overlay {
   position: fixed !important;
   inset: 0 !important;
-  z-index: 10000 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  z-index: 2147483000 !important;
+  margin: 0 !important;
   background: rgba(7, 11, 18, 0.42) !important;
   backdrop-filter: none !important;
   animation: org-drawer-backdrop-enter var(--kos-motion-base, 180ms) ease-out both !important;
 }
 
-app-organization-programs .demo-drawer {
+body > .demo-drawer.apostolos-body-drawer {
   position: fixed !important;
-  inset: 0 0 0 auto !important;
-  z-index: 10001 !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: auto !important;
+  z-index: 2147483001 !important;
   width: min(540px, 100vw) !important;
   height: 100dvh !important;
   max-height: 100dvh !important;
+  margin: 0 !important;
   display: grid !important;
   grid-template-rows: auto minmax(0, 1fr) auto !important;
   overflow: hidden !important;
@@ -45,13 +47,13 @@ app-organization-programs .demo-drawer {
   will-change: transform, opacity;
 }
 
-app-organization-programs .drawer-head {
+body > .demo-drawer.apostolos-body-drawer .drawer-head {
   padding: 28px 28px 20px !important;
   border-bottom: 1px solid var(--legacy-border, #e2e6ec) !important;
   background: var(--legacy-surface, #fff) !important;
 }
 
-app-organization-programs .drawer-body {
+body > .demo-drawer.apostolos-body-drawer .drawer-body {
   min-height: 0 !important;
   overflow-x: hidden !important;
   overflow-y: auto !important;
@@ -60,7 +62,7 @@ app-organization-programs .drawer-body {
   padding: 26px 28px 34px !important;
 }
 
-app-organization-programs .drawer-footer {
+body > .demo-drawer.apostolos-body-drawer .drawer-footer {
   position: relative !important;
   z-index: 2;
   margin: 0 !important;
@@ -70,7 +72,7 @@ app-organization-programs .drawer-footer {
   box-shadow: 0 -8px 24px rgb(17 28 45 / 4%);
 }
 
-app-organization-programs .drawer-close {
+body > .demo-drawer.apostolos-body-drawer .drawer-close {
   display: grid !important;
   place-items: center !important;
   width: 36px !important;
@@ -85,18 +87,18 @@ app-organization-programs .drawer-close {
   transition: background-color 120ms ease, border-color 120ms ease, transform 120ms ease;
 }
 
-app-organization-programs .drawer-close:hover {
+body > .demo-drawer.apostolos-body-drawer .drawer-close:hover {
   background: #f1f3f6 !important;
   border-color: var(--legacy-border-strong, #cbd2dd) !important;
 }
 
-app-organization-programs .drawer-close:active {
+body > .demo-drawer.apostolos-body-drawer .drawer-close:active {
   transform: scale(.96);
 }
 
-app-organization-programs .demo-drawer input:focus,
-app-organization-programs .demo-drawer textarea:focus,
-app-organization-programs .demo-drawer select:focus {
+body > .demo-drawer.apostolos-body-drawer input:focus,
+body > .demo-drawer.apostolos-body-drawer textarea:focus,
+body > .demo-drawer.apostolos-body-drawer select:focus {
   outline: 2px solid color-mix(in srgb, var(--accent, #4f6280) 22%, transparent) !important;
   outline-offset: 1px;
   border-color: var(--accent, #4f6280) !important;
@@ -119,25 +121,25 @@ app-organization-programs .demo-drawer select:focus {
 }
 
 @media (max-width: 720px) {
-  app-organization-programs .demo-drawer {
+  body > .demo-drawer.apostolos-body-drawer {
     width: 100vw !important;
   }
 
-  app-organization-programs .drawer-head,
-  app-organization-programs .drawer-body,
-  app-organization-programs .drawer-footer {
+  body > .demo-drawer.apostolos-body-drawer .drawer-head,
+  body > .demo-drawer.apostolos-body-drawer .drawer-body,
+  body > .demo-drawer.apostolos-body-drawer .drawer-footer {
     padding-left: 20px !important;
     padding-right: 20px !important;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  app-organization-programs .drawer-backdrop,
-  app-organization-programs .demo-drawer {
+  body > .drawer-backdrop.apostolos-body-overlay,
+  body > .demo-drawer.apostolos-body-drawer {
     animation-duration: 1ms !important;
   }
 
-  app-organization-programs .drawer-close {
+  body > .demo-drawer.apostolos-body-drawer .drawer-close {
     transition: none !important;
   }
 }

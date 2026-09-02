@@ -8,10 +8,21 @@ body:has(app-organization-programs .demo-drawer) {
   overflow: hidden;
 }
 
+/*
+ * A drawer is the top-most interaction layer. While it is open, suppress the
+ * Engagements module chrome entirely so the user is visually inside the task,
+ * not looking at a panel underneath a persistent navbar.
+ */
+body:has(app-organization-programs .demo-drawer) .eng-modulebar {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 app-organization-programs .drawer-backdrop {
   position: fixed !important;
   inset: 0 !important;
-  z-index: 1000 !important;
+  z-index: 10000 !important;
   background: rgba(7, 11, 18, 0.42) !important;
   backdrop-filter: none !important;
   animation: org-drawer-backdrop-enter var(--kos-motion-base, 180ms) ease-out both !important;
@@ -20,7 +31,7 @@ app-organization-programs .drawer-backdrop {
 app-organization-programs .demo-drawer {
   position: fixed !important;
   inset: 0 0 0 auto !important;
-  z-index: 1001 !important;
+  z-index: 10001 !important;
   width: min(540px, 100vw) !important;
   height: 100dvh !important;
   max-height: 100dvh !important;

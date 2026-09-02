@@ -196,6 +196,18 @@ app.MapGet("/api/product", async (
     CancellationToken cancellationToken) =>
 {
     var tenantId = KingdomIdentity.TenantId(context.User, context.Request);
+    var organizationKey = context.User.FindFirst(KingdomIdentity.DemoOrganizationClaim)?.Value
+        ?? (tenantId == KingdomIdentity.DivineWorldChangersTenantId
+            ? "divine-world-changers"
+            : tenantId == KingdomIdentity.HeyyKingTenantId
+                ? "heyy-king"
+                : "ctg");
+    var tenantName = organizationKey switch
+    {
+        "divine-world-changers" => "Divine World Changers",
+        "heyy-king" => "Hey King",
+        _ => configuration["KingdomOS:TenantName"] ?? "Cynthia Thompson Global"
+    };
     var careState = await entitlements.GetModuleStateAsync(
         "care",
         tenantId,
@@ -205,12 +217,22 @@ app.MapGet("/api/product", async (
     {
         moduleKey = "engagements",
         shortName = "Engagements",
-        name = "Kingdom Engagements",
-        tenantName = configuration["KingdomOS:TenantName"] ?? "Cynthia Thompson Global",
+        name = "ApostolOS Engagements",
+        organizationKey,
+        tenantName,
         platformUrl = configuration["KingdomOS:PlatformBrowserUrl"] ?? "http://localhost:5100",
+        operationsUrl = configuration["KingdomOS:OperationsBrowserUrl"] ?? "http://localhost:5101",
+        academyUrl = configuration["KingdomOS:AcademyBrowserUrl"] ?? "http://localhost:5102",
         careUrl = configuration["KingdomOS:CareBrowserUrl"] ?? "http://localhost:5104",
+        peopleUrl = configuration["KingdomOS:PeopleBrowserUrl"] ?? "http://localhost:5106",
+        impactUrl = configuration["KingdomOS:ImpactBrowserUrl"] ?? "http://localhost:5107",
         careEnabled = careState == ModuleEntitlementState.Enabled,
-        boundary = "Invitation intake, review, accepted terms, host coordination, travel, lodging, transportation, documents, readiness, event outcomes, follow-up, and closeout."
+        boundary = organizationKey switch
+        {
+            "divine-world-changers" => "Divine Empowerment Groups, semesters, clusters, placement, rosters, meetings, assignments, attendance, member engagement, and governed handoffs.",
+            "heyy-king" => "Recipient intake, partner engagement, service fulfillment, mentorship relationships, goals, meetings, milestones, and governed handoffs.",
+            _ => "Invitation intake, review, accepted terms, host coordination, travel, lodging, transportation, documents, readiness, event outcomes, follow-up, and closeout."
+        }
     });
 });
 app.MapGet("/api/capabilities", async (

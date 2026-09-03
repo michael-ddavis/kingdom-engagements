@@ -133,6 +133,10 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
     const routedBackdrop = document.querySelector<HTMLElement>('app-organization-programs .drawer-backdrop');
     const routedDrawer = document.querySelector<HTMLElement>('app-organization-programs .demo-drawer');
 
+    // Opening a DEG from the overview establishes the active group context before
+    // the drawer is portaled to <body>, so every downstream group link follows it.
+    this.syncDwcGroupFromDrawer(routedDrawer);
+
     if (routedBackdrop && routedBackdrop.parentElement !== document.body) {
       routedBackdrop.classList.add('apostolos-body-overlay');
       document.body.appendChild(routedBackdrop);
@@ -145,12 +149,29 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
       document.body.appendChild(routedDrawer);
     }
 
-    const activeDrawer = document.body.querySelector(':scope > .demo-drawer.apostolos-body-drawer');
+    const activeDrawer = document.body.querySelector<HTMLElement>(':scope > .demo-drawer.apostolos-body-drawer');
+    this.syncDwcGroupFromDrawer(activeDrawer);
+
     const hasDrawer = !!activeDrawer;
     const isHeyyKing = hasDrawer && this.currentOrganizationKey() === 'heyy-king';
 
     document.body.classList.toggle('apostolos-org-drawer-open', hasDrawer);
     document.body.classList.toggle('apostolos-org-drawer-heyyking', isHeyyKing);
+  }
+
+  private syncDwcGroupFromDrawer(drawer: HTMLElement | null): void {
+    if (!drawer || this.currentOrganizationKey() !== 'divine-world-changers') return;
+
+    const label = (drawer.getAttribute('aria-label') || '').trim().toLowerCase();
+    if (!label) return;
+
+    const group = this.formationState.groups().find(
+      item => item.name.trim().toLowerCase() === label,
+    );
+
+    if (group && this.formationState.selectedGroupId() !== group.id) {
+      this.formationState.selectGroup(group.id);
+    }
   }
 
   private currentOrganizationKey(): 'divine-world-changers' | 'heyy-king' | 'ctg' {

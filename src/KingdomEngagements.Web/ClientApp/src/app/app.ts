@@ -40,11 +40,18 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
 
         <nav class="eng-modulebar__actions" aria-label="Engagements utilities">
           @if (isDwc()) {
-            <a href="/organization/dwc">DEG Overview</a>
-            <a href="/organization/dwc/formation">Formation</a>
-            <a href="/organization/dwc/my-group">My Group</a>
+            @if (isDwcMemberView()) {
+              <span class="eng-view-chip">Member view</span>
+              <a href="/organization/dwc">Exit preview</a>
+            } @else {
+              <a href="/organization/dwc">DEG Overview</a>
+              <a href="/organization/dwc/formation">Formation</a>
+              <a href="/organization/dwc/my-group">Member Preview</a>
+            }
           }
-          <a [href]="(product()?.platformUrl || 'http://localhost:5100') + '/appearance'">Settings</a>
+          @if (!isDwcMemberView()) {
+            <a [href]="(product()?.platformUrl || 'http://localhost:5100') + '/appearance'">Settings</a>
+          }
           <span class="eng-avatar" aria-label="Signed in as Michael Davis">MD</span>
         </nav>
       </header>
@@ -60,6 +67,9 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
       </main>
     </div>
   `,
+  styles: [`
+    .eng-view-chip{display:inline-flex;min-height:32px;padding:0 10px;border-radius:999px;align-items:center;color:#6f4a73;background:#efe5ee;font-size:.62rem;font-weight:850;letter-spacing:.04em;text-transform:uppercase}
+  `],
 })
 export class App implements OnInit, AfterViewInit, OnDestroy {
   readonly product = signal<ProductInfo | null>(null);
@@ -91,14 +101,21 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
     return this.currentOrganizationKey() === 'divine-world-changers';
   }
 
+  isDwcMemberView(): boolean {
+    return this.routePath() === '/organization/dwc/my-group';
+  }
+
   showOrganizationCommandCenter(): boolean {
-    const url = this.router.url.split('?')[0].replace(/\/$/, '');
+    const url = this.routePath();
     return url === '/organization/dwc' || url === '/organization/hey-king';
   }
 
   showHickmanItinerantPanel(): boolean {
-    const url = this.router.url.split('?')[0].replace(/\/$/, '');
-    return url === '/organization/hey-king';
+    return this.routePath() === '/organization/hey-king';
+  }
+
+  private routePath(): string {
+    return this.router.url.split('?')[0].replace(/\/$/, '');
   }
 
   private syncOrganizationDrawerPortal(): void {

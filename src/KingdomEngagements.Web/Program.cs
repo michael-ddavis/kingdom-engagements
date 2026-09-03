@@ -120,6 +120,7 @@ builder.Services.AddHttpClient<EngagementsEntitlementResolver>(client =>
 builder.Services.AddScoped<EngagementsInitializer>();
 builder.Services.AddScoped<EngagementsService>();
 builder.Services.AddScoped<SpeakingRequestsService>();
+builder.Services.AddScoped<HickmanSpeakingRequestsService>();
 builder.Services.AddScoped<EngagementPreparationService>();
 builder.Services.AddScoped<AssignmentWorkspaceService>();
 builder.Services.AddScoped<EngagementCompletionService>();
@@ -186,7 +187,10 @@ app.Use(async (context, next) =>
 
     await next();
 });
+// Keep the approval bridge outside the Hickman review interceptor so an accepted
+// Pastor Hickman invitation still publishes its downstream Operations preparation work.
 app.UseMiddleware<EngagementApprovalOperationsBridge>();
+app.UseMiddleware<HickmanSpeakingRequestReviewMiddleware>();
 
 app.MapEngagementsHealth();
 app.MapGet("/api/product", async (
@@ -227,12 +231,17 @@ app.MapGet("/invite/apostle-cynthia", (IWebHostEnvironment environment) =>
     Results.File(Path.Combine(environment.WebRootPath, "invite.html"), "text/html; charset=utf-8")).AllowAnonymous();
 app.MapGet("/invite/apostle-cynthia/requests/{token}", (string token, IWebHostEnvironment environment) =>
     Results.File(Path.Combine(environment.WebRootPath, "invite.html"), "text/html; charset=utf-8")).AllowAnonymous();
+app.MapGet("/invite/pastor-hickman", (IWebHostEnvironment environment) =>
+    Results.File(Path.Combine(environment.WebRootPath, "invite-hickman.html"), "text/html; charset=utf-8")).AllowAnonymous();
+app.MapGet("/invite/pastor-hickman/requests/{token}", (string token, IWebHostEnvironment environment) =>
+    Results.File(Path.Combine(environment.WebRootPath, "invite-hickman.html"), "text/html; charset=utf-8")).AllowAnonymous();
 app.MapGet("/host/terms/{token}", (string token, IWebHostEnvironment environment) =>
     Results.File(Path.Combine(environment.WebRootPath, "terms.html"), "text/html; charset=utf-8")).AllowAnonymous();
 app.MapGet("/host/coordination/{token}", (string token, IWebHostEnvironment environment) =>
     Results.File(Path.Combine(environment.WebRootPath, "coordination.html"), "text/html; charset=utf-8")).AllowAnonymous();
 
 app.MapSpeakingRequestEndpoints();
+app.MapHickmanSpeakingRequestEndpoints();
 app.MapEngagementPreparationEndpoints();
 app.MapAssignmentWorkspaceEndpoints();
 app.MapEngagementCompletionEndpoints();

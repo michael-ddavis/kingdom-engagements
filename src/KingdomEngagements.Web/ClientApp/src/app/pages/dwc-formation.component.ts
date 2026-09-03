@@ -1,40 +1,17 @@
 import { CommonModule } from '@angular/common';
 import { Component, ElementRef, ViewChild, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import {
+  DwcFormationStateService,
+  FormationMember,
+  FormationSession,
+  FormationSource,
+  FormationTrack,
+  LeadershipStage,
+} from '../core/dwc-formation-state.service';
 
-interface FormationGroup {
-  id: string;
-  name: string;
-  leader: string;
-  cluster: string;
-  members: number;
-  pace: string;
-}
-
-interface FormationSession {
-  id: string;
-  week: number;
-  title: string;
-  theme: string;
-  scripture: string;
-  bigIdea: string;
-  teaching: string;
-  discussion: string[];
-  practice: string;
-  prayer: string;
-  resource: string;
-}
-
-interface FormationMember {
-  id: string;
-  name: string;
-  attendance: string;
-  reflections: number;
-  practice: string;
-  status: 'On pace' | 'Needs follow-up' | 'Emerging leader';
-}
-
-type DrawerKind = 'session' | 'practice' | 'member' | 'leader' | 'academy';
+type FormationTab = 'overview' | 'tracks' | 'people' | 'leadership' | 'review' | 'reports';
+type DrawerKind = 'session' | 'practice' | 'member' | 'leader' | 'track' | 'academy';
 
 @Component({
   selector: 'app-dwc-formation',
@@ -43,160 +20,391 @@ type DrawerKind = 'session' | 'practice' | 'member' | 'leader' | 'academy';
   template: `
     <section class="formation-page">
       <header class="formation-hero">
-        <div>
-          <p class="formation-eyebrow">Divine Empowerment Groups · Formation</p>
-          <h1>Discipleship has a pathway.</h1>
-          <p>Give every DEG a shared formation track while keeping the room relational: Scripture, teaching, discussion, practice, prayer, reflection and measurable next steps lived out together.</p>
+        <div class="formation-hero__copy">
+          <p class="eyebrow">Divine World Changers · Divine Empowerment Groups</p>
+          <h1>Formation that keeps moving.</h1>
+          <p>Build discipleship pathways that connect curriculum to people, practice, service, leadership and multiplication without turning a DEG into a classroom.</p>
+          <div class="hero-actions">
+            <button type="button" (click)="openSession(state.currentSession())">Prepare next session</button>
+            <a class="secondary" href="/organization/dwc/my-group">Preview member experience</a>
+          </div>
         </div>
-        <div class="hero-side">
-          <span>Spring 2027</span>
-          <strong>Transformation Track 2</strong>
-          <small>Identity, Calling & Kingdom Life</small>
-        </div>
+        <aside class="hero-track">
+          <span>{{ state.selectedGroup().semester }}</span>
+          <small>Current pathway</small>
+          <strong>{{ state.selectedTrack().title }}</strong>
+          <p>{{ state.selectedTrack().subtitle }}</p>
+          <div class="source-line"><b>{{ state.selectedTrack().source }}</b><span>{{ state.progressPercent() }}% complete</span></div>
+        </aside>
       </header>
 
-      <div class="formation-toolbar">
+      <nav class="formation-nav" aria-label="DEG formation areas">
+        @for (tab of tabs; track tab.key) {
+          <button type="button" [class.active]="activeTab() === tab.key" (click)="activeTab.set(tab.key)">{{ tab.label }}</button>
+        }
+      </nav>
+
+      <section class="context-bar">
         <label>
           <span>Viewing group</span>
-          <select [ngModel]="selectedGroupId()" (ngModelChange)="selectGroup($event)">
-            @for (group of groups; track group.id) {
+          <select [ngModel]="state.selectedGroupId()" (ngModelChange)="state.selectGroup($event)">
+            @for (group of state.groups(); track group.id) {
               <option [value]="group.id">{{ group.name }}</option>
             }
           </select>
         </label>
-        <div class="toolbar-actions">
-          <button type="button" class="quiet" (click)="openAcademyBoundary()">Academy connection</button>
-          <button type="button" (click)="openLeaderPrep()">Leader prep</button>
+        <label>
+          <span>Formation pace</span>
+          <select [ngModel]="state.selectedGroup().pace" (ngModelChange)="setPace($event)">
+            <option value="Weekly">Weekly</option>
+            <option value="Every other week">Every other week</option>
+            <option value="Flexible">Flexible</option>
+          </select>
+        </label>
+        <div class="context-meta">
+          <span>{{ state.selectedGroup().meeting }}</span>
+          <span>{{ state.selectedGroup().location }}</span>
+          <span>{{ state.selectedGroup().childcare ? 'Childcare available' : 'No childcare listed' }}</span>
         </div>
-      </div>
-
-      <section class="formation-summary">
-        <article><span>Track progress</span><strong>{{ progressPercent() }}%</strong><small>{{ completedCount() }} of {{ sessions.length }} sessions complete</small></article>
-        <article><span>Group</span><strong>{{ selectedGroup().name }}</strong><small>{{ selectedGroup().leader }} · {{ selectedGroup().cluster }}</small></article>
-        <article><span>Participation</span><strong>{{ selectedGroup().members }}</strong><small>active people in this semester</small></article>
-        <article><span>Formation pace</span><strong>{{ selectedGroup().pace }}</strong><small>{{ followupCount() }} people need relational follow-up</small></article>
+        <button type="button" class="quiet" (click)="openAcademyBoundary()">Academy connection</button>
       </section>
 
-      <div class="formation-layout">
-        <article class="track-panel">
-          <header class="panel-head">
-            <div><p class="formation-eyebrow">Current track</p><h2>Identity, Calling & Kingdom Life</h2></div>
-            <span class="track-source">DWCIM curriculum</span>
-          </header>
-          <p class="track-intro">Eight guided gatherings move the group from identity in Christ into calling, community, service and mission. Leaders can pace the same track differently without losing the shared formation outcomes.</p>
+      @if (activeTab() === 'overview') {
+        <section class="metric-grid">
+          <article><span>Track progress</span><strong>{{ state.progressPercent() }}%</strong><small>{{ state.completedCount() }} of {{ state.selectedTrack().sessions.length }} sessions</small></article>
+          <article><span>Active people</span><strong>{{ state.selectedGroup().members }}</strong><small>{{ state.selectedMembers().length }} demo records shown</small></article>
+          <article><span>Relational follow-up</span><strong>{{ state.followupCount() }}</strong><small>people need leader attention</small></article>
+          <article><span>Leadership pipeline</span><strong>{{ state.emergingLeaders().length }}</strong><small>emerging or active leaders across DEGs</small></article>
+        </section>
 
-          <div class="session-list">
-            @for (session of sessions; track session.id) {
-              <button type="button" class="session-row" [class.current]="session.id === currentSession().id" (click)="openSession(session)">
-                <span class="session-state" [attr.data-state]="sessionState(session)">{{ sessionStateIcon(session) }}</span>
-                <span class="session-copy"><small>Week {{ session.week }}</small><strong>{{ session.title }}</strong><span>{{ session.theme }}</span></span>
-                <span class="session-status">{{ sessionState(session) }}</span>
-              </button>
+        <div class="overview-layout">
+          <article class="panel track-panel">
+            <header class="panel-head">
+              <div><p class="eyebrow">Current track</p><h2>{{ state.selectedTrack().subtitle }}</h2><p>{{ state.selectedTrack().description }}</p></div>
+              <span class="source-badge" [attr.data-source]="state.selectedTrack().source">{{ state.selectedTrack().source }}</span>
+            </header>
+            <div class="progress-line"><span [style.width.%]="state.progressPercent()"></span></div>
+            <div class="session-list">
+              @for (session of state.selectedTrack().sessions; track session.id) {
+                <button type="button" class="session-row" [class.current]="session.id === state.currentSession().id" (click)="openSession(session)">
+                  <span class="session-state" [attr.data-state]="sessionState(session)">{{ sessionStateIcon(session) }}</span>
+                  <span class="session-copy"><small>Week {{ session.week }}</small><strong>{{ session.title }}</strong><span>{{ session.theme }}</span></span>
+                  <span class="session-source">{{ session.media[0]?.source || state.selectedTrack().source }}</span>
+                  <span class="session-status">{{ sessionState(session) }}</span>
+                </button>
+              }
+            </div>
+          </article>
+
+          <aside class="overview-sidebar">
+            <article class="panel next-card">
+              <p class="eyebrow">Next gathering</p>
+              <span>Week {{ state.currentSession().week }}</span>
+              <h2>{{ state.currentSession().title }}</h2>
+              <p>{{ state.currentSession().bigIdea }}</p>
+              <div class="mini-detail"><span>Scripture</span><strong>{{ state.currentSession().scripture }}</strong></div>
+              <div class="mini-detail"><span>Practice</span><strong>{{ state.currentSession().practice }}</strong></div>
+              <button type="button" (click)="openSession(state.currentSession())">Open session workspace</button>
+            </article>
+
+            <article class="panel readiness-card">
+              <p class="eyebrow">Leader preparation</p>
+              <h3>Prepare the people and the content.</h3>
+              @for (item of leaderReadiness; track item.label) {
+                <div class="readiness-line"><span [class.done]="item.done">{{ item.done ? '✓' : '○' }}</span><b>{{ item.label }}</b></div>
+              }
+              <button type="button" class="quiet" (click)="openLeaderPrep()">Leader prep checklist</button>
+            </article>
+          </aside>
+        </div>
+
+        <div class="two-col">
+          <article class="panel">
+            <header class="panel-head"><div><p class="eyebrow">Between gatherings</p><h2>Practice, reflection & prayer</h2><p>Formation continues during the week without academic scores.</p></div><button type="button" class="quiet" (click)="openPractice()">+ Add practice</button></header>
+            <div class="practice-feature"><span>This week</span><strong>{{ state.currentSession().practice }}</strong><p>Members can complete the practice, reflect, share testimony or request a leader conversation.</p></div>
+            @for (practice of groupPractices(); track practice) {
+              <div class="simple-line"><span>✓</span><div><strong>{{ practice }}</strong><small>Assigned to {{ state.selectedGroup().name }}</small></div></div>
             }
-          </div>
+          </article>
+
+          <article class="panel">
+            <header class="panel-head"><div><p class="eyebrow">Formation pulse</p><h2>What is becoming visible?</h2><p>Track evidence of growth rather than reducing people to grades.</p></div><button type="button" class="quiet" (click)="activeTab.set('reports')">View reports</button></header>
+            <div class="outcome-list">
+              @for (outcome of outcomePulse; track outcome.label) {
+                <div><span>{{ outcome.label }}</span><div class="outcome-bar"><i [style.width.%]="outcome.percent"></i></div><strong>{{ outcome.state }}</strong></div>
+              }
+            </div>
+          </article>
+        </div>
+      }
+
+      @if (activeTab() === 'tracks') {
+        <section class="page-heading">
+          <div><p class="eyebrow">Curriculum pathways</p><h2>Transformation Tracks</h2><p>Use DWCIM-owned curriculum, link Academy-owned lessons, or create a leader-developed pathway without copying formal course content into Engagements.</p></div>
+          <button type="button" (click)="openCreateTrack()">+ Create DEG track</button>
+        </section>
+
+        <div class="track-grid">
+          @for (track of state.tracks(); track track.id) {
+            <article class="track-card" [class.selected]="track.id === state.selectedTrack().id">
+              <header><span>Track {{ track.number }}</span><b [attr.data-source]="track.source">{{ track.source }}</b></header>
+              <h3>{{ track.title }}</h3>
+              <strong>{{ track.subtitle }}</strong>
+              <p>{{ track.description }}</p>
+              <div class="track-meta"><span>{{ track.sessions.length }} sessions</span><span>{{ track.outcomes.length }} formation outcomes</span></div>
+              <section><small>Prerequisites</small>@for (item of track.prerequisites; track item) { <p class="bullet">{{ item }}</p> }</section>
+              <section><small>Suggested next</small>@for (item of track.suggestedNext; track item) { <p class="bullet next">{{ item }}</p> }</section>
+              <footer>
+                @if (track.id === state.selectedTrack().id) { <span class="assigned">Assigned to this group</span> }
+                @else { <button type="button" class="quiet" (click)="assignTrack(track)">Assign to {{ state.selectedGroup().name }}</button> }
+              </footer>
+            </article>
+          }
+        </div>
+
+        <article class="panel architecture-card">
+          <div><p class="eyebrow">Academy boundary</p><h2>Content can travel. Ownership does not.</h2><p>Academy remains the source of formal programs, lessons, media and formal completion. Engagements owns the DEG, semester, pacing, discussion, practice, attendance, reflection, testimony, formation milestones and leadership journey.</p></div>
+          <div class="architecture-map"><span>Kingdom Academy<br><b>Programs · curriculum · media · completion</b></span><i>→</i><span>DEG Engagements<br><b>People · group pacing · formation · multiplication</b></span></div>
         </article>
+      }
 
-        <aside class="formation-sidebar">
-          <article class="current-card">
-            <p class="formation-eyebrow">Next gathering</p>
-            <span>Week {{ currentSession().week }}</span>
-            <h2>{{ currentSession().title }}</h2>
-            <p>{{ currentSession().bigIdea }}</p>
-            <dl>
-              <div><dt>Scripture</dt><dd>{{ currentSession().scripture }}</dd></div>
-              <div><dt>Group practice</dt><dd>{{ currentSession().practice }}</dd></div>
-            </dl>
-            <button type="button" (click)="openSession(currentSession())">Prepare this session</button>
-          </article>
+      @if (activeTab() === 'people') {
+        <section class="page-heading">
+          <div><p class="eyebrow">Person-in-community</p><h2>Formation records</h2><p>Attendance matters, but the record goes further: practice, reflection, testimony, prayer response, household context, service and discerned next steps.</p></div>
+          <a class="secondary-link" href="/organization/dwc/my-group">Open member-facing My Group →</a>
+        </section>
 
-          <article class="leader-card">
-            <p class="formation-eyebrow">Leader readiness</p>
-            <h3>Before the room gathers</h3>
-            <div class="prep-line done"><span>✓</span><b>Review leader guide</b></div>
-            <div class="prep-line done"><span>✓</span><b>Pray through member list</b></div>
-            <div class="prep-line"><span>○</span><b>Assign opening prayer</b></div>
-            <div class="prep-line"><span>○</span><b>Review follow-up needs</b></div>
-            <button type="button" class="quiet" (click)="openLeaderPrep()">Open leader preparation</button>
-          </article>
-        </aside>
-      </div>
-
-      <section class="formation-grid">
-        <article class="people-panel">
-          <header class="panel-head"><div><p class="formation-eyebrow">People in formation</p><h2>Group progress</h2></div><span>{{ members().length }} tracked</span></header>
-          @for (member of members(); track member.id) {
-            <button type="button" class="member-row" (click)="openMember(member)">
-              <span><strong>{{ member.name }}</strong><small>{{ member.attendance }} attendance · {{ member.reflections }} reflections</small></span>
-              <span><b>{{ member.practice }}</b><em [attr.data-tone]="member.status === 'Needs follow-up' ? 'warn' : member.status === 'Emerging leader' ? 'leader' : 'good'">{{ member.status }}</em></span>
+        <article class="panel people-table">
+          <div class="table-head"><span>Person</span><span>Formation</span><span>Leadership</span><span>Next step</span><span></span></div>
+          @for (member of state.selectedMembers(); track member.id) {
+            <button type="button" class="person-row" (click)="openMember(member)">
+              <span class="person-cell"><i>{{ initials(member.name) }}</i><span><strong>{{ member.name }}</strong><small>{{ member.attendance }} attendance · {{ member.reflections.length }} reflections</small></span></span>
+              <span><em [attr.data-tone]="member.status === 'Needs follow-up' ? 'warn' : member.status === 'Emerging leader' ? 'leader' : 'good'">{{ member.status }}</em><small>{{ member.practice }} practice</small></span>
+              <span><strong>{{ member.leadershipStage }}</strong><small>{{ member.serviceArea }}</small></span>
+              <span><strong>{{ member.nextStep }}</strong>@if (member.missedSessionIds.length) { <small class="warning">{{ member.missedSessionIds.length }} missed session{{ member.missedSessionIds.length === 1 ? '' : 's' }}</small> }</span>
+              <span class="open-arrow">→</span>
             </button>
           }
         </article>
 
-        <article class="practice-panel">
-          <header class="panel-head"><div><p class="formation-eyebrow">Between gatherings</p><h2>Practice & reflection</h2></div><button type="button" class="quiet" (click)="openPractice()">+ Group practice</button></header>
-          <div class="practice-card"><span>This week</span><strong>{{ currentSession().practice }}</strong><p>Members can mark the practice complete, add a short reflection, or request a leader conversation without turning discipleship into grading.</p></div>
-          @for (practice of practices(); track practice) {
-            <div class="practice-history"><span>✓</span><p><strong>{{ practice }}</strong><small>Added to {{ selectedGroup().name }}</small></p></div>
+        <div class="two-col">
+          <article class="panel">
+            <p class="eyebrow">Household-aware formation</p><h2>People do not disciple in a vacuum.</h2><p class="body-copy">Household data stays owned by People, but DEG leaders can see only the practical context they need: linked household, childcare, transportation or scheduling considerations. Sensitive household or care notes do not become general DEG notes.</p>
+          </article>
+          <article class="panel">
+            <p class="eyebrow">Catch-up without shame</p><h2>{{ missedSessionTotal() }} missed formation sessions</h2><p class="body-copy">Leaders can assign a concise catch-up path with Scripture, lesson/resource and practice. Completing catch-up removes the missed-session marker without pretending it was the same as being formed in the room.</p>
+          </article>
+        </div>
+      }
+
+      @if (activeTab() === 'leadership') {
+        <section class="page-heading">
+          <div><p class="eyebrow">Multiplication pathway</p><h2>From member to multiplying leader</h2><p>ApostolOS should make leadership emergence visible early, then turn it into intentional apprenticeship rather than accidental promotion.</p></div>
+          <button type="button" class="quiet" (click)="openLeaderPrep()">Leader development standards</button>
+        </section>
+
+        <div class="pipeline-strip">
+          @for (stage of state.leadershipStages(); track stage) {
+            <article [class.current-stage]="stageCount(stage) > 0"><strong>{{ stageCount(stage) }}</strong><span>{{ stage }}</span></article>
+          }
+        </div>
+
+        <article class="panel leadership-list">
+          <header class="panel-head"><div><p class="eyebrow">Emerging & active leaders</p><h2>Development pipeline</h2></div><span>{{ state.emergingLeaders().length }} people</span></header>
+          @for (member of state.emergingLeaders(); track member.id) {
+            <div class="leadership-row">
+              <span class="person-cell"><i>{{ initials(member.name) }}</i><span><strong>{{ member.name }}</strong><small>{{ member.serviceArea }}</small></span></span>
+              <span><small>Current stage</small><strong>{{ member.leadershipStage }}</strong></span>
+              <span><small>Development step</small><strong>{{ member.nextStep }}</strong></span>
+              <button type="button" class="quiet" [disabled]="member.leadershipStage === 'Cluster leader'" (click)="advanceLeadership(member)">Advance to {{ state.nextLeadershipStage(member.leadershipStage) }}</button>
+            </div>
           }
         </article>
-      </section>
 
-      <section class="formation-outcomes">
-        <header><div><p class="formation-eyebrow">Formation record</p><h2>What are we actually seeing grow?</h2></div><span>Relational, not a report card</span></header>
-        <div class="outcome-grid">
-          <article><span>Identity</span><strong>Rooted</strong><p>Members can articulate identity in Christ beyond circumstance and performance.</p></article>
-          <article><span>Prayer & Scripture</span><strong>Growing</strong><p>Consistent personal rhythms are becoming visible in group reflection and conversation.</p></article>
-          <article><span>Community</span><strong>Healthy</strong><p>Members are showing up, carrying one another and responding to relational follow-up.</p></article>
-          <article><span>Calling & service</span><strong>Emerging</strong><p>Three people are beginning to identify gifts, service opportunities and leadership potential.</p></article>
+        <div class="three-col">
+          <article class="panel development-card"><span>01</span><h3>Observe</h3><p>Surface consistency, service, relational health, teachability, gifts and fruit.</p></article>
+          <article class="panel development-card"><span>02</span><h3>Apprentice</h3><p>Give real responsibility: facilitate, follow up, pray, lead portions of gatherings and receive feedback.</p></article>
+          <article class="panel development-card"><span>03</span><h3>Multiply</h3><p>Commission leaders who can form people, develop others and eventually reproduce healthy groups.</p></article>
         </div>
-      </section>
+      }
+
+      @if (activeTab() === 'review') {
+        <section class="page-heading">
+          <div><p class="eyebrow">Semester closeout</p><h2>Review, commission, continue.</h2><p>A semester ending should produce testimony, next steps and multiplication—not a dead-end “course completed” state.</p></div>
+          <span class="semester-pill">{{ state.selectedGroup().semester }}</span>
+        </section>
+
+        <div class="review-layout">
+          <article class="panel closeout-card">
+            <header class="panel-head"><div><p class="eyebrow">Leader closeout</p><h2>{{ state.selectedGroup().name }}</h2></div><strong>{{ reviewPercent() }}%</strong></header>
+            @for (item of reviewChecklist; track item.field) {
+              <label class="check-row"><input type="checkbox" [ngModel]="reviewValue(item.field)" (ngModelChange)="toggleReview(item.field, $event)"><span><strong>{{ item.label }}</strong><small>{{ item.detail }}</small></span></label>
+            }
+          </article>
+
+          <article class="panel next-steps-card">
+            <p class="eyebrow">Recommended continuation</p><h2>What comes after this track?</h2>
+            @for (next of state.selectedTrack().suggestedNext; track next) {
+              <div class="recommendation"><span>→</span><strong>{{ next }}</strong></div>
+            }
+            <p class="body-copy">Recommendations can point to another DEG, a ministry service assignment, an Academy course, apprenticeship or a pastoral conversation.</p>
+          </article>
+        </div>
+
+        <article class="panel commissioning-table">
+          <header class="panel-head"><div><p class="eyebrow">Commissioning</p><h2>Name the growth. Bless the next step.</h2><p>Commissioning is a relational closeout, not a graduation ceremony requirement.</p></div></header>
+          @for (member of state.selectedMembers(); track member.id) {
+            <div class="commission-row">
+              <span><strong>{{ member.name }}</strong><small>{{ member.milestones[0] || 'Growth review still needed' }}</small></span>
+              <span><small>Next step</small><strong>{{ member.nextStep }}</strong></span>
+              <span><small>Leadership</small><strong>{{ member.leadershipStage }}</strong></span>
+              <button type="button" [class.done]="member.commissioned" (click)="commission(member)">{{ member.commissioned ? 'Commissioned ✓' : 'Mark commissioned' }}</button>
+            </div>
+          }
+        </article>
+      }
+
+      @if (activeTab() === 'reports') {
+        <section class="page-heading">
+          <div><p class="eyebrow">DWCIM discipleship health</p><h2>See formation without flattening people.</h2><p>Reporting combines participation, practices, follow-up, testimonies, service and leadership movement. It should guide ministry decisions—not create spiritual scores.</p></div>
+        </section>
+
+        <section class="metric-grid report-metrics">
+          <article><span>DEGs on tracks</span><strong>{{ state.groups().length }}</strong><small>100% of demo groups</small></article>
+          <article><span>Visible formation records</span><strong>{{ state.members().length }}</strong><small>across current demo groups</small></article>
+          <article><span>Testimonies captured</span><strong>{{ testimonyTotal() }}</strong><small>qualitative evidence of change</small></article>
+          <article><span>In leadership pathway</span><strong>{{ leadershipPipelineTotal() }}</strong><small>serving through cluster leadership</small></article>
+        </section>
+
+        <div class="report-layout">
+          <article class="panel">
+            <header class="panel-head"><div><p class="eyebrow">Formation domains</p><h2>Aggregate pulse</h2></div><span>DWCIM demo</span></header>
+            <div class="outcome-list report-outcomes">
+              @for (outcome of reportOutcomes; track outcome.label) {
+                <div><span>{{ outcome.label }}</span><div class="outcome-bar"><i [style.width.%]="outcome.percent"></i></div><strong>{{ outcome.percent }}%</strong></div>
+              }
+            </div>
+          </article>
+
+          <article class="panel">
+            <header class="panel-head"><div><p class="eyebrow">Track adoption</p><h2>Where groups are forming</h2></div></header>
+            @for (track of state.tracks(); track track.id) {
+              <div class="report-line"><span><strong>{{ track.title }}</strong><small>{{ track.subtitle }}</small></span><b>{{ groupCountForTrack(track.id) }} groups</b></div>
+            }
+          </article>
+        </div>
+
+        <article class="panel history-panel">
+          <header class="panel-head"><div><p class="eyebrow">Cross-semester history</p><h2>Formation should accumulate over time.</h2><p>A person’s story should survive the semester and remain connected as they move through groups, tracks, service and leadership.</p></div></header>
+          @for (member of state.members(); track member.id) {
+            @if (member.history.length) {
+              <div class="history-row"><strong>{{ member.name }}</strong><span>{{ member.history[0].semester }}</span><span>{{ member.history[0].group }}</span><span>{{ member.history[0].track }}</span><b>{{ member.history[0].outcome }}</b></div>
+            }
+          }
+        </article>
+      }
 
       <a class="back-link" href="/organization/dwc">← Back to Divine Empowerment Groups</a>
     </section>
 
     <dialog #formationDialog class="formation-drawer" (click)="onDialogClick($event)">
       <div class="drawer-frame">
-        <header>
-          <div><p class="formation-eyebrow">{{ drawerEyebrow() }}</p><h2>{{ drawerTitle() }}</h2><p>{{ drawerDescription() }}</p></div>
+        <header class="drawer-header">
+          <div><p class="eyebrow">{{ drawerEyebrow() }}</p><h2>{{ drawerTitle() }}</h2><p>{{ drawerDescription() }}</p></div>
           <button type="button" class="drawer-close" aria-label="Close" (click)="closeDrawer()">×</button>
         </header>
+
         <div class="drawer-body">
           @switch (drawerKind()) {
             @case ('session') {
               @if (selectedSession(); as session) {
-                <div class="session-hero"><span>Week {{ session.week }}</span><h3>{{ session.title }}</h3><p>{{ session.bigIdea }}</p></div>
-                <section class="content-block"><small>01 · Scripture</small><h3>Open the Word</h3><p>{{ session.scripture }}</p><p>{{ session.teaching }}</p></section>
-                <section class="content-block"><small>02 · Discuss together</small><h3>Make room for the group</h3>@for (question of session.discussion; track question) { <div class="discussion-question"><span>?</span><p>{{ question }}</p></div> }</section>
-                <section class="content-block"><small>03 · Practice</small><h3>Live it before next week</h3><p>{{ session.practice }}</p><button type="button" class="secondary-action" (click)="openPractice(session.practice)">Assign this practice</button></section>
-                <section class="content-block"><small>04 · Prayer</small><h3>Respond to God together</h3><p>{{ session.prayer }}</p></section>
-                <section class="content-block"><small>Leader resource</small><h3>{{ session.resource }}</h3><p>Leader notes can include timing, pastoral cautions, suggested transitions and optional Academy-linked resources.</p></section>
-                <div class="drawer-actions"><button type="button" class="secondary-action" (click)="closeDrawer()">Close</button><button type="button" [disabled]="isCompleted(session)" (click)="completeSession(session)">{{ isCompleted(session) ? 'Session complete' : 'Mark session complete' }}</button></div>
+                <div class="session-hero"><span>Week {{ session.week }}</span><h3>{{ session.title }}</h3><p>{{ session.bigIdea }}</p><small>{{ state.selectedTrack().title }} · {{ state.selectedTrack().source }}</small></div>
+
+                @if (session.media.length) {
+                  <section class="content-block media-block">
+                    <small>Linked resources</small><h3>Teach from the source without copying it.</h3>
+                    @for (media of session.media; track media.title) {
+                      <article class="media-resource"><span [attr.data-type]="media.type">{{ media.type }}</span><div><strong>{{ media.title }}</strong><small>{{ media.source }}{{ media.duration ? ' · ' + media.duration : '' }}</small></div></article>
+                      @if (media.type === 'video' && media.url) {
+                        <video controls preload="metadata" [src]="media.url"><p>Open the lesson in Kingdom Academy.</p></video>
+                      }
+                    }
+                  </section>
+                }
+
+                <section class="content-block"><small>01 · Scripture</small><h3>Open the Word</h3><p class="scripture">{{ session.scripture }}</p><p>{{ session.teaching }}</p></section>
+
+                <section class="content-block"><small>02 · Discussion</small><h3>Make room for the group.</h3>
+                  @for (question of session.discussion; track question) { <div class="question"><span>?</span><p>{{ question }}</p></div> }
+                  <div class="question-library"><strong>Question library</strong>@for (question of state.questionLibrary().slice(0, 3); track question) { <button type="button" class="question-chip" (click)="copyQuestion(question)">{{ question }}</button> }</div>
+                  <label>Add leader question<textarea rows="2" [(ngModel)]="questionDraft" placeholder="Add a reusable discussion question"></textarea></label>
+                  <button type="button" class="secondary-action" (click)="saveQuestion()">Add to question library</button>
+                </section>
+
+                <section class="content-block"><small>03 · Practice</small><h3>Live it before next week.</h3><p>{{ session.practice }}</p><button type="button" class="secondary-action" (click)="openPractice(session.practice)">Assign this practice</button></section>
+                <section class="content-block"><small>04 · Prayer response</small><h3>Respond to God together.</h3><p>{{ session.prayer }}</p></section>
+                <section class="content-block"><small>Missed-session catch-up</small><h3>Concise, not punitive.</h3><p>{{ session.catchUp }}</p></section>
+
+                <section class="content-block"><small>Leader annotation</small><h3>Notes for this group</h3><label>Private facilitation note<textarea rows="4" [(ngModel)]="sessionNoteDraft" placeholder="Timing, group dynamics, pastoral cautions, follow-up..."></textarea></label><button type="button" class="secondary-action" (click)="saveSessionNote(session)">Save annotation</button></section>
+
+                <div class="drawer-actions">
+                  <button type="button" class="secondary-action" (click)="toggleSessionComplete(session)">{{ isCompleted(session) ? 'Reopen session' : 'Mark session complete' }}</button>
+                  <button type="button" (click)="closeDrawer()">Done</button>
+                </div>
               }
             }
+
             @case ('practice') {
+              <section class="content-block"><small>Between gatherings</small><h3>Create a concrete formation practice.</h3><p>Practices can be Scripture, prayer, service, relationship, reflection or obedience. They are not graded.</p></section>
               <label>Practice / assignment<textarea rows="5" [(ngModel)]="practiceDraft" placeholder="What should the group practice before the next gathering?"></textarea></label>
-              <label>How should members respond?<select [(ngModel)]="practiceResponse"><option>Mark complete + optional reflection</option><option>Short written reflection</option><option>Discuss at next group</option><option>Leader follow-up</option></select></label>
-              <p class="boundary">DEG practice is formation, not grading. Leaders see participation and relational follow-up needs; they do not assign academic scores.</p>
-              <button type="button" (click)="savePractice()">Add to group</button>
+              <label>How should members respond?<select [(ngModel)]="practiceResponse"><option>Mark complete + optional reflection</option><option>Short written reflection</option><option>Discuss at next group</option><option>Prayer response</option><option>Leader follow-up</option></select></label>
+              <button type="button" (click)="savePractice()">Add to {{ state.selectedGroup().name }}</button>
             }
+
             @case ('member') {
               @if (selectedMember(); as member) {
-                <div class="member-profile"><span class="member-avatar">{{ initials(member.name) }}</span><div><h3>{{ member.name }}</h3><p>{{ selectedGroup().name }}</p></div></div>
-                <div class="member-stats"><div><span>Attendance</span><strong>{{ member.attendance }}</strong></div><div><span>Reflections</span><strong>{{ member.reflections }}</strong></div><div><span>Formation</span><strong>{{ member.status }}</strong></div></div>
-                <section class="content-block"><small>Current practice</small><h3>{{ member.practice }}</h3><p>Leaders can see participation and next-step context without exposing private pastoral notes.</p></section>
-                <section class="content-block"><small>Growth markers</small><div class="marker-line"><span>✓</span><p>Participates consistently in Scripture discussion</p></div><div class="marker-line"><span>✓</span><p>Completed last formation practice</p></div><div class="marker-line"><span>○</span><p>{{ member.status === 'Needs follow-up' ? 'Leader conversation recommended before next gathering' : 'Identify next service or leadership step' }}</p></div></section>
-                <div class="drawer-actions"><button type="button" class="secondary-action" (click)="recordReflection(member)">Record reflection</button><button type="button" (click)="recordMilestone(member)">Add growth milestone</button></div>
+                <div class="member-profile"><i>{{ initials(member.name) }}</i><div><h3>{{ member.name }}</h3><p>{{ state.selectedGroup().name }} · {{ member.leadershipStage }}</p></div></div>
+                <div class="member-stats"><div><span>Attendance</span><strong>{{ member.attendance }}</strong></div><div><span>Reflections</span><strong>{{ member.reflections.length }}</strong></div><div><span>Testimonies</span><strong>{{ member.testimonies.length }}</strong></div><div><span>Formation</span><strong>{{ member.status }}</strong></div></div>
+
+                <section class="content-block"><small>Household context</small><h3>{{ member.household }}</h3><p>{{ member.householdNote }}</p><p class="boundary">Only practical context is shown here. People and Care remain the systems of record for household and sensitive pastoral information.</p></section>
+
+                <section class="content-block"><small>Current next step</small><h3>{{ member.nextStep }}</h3><label>Update next step<textarea rows="3" [(ngModel)]="nextStepDraft"></textarea></label><button type="button" class="secondary-action" (click)="saveNextStep(member)">Save next step</button></section>
+
+                @if (member.missedSessionIds.length) {
+                  <section class="content-block"><small>Catch-up</small><h3>{{ member.missedSessionIds.length }} missed session{{ member.missedSessionIds.length === 1 ? '' : 's' }}</h3>
+                    @for (sessionId of member.missedSessionIds; track sessionId) {
+                      <div class="catchup-row"><span><strong>{{ sessionTitle(sessionId) }}</strong><small>{{ member.catchUpAssignedIds.includes(sessionId) ? 'Catch-up assigned' : 'No catch-up assigned yet' }}</small></span><button type="button" class="secondary-action" (click)="assignCatchUp(member, sessionId)">{{ member.catchUpAssignedIds.includes(sessionId) ? 'Assigned ✓' : 'Assign catch-up' }}</button></div>
+                    }
+                  </section>
+                }
+
+                <section class="content-block"><small>Growth markers</small><h3>What has become visible?</h3>@for (milestone of member.milestones; track milestone) { <div class="marker-line"><span>✓</span><p>{{ milestone }}</p></div> }</section>
+
+                <section class="content-block"><small>Cross-semester history</small>@if (member.history.length) { @for (entry of member.history; track entry.semester + entry.group) { <div class="history-mini"><strong>{{ entry.semester }} · {{ entry.group }}</strong><span>{{ entry.track }}</span><small>{{ entry.outcome }}</small></div> } } @else { <p>No prior DEG formation history yet.</p> }</section>
+
+                <section class="content-block composer-stack"><small>Capture formation evidence</small><label>Reflection<textarea rows="3" [(ngModel)]="reflectionDraft" placeholder="What is this person recognizing, receiving or practicing?"></textarea></label><button type="button" class="secondary-action" (click)="saveReflection(member)">Record reflection</button><label>Testimony<textarea rows="3" [(ngModel)]="testimonyDraft" placeholder="What changed? What did God do?"></textarea></label><button type="button" class="secondary-action" (click)="saveTestimony(member)">Capture testimony</button><label>Prayer response<textarea rows="3" [(ngModel)]="prayerDraft" placeholder="What did they ask God for or respond to in prayer?"></textarea></label><button type="button" class="secondary-action" (click)="savePrayerResponse(member)">Record prayer response</button><label>Growth milestone<textarea rows="3" [(ngModel)]="milestoneDraft" placeholder="Served, led, reconciled, shared testimony, built a rhythm..."></textarea></label><button type="button" (click)="saveMilestone(member)">Add milestone</button></section>
               }
             }
+
             @case ('leader') {
-              <section class="content-block"><small>Leader preparation</small><h3>{{ selectedGroup().name }} · Week {{ currentSession().week }}</h3><p>The goal is not to deliver a lecture. Prepare enough that the room can encounter Scripture, talk honestly, pray and leave with a concrete next step.</p></section>
-              <div class="leader-checks"><label><input type="checkbox" [(ngModel)]="leaderGuideReviewed"> Review the leader guide and session flow</label><label><input type="checkbox" [(ngModel)]="memberListPrayed"> Pray through the member list</label><label><input type="checkbox" [(ngModel)]="discussionPrepared"> Choose the discussion questions most useful for this group</label><label><input type="checkbox" [(ngModel)]="followupsReviewed"> Review attendance and relational follow-ups</label><label><input type="checkbox" [(ngModel)]="assignmentsReady"> Confirm prayer, hospitality and facilitation assignments</label></div>
-              <button type="button" (click)="saveLeaderPrep()">Save leader readiness</button>
+              <section class="content-block"><small>Leader development standard</small><h3>Prepare content, people and multiplication.</h3><p>DEG leadership is more than facilitation. Leaders steward Scripture, room health, follow-up, apprentice development and next-step discernment.</p></section>
+              <div class="leader-checks"><label><input type="checkbox" [(ngModel)]="leaderGuideReviewed"> Review Scripture, Academy/DWCIM resource and session flow</label><label><input type="checkbox" [(ngModel)]="memberListPrayed"> Pray through the member list</label><label><input type="checkbox" [(ngModel)]="discussionPrepared"> Select discussion questions for this group</label><label><input type="checkbox" [(ngModel)]="followupsReviewed"> Review attendance, household context and relational follow-ups</label><label><input type="checkbox" [(ngModel)]="assignmentsReady"> Confirm prayer, hospitality and facilitation assignments</label><label><input type="checkbox" [(ngModel)]="apprenticePrepared"> Give an apprentice or emerging leader a real development responsibility</label></div>
+              <section class="content-block"><small>Academy readiness</small><h3>Formal leader learning can stay in Academy.</h3><p>Examples: Facilitation Foundations, Safeguarding, Pastoral Boundaries, Scripture Handling. Engagements only needs readiness/completion signals and the leader’s actual group apprenticeship.</p></section>
+              <button type="button" (click)="closeDrawer()">Save leader readiness</button>
             }
+
+            @case ('track') {
+              <section class="content-block"><small>Leader-created curriculum</small><h3>Create the DEG pathway here; link formal Academy lessons when appropriate.</h3><p>Leader-created tracks are useful for seasonal or ministry-specific formation. They can later be reviewed and promoted into formal Academy curriculum without changing the DEG relationship record.</p></section>
+              <label>Track title<input [(ngModel)]="trackTitle" placeholder="e.g. Freedom & Wholeness"></label>
+              <label>Subtitle<input [(ngModel)]="trackSubtitle" placeholder="Short formation focus"></label>
+              <label>Content source<select [(ngModel)]="trackSource"><option value="DWCIM">DWCIM</option><option value="Kingdom Academy">Kingdom Academy</option></select></label>
+              <button type="button" (click)="createTrack()">Create track</button>
+            }
+
             @case ('academy') {
-              <section class="content-block"><small>Architecture boundary</small><h3>Academy can supply formation content without owning the group.</h3><p>A DEG is a relationship and discipleship environment. Engagements owns the group, semester, roster, gathering, discussion, practice and relational formation record.</p></section>
-              <div class="boundary-map"><div><span>Kingdom Academy</span><strong>Programs · curriculum · lessons · media · formal completion</strong></div><b>→</b><div><span>DEG Engagements</span><strong>Group pacing · discussion · practice · attendance · reflection · milestones</strong></div></div>
-              <p class="boundary">DWCIM can use its own DEG curriculum now. If Kingdom Academy is activated later, a track can reference Academy-owned lessons rather than copying them into Engagements.</p>
+              <section class="content-block"><small>Architecture boundary</small><h3>Academy supplies formal learning. Engagements carries formation in community.</h3><p>A DEG can reference Academy programs, lessons, videos, guides and formal completion without becoming a duplicate LMS.</p></section>
+              <div class="boundary-map"><div><span>Kingdom Academy</span><strong>Programs<br>Curriculum<br>Lessons<br>Video / audio<br>Formal learning<br>Formal completion</strong></div><b>→</b><div><span>DEG Engagements</span><strong>Group<br>Semester<br>Pacing<br>Discussion<br>Practice<br>Attendance<br>Reflection<br>Relationships<br>Formation milestones<br>Leadership journey</strong></div></div>
+              <section class="content-block"><small>Example</small><h3>Transformation Track 2 · Week 4</h3><p><strong>Teaching resource:</strong> Hearing & Obeying God · Source: Kingdom Academy</p><p><strong>DEG owns:</strong> Alicia’s group pacing, Wednesday gathering, discussion, Michael’s practice/reflection, Ashley’s catch-up, testimony, next steps and apprentice identification.</p></section>
             }
           }
         </div>
@@ -204,94 +412,174 @@ type DrawerKind = 'session' | 'practice' | 'member' | 'leader' | 'academy';
     </dialog>
   `,
   styles: [`
-    :host{display:block}.formation-page{display:grid;gap:1rem;max-width:1480px;margin:0 auto;padding:1.2rem 1.35rem 3rem;color:#20263a}.formation-eyebrow{margin:0;color:#6e4b91;font-size:.62rem;font-weight:850;letter-spacing:.09em;text-transform:uppercase}.formation-hero{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(260px,.6fr);gap:1rem;padding:1.7rem;border:1px solid #e4ddec;border-radius:14px;background:linear-gradient(120deg,#fbfafc,#f7f2fa)}.formation-hero h1{margin:.35rem 0 .55rem;font-size:clamp(2rem,4vw,3.35rem);letter-spacing:-.05em}.formation-hero>div>p:last-child{max-width:780px;margin:0;color:#687083;line-height:1.65}.hero-side{display:grid;padding:1.1rem 1.2rem;border-left:3px solid #6b4591;align-content:center;background:rgba(255,255,255,.62)}.hero-side span,.hero-side small{color:#777d8c;font-size:.67rem}.hero-side strong{margin:.3rem 0;font-size:1.05rem}.formation-toolbar{display:flex;min-height:62px;padding:.7rem .85rem;border:1px solid #e2e3e8;border-radius:10px;align-items:center;justify-content:space-between;gap:1rem;background:#fff}.formation-toolbar label{display:flex;align-items:center;gap:.7rem}.formation-toolbar label span{font-size:.67rem;font-weight:800}.formation-toolbar select{min-width:245px;padding:.62rem .7rem;border:1px solid #d3d5dc;border-radius:8px;background:#fff}.toolbar-actions{display:flex;gap:.5rem}button{min-height:38px;padding:.55rem .78rem;border:1px solid #583180;border-radius:8px;color:#fff;background:#583180;font-weight:800;cursor:pointer}button.quiet,.secondary-action{color:#4f5667!important;background:#fff!important;border-color:#d4d6dc!important}.formation-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow:hidden;border:1px solid #e0e1e6;border-radius:12px;background:#fff}.formation-summary article{display:grid;min-height:92px;padding:1rem;border-right:1px solid #e6e7eb;align-content:center}.formation-summary article:last-child{border-right:0}.formation-summary span,.formation-summary small{color:#7b8190;font-size:.62rem}.formation-summary strong{margin:.2rem 0;font-size:1.25rem;letter-spacing:-.03em}.formation-layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(290px,.65fr);gap:1rem}.track-panel,.current-card,.leader-card,.people-panel,.practice-panel,.formation-outcomes{border:1px solid #e1e2e7;border-radius:12px;background:#fff}.track-panel,.people-panel,.practice-panel,.formation-outcomes{padding:1rem}.panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}.panel-head h2{margin:.25rem 0 0;font-size:1.05rem}.track-source{padding:.3rem .48rem;border-radius:6px;color:#654181;background:#f3ebf8;font-size:.58rem;font-weight:800}.track-intro{margin:.75rem 0 1rem;color:#687083;font-size:.72rem;line-height:1.55}.session-list{display:grid;border-top:1px solid #e7e8ec}.session-row{display:grid;grid-template-columns:32px minmax(0,1fr) auto;width:100%;min-height:69px;padding:.55rem .3rem;border:0;border-bottom:1px solid #ececf0;align-items:center;gap:.7rem;color:inherit;background:transparent;text-align:left}.session-row:hover{background:#faf8fb}.session-row.current{background:#f7f1fa}.session-state{display:grid;width:27px;height:27px;border-radius:50%;place-items:center;background:#eef0f3;color:#697080}.session-state[data-state='Complete']{background:#e8f5ed;color:#257553}.session-state[data-state='Current']{background:#eee5f5;color:#6a418a}.session-copy{display:flex;min-width:0;flex-direction:column}.session-copy small{color:#8a8f9b;font-size:.55rem;font-weight:800;text-transform:uppercase}.session-copy strong{margin:.12rem 0;font-size:.75rem}.session-copy span{color:#777e8d;font-size:.62rem}.session-status{color:#777e8d;font-size:.6rem;font-weight:800}.formation-sidebar{display:grid;align-content:start;gap:1rem}.current-card,.leader-card{padding:1rem}.current-card>span{display:block;margin-top:.75rem;color:#79509b;font-size:.6rem;font-weight:850;text-transform:uppercase}.current-card h2{margin:.2rem 0}.current-card>p:not(.formation-eyebrow),.leader-card>p:not(.formation-eyebrow){color:#687083;font-size:.7rem;line-height:1.55}.current-card dl{display:grid;margin:.8rem 0}.current-card dl div{padding:.6rem 0;border-top:1px solid #ececf0}.current-card dt{color:#898e99;font-size:.58rem}.current-card dd{margin:.15rem 0 0;font-size:.68rem;font-weight:700}.leader-card h3{margin:.3rem 0 .7rem}.prep-line{display:grid;grid-template-columns:20px 1fr;padding:.48rem 0;gap:.4rem;color:#7a6470;font-size:.66rem}.prep-line.done{color:#39735c}.formation-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(320px,.7fr);gap:1rem}.people-panel .panel-head,.practice-panel .panel-head{margin-bottom:.5rem}.panel-head>span{color:#858a96;font-size:.62rem}.member-row{display:grid;grid-template-columns:minmax(0,1fr) auto;width:100%;min-height:64px;padding:.58rem .2rem;border:0;border-top:1px solid #ececf0;align-items:center;gap:1rem;color:inherit;background:transparent;text-align:left}.member-row>span{display:flex;flex-direction:column}.member-row small{margin-top:.2rem;color:#838895;font-size:.59rem}.member-row>span:last-child{align-items:flex-end}.member-row b{font-size:.61rem}.member-row em{margin-top:.25rem;padding:.2rem .36rem;border-radius:5px;background:#e8f5ed;color:#267052;font-size:.55rem;font-style:normal;font-weight:800}.member-row em[data-tone='warn']{background:#fff1d9;color:#896319}.member-row em[data-tone='leader']{background:#efe7f5;color:#69418a}.practice-card{margin-top:.75rem;padding:.9rem;border-left:3px solid #6b4591;background:#faf8fb}.practice-card span{color:#79509b;font-size:.58rem;font-weight:850;text-transform:uppercase}.practice-card strong{display:block;margin:.25rem 0;font-size:.78rem}.practice-card p{margin:.35rem 0 0;color:#707685;font-size:.65rem;line-height:1.5}.practice-history{display:grid;grid-template-columns:22px 1fr;padding:.65rem .2rem;border-top:1px solid #ececf0;gap:.4rem}.practice-history p{margin:0}.practice-history strong,.practice-history small{display:block;font-size:.62rem}.practice-history small{margin-top:.18rem;color:#888d98}.formation-outcomes header{display:flex;justify-content:space-between;gap:1rem}.formation-outcomes header h2{margin:.25rem 0}.formation-outcomes header>span{color:#8b8f98;font-size:.6rem}.outcome-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin-top:.8rem;border-top:1px solid #e8e9ec}.outcome-grid article{padding:.9rem .8rem .2rem 0}.outcome-grid span{color:#7a4e99;font-size:.57rem;font-weight:850;text-transform:uppercase}.outcome-grid strong{display:block;margin:.22rem 0;font-size:.8rem}.outcome-grid p{margin:0;color:#777d89;font-size:.62rem;line-height:1.5}.back-link{width:max-content;color:#674388;font-size:.67rem;font-weight:800;text-decoration:none}.formation-drawer{width:min(560px,100vw);height:100dvh;max-width:none;max-height:none;margin:0 0 0 auto;padding:0;border:0;background:#fff;box-shadow:-24px 0 70px rgba(17,24,39,.22)}.formation-drawer::backdrop{background:rgba(11,15,27,.48);backdrop-filter:blur(2px)}.drawer-frame{display:grid;grid-template-rows:auto minmax(0,1fr);height:100%}.drawer-frame>header{display:flex;padding:1.05rem 1.1rem;border-bottom:1px solid #e3e4e8;align-items:flex-start;justify-content:space-between;gap:1rem}.drawer-frame>header h2{margin:.25rem 0;font-size:1.25rem}.drawer-frame>header p:last-child{margin:.25rem 0 0;color:#747a88;font-size:.67rem;line-height:1.5}.drawer-close{display:grid;min-width:38px;width:38px;height:38px;padding:0;border-color:#d8d9df;border-radius:9px;place-items:center;color:#505665;background:#fff;font-size:1.15rem}.drawer-body{overflow:auto;padding:1rem 1.1rem 1.5rem}.session-hero{padding:1rem;border-left:3px solid #6b4591;background:#faf7fc}.session-hero span{color:#79509b;font-size:.58rem;font-weight:850;text-transform:uppercase}.session-hero h3{margin:.22rem 0}.session-hero p{margin:0;color:#6d7381;font-size:.68rem;line-height:1.5}.content-block{padding:1rem 0;border-bottom:1px solid #e8e9ec}.content-block small{color:#7a4f98;font-size:.57rem;font-weight:850;text-transform:uppercase}.content-block h3{margin:.25rem 0 .45rem}.content-block p{color:#676e7c;font-size:.69rem;line-height:1.62}.discussion-question{display:grid;grid-template-columns:28px 1fr;padding:.5rem 0;gap:.5rem}.discussion-question span{display:grid;width:25px;height:25px;border-radius:7px;place-items:center;color:#6b4591;background:#f0e8f5;font-weight:900}.discussion-question p{margin:.2rem 0}.drawer-actions{display:flex;justify-content:flex-end;gap:.5rem;padding-top:1rem}.drawer-actions button:disabled{opacity:.55;cursor:default}.drawer-body label{display:grid;gap:.35rem;margin-bottom:.85rem;color:#505665;font-size:.66rem;font-weight:800}.drawer-body textarea,.drawer-body select{width:100%;padding:.65rem;border:1px solid #d1d3da;border-radius:8px;background:#fff;font:inherit;font-size:.72rem}.boundary{padding:.75rem;border-left:3px solid #b68b42;background:#fbf6ec;color:#70634c;font-size:.65rem;line-height:1.55}.member-profile{display:flex;align-items:center;gap:.7rem}.member-avatar{display:grid;width:46px;height:46px;border-radius:12px;place-items:center;color:#684188;background:#eee6f4;font-weight:900}.member-profile h3,.member-profile p{margin:0}.member-profile p{margin-top:.2rem;color:#858995;font-size:.65rem}.member-stats{display:grid;grid-template-columns:repeat(3,1fr);margin-top:1rem;border:1px solid #e4e5e9;border-radius:9px}.member-stats div{padding:.7rem;border-right:1px solid #e4e5e9}.member-stats div:last-child{border-right:0}.member-stats span,.member-stats strong{display:block}.member-stats span{color:#898e99;font-size:.55rem}.member-stats strong{margin-top:.18rem;font-size:.7rem}.marker-line{display:grid;grid-template-columns:22px 1fr;gap:.4rem}.marker-line p{margin:.1rem 0}.leader-checks{display:grid;margin:1rem 0}.leader-checks label{display:flex;padding:.65rem 0;border-top:1px solid #e9eaed;align-items:flex-start;gap:.5rem;font-size:.69rem;font-weight:650}.leader-checks input{margin-top:.15rem}.boundary-map{display:grid;grid-template-columns:1fr auto 1fr;gap:.6rem;align-items:center;margin:1rem 0}.boundary-map div{padding:.8rem;border:1px solid #e0e1e5;border-radius:8px}.boundary-map span,.boundary-map strong{display:block}.boundary-map span{color:#765094;font-size:.58rem;font-weight:850;text-transform:uppercase}.boundary-map strong{margin-top:.25rem;font-size:.68rem;line-height:1.45}@media(max-width:1050px){.formation-summary,.outcome-grid{grid-template-columns:1fr 1fr}.formation-summary article:nth-child(2){border-right:0}.formation-layout,.formation-grid{grid-template-columns:1fr}}@media(max-width:700px){.formation-page{padding:.9rem}.formation-hero{grid-template-columns:1fr}.hero-side{border-top:3px solid #6b4591;border-left:0}.formation-toolbar{display:grid}.formation-toolbar label{display:grid}.formation-toolbar select{width:100%;min-width:0}.toolbar-actions{display:grid;grid-template-columns:1fr 1fr}.formation-summary,.outcome-grid{grid-template-columns:1fr}.formation-summary article{border-right:0;border-bottom:1px solid #e6e7eb}.session-row{grid-template-columns:30px minmax(0,1fr)}.session-status{display:none}.formation-drawer{width:100vw}.member-row{grid-template-columns:1fr}.member-row>span:last-child{align-items:flex-start}.member-stats{grid-template-columns:1fr}.member-stats div{border-right:0;border-bottom:1px solid #e4e5e9}.boundary-map{grid-template-columns:1fr}.boundary-map>b{text-align:center;transform:rotate(90deg)}}
+    :host{display:block}.formation-page{display:grid;gap:14px;max-width:1500px;margin:0 auto;padding:20px 22px 52px;color:#202637}.eyebrow{margin:0;color:#704897;font-size:.62rem;font-weight:850;letter-spacing:.095em;text-transform:uppercase}.formation-hero{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(300px,.62fr);gap:20px;padding:30px 32px;border:1px solid #e5dfeb;border-radius:18px;background:linear-gradient(120deg,#fffefd,#faf7fb 58%,#f5eef8);box-shadow:0 18px 50px rgba(43,28,57,.05)}.formation-hero h1{margin:7px 0 9px;font-size:clamp(2.4rem,5vw,4.1rem);line-height:.98;letter-spacing:-.06em}.formation-hero__copy>p:last-of-type{max-width:820px;margin:0;color:#687080;font-size:.86rem;line-height:1.65}.hero-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:20px}.hero-actions button,.hero-actions a,.context-bar button,.panel button,.page-heading button,.secondary-link,.drawer-body button{min-height:39px;padding:0 13px;border:0;border-radius:8px;background:#27344e;color:#fff;font-size:.7rem;font-weight:780;text-decoration:none;cursor:pointer}.hero-actions .secondary,.secondary-link,.quiet,.secondary-action{border:1px solid #ded9e4!important;background:#fff!important;color:#5d4274!important}.hero-track{display:grid;padding:18px 20px;border-left:4px solid #734d97;border-radius:6px 12px 12px 6px;align-content:center;background:rgba(255,255,255,.68)}.hero-track>span,.hero-track>small{color:#85808a;font-size:.65rem}.hero-track>strong{margin:8px 0 3px;font-size:1.18rem}.hero-track>p{margin:0;color:#5e6572;font-size:.77rem}.source-line{display:flex;margin-top:17px;padding-top:12px;border-top:1px solid #ece7ef;justify-content:space-between;gap:10px;color:#74647c;font-size:.65rem}.formation-nav{display:flex;gap:3px;padding:5px;border:1px solid #e2dfe5;border-radius:12px;background:#fff;overflow:auto}.formation-nav button{padding:9px 13px;border:0;border-radius:8px;background:transparent;color:#747581;font-size:.7rem;font-weight:760;white-space:nowrap;cursor:pointer}.formation-nav button.active{background:#2b3141;color:#fff}.context-bar{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;gap:10px;padding:10px 12px;border:1px solid #e2e2e6;border-radius:11px;align-items:end;background:#fff}.context-bar label,.drawer-body label{display:grid;gap:5px;color:#777986;font-size:.62rem;font-weight:720}.context-bar select,.drawer-body input,.drawer-body select,.drawer-body textarea{min-height:38px;padding:8px 10px;border:1px solid #d9d8df;border-radius:8px;background:#fff;color:#202637;font:inherit;font-size:.72rem}.context-bar select{min-width:185px}.context-meta{display:flex;flex-wrap:wrap;gap:6px;align-self:center}.context-meta span,.semester-pill{padding:5px 8px;border-radius:7px;background:#f5f2f6;color:#716b75;font-size:.62rem}.metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.metric-grid article{display:grid;min-height:104px;padding:15px 16px;border:1px solid #e2e2e5;border-radius:11px;background:#fff}.metric-grid span{color:#797b84;font-size:.63rem;font-weight:720}.metric-grid strong{margin:auto 0 0;font-size:1.7rem;letter-spacing:-.04em}.metric-grid small{color:#8c8d94;font-size:.61rem}.overview-layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(310px,.55fr);gap:12px}.panel{border:1px solid #e2e2e5;border-radius:13px;background:#fff;box-shadow:0 8px 24px rgba(27,33,47,.025)}.track-panel,.people-table,.leadership-list,.commissioning-table,.history-panel{padding:19px}.panel-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start}.panel-head h2,.page-heading h2{margin:4px 0 5px;font-size:1.25rem;letter-spacing:-.035em}.panel-head p:not(.eyebrow),.page-heading p:not(.eyebrow),.body-copy{max-width:760px;margin:0;color:#747887;font-size:.72rem;line-height:1.55}.source-badge{padding:5px 8px;border-radius:7px;background:#f3eef6;color:#69438a;font-size:.6rem;font-weight:800;white-space:nowrap}.source-badge[data-source='Kingdom Academy'],[data-source='Kingdom Academy']{color:#8b642d!important}.progress-line{height:5px;margin:15px 0 5px;border-radius:10px;background:#f0edf2;overflow:hidden}.progress-line span{display:block;height:100%;border-radius:inherit;background:#704897}.session-list{display:grid}.session-row{display:grid;grid-template-columns:34px minmax(0,1fr) auto auto;min-height:72px;padding:10px 4px;border:0;border-top:1px solid #ececef;align-items:center;gap:11px;background:transparent;color:inherit;text-align:left;cursor:pointer}.session-row:first-child{border-top:0}.session-row:hover,.session-row.current{background:#fbf8fc}.session-state{display:grid;width:28px;height:28px;border-radius:8px;place-items:center;background:#f4f1f5;color:#8a7c91;font-size:.64rem;font-weight:830}.session-state[data-state='Complete']{background:#edf6f0;color:#367152}.session-state[data-state='Current']{background:#eee5f4;color:#704897}.session-copy{display:grid}.session-copy small,.session-source,.session-status{color:#8a8b92;font-size:.58rem}.session-copy strong{margin:2px 0;font-size:.78rem}.session-copy span{color:#777b87;font-size:.65rem}.session-source{padding:4px 6px;border-radius:6px;background:#f7f5f2;white-space:nowrap}.session-status{font-weight:800}.overview-sidebar{display:grid;gap:12px}.next-card,.readiness-card{padding:18px}.next-card>span{display:block;margin-top:11px;color:#8a7f91;font-size:.63rem}.next-card h2{margin:4px 0;font-size:1.4rem}.next-card>p,.readiness-card>p:not(.eyebrow){color:#727783;font-size:.72rem;line-height:1.55}.mini-detail{display:grid;gap:3px;margin-top:11px;padding-top:11px;border-top:1px solid #ececef}.mini-detail span{color:#8d8d94;font-size:.58rem;text-transform:uppercase;letter-spacing:.06em}.mini-detail strong{font-size:.7rem;line-height:1.45}.next-card button,.readiness-card button{width:100%;margin-top:14px}.readiness-card h3{margin:5px 0 12px;font-size:.95rem}.readiness-line{display:flex;gap:8px;padding:7px 0;border-top:1px solid #f0eef1;align-items:center}.readiness-line span{color:#aaa2ad}.readiness-line span.done{color:#3d7c5c}.readiness-line b{font-size:.68rem}.two-col,.review-layout,.report-layout{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.two-col>.panel,.review-layout>.panel,.report-layout>.panel{padding:18px}.practice-feature{display:grid;gap:5px;margin:14px 0;padding:14px;border-left:3px solid #704897;background:#faf7fb}.practice-feature span{color:#8b7c93;font-size:.58rem;text-transform:uppercase}.practice-feature strong{font-size:.78rem}.practice-feature p{margin:0;color:#777b86;font-size:.68rem;line-height:1.5}.simple-line,.marker-line{display:flex;gap:9px;padding:10px 0;border-top:1px solid #efedf0}.simple-line>span,.marker-line>span{color:#397255}.simple-line div{display:grid}.simple-line strong{font-size:.7rem}.simple-line small{color:#898a91;font-size:.6rem}.outcome-list{display:grid;margin-top:13px}.outcome-list>div{display:grid;grid-template-columns:130px minmax(0,1fr) 70px;gap:10px;padding:10px 0;border-top:1px solid #efedf0;align-items:center}.outcome-list>div>span,.outcome-list>div>strong{font-size:.65rem}.outcome-list>div>strong{text-align:right}.outcome-bar{height:6px;border-radius:10px;background:#f0edf1;overflow:hidden}.outcome-bar i{display:block;height:100%;background:#735096}.page-heading{display:flex;padding:8px 2px 2px;align-items:flex-end;justify-content:space-between;gap:20px}.track-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}.track-card{display:flex;min-height:420px;padding:18px;border:1px solid #e2e1e5;border-radius:13px;flex-direction:column;background:#fff}.track-card.selected{border-color:#bba7ca;box-shadow:inset 0 3px 0 #704897}.track-card header{display:flex;justify-content:space-between;color:#888991;font-size:.61rem}.track-card header b{font-size:.58rem}.track-card h3{margin:15px 0 2px;font-size:1.08rem}.track-card>strong{font-size:.72rem}.track-card>p{color:#777c87;font-size:.69rem;line-height:1.52}.track-meta{display:flex;gap:6px;margin:9px 0}.track-meta span{padding:4px 6px;border-radius:6px;background:#f6f4f6;color:#77727b;font-size:.58rem}.track-card section{margin-top:10px;padding-top:10px;border-top:1px solid #efedf0}.track-card section small{color:#8c8790;font-size:.58rem;font-weight:800;text-transform:uppercase}.bullet{position:relative;margin:6px 0 0;padding-left:13px;color:#606572!important;font-size:.64rem!important}.bullet:before{position:absolute;left:2px;content:'•';color:#704897}.bullet.next:before{content:'→'}.track-card footer{display:flex;margin-top:auto;padding-top:14px;align-items:center;justify-content:flex-end}.assigned{color:#397255;font-size:.62rem;font-weight:800}.architecture-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(360px,.8fr);gap:20px;padding:20px;align-items:center}.architecture-map,.boundary-map{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center}.architecture-map span,.boundary-map>div{padding:14px;border:1px solid #e8e3e8;border-radius:9px;background:#faf8fa;color:#7b7480;font-size:.64rem}.architecture-map b,.boundary-map strong{display:block;margin-top:5px;color:#343746;font-size:.69rem;line-height:1.5}.architecture-map i{font-style:normal;color:#704897}.people-table{overflow:auto}.table-head,.person-row{display:grid;grid-template-columns:minmax(210px,1.1fr) minmax(140px,.7fr) minmax(150px,.7fr) minmax(250px,1.2fr) 24px;gap:13px;align-items:center}.table-head{padding:5px 4px 9px;color:#92929a;font-size:.58rem;font-weight:800;text-transform:uppercase}.person-row{width:100%;min-height:78px;padding:11px 4px;border:0;border-top:1px solid #ececef;background:transparent;color:inherit;text-align:left;cursor:pointer}.person-row:hover{background:#fbfafc}.person-cell{display:flex;gap:10px;align-items:center}.person-cell>i,.member-profile>i{display:grid;width:38px;height:38px;border-radius:10px;place-items:center;background:#f0e9f4;color:#704897;font-size:.62rem;font-style:normal;font-weight:850}.person-cell>span,.person-row>span:not(.person-cell){display:grid;gap:3px}.person-cell strong,.person-row strong{font-size:.69rem}.person-cell small,.person-row small{color:#898a91;font-size:.59rem;line-height:1.4}.person-row em{width:max-content;padding:4px 6px;border-radius:6px;background:#edf6f0;color:#397255;font-size:.57rem;font-style:normal;font-weight:800}.person-row em[data-tone='warn']{background:#fff4e8;color:#9a6424}.person-row em[data-tone='leader']{background:#f1e9f6;color:#704897}.warning{color:#a26627!important}.open-arrow{color:#8a7a91!important;font-size:1rem}.pipeline-strip{display:grid;grid-template-columns:repeat(8,minmax(110px,1fr));gap:6px;overflow:auto}.pipeline-strip article{display:grid;min-height:82px;padding:11px;border:1px solid #e6e4e7;border-radius:9px;background:#fff}.pipeline-strip article.current-stage{border-top:3px solid #704897}.pipeline-strip strong{font-size:1.2rem}.pipeline-strip span{margin-top:auto;color:#777984;font-size:.6rem}.leadership-row,.commission-row{display:grid;grid-template-columns:minmax(200px,1fr) minmax(140px,.55fr) minmax(240px,1.2fr) auto;gap:14px;padding:12px 2px;border-top:1px solid #ececef;align-items:center}.leadership-row>span,.commission-row>span{display:grid;gap:3px}.leadership-row small,.commission-row small{color:#8b8b92;font-size:.58rem}.leadership-row strong,.commission-row strong{font-size:.68rem}.leadership-row button:disabled{opacity:.45}.three-col{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.development-card{padding:18px}.development-card>span{color:#8f779f;font-size:.63rem;font-weight:850}.development-card h3{margin:8px 0 5px}.development-card p{margin:0;color:#777b86;font-size:.69rem;line-height:1.52}.closeout-card,.next-steps-card{padding:18px}.check-row{display:flex!important;grid-template-columns:auto 1fr!important;gap:10px!important;padding:12px 0;border-top:1px solid #eeecef;align-items:flex-start}.check-row input{min-height:auto!important;margin-top:3px}.check-row span{display:grid;gap:3px}.check-row strong{font-size:.7rem}.check-row small{color:#888991;font-size:.61rem}.recommendation{display:flex;gap:9px;padding:12px 0;border-top:1px solid #eeecef}.recommendation span{color:#704897}.recommendation strong{font-size:.7rem}.commission-row button.done{background:#edf6f0;color:#397255}.report-metrics article strong{font-size:1.55rem}.report-line{display:flex;padding:12px 0;border-top:1px solid #eeecef;justify-content:space-between;gap:15px;align-items:center}.report-line>span{display:grid;gap:3px}.report-line strong,.report-line b{font-size:.7rem}.report-line small{color:#8b8c93;font-size:.6rem}.report-outcomes>div{grid-template-columns:150px minmax(0,1fr) 50px}.history-row{display:grid;grid-template-columns:minmax(140px,.8fr) 90px minmax(140px,1fr) minmax(180px,1.2fr) minmax(120px,.7fr);gap:12px;padding:11px 2px;border-top:1px solid #ececef;align-items:center;font-size:.64rem}.history-row span{color:#747884}.back-link{width:max-content;margin-top:4px;color:#704897;font-size:.67rem;font-weight:760;text-decoration:none}.formation-drawer{width:min(760px,calc(100vw - 24px));height:100dvh;max-width:none;max-height:none;margin:0 0 0 auto;padding:0;border:0;background:transparent}.formation-drawer::backdrop{background:rgba(18,20,29,.4);backdrop-filter:blur(2px)}.drawer-frame{display:grid;height:100%;grid-template-rows:auto 1fr;background:#fff;box-shadow:-24px 0 70px rgba(20,20,30,.18)}.drawer-header{display:flex;padding:23px 24px 18px;border-bottom:1px solid #ece9ed;justify-content:space-between;gap:18px}.drawer-header h2{margin:5px 0;font-size:1.65rem;letter-spacing:-.04em}.drawer-header p:not(.eyebrow){max-width:570px;margin:0;color:#767986;font-size:.7rem;line-height:1.5}.drawer-close{width:38px;height:38px;padding:0!important;border:1px solid #e3e0e5!important;border-radius:9px!important;background:#fff!important;color:#6e6e78!important;font-size:1.3rem!important}.drawer-body{display:grid;align-content:start;gap:15px;padding:20px 24px 48px;overflow:auto}.session-hero{padding:19px;border-radius:12px;background:linear-gradient(125deg,#2b3141,#473854);color:#fff}.session-hero span,.session-hero small{font-size:.61rem;opacity:.7}.session-hero h3{margin:7px 0 4px;font-size:1.45rem}.session-hero p{margin:0 0 8px;font-size:.74rem;line-height:1.5;opacity:.86}.content-block{display:grid;gap:8px;padding:15px;border:1px solid #e7e4e8;border-radius:11px;background:#fff}.content-block>small{color:#795797;font-size:.58rem;font-weight:850;text-transform:uppercase;letter-spacing:.07em}.content-block h3{margin:0;font-size:.9rem}.content-block p{margin:0;color:#696e7a;font-size:.7rem;line-height:1.6}.scripture{color:#333848!important;font-weight:760}.media-resource{display:grid;grid-template-columns:auto minmax(0,1fr);gap:9px;padding:9px 0;border-top:1px solid #eeecef;align-items:center}.media-resource>span{padding:4px 6px;border-radius:6px;background:#f0e9f4;color:#704897;font-size:.55rem;font-weight:800;text-transform:uppercase}.media-resource>div{display:grid;gap:2px}.media-resource strong{font-size:.69rem}.media-resource small{color:#8c8c93;font-size:.58rem}.media-block video{width:100%;max-height:300px;margin-top:5px;border-radius:9px;background:#111}.question{display:grid;grid-template-columns:26px 1fr;gap:8px;padding:9px 0;border-top:1px solid #eeecef;align-items:start}.question>span{display:grid;width:24px;height:24px;border-radius:7px;place-items:center;background:#f0e9f4;color:#704897;font-size:.65rem;font-weight:850}.question-library{display:flex;flex-wrap:wrap;gap:5px;padding-top:8px;border-top:1px solid #eeecef}.question-library>strong{width:100%;font-size:.62rem}.question-chip{min-height:32px!important;padding:6px 8px!important;border:1px solid #e6e1e7!important;background:#faf8fa!important;color:#6b6170!important;font-size:.59rem!important;text-align:left}.boundary{padding:9px;border-left:3px solid #9d80b2;background:#faf7fb!important;color:#6d6571!important}.drawer-actions{display:flex;justify-content:flex-end;gap:8px}.member-profile{display:flex;gap:11px;align-items:center}.member-profile>i{width:46px;height:46px}.member-profile h3{margin:0;font-size:1rem}.member-profile p{margin:3px 0 0;color:#7e8089;font-size:.65rem}.member-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}.member-stats div{display:grid;padding:10px;border-radius:8px;background:#f7f5f7}.member-stats span{color:#8c8c93;font-size:.55rem}.member-stats strong{margin-top:4px;font-size:.69rem}.catchup-row{display:flex;padding:9px 0;border-top:1px solid #ece9ed;justify-content:space-between;gap:10px;align-items:center}.catchup-row>span{display:grid;gap:2px}.catchup-row strong{font-size:.67rem}.catchup-row small{color:#8b8b93;font-size:.57rem}.marker-line p{font-size:.68rem!important}.history-mini{display:grid;gap:3px;padding:9px 0;border-top:1px solid #ece9ed}.history-mini strong{font-size:.67rem}.history-mini span,.history-mini small{color:#85868f;font-size:.59rem}.composer-stack{gap:10px}.leader-checks{display:grid;border:1px solid #e7e4e8;border-radius:11px;overflow:hidden}.leader-checks label{display:flex!important;grid-template-columns:auto 1fr!important;min-height:48px;padding:11px!important;border-top:1px solid #eeecef;align-items:flex-start!important;gap:9px!important;color:#494e5b!important;font-size:.68rem!important}.leader-checks label:first-child{border-top:0}.leader-checks input{min-height:auto!important}.boundary-map{grid-template-columns:1fr auto 1fr}.boundary-map>div{min-height:180px}.boundary-map>div>span{color:#76508f;font-size:.62rem;font-weight:850;text-transform:uppercase}.boundary-map>div>strong{margin-top:10px;line-height:1.75}.boundary-map>b{color:#704897}.formation-drawer button:disabled{opacity:.45;cursor:default}@media(max-width:1100px){.formation-hero,.overview-layout,.architecture-card{grid-template-columns:1fr}.hero-track{border-left:0;border-top:4px solid #734d97}.track-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.context-bar{grid-template-columns:1fr 1fr}.context-meta{grid-column:1/-1}.people-table{overflow:auto}.table-head,.person-row{min-width:920px}}@media(max-width:780px){.formation-page{padding:12px 10px 36px}.formation-hero{padding:22px 18px}.formation-hero h1{font-size:2.45rem}.two-col,.review-layout,.report-layout,.three-col,.track-grid{grid-template-columns:1fr}.page-heading{align-items:flex-start;flex-direction:column}.context-bar{grid-template-columns:1fr}.context-bar select{width:100%}.context-meta{grid-column:auto}.metric-grid{grid-template-columns:1fr 1fr}.member-stats{grid-template-columns:1fr 1fr}.leadership-row,.commission-row,.history-row{grid-template-columns:1fr}.leadership-row button{width:100%}.architecture-map,.boundary-map{grid-template-columns:1fr}.architecture-map i,.boundary-map>b{transform:rotate(90deg);justify-self:center}.formation-drawer{width:100vw}.drawer-header,.drawer-body{padding-left:17px;padding-right:17px}}@media(max-width:480px){.metric-grid{grid-template-columns:1fr}.session-row{grid-template-columns:32px minmax(0,1fr) auto}.session-source{display:none}.context-bar button{width:100%}.member-stats{grid-template-columns:1fr}}
   `],
 })
 export class DwcFormationComponent {
   @ViewChild('formationDialog') formationDialog?: ElementRef<HTMLDialogElement>;
 
-  private readonly storageKey = 'apostolos.engagements.demo.dwc.formation.v1';
-  readonly groups: FormationGroup[] = [
-    { id: 'young-adults', name: 'Young Adults DEG', leader: 'Alicia Brown', cluster: 'Central Cluster', members: 11, pace: 'On pace' },
-    { id: 'marriage-family', name: 'Marriage & Family DEG', leader: 'James Smith', cluster: 'East Cluster', members: 14, pace: 'On pace' },
-    { id: 'men-of-valor', name: 'Men of Valor', leader: 'Marcus Hill', cluster: 'South Cluster', members: 9, pace: 'Needs attention' },
-    { id: 'women-purpose', name: 'Women of Purpose', leader: 'Jordan Davis', cluster: 'Central Cluster', members: 13, pace: 'Ahead' },
+  readonly tabs: { key: FormationTab; label: string }[] = [
+    { key: 'overview', label: 'Formation' },
+    { key: 'tracks', label: 'Tracks & Curriculum' },
+    { key: 'people', label: 'People' },
+    { key: 'leadership', label: 'Leadership Pipeline' },
+    { key: 'review', label: 'Semester Review' },
+    { key: 'reports', label: 'Discipleship Health' },
   ];
-
-  readonly sessions: FormationSession[] = [
-    { id: 'created', week: 1, title: 'Created & Known', theme: 'Identity begins with the God who formed us.', scripture: 'Psalm 139:13–18 · Genesis 1:26–27', bigIdea: 'Before calling, gifting or achievement, we receive the dignity of being created and known by God.', teaching: 'Explore identity as something received from God rather than assembled from performance, approval or circumstance.', discussion: ['Where do you most often look for identity besides God?', 'What changes when you believe God knows you completely and still draws near?'], practice: 'Begin each morning this week by praying Psalm 139:23–24 and writing one truth God says about you.', prayer: 'Pray for freedom from false labels and fresh confidence in the Father’s knowledge and love.', resource: 'Leader Guide · Created & Known' },
-    { id: 'christ', week: 2, title: 'Identity in Christ', theme: 'We learn to live from union, not striving.', scripture: 'Ephesians 1:3–14 · Colossians 3:1–4', bigIdea: 'The gospel gives us a new center: who Christ is and what God has done in Him.', teaching: 'Name the difference between trying to earn spiritual identity and learning to live from what Christ has already secured.', discussion: ['Which truth in Ephesians 1 is hardest for you to receive personally?', 'How would living from belovedness change one area of your week?'], practice: 'Choose one “in Christ” truth and speak it aloud in prayer every day.', prayer: 'Thank Jesus for adoption, redemption and belonging; ask the Spirit to make truth experiential.', resource: 'Leader Guide · Identity in Christ' },
-    { id: 'gifts', week: 3, title: 'Gifts, Grace & Calling', theme: 'Grace equips every believer to contribute.', scripture: 'Romans 12:3–8 · 1 Peter 4:10–11', bigIdea: 'Calling is not a platform; it is faithful stewardship of grace for the good of others.', teaching: 'Help members notice spiritual gifts, natural strengths, burdens and recurring fruit without forcing premature labels.', discussion: ['Where have other people consistently seen grace on your life?', 'What need or burden repeatedly moves you toward action?'], practice: 'Ask two mature believers where they see grace on your life and record what you hear.', prayer: 'Ask the Spirit for humility, clarity and courage to steward gifts as service.', resource: 'Gifts & Calling Reflection Guide' },
-    { id: 'hear-obey', week: 4, title: 'Hearing & Obeying God', theme: 'Discipleship becomes concrete through responsive obedience.', scripture: 'John 10:27 · James 1:22–25 · Acts 13:1–3', bigIdea: 'We mature by learning to recognize God’s voice through Scripture and the Spirit, then responding faithfully.', teaching: 'Keep discernment anchored in Scripture, community and the character of God while creating room for real testimony and practice.', discussion: ['How do you currently discern whether a prompting is from God?', 'What is one clear act of obedience already in front of you?'], practice: 'Set aside 15 quiet minutes three times this week: read Scripture, listen, write, then obey the clearest biblical next step.', prayer: 'Pray for clean motives, sharpened discernment and grace to obey quickly.', resource: 'Listening Prayer & Discernment Guide' },
-    { id: 'community', week: 5, title: 'Covenant Community', theme: 'Formation happens with people, not around them.', scripture: 'Acts 2:42–47 · Hebrews 10:23–25', bigIdea: 'Jesus forms a people who practice presence, honesty, encouragement, generosity and mutual responsibility.', teaching: 'Move beyond attendance toward a biblical vision of people who know, strengthen and carry one another.', discussion: ['What makes it difficult for you to be truly known?', 'What would healthy spiritual responsibility look like in this group?'], practice: 'Make one intentional encouragement or practical act of care for another group member this week.', prayer: 'Pray for trust, reconciliation, courage and durable spiritual friendship.', resource: 'Community Practices Guide' },
-    { id: 'service', week: 6, title: 'Serve With Purpose', theme: 'Calling takes shape through faithful service.', scripture: 'Mark 10:42–45 · Ephesians 2:10', bigIdea: 'Kingdom leadership begins with serving what God loves, not building personal importance.', teaching: 'Connect gifts and burdens to tangible service inside the church, neighborhood and everyday vocation.', discussion: ['Where is there a real need your gifts could meet now?', 'What keeps service from becoming performance or burnout?'], practice: 'Take one concrete service step before the next gathering and come ready to share what you learned.', prayer: 'Ask Jesus for His servant heart and wisdom about sustainable obedience.', resource: 'Service & Ministry Next-Step Map' },
-    { id: 'mission', week: 7, title: 'Live Sent', theme: 'Every disciple carries the Kingdom into ordinary places.', scripture: 'Matthew 28:18–20 · 2 Corinthians 5:17–20', bigIdea: 'Mission is not an occasional event; it is the posture of people sent by Jesus.', teaching: 'Help the group name the people and places God has already entrusted to them.', discussion: ['Who is already in your life that God may be inviting you to love intentionally?', 'What would good news look like in your workplace, school or neighborhood?'], practice: 'Pray daily for one person and create one natural opportunity to listen, serve or share your story.', prayer: 'Pray for compassion, boldness and sensitivity to the Spirit in everyday mission.', resource: 'Live Sent Conversation Guide' },
-    { id: 'commission', week: 8, title: 'Commissioned for the Next Step', theme: 'Formation should move into ongoing obedience.', scripture: 'Philippians 1:3–6 · 2 Timothy 2:1–2', bigIdea: 'A semester ends, but discipleship continues through clear next steps, relationships and multiplication.', teaching: 'Celebrate growth, name remaining formation needs, identify service and leadership steps, and make room for testimony and commissioning prayer.', discussion: ['Where have you seen God change you during this semester?', 'What is the next faithful step you do not want to lose after this group ends?'], practice: 'Write a 90-day formation plan with one rhythm, one relationship and one Kingdom assignment.', prayer: 'Commission one another with thanksgiving, blessing and prayer for endurance.', resource: '90-Day Formation & Commissioning Guide' },
-  ];
-
-  readonly selectedGroupId = signal('young-adults');
-  readonly completed = signal<string[]>(['created', 'christ', 'gifts']);
-  readonly practices = signal<string[]>(['Ask two mature believers where they see grace on your life.']);
-  readonly members = signal<FormationMember[]>([
-    { id: 'michael', name: 'Michael Davis', attendance: '4/4', reflections: 3, practice: 'Complete', status: 'Emerging leader' },
-    { id: 'sarah', name: 'Sarah Jones', attendance: '4/4', reflections: 2, practice: 'Complete', status: 'On pace' },
-    { id: 'andre', name: 'Andre Lewis', attendance: '3/4', reflections: 2, practice: 'In progress', status: 'On pace' },
-    { id: 'ashley', name: 'Ashley Martin', attendance: '2/4', reflections: 1, practice: 'Not started', status: 'Needs follow-up' },
-    { id: 'derrick', name: 'Derrick Lewis', attendance: '4/4', reflections: 3, practice: 'Complete', status: 'On pace' },
-  ]);
+  readonly activeTab = signal<FormationTab>('overview');
   readonly selectedSession = signal<FormationSession | null>(null);
   readonly selectedMember = signal<FormationMember | null>(null);
   readonly drawerKind = signal<DrawerKind | null>(null);
 
   practiceDraft = '';
   practiceResponse = 'Mark complete + optional reflection';
+  questionDraft = '';
+  sessionNoteDraft = '';
+  nextStepDraft = '';
+  reflectionDraft = '';
+  testimonyDraft = '';
+  prayerDraft = '';
+  milestoneDraft = '';
+  trackTitle = '';
+  trackSubtitle = '';
+  trackSource: FormationSource = 'DWCIM';
+
   leaderGuideReviewed = true;
   memberListPrayed = true;
   discussionPrepared = false;
   followupsReviewed = false;
   assignmentsReady = false;
+  apprenticePrepared = false;
 
-  readonly selectedGroup = computed(() => this.groups.find(group => group.id === this.selectedGroupId()) ?? this.groups[0]);
-  readonly completedCount = computed(() => this.completed().length);
-  readonly progressPercent = computed(() => Math.round(this.completed().length * 100 / this.sessions.length));
-  readonly currentSession = computed(() => this.sessions.find(session => !this.completed().includes(session.id)) ?? this.sessions[this.sessions.length - 1]);
-  readonly followupCount = computed(() => this.members().filter(member => member.status === 'Needs follow-up').length);
+  readonly leaderReadiness = [
+    { label: 'Review session resource', done: true },
+    { label: 'Pray through the people', done: true },
+    { label: 'Choose discussion prompts', done: false },
+    { label: 'Review follow-up needs', done: false },
+    { label: 'Prepare apprentice role', done: false },
+  ];
 
-  constructor() { this.restore(); }
+  readonly outcomePulse = [
+    { label: 'Identity', percent: 82, state: 'Rooted' },
+    { label: 'Prayer & Scripture', percent: 68, state: 'Growing' },
+    { label: 'Community', percent: 78, state: 'Healthy' },
+    { label: 'Calling & service', percent: 61, state: 'Emerging' },
+  ];
 
-  selectGroup(id: string): void {
-    this.selectedGroupId.set(id);
-    this.persist();
+  readonly reportOutcomes = [
+    { label: 'Scripture engagement', percent: 78 },
+    { label: 'Prayer rhythm', percent: 71 },
+    { label: 'Relational health', percent: 74 },
+    { label: 'Service activation', percent: 63 },
+    { label: 'Leadership emergence', percent: 42 },
+    { label: 'Missional practice', percent: 57 },
+  ];
+
+  readonly reviewChecklist = [
+    { field: 'leaderReview' as const, label: 'Leader formation review', detail: 'Name group-level growth, tension and lessons from the semester.' },
+    { field: 'memberNextSteps' as const, label: 'Member next steps', detail: 'Every person has a relational next step, not just a completion status.' },
+    { field: 'testimoniesCaptured' as const, label: 'Testimonies captured', detail: 'Preserve stories of change as qualitative formation evidence.' },
+    { field: 'commissioningPlanned' as const, label: 'Commissioning prepared', detail: 'Create room to bless, pray and send people into continued obedience.' },
+    { field: 'rolloverReady' as const, label: 'Next semester ready', detail: 'Recommend next track, group, service, Academy learning or apprenticeship.' },
+  ];
+
+  readonly groupPractices = computed(() => this.state.practices()[this.state.selectedGroupId()] ?? []);
+
+  constructor(readonly state: DwcFormationStateService) {}
+
+  setPace(pace: 'Weekly' | 'Every other week' | 'Flexible'): void {
+    this.state.setGroupPace(this.state.selectedGroupId(), pace);
   }
 
   sessionState(session: FormationSession): 'Complete' | 'Current' | 'Upcoming' {
-    if (this.completed().includes(session.id)) return 'Complete';
-    return this.currentSession().id === session.id ? 'Current' : 'Upcoming';
+    if (this.isCompleted(session)) return 'Complete';
+    return session.id === this.state.currentSession().id ? 'Current' : 'Upcoming';
   }
 
   sessionStateIcon(session: FormationSession): string {
-    const state = this.sessionState(session);
-    return state === 'Complete' ? '✓' : state === 'Current' ? '→' : String(session.week);
+    const status = this.sessionState(session);
+    return status === 'Complete' ? '✓' : status === 'Current' ? '→' : String(session.week);
   }
 
-  isCompleted(session: FormationSession): boolean { return this.completed().includes(session.id); }
+  isCompleted(session: FormationSession): boolean {
+    return this.state.selectedGroup().completedSessionIds.includes(session.id);
+  }
 
   openSession(session: FormationSession): void {
     this.selectedSession.set(session);
+    this.sessionNoteDraft = this.state.sessionNote(this.state.selectedGroupId(), session.id);
+    this.questionDraft = '';
     this.drawerKind.set('session');
     this.showDrawer();
   }
 
+  toggleSessionComplete(session: FormationSession): void {
+    if (this.isCompleted(session)) this.state.reopenSession(this.state.selectedGroupId(), session.id);
+    else this.state.completeSession(this.state.selectedGroupId(), session.id);
+  }
+
   openPractice(defaultValue = ''): void {
-    this.practiceDraft = defaultValue || this.currentSession().practice;
+    this.practiceDraft = defaultValue || this.state.currentSession().practice;
     this.drawerKind.set('practice');
     this.showDrawer();
   }
 
+  savePractice(): void {
+    this.state.addPractice(this.state.selectedGroupId(), this.practiceDraft);
+    this.closeDrawer();
+  }
+
   openMember(member: FormationMember): void {
     this.selectedMember.set(member);
+    this.nextStepDraft = member.nextStep;
+    this.reflectionDraft = '';
+    this.testimonyDraft = '';
+    this.prayerDraft = '';
+    this.milestoneDraft = '';
     this.drawerKind.set('member');
     this.showDrawer();
+  }
+
+  saveNextStep(member: FormationMember): void {
+    this.state.setMemberNextStep(member.id, this.nextStepDraft.trim());
+    this.refreshMember(member.id);
+  }
+
+  saveReflection(member: FormationMember): void {
+    this.state.addReflection(member.id, this.reflectionDraft);
+    this.reflectionDraft = '';
+    this.refreshMember(member.id);
+  }
+
+  saveTestimony(member: FormationMember): void {
+    this.state.addTestimony(member.id, this.testimonyDraft);
+    this.testimonyDraft = '';
+    this.refreshMember(member.id);
+  }
+
+  savePrayerResponse(member: FormationMember): void {
+    this.state.addPrayerResponse(member.id, this.prayerDraft);
+    this.prayerDraft = '';
+    this.refreshMember(member.id);
+  }
+
+  saveMilestone(member: FormationMember): void {
+    this.state.addMilestone(member.id, this.milestoneDraft);
+    this.milestoneDraft = '';
+    this.refreshMember(member.id);
+  }
+
+  assignCatchUp(member: FormationMember, sessionId: string): void {
+    this.state.assignCatchUp(member.id, sessionId);
+    this.refreshMember(member.id);
+  }
+
+  sessionTitle(sessionId: string): string {
+    for (const track of this.state.tracks()) {
+      const match = track.sessions.find(session => session.id === sessionId);
+      if (match) return match.title;
+    }
+    return 'Formation session';
   }
 
   openLeaderPrep(): void {
@@ -299,50 +587,97 @@ export class DwcFormationComponent {
     this.showDrawer();
   }
 
+  openCreateTrack(): void {
+    this.trackTitle = '';
+    this.trackSubtitle = '';
+    this.trackSource = 'DWCIM';
+    this.drawerKind.set('track');
+    this.showDrawer();
+  }
+
+  createTrack(): void {
+    const created = this.state.createTrack(this.trackTitle, this.trackSubtitle, this.trackSource);
+    if (!created) return;
+    this.state.assignTrack(this.state.selectedGroupId(), created.id);
+    this.closeDrawer();
+  }
+
+  assignTrack(track: FormationTrack): void {
+    this.state.assignTrack(this.state.selectedGroupId(), track.id);
+  }
+
   openAcademyBoundary(): void {
     this.drawerKind.set('academy');
     this.showDrawer();
   }
 
-  completeSession(session: FormationSession): void {
-    if (!this.completed().includes(session.id)) {
-      this.completed.update(items => [...items, session.id]);
-      this.persist();
-    }
-    this.closeDrawer();
+  saveSessionNote(session: FormationSession): void {
+    this.state.saveSessionNote(this.state.selectedGroupId(), session.id, this.sessionNoteDraft);
   }
 
-  savePractice(): void {
-    const value = this.practiceDraft.trim();
-    if (!value) return;
-    this.practices.update(items => [value, ...items.filter(item => item !== value)]);
-    this.persist();
-    this.closeDrawer();
+  copyQuestion(question: string): void {
+    this.questionDraft = question;
   }
 
-  recordReflection(member: FormationMember): void {
-    this.members.update(items => items.map(item => item.id === member.id ? { ...item, reflections: item.reflections + 1 } : item));
-    this.selectedMember.set({ ...member, reflections: member.reflections + 1 });
-    this.persist();
+  saveQuestion(): void {
+    this.state.addQuestion(this.questionDraft);
+    this.questionDraft = '';
   }
 
-  recordMilestone(member: FormationMember): void {
-    this.members.update(items => items.map(item => item.id === member.id ? { ...item, status: 'Emerging leader' as const } : item));
-    this.selectedMember.set({ ...member, status: 'Emerging leader' });
-    this.persist();
+  advanceLeadership(member: FormationMember): void {
+    this.state.moveLeadership(member.id, this.state.nextLeadershipStage(member.leadershipStage));
   }
 
-  saveLeaderPrep(): void {
-    this.persist();
-    this.closeDrawer();
+  stageCount(stage: LeadershipStage): number {
+    return this.state.members().filter(member => member.leadershipStage === stage).length;
+  }
+
+  leadershipPipelineTotal(): number {
+    const memberIndex = this.state.leadershipStages().indexOf('Serving');
+    return this.state.members().filter(member => this.state.leadershipStages().indexOf(member.leadershipStage) >= memberIndex).length;
+  }
+
+  groupCountForTrack(trackId: string): number {
+    return this.state.groups().filter(group => group.trackId === trackId).length;
+  }
+
+  missedSessionTotal(): number {
+    return this.state.selectedMembers().reduce((total, member) => total + member.missedSessionIds.length, 0);
+  }
+
+  testimonyTotal(): number {
+    return this.state.members().reduce((total, member) => total + member.testimonies.length, 0);
+  }
+
+  reviewValue(field: 'leaderReview' | 'memberNextSteps' | 'testimoniesCaptured' | 'commissioningPlanned' | 'rolloverReady'): boolean {
+    return this.state.reviewFor(this.state.selectedGroupId())[field];
+  }
+
+  toggleReview(field: 'leaderReview' | 'memberNextSteps' | 'testimoniesCaptured' | 'commissioningPlanned' | 'rolloverReady', value: boolean): void {
+    this.state.updateSemesterReview(this.state.selectedGroupId(), field, value);
+  }
+
+  reviewPercent(): number {
+    const review = this.state.reviewFor(this.state.selectedGroupId());
+    const values = [review.leaderReview, review.memberNextSteps, review.testimoniesCaptured, review.commissioningPlanned, review.rolloverReady];
+    return Math.round(values.filter(Boolean).length * 100 / values.length);
+  }
+
+  commission(member: FormationMember): void {
+    if (!member.commissioned) this.state.commissionMember(member.id);
+  }
+
+  initials(name: string): string {
+    return name.split(/\s+/).slice(0, 2).map(part => part.charAt(0)).join('').toUpperCase();
   }
 
   drawerEyebrow(): string {
     switch (this.drawerKind()) {
-      case 'session': return `Formation session · ${this.selectedGroup().name}`;
+      case 'session': return `Formation session · ${this.state.selectedGroup().name}`;
       case 'practice': return 'Between gatherings';
-      case 'member': return 'Formation record';
-      case 'leader': return 'Leader preparation';
+      case 'member': return 'Person-in-community formation';
+      case 'leader': return 'Leader development';
+      case 'track': return 'Curriculum builder';
       case 'academy': return 'ApostolOS architecture';
       default: return 'Divine Empowerment Groups';
     }
@@ -350,10 +685,11 @@ export class DwcFormationComponent {
 
   drawerTitle(): string {
     switch (this.drawerKind()) {
-      case 'session': return this.selectedSession()?.title ?? 'Session';
+      case 'session': return this.selectedSession()?.title ?? 'Formation session';
       case 'practice': return 'Create group practice';
       case 'member': return this.selectedMember()?.name ?? 'Member formation';
-      case 'leader': return `Prepare Week ${this.currentSession().week}`;
+      case 'leader': return 'Prepare leaders who multiply';
+      case 'track': return 'Create DEG formation track';
       case 'academy': return 'DEG formation + Kingdom Academy';
       default: return 'Formation';
     }
@@ -361,11 +697,12 @@ export class DwcFormationComponent {
 
   drawerDescription(): string {
     switch (this.drawerKind()) {
-      case 'session': return 'Guide the gathering without turning the group into a classroom.';
-      case 'practice': return 'Carry formation into the week with a simple, concrete next step.';
-      case 'member': return 'See participation, reflection and relational next steps without reducing a person to a score.';
-      case 'leader': return 'Prepare the Scripture, people, assignments and pastoral posture before the room gathers.';
-      case 'academy': return 'Reuse Academy-grade curriculum structure while keeping DEG relationships inside Engagements.';
+      case 'session': return 'Teach from Scripture and trusted curriculum, then move the group into discussion, practice, prayer and relational follow-up.';
+      case 'practice': return 'Carry formation into ordinary life with one concrete next step.';
+      case 'member': return 'See the person across participation, household context, growth, testimony, service and leadership—not as a spiritual score.';
+      case 'leader': return 'Formation leaders prepare both the content and the people, while developing the next leader in the room.';
+      case 'track': return 'Create a DWCIM pathway or link Academy-owned content while Engagements keeps ownership of the DEG journey.';
+      case 'academy': return 'Share curriculum across modules without duplicating system ownership.';
       default: return '';
     }
   }
@@ -379,8 +716,8 @@ export class DwcFormationComponent {
     if (event.target === event.currentTarget) this.closeDrawer();
   }
 
-  initials(name: string): string {
-    return name.split(/\s+/).slice(0, 2).map(part => part.charAt(0)).join('').toUpperCase();
+  private refreshMember(memberId: string): void {
+    this.selectedMember.set(this.state.members().find(member => member.id === memberId) ?? null);
   }
 
   private showDrawer(): void {
@@ -388,42 +725,5 @@ export class DwcFormationComponent {
       const dialog = this.formationDialog?.nativeElement;
       if (dialog && !dialog.open) dialog.showModal();
     });
-  }
-
-  private persist(): void {
-    try {
-      localStorage.setItem(this.storageKey, JSON.stringify({
-        selectedGroupId: this.selectedGroupId(),
-        completed: this.completed(),
-        practices: this.practices(),
-        members: this.members(),
-        leader: {
-          guide: this.leaderGuideReviewed,
-          prayer: this.memberListPrayed,
-          discussion: this.discussionPrepared,
-          followups: this.followupsReviewed,
-          assignments: this.assignmentsReady,
-        },
-      }));
-    } catch { /* Demo persistence is best-effort. */ }
-  }
-
-  private restore(): void {
-    try {
-      const raw = localStorage.getItem(this.storageKey);
-      if (!raw) return;
-      const state = JSON.parse(raw);
-      if (this.groups.some(group => group.id === state.selectedGroupId)) this.selectedGroupId.set(state.selectedGroupId);
-      if (Array.isArray(state.completed)) this.completed.set(state.completed.filter((id: string) => this.sessions.some(session => session.id === id)));
-      if (Array.isArray(state.practices)) this.practices.set(state.practices);
-      if (Array.isArray(state.members)) this.members.set(state.members);
-      if (state.leader) {
-        this.leaderGuideReviewed = state.leader.guide ?? true;
-        this.memberListPrayed = state.leader.prayer ?? true;
-        this.discussionPrepared = state.leader.discussion ?? false;
-        this.followupsReviewed = state.leader.followups ?? false;
-        this.assignmentsReady = state.leader.assignments ?? false;
-      }
-    } catch { /* Keep deterministic defaults if stored demo state is invalid. */ }
   }
 }

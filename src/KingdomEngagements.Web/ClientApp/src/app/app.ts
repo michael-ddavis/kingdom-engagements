@@ -1,6 +1,7 @@
 import { AfterViewInit, Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
 import { EngagementsApiService } from './core/engagements-api.service';
+import { DwcFormationStateService } from './core/dwc-formation-state.service';
 import { ProductInfo } from './core/models';
 import { HickmanItinerantPanelComponent } from './shared/hickman-itinerant-panel.component';
 import { OrganizationCommandCenterComponent } from './shared/organization-command-center.component';
@@ -41,12 +42,12 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
         <nav class="eng-modulebar__actions" aria-label="Engagements utilities">
           @if (isDwc()) {
             @if (isDwcMemberView()) {
-              <span class="eng-view-chip">Member view</span>
-              <a href="/organization/dwc">Exit preview</a>
+              <span class="eng-view-chip">Member view · {{ formationState.selectedGroup().name }}</span>
+              <a [href]="groupHref('/organization/dwc/formation')">Exit preview</a>
             } @else {
-              <a href="/organization/dwc">DEG Overview</a>
-              <a href="/organization/dwc/formation">Formation</a>
-              <a href="/organization/dwc/my-group">Member Preview</a>
+              <a [href]="groupHref('/organization/dwc')">DEG Overview</a>
+              <a [href]="groupHref('/organization/dwc/formation')">Formation</a>
+              <a [href]="groupHref('/organization/dwc/my-group')">Member Preview</a>
             }
           }
           @if (!isDwcMemberView()) {
@@ -78,6 +79,7 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
   constructor(
     private readonly api: EngagementsApiService,
     private readonly router: Router,
+    readonly formationState: DwcFormationStateService,
   ) {}
 
   ngOnInit(): void {
@@ -114,6 +116,10 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
     return this.routePath() === '/organization/hey-king';
   }
 
+  groupHref(path: string): string {
+    return `${path}?group=${encodeURIComponent(this.formationState.selectedGroupId())}`;
+  }
+
   private routePath(): string {
     return this.router.url.split('?')[0].replace(/\/$/, '');
   }
@@ -122,8 +128,6 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
     const routedBackdrop = document.querySelector<HTMLElement>('app-organization-programs .drawer-backdrop');
     const routedDrawer = document.querySelector<HTMLElement>('app-organization-programs .demo-drawer');
 
-    // Routed content can establish its own containing block. Move the live overlay
-    // nodes to <body> so fixed positioning is always browser-viewport relative.
     if (routedBackdrop && routedBackdrop.parentElement !== document.body) {
       routedBackdrop.classList.add('apostolos-body-overlay');
       document.body.appendChild(routedBackdrop);

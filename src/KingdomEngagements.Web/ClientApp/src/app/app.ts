@@ -83,6 +83,11 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    const requestedGroup = this.router.parseUrl(this.router.url).queryParams['group'];
+    if (typeof requestedGroup === 'string' && this.formationState.groups().some(group => group.id === requestedGroup)) {
+      this.formationState.selectGroup(requestedGroup);
+    }
+
     this.api.getProduct().subscribe({
       next: product => this.product.set(product),
     });

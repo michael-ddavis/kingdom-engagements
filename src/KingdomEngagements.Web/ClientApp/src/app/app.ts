@@ -1,5 +1,5 @@
 import { AfterViewInit, Component, OnDestroy, OnInit, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Router, RouterOutlet } from '@angular/router';
 import { EngagementsApiService } from './core/engagements-api.service';
 import { ProductInfo } from './core/models';
 import { HickmanItinerantPanelComponent } from './shared/hickman-itinerant-panel.component';
@@ -40,7 +40,7 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
 
         <nav class="eng-modulebar__actions" aria-label="Engagements utilities">
           @if (isDwc()) {
-            <a href="/organization/dwc">DEG Groups</a>
+            <a href="/organization/dwc">DEG Overview</a>
             <a href="/organization/dwc/formation">Formation</a>
             <a href="/organization/dwc/my-group">My Group</a>
           }
@@ -51,8 +51,12 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
 
       <main class="eng-main">
         <router-outlet />
-        <app-organization-command-center />
-        <app-hickman-itinerant-panel />
+        @if (showOrganizationCommandCenter()) {
+          <app-organization-command-center />
+        }
+        @if (showHickmanItinerantPanel()) {
+          <app-hickman-itinerant-panel />
+        }
       </main>
     </div>
   `,
@@ -61,7 +65,10 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
   readonly product = signal<ProductInfo | null>(null);
   private overlayObserver?: MutationObserver;
 
-  constructor(private readonly api: EngagementsApiService) {}
+  constructor(
+    private readonly api: EngagementsApiService,
+    private readonly router: Router,
+  ) {}
 
   ngOnInit(): void {
     this.api.getProduct().subscribe({
@@ -82,6 +89,16 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
 
   isDwc(): boolean {
     return this.currentOrganizationKey() === 'divine-world-changers';
+  }
+
+  showOrganizationCommandCenter(): boolean {
+    const url = this.router.url.split('?')[0].replace(/\/$/, '');
+    return url === '/organization/dwc' || url === '/organization/hey-king';
+  }
+
+  showHickmanItinerantPanel(): boolean {
+    const url = this.router.url.split('?')[0].replace(/\/$/, '');
+    return url === '/organization/hey-king';
   }
 
   private syncOrganizationDrawerPortal(): void {

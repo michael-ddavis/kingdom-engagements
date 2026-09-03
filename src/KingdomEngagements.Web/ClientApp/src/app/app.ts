@@ -2,12 +2,13 @@ import { AfterViewInit, Component, OnDestroy, OnInit, signal } from '@angular/co
 import { RouterOutlet } from '@angular/router';
 import { EngagementsApiService } from './core/engagements-api.service';
 import { ProductInfo } from './core/models';
+import { HickmanItinerantPanelComponent } from './shared/hickman-itinerant-panel.component';
 import { OrganizationCommandCenterComponent } from './shared/organization-command-center.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, OrganizationCommandCenterComponent],
+  imports: [RouterOutlet, OrganizationCommandCenterComponent, HickmanItinerantPanelComponent],
   template: `
     <div class="eng-app">
       <header class="eng-modulebar">
@@ -46,6 +47,7 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
       <main class="eng-main">
         <router-outlet />
         <app-organization-command-center />
+        <app-hickman-itinerant-panel />
       </main>
     </div>
   `,

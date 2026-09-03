@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Invite Pastor Derwin Hickman · Heyy King</title>
+  <link rel="stylesheet" href="/invite.css" />
+</head>
+<body>
+  <main class="invitation-shell">
+    <aside class="brand-panel">
+      <img class="brand-portrait" src="https://s3-us-west-1.amazonaws.com/faithnetworkuserfilestore/FAITHNETWORK_USERFILESTORE/FAITHNETWORK_USERFILESTORE/imagelibraries/ministries/151c3d41-ea00-477d-bc53-b09a3b31047b/pastors/derwin.jpg" alt="Pastor Derwin Hickman" />
+      <div class="brand-overlay"></div>
+      <div class="brand-content">
+        <p class="brand-kicker">Itinerant ministry invitations</p>
+        <h1>Invite<br />Pastor Derwin Hickman</h1>
+        <p class="brand-description">Thank you for considering Pastor Derwin Hickman for your gathering. Please share the details of the event so his ministry team can prayerfully review the invitation and prepare with excellence.</p>
+        <div class="brand-divider"></div>
+        <p class="brand-note">Relationship, preparation and spiritual clarity help create room for meaningful ministry.</p>
+      </div>
+      <div class="brand-footer"><span>Mentorship</span><span>Leadership</span><span>Ministry</span></div>
+    </aside>
+
+    <section class="invitation-content">
+      <div id="loading" class="state-card" hidden>Loading invitation…</div>
+
+      <section id="confirmation" class="confirmation-view" hidden aria-live="polite">
+        <div class="confirmation-mark">✓</div>
+        <p class="page-eyebrow" id="confirmation-eyebrow">Invitation received</p>
+        <h2 id="confirmation-title">Thank you for inviting Pastor Derwin Hickman.</h2>
+        <p class="confirmation-introduction" id="confirmation-copy">His ministry team will review the information provided and contact your primary coordinator if additional details are needed.</p>
+        <div class="confirmation-status"><span class="status-dot"></span><div><small>Current status</small><strong id="confirmation-status">Awaiting review</strong></div></div>
+        <section class="confirmation-details">
+          <div class="confirmation-heading"><div><p class="section-eyebrow">Invitation summary</p><h3 id="summary-event"></h3></div><span class="request-number" id="summary-reference"></span></div>
+          <dl>
+            <div><dt>Host ministry</dt><dd id="summary-host"></dd></div>
+            <div><dt>Event dates</dt><dd id="summary-dates"></dd></div>
+            <div><dt>Location</dt><dd id="summary-location"></dd></div>
+            <div><dt>Primary contact</dt><dd id="summary-contact"></dd></div>
+            <div><dt>Submitted</dt><dd id="summary-submitted"></dd></div>
+            <div><dt>Host readiness</dt><dd id="summary-readiness"></dd></div>
+          </dl>
+        </section>
+        <div class="confirmation-actions"><button type="button" class="primary-button" id="submit-another">Submit another invitation</button><a href="https://www.hickmanlhickman.com/#heyking" class="secondary-button">Return to Heyy King</a></div>
+      </section>
+
+      <section id="form-view">
+        <header class="form-header">
+          <a href="https://www.hickmanlhickman.com/#heyking" class="return-link"><span aria-hidden="true">←</span> Return to Heyy King</a>
+          <p class="page-eyebrow" id="page-eyebrow">Host ministry portal</p>
+          <h2 id="form-title">Speaking invitation</h2>
+          <p class="form-introduction" id="form-introduction">Tell us about your ministry, the gathering and the assignment you are requesting of Pastor Hickman. Fields marked with an asterisk are required.</p>
+        </header>
+
+        <div id="request-message" class="request-message" hidden></div>
+        <div id="form-error" class="form-error" hidden role="alert"></div>
+
+        <form id="invitation-form" novalidate>
+          <section class="form-section">
+            <div class="section-heading"><span class="section-number">01</span><div><p class="section-eyebrow">Host and gathering</p><h3>Tell us about the event</h3></div></div>
+            <div class="field-grid">
+              <label class="form-field form-field--wide"><span>Ministry or organization name <em>*</em></span><input name="organizationName" required maxlength="180" placeholder="Greater Hope Worship Center" /></label>
+              <label class="form-field form-field--wide"><span>Event name <em>*</em></span><input name="eventName" required maxlength="180" placeholder="Kingdom Men Leadership Gathering" /></label>
+              <label class="form-field"><span>Event type <em>*</em></span><select name="eventType" required><option value="">Select an event type</option><option>Sunday Service</option><option>Leadership Intensive</option><option>Men’s Gathering</option><option>Youth or Young Adult Event</option><option>Mentorship or Empowerment Event</option><option>Community Event</option><option>Worship and Prayer Gathering</option><option>Conference</option><option>Other</option></select></label>
+              <label class="form-field"><span>Expected attendance <em>*</em></span><input name="expectedAttendance" type="number" min="1" max="100000" required placeholder="300" /></label>
+              <label class="form-field form-field--wide"><span>Requested ministry assignment <em>*</em></span><textarea name="ministryRequest" required maxlength="3000" rows="6" placeholder="Describe the services, sessions, mentoring conversations, leadership meetings or ministry responsibilities being requested of Pastor Hickman."></textarea></label>
+            </div>
+          </section>
+
+          <section class="form-section">
+            <div class="section-heading"><span class="section-number">02</span><div><p class="section-eyebrow">Event logistics</p><h3>Dates and location</h3></div></div>
+            <div class="field-grid">
+              <label class="form-field"><span>Start date <em>*</em></span><input name="startDate" type="date" required /></label>
+              <label class="form-field"><span>End date <em>*</em></span><input name="endDate" type="date" required /></label>
+              <label class="form-field form-field--wide"><span>Venue name <em>*</em></span><input name="venueName" required maxlength="180" placeholder="Greater Hope Worship Center" /></label>
+              <label class="form-field"><span>City <em>*</em></span><input name="city" required maxlength="120" placeholder="Richmond" /></label>
+              <label class="form-field"><span>State, province or territory</span><input name="state" maxlength="120" placeholder="Virginia" /></label>
+              <label class="form-field"><span>Country <em>*</em></span><input name="country" required value="United States" /></label>
+              <label class="form-field"><span>Region (if different)</span><input name="region" placeholder="Greater Richmond" /></label>
+              <label class="form-field"><span>Event timezone <em>*</em></span><input name="timeZone" required value="America/New_York" placeholder="America/New_York" /></label>
+              <label class="form-field form-field--wide"><span>Venue address <em>*</em></span><input name="venueAddress" required placeholder="Street address, city and postal code" /></label>
+            </div>
+          </section>
+
+          <section class="form-section">
+            <div class="section-heading"><span class="section-number">03</span><div><p class="section-eyebrow">Primary coordinator</p><h3>Who should our team contact?</h3></div></div>
+            <div class="field-grid">
+              <label class="form-field form-field--wide"><span>Contact name <em>*</em></span><input name="contactName" required maxlength="140" placeholder="Pastor Naomi Brooks" /></label>
+              <label class="form-field"><span>Email address <em>*</em></span><input name="contactEmail" type="email" required placeholder="name@ministry.org" /></label>
+              <label class="form-field"><span>Phone number <em>*</em></span><input name="contactPhone" type="tel" required maxlength="60" placeholder="(804) 555-0123" /></label>
+            </div>
+          </section>
+
+          <section class="form-section">
+            <div class="section-heading"><span class="section-number">04</span><div><p class="section-eyebrow">Host coverage</p><h3>Travel, lodging and honorarium</h3></div></div>
+            <p class="section-description">Choose a clear answer for each item. “No” is a valid answer; use “Not determined” only when a decision is still pending.</p>
+            <div class="field-grid">
+              <label class="form-field"><span>Will the host cover travel?</span><select name="travelCoverageStatus"><option value="yes">Yes</option><option value="no">No</option><option value="not-determined" selected>Not determined</option></select></label>
+              <label class="form-field"><span>Will the host provide lodging?</span><select name="lodgingCoverageStatus"><option value="yes">Yes</option><option value="no">No</option><option value="not-determined" selected>Not determined</option></select></label>
+              <label class="form-field"><span>Will an honorarium be provided?</span><select name="honorariumStatus"><option value="yes">Yes</option><option value="no">No</option><option value="not-determined" selected>Not determined</option></select></label>
+              <label class="form-field"><span>Who will book primary travel?</span><select name="travelBookedBy"><option value="host">Host ministry</option><option value="ministry-team">Pastor Hickman’s team</option><option value="shared">Shared</option><option value="not-determined" selected>Not determined</option></select></label>
+              <label class="form-field"><span>Honorarium amount</span><input name="honorariumAmount" type="number" min="0" step="0.01" value="0" /></label>
+              <label class="form-field"><span>Currency</span><input name="honorariumCurrency" maxlength="8" value="USD" /></label>
+              <label class="form-field"><span>Payment status</span><select name="paymentStatus"><option value="not-applicable">Not applicable</option><option value="not-due" selected>Not due</option><option value="pending">Pending</option><option value="paid">Paid</option></select></label>
+              <label class="form-field"><span>Agreement / contract status</span><select name="agreementStatus"><option value="not-started" selected>Not started</option><option value="drafted">Drafted</option><option value="sent">Sent</option><option value="signed">Signed</option></select></label>
+              <label class="form-field"><span>Engagement status</span><select name="engagementStatus"><option value="proposed" selected>Proposed</option><option value="scheduled">Scheduled</option><option value="rescheduled">Rescheduled</option><option value="cancelled">Cancelled</option></select></label>
+            </div>
+          </section>
+
+          <section id="response-section" class="form-section" hidden>
+            <div class="section-heading"><span class="section-number">05</span><div><p class="section-eyebrow">Requested update</p><h3>Respond to Pastor Hickman’s ministry team</h3></div></div>
+            <label class="form-field form-field--wide"><span>Response message <em>*</em></span><textarea name="responseMessage" rows="5" placeholder="Let the ministry team know what you updated or clarify their question."></textarea></label>
+          </section>
+
+          <section class="submission-section">
+            <div class="readiness-card"><div class="readiness-heading"><div><p class="section-eyebrow">Host readiness</p><h3>Invitation completeness</h3></div><strong id="readiness-percentage">43%</strong></div><div class="readiness-bar"><span id="readiness-bar" style="width:43%"></span></div><div class="readiness-items"><span data-check="event">Event</span><span data-check="contact">Contact</span><span data-check="travel">Travel</span><span data-check="lodging">Lodging</span><span data-check="honorarium">Honorarium</span><span data-check="ministry">Ministry request</span><span data-check="attendance">Attendance</span></div></div>
+            <div class="submission-copy"><p class="section-eyebrow">Ready to send</p><h3 id="submit-heading">Submit for prayerful review</h3><p id="submit-copy">Your information will be stored in ApostolOS Engagements and reviewed by Pastor Hickman’s ministry team.</p><button class="submit-button" id="submit-button" type="submit">Submit invitation <span>→</span></button><p class="privacy-note">Your information is used only for ministry invitation review and coordination.</p></div>
+          </section>
+        </form>
+        <p class="powered-by">Powered by <strong>ApostolOS · Engagements</strong></p>
+      </section>
+    </section>
+  </main>
+  <script src="/invite-hickman.js" defer></script>
+</body>
+</html>

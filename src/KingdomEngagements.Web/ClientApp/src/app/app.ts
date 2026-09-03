@@ -39,6 +39,10 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
         </div>
 
         <nav class="eng-modulebar__actions" aria-label="Engagements utilities">
+          @if (isDwc()) {
+            <a href="/organization/dwc">DEG Groups</a>
+            <a href="/organization/dwc/formation">Formation</a>
+          }
           <a [href]="(product()?.platformUrl || 'http://localhost:5100') + '/appearance'">Settings</a>
           <span class="eng-avatar" aria-label="Signed in as Michael Davis">MD</span>
         </nav>
@@ -73,6 +77,10 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     this.overlayObserver?.disconnect();
     document.body.classList.remove('apostolos-org-drawer-open', 'apostolos-org-drawer-heyyking');
+  }
+
+  isDwc(): boolean {
+    return this.currentOrganizationKey() === 'divine-world-changers';
   }
 
   private syncOrganizationDrawerPortal(): void {

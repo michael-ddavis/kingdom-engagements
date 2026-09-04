@@ -1,4 +1,4 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { CtgProgramsStateService } from '../core/ctg-programs-state.service';
@@ -88,8 +88,11 @@ import { CtgProgramsStateService } from '../core/ctg-programs-state.service';
   `],
 })
 export class CtgEventRegistrationComponent {
-  readonly eventId: string;
-  readonly event = computed(() => this.state.eventById(this.eventId));
+  private readonly programs = inject(CtgProgramsStateService);
+  private readonly route = inject(ActivatedRoute);
+
+  readonly eventId = this.route.snapshot.paramMap.get('eventId') || 'power-glory-2026';
+  readonly event = computed(() => this.programs.eventById(this.eventId));
   readonly confirmation = signal('');
 
   firstName = '';
@@ -100,16 +103,7 @@ export class CtgEventRegistrationComponent {
   state = '';
   church = '';
   accessibility = '';
-  tierId = '';
-
-  constructor(route: ActivatedRoute, readonly stateService: CtgProgramsStateService) {
-    this.state = stateService;
-    this.eventId = route.snapshot.paramMap.get('eventId') || 'power-glory-2026';
-    const firstTier = this.state.eventById(this.eventId)?.tiers[0];
-    this.tierId = firstTier?.id ?? '';
-  }
-
-  private readonly state: CtgProgramsStateService;
+  tierId = this.programs.eventById(this.eventId)?.tiers[0]?.id ?? '';
 
   selectedTier() {
     return this.event()?.tiers.find(item => item.id === this.tierId);
@@ -117,7 +111,7 @@ export class CtgEventRegistrationComponent {
 
   submit(): void {
     if (!this.event() || !this.firstName.trim() || !this.lastName.trim() || !this.email.trim() || !this.tierId) return;
-    const record = this.state.register({
+    const record = this.programs.register({
       eventId: this.eventId,
       firstName: this.firstName.trim(),
       lastName: this.lastName.trim(),

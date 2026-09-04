@@ -4,6 +4,7 @@ import { provideRouter } from '@angular/router';
 import { InvitationsComponent } from './pages/invitations.component';
 import { AssignmentListComponent } from './pages/assignment-list.component';
 import { AssignmentWorkspaceComponent } from './pages/assignment-workspace.component';
+import { CtgEngagementsHomeComponent } from './pages/ctg-engagements-home.component';
 import { CtgEventRegistrationComponent } from './pages/ctg-event-registration.component';
 import { CtgPower12ApplicationComponent } from './pages/ctg-power12-application.component';
 import { CtgProgramsComponent } from './pages/ctg-programs.component';
@@ -21,6 +22,7 @@ export const appConfig: ApplicationConfig = {
       { path: 'invitations', component: InvitationsComponent },
       { path: 'assignments', component: AssignmentListComponent },
       { path: 'assignments/:id', component: AssignmentWorkspaceComponent },
+      { path: 'organization/ctg', component: CtgEngagementsHomeComponent },
       { path: 'organization/ctg/programs', component: CtgProgramsComponent },
       { path: 'register/:eventId', component: CtgEventRegistrationComponent },
       { path: 'join-the-12', component: CtgPower12ApplicationComponent },

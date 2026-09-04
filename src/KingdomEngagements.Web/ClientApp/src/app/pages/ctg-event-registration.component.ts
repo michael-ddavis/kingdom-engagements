@@ -91,14 +91,12 @@ export class CtgEventRegistrationComponent {
   readonly eventId: string;
   readonly event = computed(() => this.state.eventById(this.eventId));
   readonly confirmation = signal('');
-  readonly selectedTier = computed(() => this.event()?.tiers.find(item => item.id === this.tierId));
 
   firstName = '';
   lastName = '';
   email = '';
   phone = '';
   city = '';
-  stateName = '';
   state = '';
   church = '';
   accessibility = '';
@@ -112,6 +110,10 @@ export class CtgEventRegistrationComponent {
   }
 
   private readonly state: CtgProgramsStateService;
+
+  selectedTier() {
+    return this.event()?.tiers.find(item => item.id === this.tierId);
+  }
 
   submit(): void {
     if (!this.event() || !this.firstName.trim() || !this.lastName.trim() || !this.email.trim() || !this.tierId) return;

@@ -22,7 +22,7 @@ export class OrganizationLandingComponent implements OnInit {
       void this.router.navigate(['/organization', 'hey-king'], { replaceUrl: true });
       return;
     }
-    void this.router.navigate(['/assignments'], { replaceUrl: true });
+    void this.router.navigate(['/organization', 'ctg'], { replaceUrl: true });
   }
 
   private selectedOrganization(): string {

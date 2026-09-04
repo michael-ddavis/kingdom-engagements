@@ -4,6 +4,9 @@ import { provideRouter } from '@angular/router';
 import { InvitationsComponent } from './pages/invitations.component';
 import { AssignmentListComponent } from './pages/assignment-list.component';
 import { AssignmentWorkspaceComponent } from './pages/assignment-workspace.component';
+import { CtgEventRegistrationComponent } from './pages/ctg-event-registration.component';
+import { CtgPower12ApplicationComponent } from './pages/ctg-power12-application.component';
+import { CtgProgramsComponent } from './pages/ctg-programs.component';
 import { DwcFormationHomeContextComponent } from './pages/dwc-formation-home-context.component';
 import { DwcFormationToolsComponent } from './pages/dwc-formation-tools.component';
 import { DwcMyGroupContextComponent } from './pages/dwc-my-group-context.component';
@@ -18,6 +21,9 @@ export const appConfig: ApplicationConfig = {
       { path: 'invitations', component: InvitationsComponent },
       { path: 'assignments', component: AssignmentListComponent },
       { path: 'assignments/:id', component: AssignmentWorkspaceComponent },
+      { path: 'organization/ctg/programs', component: CtgProgramsComponent },
+      { path: 'register/:eventId', component: CtgEventRegistrationComponent },
+      { path: 'join-the-12', component: CtgPower12ApplicationComponent },
       { path: 'organization/dwc/formation', component: DwcFormationHomeContextComponent },
       { path: 'organization/dwc/formation/tools', component: DwcFormationToolsComponent },
       { path: 'organization/dwc/my-group', component: DwcMyGroupContextComponent },

@@ -12,52 +12,58 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
   imports: [RouterOutlet, OrganizationCommandCenterComponent, HickmanItinerantPanelComponent],
   template: `
     <div class="eng-app">
-      <header class="eng-modulebar">
-        <div class="eng-modulebar__identity">
-          <a
-            class="eng-brand"
-            [href]="product()?.platformUrl || 'http://localhost:5100'"
-            aria-label="Return to ApostolOS"
-            title="Return to ApostolOS">
-            <span class="eng-brand__mark" aria-hidden="true">
-              <img src="/kingdomos-mark.svg" alt="" />
-            </span>
-            <span class="eng-brand__text">
-              <strong>ApostolOS</strong>
-              <small>Engagements</small>
-            </span>
-          </a>
+      @if (!isPublicIntake()) {
+        <header class="eng-modulebar">
+          <div class="eng-modulebar__identity">
+            <a
+              class="eng-brand"
+              [href]="product()?.platformUrl || 'http://localhost:5100'"
+              aria-label="Return to ApostolOS"
+              title="Return to ApostolOS">
+              <span class="eng-brand__mark" aria-hidden="true">
+                <img src="/kingdomos-mark.svg" alt="" />
+              </span>
+              <span class="eng-brand__text">
+                <strong>ApostolOS</strong>
+                <small>Engagements</small>
+              </span>
+            </a>
 
-          <span class="eng-modulebar__divider" aria-hidden="true"></span>
+            <span class="eng-modulebar__divider" aria-hidden="true"></span>
 
-          <div class="eng-tenant">
-            <span class="eng-presence" aria-hidden="true"></span>
-            <span>
-              <small>Organization</small>
-              <strong>{{ organizationName() }}</strong>
-            </span>
+            <div class="eng-tenant">
+              <span class="eng-presence" aria-hidden="true"></span>
+              <span>
+                <small>Organization</small>
+                <strong>{{ organizationName() }}</strong>
+              </span>
+            </div>
           </div>
-        </div>
 
-        <nav class="eng-modulebar__actions" aria-label="Engagements utilities">
-          @if (isDwc()) {
-            @if (isDwcMemberView()) {
-              <span class="eng-view-chip">Member view · {{ formationState.selectedGroup().name }}</span>
-              <a [href]="groupHref('/organization/dwc/formation')">Exit preview</a>
-            } @else {
-              <a [href]="groupHref('/organization/dwc')">DEG Overview</a>
-              <a [href]="groupHref('/organization/dwc/formation')">Formation</a>
-              <a [href]="groupHref('/organization/dwc/my-group')">Member Preview</a>
+          <nav class="eng-modulebar__actions" aria-label="Engagements utilities">
+            @if (isDwc()) {
+              @if (isDwcMemberView()) {
+                <span class="eng-view-chip">Member view · {{ formationState.selectedGroup().name }}</span>
+                <a [href]="groupHref('/organization/dwc/formation')">Exit preview</a>
+              } @else {
+                <a [href]="groupHref('/organization/dwc')">DEG Overview</a>
+                <a [href]="groupHref('/organization/dwc/formation')">Formation</a>
+                <a [href]="groupHref('/organization/dwc/my-group')">Member Preview</a>
+              }
+            } @else if (isCtg()) {
+              <a href="/assignments">Engagements</a>
+              <a href="/invitations">Invitations</a>
+              <a href="/organization/ctg/programs">Events & Programs</a>
             }
-          }
-          @if (!isDwcMemberView()) {
-            <a [href]="(product()?.platformUrl || 'http://localhost:5100') + '/appearance'">Settings</a>
-          }
-          <span class="eng-avatar" aria-label="Signed in as Michael Davis">MD</span>
-        </nav>
-      </header>
+            @if (!isDwcMemberView()) {
+              <a [href]="(product()?.platformUrl || 'http://localhost:5100') + '/appearance'">Settings</a>
+            }
+            <span class="eng-avatar" aria-label="Signed in as Michael Davis">MD</span>
+          </nav>
+        </header>
+      }
 
-      <main class="eng-main">
+      <main class="eng-main" [class.eng-main--public]="isPublicIntake()">
         <router-outlet />
         @if (showOrganizationCommandCenter()) {
           <app-organization-command-center />
@@ -70,6 +76,7 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
   `,
   styles: [`
     .eng-view-chip{display:inline-flex;min-height:32px;padding:0 10px;border-radius:999px;align-items:center;color:#6f4a73;background:#efe5ee;font-size:.62rem;font-weight:850;letter-spacing:.04em;text-transform:uppercase}
+    .eng-main--public{max-width:none!important;padding:0!important;margin:0!important}
   `],
 })
 export class App implements OnInit, AfterViewInit, OnDestroy {
@@ -108,8 +115,17 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
     return this.currentOrganizationKey() === 'divine-world-changers';
   }
 
+  isCtg(): boolean {
+    return this.currentOrganizationKey() === 'ctg';
+  }
+
   isDwcMemberView(): boolean {
     return this.routePath() === '/organization/dwc/my-group';
+  }
+
+  isPublicIntake(): boolean {
+    const path = this.routePath();
+    return path.startsWith('/register/') || path === '/join-the-12';
   }
 
   showOrganizationCommandCenter(): boolean {

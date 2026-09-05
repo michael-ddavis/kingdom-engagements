@@ -17,51 +17,57 @@ import {
 
       <header class="page-header">
         <div>
-          <span class="eyebrow">Cynthia Thompson Global · Host handoff</span>
+          <span class="eyebrow">Cynthia Thompson Global · Assistant quick action</span>
           <h1>Start the invitation. Let the host finish it.</h1>
-          <p>Open the CTG record now, give it a reference number, and send the secure completion link to the host. They continue the same invitation instead of creating another one.</p>
+          <p>Create the CTG record first, then send the host one secure link to finish that exact invitation. The reference number stays with the relationship from first contact through review and preparation.</p>
         </div>
         <aside>
-          <small>How it works</small>
-          <strong>CTG starts → Host completes → CTG reviews</strong>
-          <span>The reference number stays with the invitation through approval and engagement preparation.</span>
+          <small>Fast handoff</small>
+          <strong>1. Start · 2. Send · 3. Review</strong>
+          <span>Name and email are enough. Add anything else only if you already know it.</span>
         </aside>
       </header>
 
       @if (!result()) {
         <form class="start-form" (submit)="$event.preventDefault(); createInvitation()">
           <section class="form-intro">
-            <div><span class="eyebrow">Only capture what you know</span><h2>Open the host's invitation record</h2></div>
-            <p>Host name and email are enough to create the handoff. Everything else can be prefilled now or completed by the host.</p>
+            <div><span class="eyebrow">Two required fields</span><h2>Who should finish this invitation?</h2></div>
+            <p>ApostolOS creates the CTG reference immediately. The host completes the full event and travel information from the secure link.</p>
           </section>
 
           @if (error()) { <p class="error">{{ error() }}</p> }
 
-          <div class="fields">
-            <label>Host / primary contact <em>*</em><input name="contactName" [(ngModel)]="draft.contactName" required placeholder="Pastor James Okoro" /></label>
-            <label>Email <em>*</em><input name="contactEmail" type="email" [(ngModel)]="draft.contactEmail" required placeholder="pastor@ministry.org" /></label>
-            <label>Ministry / organization<input name="organizationName" [(ngModel)]="draft.organizationName" placeholder="Kingdom Leadership Network" /></label>
-            <label>Phone / WhatsApp<input name="contactPhone" [(ngModel)]="draft.contactPhone" /></label>
-            <label class="wide">Event / gathering<input name="eventName" [(ngModel)]="draft.eventName" placeholder="Leadership Conference" /></label>
-            <label>City<input name="city" [(ngModel)]="draft.city" placeholder="Lagos" /></label>
-            <label>State / province<input name="state" [(ngModel)]="draft.state" /></label>
-            <label>Country<input name="country" [(ngModel)]="draft.country" placeholder="Nigeria" /></label>
-            <label>Requested start<input name="startDate" type="date" [(ngModel)]="draft.startDate" /></label>
-            <label>Requested end<input name="endDate" type="date" [(ngModel)]="draft.endDate" /></label>
-            <label class="wide">Internal handoff note<textarea name="note" rows="4" [(ngModel)]="draft.note" placeholder="Spoke with Apostle after service. Please complete the formal invitation details."></textarea></label>
+          <div class="essential-fields">
+            <label>Host / primary contact <em>*</em><input name="contactName" [(ngModel)]="draft.contactName" required autocomplete="name" placeholder="Pastor James Okoro" /></label>
+            <label>Email <em>*</em><input name="contactEmail" type="email" [(ngModel)]="draft.contactEmail" required autocomplete="email" placeholder="pastor@ministry.org" /></label>
+            <label>Ministry / organization <span>optional</span><input name="organizationName" [(ngModel)]="draft.organizationName" placeholder="Kingdom Leadership Network" /></label>
+            <label>Event / gathering <span>optional</span><input name="eventName" [(ngModel)]="draft.eventName" placeholder="Leadership Conference" /></label>
           </div>
 
+          <details class="optional-details">
+            <summary><span>Add details I already know</span><small>Dates, location, phone or a handoff note</small></summary>
+            <div class="fields">
+              <label>Phone / WhatsApp<input name="contactPhone" [(ngModel)]="draft.contactPhone" /></label>
+              <label>City<input name="city" [(ngModel)]="draft.city" placeholder="Lagos" /></label>
+              <label>State / province<input name="state" [(ngModel)]="draft.state" /></label>
+              <label>Country<input name="country" [(ngModel)]="draft.country" placeholder="Nigeria" /></label>
+              <label>Requested start<input name="startDate" type="date" [(ngModel)]="draft.startDate" /></label>
+              <label>Requested end<input name="endDate" type="date" [(ngModel)]="draft.endDate" /></label>
+              <label class="wide">Internal handoff note<textarea name="note" rows="3" [(ngModel)]="draft.note" placeholder="Spoke with Apostle after service. Please complete the formal invitation details."></textarea></label>
+            </div>
+          </details>
+
           <footer>
-            <span>This creates a real CTG invitation record immediately.</span>
-            <button type="submit" class="primary" [disabled]="saving()">{{ saving() ? 'Opening invitation…' : 'Start invitation & create link' }}</button>
+            <span>Creates one CTG record and one secure completion link.</span>
+            <button type="submit" class="primary" [disabled]="saving()">{{ saving() ? 'Opening invitation…' : 'Start invitation' }}</button>
           </footer>
         </form>
       } @else if (result(); as created) {
         <section class="handoff-card">
           <div class="success-mark">✓</div>
-          <span class="eyebrow">Invitation started</span>
+          <span class="eyebrow">Ready to send</span>
           <h2>{{ created.request.referenceNumber }}</h2>
-          <p class="lead">The invitation exists in CTG now. It is waiting for {{ created.request.contactName }} to complete the host details.</p>
+          <p class="lead">This invitation now exists in CTG and is waiting for {{ created.request.contactName }} to finish it. They cannot accidentally create a second record from this link.</p>
 
           <div class="record-strip">
             <div><small>Record</small><strong>{{ created.request.referenceNumber }}</strong></div>
@@ -72,13 +78,16 @@ import {
           <section class="share-section">
             <div><span class="eyebrow">Secure completion link</span><h3>Send this exact invitation</h3></div>
             <div class="link-box"><code>{{ created.completionUrl }}</code><button type="button" (click)="copy(created.completionUrl, 'Link copied')">Copy link</button></div>
-            <p>The host will see <strong>{{ created.request.referenceNumber }}</strong> on the form. Their submission updates this record and closes this completion link.</p>
+            <p>The form displays <strong>{{ created.request.referenceNumber }}</strong>. When the host submits it, this link closes and the same record moves to CTG's review queue.</p>
           </section>
 
           <section class="message-section">
             <span class="eyebrow">Ready-to-send message</span>
             <div class="message-box">{{ shareMessage(created) }}</div>
-            <button type="button" class="secondary" (click)="copy(shareMessage(created), 'Message copied')">Copy message</button>
+            <div class="send-actions">
+              <a class="primary email-action" [href]="emailHref(created)">Email host</a>
+              <button type="button" class="secondary" (click)="copy(shareMessage(created), 'Message copied')">Copy message</button>
+            </div>
           </section>
 
           @if (copyNotice()) { <p class="copy-notice">{{ copyNotice() }}</p> }
@@ -92,7 +101,7 @@ import {
     </section>
   `,
   styles: [`
-    :host{display:block}.start-page{max-width:1120px;margin:0 auto;padding:30px 34px 72px;color:#1e2733}.back-link{display:inline-block;margin-bottom:18px;color:#53677e;font-size:.69rem;font-weight:850;text-decoration:none}.eyebrow{display:block;color:#956d34;font-size:.6rem;font-weight:900;letter-spacing:.11em;text-transform:uppercase}.page-header{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:42px;align-items:end;padding-bottom:28px;border-bottom:1px solid #dfe2e6}.page-header h1{max-width:780px;margin:7px 0 10px;font-size:clamp(2.4rem,5vw,4.2rem);line-height:.99;letter-spacing:-.055em}.page-header p{max-width:760px;margin:0;color:#717984;line-height:1.65}.page-header aside{display:grid;gap:7px;padding:18px;border-left:3px solid #b68948;background:#f7f3eb}.page-header aside small{color:#87775e;font-size:.6rem;font-weight:900;text-transform:uppercase}.page-header aside strong{font-size:.85rem}.page-header aside span{color:#767c84;font-size:.68rem;line-height:1.5}.start-form,.handoff-card{margin-top:24px;border:1px solid #dfe2e6;border-radius:14px;background:#fff;overflow:hidden}.form-intro{display:flex;justify-content:space-between;gap:30px;align-items:end;padding:20px 22px;border-bottom:1px solid #e5e7ea;background:#fbfaf7}.form-intro h2{margin:4px 0 0;font-size:1.35rem;letter-spacing:-.035em}.form-intro p{max-width:450px;margin:0;color:#777e87;font-size:.69rem;line-height:1.55}.fields{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:22px}.fields label{display:grid;gap:6px;color:#5e6771;font-size:.65rem;font-weight:850}.fields label.wide{grid-column:1/-1}.fields em{color:#a84f47;font-style:normal}.fields input,.fields textarea{box-sizing:border-box;width:100%;padding:11px;border:1px solid #d1d7de;border-radius:8px;background:#fbfbfa;color:#202a35;font:inherit}.fields textarea{resize:vertical}.start-form footer{display:flex;justify-content:space-between;gap:20px;align-items:center;padding:16px 22px;border-top:1px solid #e5e7ea}.start-form footer span{color:#80868e;font-size:.65rem}.primary,.secondary,.result-actions a,.link-box button{min-height:40px;padding:0 14px;border:1px solid #d4d9df;border-radius:8px;background:#fff;color:#315d87;font:inherit;font-size:.68rem;font-weight:850;cursor:pointer}.primary{border-color:#18273b;background:#18273b;color:#fff}.primary:disabled{opacity:.55;cursor:wait}.error{margin:16px 22px 0;padding:11px 13px;border-left:3px solid #b75b52;background:#fff0ee;color:#91443e;font-size:.7rem}.handoff-card{padding:28px}.success-mark{display:grid;width:42px;height:42px;border-radius:50%;place-items:center;margin-bottom:18px;background:#e8f3ec;color:#2d7450;font-weight:900}.handoff-card h2{margin:5px 0 6px;font-size:2.2rem;letter-spacing:-.045em}.lead{max-width:720px;margin:0;color:#6e7680;line-height:1.6}.record-strip{display:grid;grid-template-columns:repeat(3,1fr);margin-top:24px;border-top:1px solid #e1e4e7;border-bottom:1px solid #e1e4e7}.record-strip div{display:grid;gap:4px;padding:15px;border-right:1px solid #e5e7ea}.record-strip div:last-child{border-right:0}.record-strip small{color:#868c93;font-size:.58rem;font-weight:850;text-transform:uppercase}.record-strip strong{font-size:.78rem}.share-section,.message-section{margin-top:24px}.share-section h3{margin:4px 0 10px;font-size:1.05rem}.share-section>p{color:#737b84;font-size:.68rem;line-height:1.55}.link-box{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:9px;border:1px solid #dce0e5;border-radius:10px;background:#f7f8f8}.link-box code{overflow:auto;padding:8px;color:#41566e;font-size:.64rem;white-space:nowrap}.message-box{margin-top:8px;padding:14px;border-left:3px solid #b68948;background:#f8f4ec;color:#5f6872;font-size:.7rem;line-height:1.65;white-space:pre-line}.message-section .secondary{margin-top:8px}.copy-notice{margin:14px 0 0;color:#327054;font-size:.68rem;font-weight:800}.result-actions{display:flex;justify-content:flex-end;gap:8px;margin:26px -28px -28px;padding:16px 28px;border-top:1px solid #e5e7ea;background:#fbfbfa}.result-actions a{display:inline-flex;align-items:center;text-decoration:none}.secondary{background:#fff;color:#536477}@media(max-width:800px){.page-header{grid-template-columns:1fr}.form-intro{display:grid}.record-strip{grid-template-columns:1fr}.record-strip div{border-right:0;border-bottom:1px solid #e5e7ea}.record-strip div:last-child{border-bottom:0}}@media(max-width:600px){.start-page{padding:22px 16px 58px}.fields{grid-template-columns:1fr}.fields label.wide{grid-column:auto}.start-form footer,.result-actions{display:grid}.link-box{grid-template-columns:1fr}.handoff-card{padding:20px}.result-actions{margin:22px -20px -20px;padding:14px 20px}}
+    :host{display:block}.start-page{max-width:1060px;margin:0 auto;padding:30px 34px 72px;color:#1f2937}.back-link{display:inline-block;margin-bottom:18px;color:#53677e;font-size:.69rem;font-weight:800;text-decoration:none}.eyebrow{display:block;color:#8f6d3c;font-size:.6rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase}.page-header{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:38px;align-items:end;padding-bottom:26px;border-bottom:1px solid #dedfdc}.page-header h1{max-width:760px;margin:7px 0 10px;font-size:clamp(2.25rem,5vw,4rem);line-height:1;letter-spacing:-.052em}.page-header p{max-width:750px;margin:0;color:#707985;line-height:1.65}.page-header aside{display:grid;gap:7px;padding:17px;border-left:3px solid #9b7846;background:#f8f4ec}.page-header aside small{color:#84765f;font-size:.6rem;font-weight:900;text-transform:uppercase}.page-header aside strong{font-size:.84rem}.page-header aside span{color:#747b84;font-size:.68rem;line-height:1.5}.start-form,.handoff-card{margin-top:22px;border:1px solid #dedfdc;border-radius:13px;background:#fffefa;overflow:hidden}.form-intro{display:flex;justify-content:space-between;gap:30px;align-items:end;padding:19px 22px;border-bottom:1px solid #e6e6e2;background:#fbfaf7}.form-intro h2{margin:4px 0 0;font-size:1.3rem;letter-spacing:-.03em}.form-intro p{max-width:430px;margin:0;color:#777e87;font-size:.69rem;line-height:1.55}.essential-fields,.fields{display:grid;grid-template-columns:1fr 1fr;gap:14px}.essential-fields{padding:22px}.essential-fields label,.fields label{display:grid;gap:6px;color:#5d6671;font-size:.65rem;font-weight:800}.essential-fields label span{color:#91969c;font-size:.58rem;font-weight:700}.essential-fields em{color:#a84f47;font-style:normal}.essential-fields input,.fields input,.fields textarea{box-sizing:border-box;width:100%;padding:11px;border:1px solid #d3d7db;border-radius:8px;background:#fff;color:#202a35;font:inherit}.fields label.wide{grid-column:1/-1}.fields textarea{resize:vertical}.optional-details{margin:0 22px 20px;border:1px solid #e0e2e3;border-radius:10px;background:#fbfaf7;overflow:hidden}.optional-details summary{display:flex;justify-content:space-between;gap:18px;padding:13px 14px;color:#405066;cursor:pointer;list-style:none}.optional-details summary::-webkit-details-marker{display:none}.optional-details summary span{font-size:.7rem;font-weight:850}.optional-details summary small{color:#858b92;font-size:.62rem}.optional-details[open] summary{border-bottom:1px solid #e4e5e4}.optional-details .fields{padding:16px}.start-form footer{display:flex;justify-content:space-between;gap:20px;align-items:center;padding:15px 22px;border-top:1px solid #e6e6e2;background:#fcfbf8}.start-form footer span{color:#80868e;font-size:.65rem}.primary,.secondary,.result-actions a,.link-box button{display:inline-flex;min-height:40px;padding:0 14px;border:1px solid #d4d9df;border-radius:8px;align-items:center;justify-content:center;background:#fff;color:#315d87;font:inherit;font-size:.68rem;font-weight:850;text-decoration:none;cursor:pointer}.primary{border-color:#273b53;background:#273b53;color:#fff}.primary:disabled{opacity:.55;cursor:wait}.error{margin:16px 22px 0;padding:11px 13px;border-left:3px solid #b75b52;background:#fff0ee;color:#91443e;font-size:.7rem}.handoff-card{padding:28px}.success-mark{display:grid;width:42px;height:42px;border-radius:50%;place-items:center;margin-bottom:18px;background:#e8f3ec;color:#2d7450;font-weight:900}.handoff-card h2{margin:5px 0 6px;font-size:2.15rem;letter-spacing:-.04em}.lead{max-width:740px;margin:0;color:#6e7680;line-height:1.6}.record-strip{display:grid;grid-template-columns:repeat(3,1fr);margin-top:23px;border-top:1px solid #e1e4e7;border-bottom:1px solid #e1e4e7}.record-strip div{display:grid;gap:4px;padding:14px;border-right:1px solid #e5e7ea}.record-strip div:last-child{border-right:0}.record-strip small{color:#868c93;font-size:.58rem;font-weight:850;text-transform:uppercase}.record-strip strong{font-size:.78rem}.share-section,.message-section{margin-top:23px}.share-section h3{margin:4px 0 10px;font-size:1.03rem}.share-section>p{color:#737b84;font-size:.68rem;line-height:1.55}.link-box{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:8px;border:1px solid #dce0e5;border-radius:10px;background:#f7f8f8}.link-box code{overflow:auto;padding:8px;color:#41566e;font-size:.64rem;white-space:nowrap}.message-box{margin-top:8px;padding:14px;border-left:3px solid #a98248;background:#f8f4ec;color:#5f6872;font-size:.7rem;line-height:1.65;white-space:pre-line}.send-actions{display:flex;gap:8px;margin-top:9px}.email-action{min-width:116px}.copy-notice{margin:14px 0 0;color:#327054;font-size:.68rem;font-weight:800}.result-actions{display:flex;justify-content:flex-end;gap:8px;margin:26px -28px -28px;padding:16px 28px;border-top:1px solid #e5e7ea;background:#fbfbfa}.secondary{background:#fff;color:#536477}@media(max-width:800px){.page-header{grid-template-columns:1fr}.form-intro{display:grid}.record-strip{grid-template-columns:1fr}.record-strip div{border-right:0;border-bottom:1px solid #e5e7ea}.record-strip div:last-child{border-bottom:0}}@media(max-width:600px){.start-page{padding:22px 16px 58px}.essential-fields,.fields{grid-template-columns:1fr}.fields label.wide{grid-column:auto}.optional-details summary{display:grid}.start-form footer,.result-actions,.send-actions{display:grid}.link-box{grid-template-columns:1fr}.handoff-card{padding:20px}.result-actions{margin:22px -20px -20px;padding:14px 20px}}
   `],
 })
 export class CtgStartInvitationComponent {
@@ -157,6 +166,11 @@ export class CtgStartInvitationComponent {
 
   shareMessage(result: StartedInvitationLinkResult): string {
     return `Hello ${result.request.contactName},\n\nCynthia Thompson Global has opened invitation ${result.request.referenceNumber} for your ministry. Please use the secure link below to complete the remaining event and host details.\n\n${result.completionUrl}\n\nThis link continues invitation ${result.request.referenceNumber}; it does not create a new request. Once you submit it, the invitation will return to the CTG team for review.`;
+  }
+
+  emailHref(result: StartedInvitationLinkResult): string {
+    const subject = `Complete CTG invitation ${result.request.referenceNumber}`;
+    return `mailto:${encodeURIComponent(result.request.contactEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(this.shareMessage(result))}`;
   }
 
   expiry(value: string | null): string {

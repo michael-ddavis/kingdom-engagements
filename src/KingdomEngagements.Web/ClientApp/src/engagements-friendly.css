@@ -1,0 +1,394 @@
+/* Engagements usability polish: calm, warm, readable, and consistent without changing workflow depth. */
+:root {
+  --eng-friendly-canvas: #f7f5f1;
+  --eng-friendly-surface: #fffefa;
+  --eng-friendly-surface-soft: #fbfaf7;
+  --eng-friendly-ink: #1f2937;
+  --eng-friendly-muted: #6f7782;
+  --eng-friendly-line: #dedfdc;
+  --eng-friendly-shadow: 0 10px 28px rgba(25, 35, 48, .055);
+  --eng-friendly-radius: 12px;
+  --eng-org-accent: #516d8e;
+  --eng-org-accent-soft: #edf2f7;
+}
+
+body.eng-org-ctg {
+  --eng-org-accent: #4e6f93;
+  --eng-org-accent-soft: #edf3f8;
+}
+
+body.eng-org-dwc {
+  --eng-org-accent: #76527b;
+  --eng-org-accent-soft: #f2ebf2;
+}
+
+body.eng-org-heyy {
+  --eng-org-accent: #9a7131;
+  --eng-org-accent-soft: #f7f0e4;
+}
+
+html,
+body {
+  background: var(--eng-friendly-canvas);
+}
+
+body {
+  color: var(--eng-friendly-ink);
+}
+
+.eng-main {
+  min-height: calc(100vh - 70px);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.22), transparent 18rem),
+    var(--eng-friendly-canvas) !important;
+}
+
+/* Module shell */
+.eng-modulebar {
+  min-height: 70px;
+  padding: 0 24px;
+  border-bottom-color: var(--eng-friendly-line);
+  background: rgba(250, 249, 246, .96);
+  box-shadow: 0 1px 0 rgba(31, 41, 55, .025);
+}
+
+.eng-brand__mark {
+  width: 38px;
+  height: 42px;
+  flex-basis: 38px;
+}
+
+.eng-brand strong {
+  color: #202a38;
+  font-size: .9rem;
+}
+
+.eng-brand small,
+.eng-tenant small {
+  color: #8a9098;
+}
+
+.eng-tenant strong {
+  color: #4d5967;
+  font-size: .73rem;
+}
+
+.eng-presence {
+  background: var(--eng-org-accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--eng-org-accent) 10%, transparent);
+}
+
+.eng-modulebar__actions {
+  gap: 3px;
+}
+
+.eng-modulebar__actions a {
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: #65707d;
+  font-size: .69rem;
+  font-weight: 760;
+  letter-spacing: 0;
+  transition: color .14s ease, background .14s ease, border-color .14s ease;
+}
+
+.eng-modulebar__actions a:hover {
+  border-color: #e1e2df;
+  color: #283546;
+  background: rgba(255,255,255,.82);
+}
+
+.eng-modulebar__actions a.current {
+  color: #23364b;
+  background: var(--eng-org-accent-soft);
+}
+
+.eng-modulebar__actions a.eng-primary-action {
+  margin-left: 5px;
+  padding-inline: 12px;
+  border-color: var(--eng-org-accent);
+  color: #fff;
+  background: var(--eng-org-accent);
+  box-shadow: none;
+}
+
+.eng-modulebar__actions a.eng-primary-action:hover {
+  filter: brightness(.96);
+  color: #fff;
+  background: var(--eng-org-accent);
+}
+
+.eng-avatar {
+  background: #31445c;
+}
+
+/* Shared page hierarchy */
+.eng-page {
+  width: min(1380px, calc(100% - 48px));
+  padding-top: 30px;
+}
+
+.eng-eyebrow {
+  color: color-mix(in srgb, var(--eng-org-accent) 80%, #6f5936);
+  font-size: .64rem;
+  letter-spacing: .1em;
+}
+
+.eng-title,
+.legacy-assignment-hero h1 {
+  color: #202a38;
+}
+
+.eng-subtitle,
+.legacy-assignment-hero > div > p:last-child {
+  color: var(--eng-friendly-muted);
+}
+
+.eng-section {
+  border-color: var(--eng-friendly-line);
+  border-radius: var(--eng-friendly-radius);
+  background: var(--eng-friendly-surface);
+  box-shadow: none;
+}
+
+.eng-section__header {
+  border-bottom-color: #e8e8e5;
+}
+
+.eng-button,
+.invitation-actions a,
+.invitation-actions button {
+  border-radius: 9px;
+}
+
+/* CTG engagement queue: turn the old dashboard-like summary into a quiet ministry brief. */
+body.eng-org-ctg .legacy-assignment-index {
+  width: min(1280px, calc(100% - 56px));
+}
+
+body.eng-org-ctg .legacy-assignment-hero {
+  padding: 8px 0 23px;
+  border-bottom: 1px solid var(--eng-friendly-line);
+}
+
+body.eng-org-ctg .legacy-assignment-summary {
+  gap: 0;
+  margin: 18px 0;
+  border-top: 1px solid var(--eng-friendly-line);
+  border-bottom: 1px solid var(--eng-friendly-line);
+}
+
+body.eng-org-ctg .legacy-assignment-summary article {
+  min-height: 88px;
+  padding: 15px 18px;
+  border: 0;
+  border-right: 1px solid #e4e5e2;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body.eng-org-ctg .legacy-assignment-summary article:last-child {
+  border-right: 0;
+}
+
+body.eng-org-ctg .legacy-summary-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  color: var(--eng-org-accent);
+  background: var(--eng-org-accent-soft);
+  border: 0;
+}
+
+body.eng-org-ctg .legacy-assignment-summary article > div > strong {
+  font-size: 1.25rem;
+}
+
+body.eng-org-ctg .legacy-assignment-summary article > div > span {
+  margin-top: 4px;
+  font-size: .74rem;
+}
+
+body.eng-org-ctg .legacy-assignment-summary article > div > small {
+  margin-top: 2px;
+  font-size: .63rem;
+}
+
+body.eng-org-ctg .legacy-attention-banner {
+  border-color: #ead5cd;
+  border-radius: 10px;
+  background: #fff7f3;
+}
+
+body.eng-org-ctg .legacy-assignment-toolbar {
+  margin-top: 18px;
+}
+
+body.eng-org-ctg .legacy-filter-group {
+  padding: 3px;
+  border-color: var(--eng-friendly-line);
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+body.eng-org-ctg .legacy-filter-group button {
+  min-height: 36px;
+  border-radius: 7px;
+  color: #68727e;
+}
+
+body.eng-org-ctg .legacy-filter-group button.selected {
+  border-color: var(--eng-org-accent);
+  color: #fff;
+  background: var(--eng-org-accent);
+}
+
+body.eng-org-ctg .assignment-list {
+  gap: 10px;
+}
+
+body.eng-org-ctg .legacy-assignment-card {
+  border-color: var(--eng-friendly-line);
+  border-radius: 12px;
+  background: var(--eng-friendly-surface);
+  box-shadow: none;
+  transform: none;
+}
+
+body.eng-org-ctg .legacy-assignment-card:hover {
+  border-color: #c9c8c2;
+  box-shadow: var(--eng-friendly-shadow);
+  transform: none;
+}
+
+body.eng-org-ctg .legacy-assignment-card-heading {
+  padding: 11px 17px;
+  border-bottom-color: #e8e8e5;
+  background: var(--eng-friendly-surface-soft);
+}
+
+body.eng-org-ctg .legacy-assignment-card-body {
+  padding-top: 17px;
+  padding-bottom: 17px;
+}
+
+body.eng-org-ctg .legacy-assignment-card-footer {
+  border-top-color: #e8e8e5;
+  background: #fcfbf8;
+}
+
+body.eng-org-ctg .legacy-current-stage {
+  border-color: #e1e3e4;
+  background: #f8f8f6;
+}
+
+/* Keep drawers and forms approachable rather than dense. */
+dialog input,
+dialog select,
+dialog textarea,
+.eng-page input,
+.eng-page select,
+.eng-page textarea {
+  border-color: #d5d8dc;
+  background: #fffefa;
+}
+
+dialog input:focus,
+dialog select:focus,
+dialog textarea:focus,
+.eng-page input:focus,
+.eng-page select:focus,
+.eng-page textarea:focus {
+  border-color: color-mix(in srgb, var(--eng-org-accent) 60%, #c9ccd0);
+  outline: 3px solid color-mix(in srgb, var(--eng-org-accent) 12%, transparent);
+}
+
+/* Utility: readable empty states, not giant blank panels. */
+.legacy-empty-state,
+.empty {
+  color: #7a8189;
+}
+
+/* DWC and Heyy King retain their organization-specific pages, but the shell and controls share the same calm rhythm. */
+body.eng-org-dwc .eng-modulebar__actions a.current,
+body.eng-org-heyy .eng-modulebar__actions a.current {
+  color: #28313a;
+}
+
+@media (max-width: 1100px) {
+  .eng-modulebar {
+    align-items: flex-start;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+
+  .eng-modulebar__actions {
+    max-width: 58vw;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .eng-modulebar__actions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .eng-modulebar__actions a,
+  .eng-view-chip {
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .eng-modulebar {
+    display: grid;
+    gap: 8px;
+  }
+
+  .eng-modulebar__actions {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .eng-tenant {
+    display: none;
+  }
+
+  .eng-modulebar__divider {
+    display: none;
+  }
+
+  .eng-page,
+  body.eng-org-ctg .legacy-assignment-index {
+    width: min(100% - 28px, 1380px);
+  }
+
+  body.eng-org-ctg .legacy-assignment-summary {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  body.eng-org-ctg .legacy-assignment-summary article:nth-child(2) {
+    border-right: 0;
+  }
+
+  body.eng-org-ctg .legacy-assignment-summary article:nth-child(-n+2) {
+    border-bottom: 1px solid #e4e5e2;
+  }
+}
+
+@media (max-width: 520px) {
+  body.eng-org-ctg .legacy-assignment-summary {
+    grid-template-columns: 1fr;
+  }
+
+  body.eng-org-ctg .legacy-assignment-summary article {
+    border-right: 0;
+    border-bottom: 1px solid #e4e5e2;
+  }
+
+  body.eng-org-ctg .legacy-assignment-summary article:last-child {
+    border-bottom: 0;
+  }
+}

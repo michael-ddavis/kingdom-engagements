@@ -78,7 +78,7 @@ builder.Services.AddDbContext<AssignmentWorkspaceDbContext>(options =>
 
 builder.Services.AddDbContext<EngagementCompletionDbContext>(options =>
 {
-    if (provider.Equals("Database:Provider", StringComparison.OrdinalIgnoreCase))
+    if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
     {
         if (string.IsNullOrWhiteSpace(connectionString))
             throw new InvalidOperationException("ConnectionStrings:EngagementsDatabase is required for SQL Server.");

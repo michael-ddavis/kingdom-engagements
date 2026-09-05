@@ -51,8 +51,9 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
                 <a [href]="groupHref('/organization/dwc/my-group')">Member Preview</a>
               }
             } @else if (isCtg()) {
+              <a href="/organization/ctg">Overview</a>
+              <a href="/organization/ctg/bookings">Booking Desk</a>
               <a href="/assignments">Engagements</a>
-              <a href="/invitations">Invitations</a>
               <a href="/organization/ctg/programs">Events & Programs</a>
             }
             @if (!isDwcMemberView()) {
@@ -149,8 +150,6 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
     const routedBackdrop = document.querySelector<HTMLElement>('app-organization-programs .drawer-backdrop');
     const routedDrawer = document.querySelector<HTMLElement>('app-organization-programs .demo-drawer');
 
-    // Opening a DEG from the overview establishes the active group context before
-    // the drawer is portaled to <body>, so every downstream group link follows it.
     this.syncDwcGroupFromDrawer(routedDrawer);
 
     if (routedBackdrop && routedBackdrop.parentElement !== document.body) {

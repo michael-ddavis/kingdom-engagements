@@ -30,6 +30,24 @@ export interface CreateMinistryResponseInput {
   followUpDueAtUtc: string | null;
 }
 
+export interface CreateEngagementInput {
+  externalAssignmentId: string;
+  title: string;
+  speakerName: string;
+  hostOrganization: string;
+  startsAtUtc: string | null;
+  endsAtUtc: string | null;
+  location: string | null;
+}
+
+export interface CreateEngagementTaskInput {
+  category: string;
+  title: string;
+  owner: string;
+  detail: string | null;
+  dueAtUtc: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class EngagementsApiService {
   constructor(private readonly http: HttpClient) {}
@@ -71,6 +89,17 @@ export class EngagementsApiService {
 
   getAssignments(): Observable<readonly EngagementSummary[]> {
     return this.http.get<readonly EngagementSummary[]>('/api/engagements/assignments');
+  }
+
+  createAssignment(input: CreateEngagementInput): Observable<EngagementDetails> {
+    return this.http.post<EngagementDetails>('/api/engagements/assignments', input);
+  }
+
+  addAssignmentTask(assignmentId: string, input: CreateEngagementTaskInput): Observable<EngagementDetails> {
+    return this.http.post<EngagementDetails>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/tasks`,
+      input,
+    );
   }
 
   getAssignment(id: string): Observable<EngagementDetails> {

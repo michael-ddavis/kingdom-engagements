@@ -133,6 +133,7 @@ builder.Services.AddHttpClient<EngagementsEntitlementResolver>(client =>
 builder.Services.AddScoped<EngagementsInitializer>();
 builder.Services.AddScoped<EngagementsService>();
 builder.Services.AddScoped<SpeakingRequestsService>();
+builder.Services.AddScoped<StaffStartedInvitationsService>();
 builder.Services.AddScoped<HickmanSpeakingRequestsService>();
 builder.Services.AddScoped<EngagementPreparationService>();
 builder.Services.AddScoped<AssignmentWorkspaceService>();
@@ -254,6 +255,7 @@ app.MapGet("/host/coordination/{token}", (string token, IWebHostEnvironment envi
     Results.File(Path.Combine(environment.WebRootPath, "coordination.html"), "text/html; charset=utf-8")).AllowAnonymous();
 
 app.MapGlobalBookingDeskEndpoints();
+app.MapStaffStartedInvitationEndpoints();
 app.MapSpeakingRequestEndpoints();
 app.MapHickmanSpeakingRequestEndpoints();
 app.MapEngagementPreparationEndpoints();

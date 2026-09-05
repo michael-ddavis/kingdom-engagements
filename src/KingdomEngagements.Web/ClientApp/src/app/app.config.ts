@@ -9,6 +9,7 @@ import { CtgEngagementsHomeComponent } from './pages/ctg-engagements-home.compon
 import { CtgEventRegistrationComponent } from './pages/ctg-event-registration.component';
 import { CtgPower12ApplicationComponent } from './pages/ctg-power12-application.component';
 import { CtgProgramsComponent } from './pages/ctg-programs.component';
+import { CtgStartInvitationComponent } from './pages/ctg-start-invitation.component';
 import { DwcFormationHomeContextComponent } from './pages/dwc-formation-home-context.component';
 import { DwcFormationToolsComponent } from './pages/dwc-formation-tools.component';
 import { DwcMyGroupContextComponent } from './pages/dwc-my-group-context.component';
@@ -25,6 +26,7 @@ export const appConfig: ApplicationConfig = {
       { path: 'assignments/:id', component: AssignmentWorkspaceComponent },
       { path: 'organization/ctg', component: CtgEngagementsHomeComponent },
       { path: 'organization/ctg/bookings', component: CtgBookingDeskComponent },
+      { path: 'organization/ctg/start-invitation', component: CtgStartInvitationComponent },
       { path: 'organization/ctg/programs', component: CtgProgramsComponent },
       { path: 'register/:eventId', component: CtgEventRegistrationComponent },
       { path: 'join-the-12', component: CtgPower12ApplicationComponent },

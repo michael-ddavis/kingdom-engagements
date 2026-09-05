@@ -48,6 +48,25 @@ export interface CreateEngagementTaskInput {
   dueAtUtc: string | null;
 }
 
+export interface StartSpeakingInvitationInput {
+  contactName: string;
+  contactEmail: string;
+  organizationName: string | null;
+  eventName: string | null;
+  contactPhone: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  note: string | null;
+}
+
+export interface StartedInvitationLinkResult {
+  request: SpeakingRequestDetails;
+  completionUrl: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class EngagementsApiService {
   constructor(private readonly http: HttpClient) {}
@@ -63,6 +82,17 @@ export class EngagementsApiService {
   getRequest(id: string): Observable<SpeakingRequestDetails> {
     return this.http.get<SpeakingRequestDetails>(
       `/api/engagements/requests/${encodeURIComponent(id)}`,
+    );
+  }
+
+  startInvitation(input: StartSpeakingInvitationInput): Observable<StartedInvitationLinkResult> {
+    return this.http.post<StartedInvitationLinkResult>('/api/engagements/requests/start', input);
+  }
+
+  refreshStartedInvitationLink(id: string): Observable<StartedInvitationLinkResult> {
+    return this.http.post<StartedInvitationLinkResult>(
+      `/api/engagements/requests/${encodeURIComponent(id)}/refresh-host-link`,
+      {},
     );
   }
 

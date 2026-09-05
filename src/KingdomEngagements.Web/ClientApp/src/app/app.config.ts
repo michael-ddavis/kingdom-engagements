@@ -4,16 +4,37 @@ import { provideRouter } from '@angular/router';
 import { InvitationsComponent } from './pages/invitations.component';
 import { AssignmentListComponent } from './pages/assignment-list.component';
 import { AssignmentWorkspaceComponent } from './pages/assignment-workspace.component';
+import { CtgBookingDeskComponent } from './pages/ctg-booking-desk.component';
+import { CtgEngagementsHomeComponent } from './pages/ctg-engagements-home.component';
+import { CtgEventRegistrationComponent } from './pages/ctg-event-registration.component';
+import { CtgPower12ApplicationComponent } from './pages/ctg-power12-application.component';
+import { CtgProgramsComponent } from './pages/ctg-programs.component';
+import { CtgStartInvitationComponent } from './pages/ctg-start-invitation.component';
+import { DwcFormationHomeContextComponent } from './pages/dwc-formation-home-context.component';
+import { DwcFormationToolsComponent } from './pages/dwc-formation-tools.component';
+import { DwcMyGroupContextComponent } from './pages/dwc-my-group-context.component';
+import { OrganizationLandingComponent } from './pages/organization-landing.component';
+import { OrganizationProgramsComponent } from './pages/organization-programs.component';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideHttpClient(),
     provideRouter([
-      { path: '', redirectTo: 'assignments', pathMatch: 'full' },
+      { path: '', component: OrganizationLandingComponent, pathMatch: 'full' },
       { path: 'invitations', component: InvitationsComponent },
       { path: 'assignments', component: AssignmentListComponent },
       { path: 'assignments/:id', component: AssignmentWorkspaceComponent },
-      { path: '**', redirectTo: 'assignments' },
+      { path: 'organization/ctg', component: CtgEngagementsHomeComponent },
+      { path: 'organization/ctg/bookings', component: CtgBookingDeskComponent },
+      { path: 'organization/ctg/start-invitation', component: CtgStartInvitationComponent },
+      { path: 'organization/ctg/programs', component: CtgProgramsComponent },
+      { path: 'register/:eventId', component: CtgEventRegistrationComponent },
+      { path: 'join-the-12', component: CtgPower12ApplicationComponent },
+      { path: 'organization/dwc/formation', component: DwcFormationHomeContextComponent },
+      { path: 'organization/dwc/formation/tools', component: DwcFormationToolsComponent },
+      { path: 'organization/dwc/my-group', component: DwcMyGroupContextComponent },
+      { path: 'organization/:org', component: OrganizationProgramsComponent },
+      { path: '**', redirectTo: '' },
     ]),
   ],
 };

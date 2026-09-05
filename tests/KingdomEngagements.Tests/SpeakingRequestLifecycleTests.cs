@@ -7,6 +7,72 @@ namespace KingdomEngagements.Tests;
 public sealed class SpeakingRequestLifecycleTests
 {
     [Fact]
+    public async Task StaffStartedInvitationKeepsOneReferenceThroughHostCompletion()
+    {
+        await using var fixture = CreateFixture();
+        var tenantId = Guid.NewGuid();
+
+        var started = await fixture.StartedService.StartAsync(
+            tenantId,
+            new StartSpeakingInvitationInput(
+                ContactName: "Pastor James Okoro",
+                ContactEmail: "pastor.okoro@example.org",
+                OrganizationName: "Kingdom Leadership Network",
+                EventName: "Leadership Conference",
+                ContactPhone: "+234 800 555 0142",
+                City: "Lagos",
+                State: "Lagos State",
+                Country: "Nigeria",
+                StartDate: new DateOnly(2027, 3, 18),
+                EndDate: new DateOnly(2027, 3, 21),
+                Note: "Spoke with Apostle after service. Formal information pending."),
+            CancellationToken.None);
+
+        Assert.Equal("host-completion-needed", started.Status);
+        Assert.StartsWith("CTG-", started.ReferenceNumber);
+        Assert.NotNull(started.EditTokenExpiresAtUtc);
+        Assert.Contains(started.Communications, item => item.Type == "started-by-ctg");
+
+        fixture.Requests.ChangeTracker.Clear();
+        var hostOpened = await fixture.StartedService.GetForHostAsync(started.EditToken, CancellationToken.None);
+        Assert.NotNull(hostOpened);
+        Assert.Equal(started.Id, hostOpened.Id);
+        Assert.Equal(started.ReferenceNumber, hostOpened.ReferenceNumber);
+
+        fixture.Requests.ChangeTracker.Clear();
+        var completed = await fixture.StartedService.CompleteAsync(
+            started.EditToken,
+            ValidRequest() with
+            {
+                OrganizationName = "Kingdom Leadership Network",
+                EventName = "Leadership Conference",
+                ContactName = "Pastor James Okoro",
+                ContactEmail = "pastor.okoro@example.org",
+                ContactPhone = "+234 800 555 0142",
+                City = "Lagos",
+                State = "Lagos State",
+                Country = "Nigeria",
+                TimeZone = "Africa/Lagos",
+                VenueAddress = "Victoria Island, Lagos",
+                VenueName = "Kingdom Leadership Centre",
+                StartDate = new DateOnly(2027, 3, 18),
+                EndDate = new DateOnly(2027, 3, 21),
+            },
+            CancellationToken.None);
+
+        Assert.NotNull(completed);
+        Assert.Equal(started.Id, completed.Id);
+        Assert.Equal(started.ReferenceNumber, completed.ReferenceNumber);
+        Assert.Equal("awaiting-review", completed.Status);
+        Assert.Contains(completed.Communications, item => item.Type == "started-by-ctg");
+        Assert.Contains(completed.Communications, item => item.Type == "host-responded");
+
+        fixture.Requests.ChangeTracker.Clear();
+        Assert.Null(await fixture.StartedService.GetForHostAsync(started.EditToken, CancellationToken.None));
+        Assert.Single(await fixture.Requests.Requests.ToListAsync());
+    }
+
+    [Fact]
     public async Task RequestInformationHostResubmissionAndApprovalReuseOneRequestAndOneAssignment()
     {
         await using var fixture = CreateFixture();
@@ -130,17 +196,24 @@ public sealed class SpeakingRequestLifecycleTests
             .Options;
         var engagements = new EngagementsDbContext(engagementOptions);
         var requests = new SpeakingRequestsDbContext(requestOptions);
-        return new TestFixture(engagements, requests, new SpeakingRequestsService(requests, engagements));
+        var service = new SpeakingRequestsService(requests, engagements);
+        return new TestFixture(
+            engagements,
+            requests,
+            service,
+            new StaffStartedInvitationsService(requests, service));
     }
 
     private sealed class TestFixture(
         EngagementsDbContext engagements,
         SpeakingRequestsDbContext requests,
-        SpeakingRequestsService service) : IAsyncDisposable
+        SpeakingRequestsService service,
+        StaffStartedInvitationsService startedService) : IAsyncDisposable
     {
         public EngagementsDbContext Engagements { get; } = engagements;
         public SpeakingRequestsDbContext Requests { get; } = requests;
         public SpeakingRequestsService Service { get; } = service;
+        public StaffStartedInvitationsService StartedService { get; } = startedService;
 
         public async ValueTask DisposeAsync()
         {

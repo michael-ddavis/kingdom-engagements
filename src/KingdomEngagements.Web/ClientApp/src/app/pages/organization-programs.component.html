@@ -1,0 +1,256 @@
+<section class="org-space" [class.org-space--heyking]="org() === 'hey-king'">
+  @if (toast()) {
+    <div class="toast" role="status">
+      <div><strong>{{ toast()!.title }}</strong><span>{{ toast()!.detail }}</span></div>
+      <button type="button" aria-label="Close message" (click)="toast.set(null)">×</button>
+    </div>
+  }
+
+  @if (org() === 'dwc') {
+    <header class="org-hero">
+      <div>
+        <p class="eyebrow">Divine World Changers · Engagements</p>
+        <h1>Divine Empowerment Groups</h1>
+        <p>One operating space for semesters, clusters, groups, placements, people, attendance, assignments, care handoffs, training readiness and measurable discipleship.</p>
+      </div>
+      <div class="hero-actions">
+        <button type="button" (click)="active.set('groups')">Find a group</button>
+        <button type="button" class="secondary" (click)="active.set('placements')">Placement inbox</button>
+      </div>
+    </header>
+
+    <nav class="section-nav" aria-label="Divine Empowerment Groups">
+      @for (item of dwcTabs; track item.key) {
+        <button type="button" [class.active]="active() === item.key" (click)="active.set(item.key)">{{ item.label }}</button>
+      }
+    </nav>
+
+    @if (active() === 'overview') {
+      <div class="metric-grid">
+        @for (m of dwcMetrics(); track m.label) {
+          <article class="metric"><span>{{ m.label }}</span><strong>{{ m.value }}</strong><small>{{ m.note }}</small></article>
+        }
+      </div>
+      <div class="two-col">
+        <article class="panel">
+          <div class="panel-head"><div><p class="eyebrow">Needs attention</p><h2>Group health</h2></div><button type="button" (click)="active.set('groups')">Open directory</button></div>
+          @for (r of dwcAttention; track r.id) {
+            <button type="button" class="list-row row-button" (click)="openAttention(r)">
+              <div><strong>{{ r.title }}</strong><span>{{ r.subtitle }}</span></div>
+              <div class="row-meta"><b>{{ r.status }}</b><small>{{ r.meta }}</small></div>
+            </button>
+          }
+        </article>
+        <article class="panel">
+          <div class="panel-head"><div><p class="eyebrow">This week</p><h2>Leadership rhythm</h2></div><button type="button" class="quiet" (click)="openLeadershipRhythm()">Open week</button></div>
+          <div class="agenda"><div><b>Mon</b><span>Cluster leaders prayer & review</span></div><div><b>Wed</b><span>11 empowerment groups meeting</span></div><div><b>Thu</b><span>Leader development · Transformation Track</span></div><div><b>Sat</b><span>New member placement orientation</span></div></div>
+        </article>
+      </div>
+    }
+
+    @if (active() === 'groups') {
+      <article class="panel">
+        <div class="panel-head">
+          <div><p class="eyebrow">Spring 2027</p><h2>Empowerment Group directory</h2><p>Track availability, leadership, location, roster, assignments and current health.</p></div>
+          <button type="button" (click)="openCreateGroup()">+ Create group</button>
+        </div>
+        <div class="filter-strip">
+          <span>18 total</span><span>8 accepting people</span><span>27 open seats</span><span>3 clusters</span>
+        </div>
+        @for (g of groups(); track g.id) {
+          <button type="button" class="list-row rich row-button" (click)="openGroup(g)">
+            <div><strong>{{ g.title }}</strong><span>{{ g.subtitle }}</span><small>{{ g.meta }}</small></div>
+            <div class="row-meta"><b>{{ g.status }}</b><small>Open group →</small></div>
+          </button>
+        }
+      </article>
+    }
+
+    @if (active() === 'clusters') {
+      <div class="card-grid">
+        @for (c of clusters; track c.id) {
+          <article class="panel cluster">
+            <p class="eyebrow">{{ c.status }}</p><h2>{{ c.title }}</h2><p>{{ c.subtitle }}</p><strong>{{ c.meta }}</strong>
+            <button type="button" (click)="openCluster(c)">Open cluster</button>
+          </article>
+        }
+      </div>
+    }
+
+    @if (active() === 'placements') {
+      <div class="two-col">
+        <article class="panel">
+          <div class="panel-head"><div><p class="eyebrow">Placement inbox</p><h2>{{ waitingPlacementCount() }} people waiting for a group</h2></div><button type="button" class="quiet" (click)="openPlacementRules()">Placement rules</button></div>
+          @for (p of placements(); track p.id) {
+            <button type="button" class="list-row row-button" (click)="openPlacement(p)">
+              <div><strong>{{ p.title }}</strong><span>{{ p.subtitle }}</span></div>
+              <div class="row-meta"><b>{{ p.status }}</b><small>{{ p.meta }}</small></div>
+            </button>
+          }
+        </article>
+        <article class="panel"><p class="eyebrow">Workflow</p><h2>Request → connected</h2><ol class="steps"><li>Request received</li><li>Coordinator reviews preferences</li><li>Capacity and cluster checked</li><li>Leader notified</li><li>Approved, waitlisted or alternative suggested</li><li>Person added to People-backed roster</li><li>Welcome communication sent</li></ol></article>
+      </div>
+    }
+
+    @if (active() === 'people') {
+      <article class="panel">
+        <div class="panel-head"><div><p class="eyebrow">Roster & roles</p><h2>Marriage & Family DEG</h2><p>People records stay central; group-specific roles and assignments live here.</p></div><button type="button" (click)="openManageAssignments()">Manage assignments</button></div>
+        @for (p of groupPeople(); track p.id) {
+          <button type="button" class="list-row row-button" (click)="openPersonRole(p)">
+            <div><strong>{{ p.title }}</strong><span>{{ p.subtitle }}</span></div><div class="row-meta"><b>{{ p.status }}</b><small>{{ p.meta }}</small></div>
+          </button>
+        }
+      </article>
+    }
+
+    @if (active() === 'meetings') {
+      <div class="two-col">
+        <article class="panel">
+          <div class="panel-head"><div><p class="eyebrow">Next meeting</p><h2>Wednesday · 6:30 PM</h2><p>Marriage & Family DEG · East Cluster</p></div><button type="button" class="quiet" (click)="openMeetingPlan()">Plan meeting</button></div>
+          @for (a of meetingAssignments(); track a.id) {
+            <button type="button" class="list-row row-button" (click)="openMeetingAssignment(a)"><div><strong>{{ a.title }}</strong><span>{{ a.subtitle }}</span></div><b>{{ a.status }}</b></button>
+          }
+        </article>
+        <article class="panel"><p class="eyebrow">Attendance</p><h2>{{ attendanceSummary() }}</h2><div class="attendance">✓ Marcus Hill<br>✓ Jordan Hill<br>✓ James Carter<br>○ Ashley Martin<br>✓ Alicia Brown<br>+ 1 first-time guest</div><button type="button" (click)="openAttendance()">Take attendance</button></article>
+      </div>
+    }
+
+    @if (active() === 'semesters') {
+      <div class="card-grid">
+        <article class="panel"><p class="eyebrow">Current</p><h2>Spring 2027</h2><p>{{ groups().length }} visible demo groups · 214 enrolled · 27 open seats</p><button type="button" (click)="openSemester('current')">Manage semester</button></article>
+        <article class="panel"><p class="eyebrow">Next</p><h2>Summer 2027</h2><p>{{ summerRolloverPrepared() ? 'Rollover prepared · leaders can confirm' : 'Planning opens May 1' }}</p><button type="button" (click)="openSemester('rollover')">{{ summerRolloverPrepared() ? 'Review rollover' : 'Prepare rollover' }}</button></article>
+        <article class="panel"><p class="eyebrow">History</p><h2>Fall 2026</h2><p>197 participants · 16 groups</p><button type="button" (click)="openSemester('history')">View report</button></article>
+      </div>
+    }
+
+    @if (active() === 'connections') {
+      <div class="card-grid">
+        @for (connection of dwcConnections; track connection.title) {
+          <article class="panel"><p class="eyebrow">{{ connection.title }}</p><h2>{{ connection.heading }}</h2><p>{{ connection.detail }}</p><button type="button" class="quiet" (click)="openConnection(connection)">Preview connection</button></article>
+        }
+      </div>
+    }
+  } @else {
+    <header class="org-hero hey">
+      <div><p class="eyebrow">Heyy King · Engagements + Operations</p><h1>Beyond the Suit</h1><p>Follow each young man from application through appointment, outfit fulfillment, mentorship, goals, milestones and long-term relationship.</p></div>
+      <div class="hero-actions"><button type="button" (click)="active.set('journey')">Open recipient journey</button><button type="button" class="secondary" (click)="active.set('mentorship')">Mentorship</button></div>
+    </header>
+
+    <nav class="section-nav" aria-label="Heyy King">
+      @for (item of heyTabs; track item.key) { <button type="button" [class.active]="active() === item.key" (click)="active.set(item.key)">{{ item.label }}</button> }
+    </nav>
+
+    @if (active() === 'overview') {
+      <div class="metric-grid">@for (m of heyMetrics(); track m.label) { <article class="metric"><span>{{ m.label }}</span><strong>{{ m.value }}</strong><small>{{ m.note }}</small></article> }</div>
+      <div class="two-col">
+        <article class="panel"><div class="panel-head"><div><p class="eyebrow">Today</p><h2>What needs action</h2></div><button type="button" class="quiet" (click)="active.set('journey')">Open pipeline</button></div>@for (r of heyAttention; track r.id) { <button type="button" class="list-row row-button" (click)="openHeyAttention(r)"><div><strong>{{ r.title }}</strong><span>{{ r.subtitle }}</span></div><div class="row-meta"><b>{{ r.status }}</b><small>{{ r.meta }}</small></div></button> }</article>
+        <article class="panel"><p class="eyebrow">Impact</p><h2>2027 snapshot</h2><div class="impact-big">186 <span>men served</span></div><p>164 complete outfits · 24 active partners · 18 employment milestones · {{ mentees().length + 21 }} men enrolled in mentorship.</p><button type="button" class="quiet" (click)="openImpactSnapshot()">Open impact story</button></article>
+      </div>
+    }
+
+    @if (active() === 'journey') {
+      <article class="panel">
+        <div class="panel-head"><div><p class="eyebrow">Recipient pipeline</p><h2>Application → relationship</h2><p>Every young man has one connected journey instead of disconnected forms and spreadsheets.</p></div><button type="button" (click)="openNewApplication()">+ New application</button></div>
+        <div class="pipeline">@for (s of journey(); track s.label) { <div><strong>{{ s.value }}</strong><span>{{ s.label }}</span></div> }</div>
+        @for (r of recipients(); track r.id) {
+          <button type="button" class="list-row rich row-button" (click)="openRecipient(r)"><div><strong>{{ r.title }}</strong><span>{{ r.subtitle }}</span><small>{{ r.meta }}</small></div><div class="row-meta"><b>{{ r.status }}</b><small>Open journey →</small></div></button>
+        }
+      </article>
+    }
+
+    @if (active() === 'appointments') {
+      <article class="panel"><div class="panel-head"><div><p class="eyebrow">Today's appointments</p><h2>Suit Operations</h2></div><button type="button" (click)="openSchedule()">+ Schedule</button></div>@for (a of appointments(); track a.id) { <button type="button" class="list-row row-button" (click)="openAppointment(a)"><div><strong>{{ a.title }}</strong><span>{{ a.subtitle }}</span></div><div class="row-meta"><b>{{ a.status }}</b><small>{{ a.meta }}</small></div></button> }</article>
+    }
+
+    @if (active() === 'wardrobe') {
+      <div class="two-col">
+        <article class="panel"><div class="panel-head"><div><p class="eyebrow">Assigned outfit</p><h2>Marcus Johnson · Interview Outfit</h2></div><button type="button" class="quiet" (click)="openOutfit()">Manage outfit</button></div>@for (i of outfit(); track i.id) { <button type="button" class="list-row row-button" (click)="openOutfitItem(i)"><div><strong>{{ i.title }}</strong><span>{{ i.subtitle }}</span></div><b>{{ i.status }}</b></button> }<p class="success">{{ outfitReadyCount() }} of {{ outfit().length }} required items ready</p></article>
+        <article class="panel"><div class="panel-head"><div><p class="eyebrow">Measurements</p><h2>Current fit profile</h2></div><button type="button" class="quiet" (click)="openMeasurements()">Update</button></div><dl class="measure"><div><dt>Jacket</dt><dd>{{ measurements().jacket }}</dd></div><div><dt>Shirt</dt><dd>{{ measurements().shirt }}</dd></div><div><dt>Waist</dt><dd>{{ measurements().waist }}</dd></div><div><dt>Inseam</dt><dd>{{ measurements().inseam }}</dd></div><div><dt>Shoe</dt><dd>{{ measurements().shoe }}</dd></div></dl><small>History preserved · last demo update {{ measurements().updated }}</small></article>
+      </div>
+    }
+
+    @if (active() === 'inventory') {
+      <article class="panel"><div class="panel-head"><div><p class="eyebrow">Inventory</p><h2>What Heyy King has right now</h2></div><button type="button" (click)="openDonation()">Record donation</button></div>@for (i of inventory(); track i.id) { <button type="button" class="list-row row-button" (click)="openInventoryItem(i)"><div><strong>{{ i.title }}</strong><span>{{ i.subtitle }}</span></div><div class="row-meta"><b>{{ i.status }}</b><small>{{ i.meta }}</small></div></button> }<div class="needs"><strong>Needs forecast</strong><span>HIGH · 44R–48R navy/charcoal suits</span><span>HIGH · Size 11–13 dress shoes</span><span>MEDIUM · 17–18 neck white shirts</span><button type="button" class="quiet" (click)="openNeedsForecast()">Use forecast</button></div></article>
+    }
+
+    @if (active() === 'partners') {
+      <div class="two-col">
+        <article class="panel"><div class="panel-head"><div><p class="eyebrow">Service partners</p><h2>Relationship network</h2></div><button type="button" class="quiet" (click)="openAddPartner()">+ Partner</button></div>@for (p of partners(); track p.id) { <button type="button" class="list-row row-button" (click)="openPartner(p)"><div><strong>{{ p.title }}</strong><span>{{ p.subtitle }}</span></div><div class="row-meta"><b>{{ p.status }}</b><small>{{ p.meta }}</small></div></button> }</article>
+        <article class="panel"><p class="eyebrow">Referral portal</p><h2>Refer a young man</h2><p>Partners submit a secure referral and can see only referral status—not private measurements, mentorship notes or internal care information.</p><button type="button" (click)="openPartnerPortal()">Preview partner portal</button></article>
+      </div>
+    }
+
+    @if (active() === 'mentorship') {
+      <div class="metric-grid"><article class="metric"><span>Active mentees</span><strong>{{ mentees().length + 5 }}</strong><small>Pastor Hickman</small></article><article class="metric"><span>Meetings this week</span><strong>{{ meetingsThisWeek() }}</strong><small>tracked conversations</small></article><article class="metric"><span>Need follow-up</span><strong>2</strong><small>one overdue goal</small></article><article class="metric"><span>Program enrolled</span><strong>{{ mentees().length + 28 }}</strong><small>{{ mentees().length + 21 }} active matches</small></article></div>
+      <div class="two-col">
+        <article class="panel"><div class="panel-head"><div><p class="eyebrow">Pastor Hickman</p><h2>My mentees</h2></div><button type="button" (click)="openNewMatch()">+ New match</button></div>@for (m of mentees(); track m.id) { <button type="button" class="list-row row-button" (click)="openMentee(m)"><div><strong>{{ m.title }}</strong><span>{{ m.subtitle }}</span></div><div class="row-meta"><b>{{ m.status }}</b><small>{{ m.meta }}</small></div></button> }</article>
+        <article class="panel"><div class="panel-head"><div><p class="eyebrow">Marcus Johnson</p><h2>Current goals</h2></div><button type="button" class="quiet" (click)="openAddGoal()">+ Goal</button></div>@for (g of goals(); track g.id) { <button type="button" class="list-row row-button" (click)="toggleGoal(g)"><div><strong>{{ g.title }}</strong><span>{{ g.subtitle }}</span></div><b>{{ g.status }}</b></button> }<button type="button" (click)="openMentorshipMeeting()">Record mentorship meeting</button></article>
+      </div>
+    }
+
+    @if (active() === 'cohorts') {
+      <div class="two-col"><article class="panel"><p class="eyebrow">Fall 2027</p><h2>Heyy King Brotherhood Cohort</h2><p>12 young men · Pastor Hickman</p><div class="chips"><span>Identity</span><span>Discipline</span><span>Work</span><span>Money</span><span>Prayer</span><span>Leadership</span><span>Purpose</span></div><button type="button" (click)="openCohort()">Open cohort</button></article><article class="panel"><div class="panel-head"><div><p class="eyebrow">Milestones</p><h2>Marcus' story</h2></div><button type="button" class="quiet" (click)="openAddMilestone()">+ Milestone</button></div><div class="timeline">@for (milestone of milestones(); track milestone.id) { <button type="button" (click)="openMilestone(milestone)"><b>{{ milestone.date }}</b>{{ milestone.text }}</button> }</div></article></div>
+    }
+
+    @if (active() === 'connections') {
+      <div class="card-grid">@for (connection of heyConnections; track connection.title) { <article class="panel"><p class="eyebrow">{{ connection.title }}</p><h2>{{ connection.heading }}</h2><p>{{ connection.detail }}</p><button type="button" class="quiet" (click)="openConnection(connection)">Preview connection</button></article> }</div>
+    }
+  }
+</section>
+
+@if (drawer()) {
+  <div class="drawer-backdrop" (click)="closeDrawer()"></div>
+  <aside class="demo-drawer" role="dialog" aria-modal="true" [attr.aria-label]="drawer()!.title">
+    <header class="drawer-head"><div><p class="eyebrow">{{ drawer()!.eyebrow }}</p><h2>{{ drawer()!.title }}</h2><p>{{ drawer()!.description }}</p></div><button type="button" class="drawer-close" aria-label="Close" (click)="closeDrawer()">×</button></header>
+    <div class="drawer-body">
+      @switch (drawer()!.kind) {
+        @case ('dwc-create-group') {
+          <div class="form-grid"><label>Group name<input [(ngModel)]="form.groupName" /></label><label>Cluster<select [(ngModel)]="form.cluster"><option>Central</option><option>East</option><option>South</option></select></label><label>Leader<input [(ngModel)]="form.leader" /></label><label>Meeting day<select [(ngModel)]="form.day"><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Saturday</option></select></label><label>Time<input [(ngModel)]="form.time" /></label><label>Capacity<input type="number" [(ngModel)]="form.capacity" /></label><label class="span-2">Location<input [(ngModel)]="form.location" /></label><label class="check"><input type="checkbox" [(ngModel)]="form.childcare" /> Childcare available</label></div>
+        }
+        @case ('dwc-group') {
+          @if (selectedGroup()) { <div class="drawer-stats"><div><span>Status</span><strong>{{ selectedGroup()!.status }}</strong></div><div><span>Capacity</span><strong>{{ selectedGroup()!.enrolled }}/{{ selectedGroup()!.capacity }}</strong></div><div><span>Cluster</span><strong>{{ selectedGroup()!.cluster }}</strong></div></div><section class="drawer-section"><h3>Leadership & meeting</h3><p><strong>{{ selectedGroup()!.leader }}</strong> · {{ selectedGroup()!.day }} {{ selectedGroup()!.time }}</p><p>{{ selectedGroup()!.location }} · Childcare: {{ selectedGroup()!.childcare ? 'Yes' : 'No' }}</p></section><section class="drawer-section"><h3>Roster</h3>@for (person of selectedGroup()!.roster; track person.name) { <div class="mini-row"><span>{{ person.name }}</span><b>{{ person.role }}</b></div> }</section><section class="drawer-section"><h3>Recurring assignments</h3>@for (assignment of selectedGroup()!.assignments; track assignment.role) { <div class="mini-row"><span>{{ assignment.role }}</span><b>{{ assignment.person }}</b></div> }</section> }
+        }
+        @case ('dwc-cluster') { @if (selectedRow()) { <div class="detail-card"><strong>{{ selectedRow()!.title }}</strong><p>{{ selectedRow()!.subtitle }}</p><span>{{ selectedRow()!.meta }}</span></div><section class="drawer-section"><h3>Cluster leader responsibilities</h3><ul><li>Review group health and open capacity</li><li>Coach group leaders and apprentices</li><li>Resolve placement exceptions</li><li>Escalate care needs without exposing private records</li><li>Prepare semester rollover readiness</li></ul></section> } }
+        @case ('dwc-placement') { @if (selectedPlacement()) { <div class="detail-card"><strong>{{ selectedPlacement()!.title }}</strong><p>{{ selectedPlacement()!.subtitle }}</p><span>Suggested: {{ selectedPlacement()!.meta }}</span></div><section class="drawer-section"><h3>Coordinator decision</h3><p>Confirm capacity, location, preferred day and leader readiness before connecting this person.</p><div class="decision-grid"><button type="button" (click)="updatePlacement('Approved')">Approve placement</button><button type="button" class="secondary" (click)="updatePlacement('Waitlist')">Waitlist</button><button type="button" class="secondary" (click)="updatePlacement('Alternative suggested')">Suggest alternative</button></div></section> } }
+        @case ('dwc-assignments') { <div class="form-grid"><label>Person<input [(ngModel)]="form.person" /></label><label>Role<select [(ngModel)]="form.role"><option>Co-Leader</option><option>Apprentice Leader</option><option>Host</option><option>Prayer Lead</option><option>Hospitality</option><option>Childcare Coordinator</option><option>Communications</option></select></label><label class="span-2">Assignment note<input [(ngModel)]="form.note" /></label></div> }
+        @case ('dwc-person-role') { @if (selectedRow()) { <div class="detail-card"><strong>{{ selectedRow()!.title }}</strong><p>{{ selectedRow()!.subtitle }}</p><span>{{ selectedRow()!.meta }}</span></div><section class="drawer-section"><h3>Access boundary</h3><p>This group role does not grant organization or module administration. Sensitive care information remains in Care.</p></section> } }
+        @case ('dwc-meeting-plan') { <div class="form-grid"><label>Topic / curriculum<input [(ngModel)]="form.topic" /></label><label>Facilitator<input [(ngModel)]="form.facilitator" /></label><label class="span-2">Leader notes<textarea [(ngModel)]="form.notes"></textarea></label></div> }
+        @case ('dwc-meeting-assignment') { @if (selectedRow()) { <div class="detail-card"><strong>{{ selectedRow()!.title }}</strong><p>Current: {{ selectedRow()!.subtitle }}</p></div><label>Assign to<input [(ngModel)]="form.person" /></label> } }
+        @case ('dwc-attendance') { <section class="drawer-section"><h3>Wednesday attendance</h3>@for (person of attendancePeople; track person.name) { <label class="attendance-check"><input type="checkbox" [(ngModel)]="person.present" /> <span>{{ person.name }}</span><small>{{ person.note }}</small></label> }<label class="check"><input type="checkbox" [(ngModel)]="form.guest" /> Add first-time guest</label></section> }
+        @case ('dwc-semester-current') { <section class="drawer-section"><h3>Spring 2027 controls</h3><div class="mini-row"><span>Groups</span><b>18</b></div><div class="mini-row"><span>Enrolled</span><b>214</b></div><div class="mini-row"><span>Open seats</span><b>27</b></div><div class="mini-row"><span>Leaders incomplete training</span><b>2</b></div></section><label>Enrollment close date<input type="date" [(ngModel)]="form.closeDate" /></label> }
+        @case ('dwc-semester-rollover') { <section class="drawer-section"><h3>Summer rollover</h3><label class="attendance-check"><input type="checkbox" [(ngModel)]="form.keepGroups" /><span>Carry active groups forward</span></label><label class="attendance-check"><input type="checkbox" [(ngModel)]="form.keepLeaders" /><span>Carry leader teams forward</span></label><label class="attendance-check"><input type="checkbox" [(ngModel)]="form.reinvite" /><span>Invite members to re-enroll</span></label><label class="attendance-check"><input type="checkbox" [(ngModel)]="form.resetCapacity" /><span>Require capacity confirmation</span></label></section> }
+        @case ('dwc-semester-history') { <div class="drawer-stats"><div><span>Participants</span><strong>197</strong></div><div><span>Groups</span><strong>16</strong></div><div><span>Completion</span><strong>84%</strong></div></div><section class="drawer-section"><h3>Fall 2026 highlights</h3><p>11 participants moved into serving roles, 4 apprentices became group leaders, and 92% of groups completed semester closeout.</p></section> }
+        @case ('dwc-rules') { <section class="drawer-section"><h3>Placement priorities</h3><ol><li>Life stage / group fit</li><li>Meeting-day preference</li><li>Geographic cluster</li><li>Open capacity</li><li>Leader readiness</li><li>Childcare / accessibility needs</li></ol></section> }
+        @case ('dwc-leadership') { <section class="drawer-section"><h3>Leadership rhythm</h3><div class="mini-row"><span>Monday</span><b>Cluster prayer & review</b></div><div class="mini-row"><span>Wednesday</span><b>11 groups meeting</b></div><div class="mini-row"><span>Thursday</span><b>Transformation Track</b></div><div class="mini-row"><span>Saturday</span><b>Placement orientation</b></div></section> }
+        @case ('connection') { @if (selectedConnection()) { <div class="detail-card"><strong>{{ selectedConnection()!.title }}</strong><p>{{ selectedConnection()!.heading }}</p><span>{{ selectedConnection()!.detail }}</span></div><section class="drawer-section"><h3>Demo boundary</h3><p>{{ selectedConnection()!.boundary }}</p></section> } }
+
+        @case ('hey-new-application') { <div class="form-grid"><label>Young man's name<input [(ngModel)]="form.person" /></label><label>Referral source<input [(ngModel)]="form.referral" /></label><label>Primary need<select [(ngModel)]="form.need"><option>Job interview attire</option><option>Employment transition</option><option>Graduation / milestone</option><option>Professional wardrobe</option></select></label><label>Interview / event date<input type="date" [(ngModel)]="form.eventDate" /></label><label class="span-2">Notes<textarea [(ngModel)]="form.notes"></textarea></label></div> }
+        @case ('hey-recipient') { @if (selectedRecipient()) { <div class="drawer-stats"><div><span>Stage</span><strong>{{ selectedRecipient()!.status }}</strong></div><div><span>Referral</span><strong>{{ selectedRecipient()!.referral }}</strong></div><div><span>Mentorship</span><strong>{{ selectedRecipient()!.mentor || 'Not matched' }}</strong></div></div><section class="drawer-section"><h3>{{ selectedRecipient()!.title }}</h3><p>{{ selectedRecipient()!.subtitle }}</p><p>{{ selectedRecipient()!.meta }}</p></section><div class="decision-grid"><button type="button" (click)="advanceRecipient()">Advance journey</button><button type="button" class="secondary" (click)="scheduleSelectedRecipient()">Schedule</button><button type="button" class="secondary" (click)="matchSelectedRecipient()">Start mentorship</button></div> } }
+        @case ('hey-schedule') { <div class="form-grid"><label>Young man<input [(ngModel)]="form.person" /></label><label>Appointment type<select [(ngModel)]="form.appointmentType"><option>Intake</option><option>Measurements</option><option>First fitting</option><option>Alteration fitting</option><option>Pickup</option><option>Mentorship</option></select></label><label>Date<input type="date" [(ngModel)]="form.date" /></label><label>Time<input type="time" [(ngModel)]="form.time" /></label><label>Assigned team member<input [(ngModel)]="form.assigned" /></label><label>Location<input [(ngModel)]="form.location" /></label></div> }
+        @case ('hey-appointment') { @if (selectedRow()) { <div class="detail-card"><strong>{{ selectedRow()!.title }}</strong><p>{{ selectedRow()!.subtitle }}</p><span>{{ selectedRow()!.meta }}</span></div><section class="drawer-section"><h3>Appointment actions</h3><p>Mark arrival, record measurements/fitting notes, reschedule, or complete the appointment without losing the recipient journey.</p></section> } }
+        @case ('hey-outfit') { <section class="drawer-section"><h3>Interview Outfit</h3>@for (item of outfit(); track item.id) { <label class="attendance-check"><input type="checkbox" [checked]="item.status === 'Ready'" (change)="toggleOutfitItem(item)" /><span>{{ item.title }}</span><small>{{ item.subtitle }}</small></label> }</section> }
+        @case ('hey-outfit-item') { @if (selectedRow()) { <div class="detail-card"><strong>{{ selectedRow()!.title }}</strong><p>{{ selectedRow()!.subtitle }}</p><span>{{ selectedRow()!.status }}</span></div><label>Status<select [(ngModel)]="form.status"><option>Ready</option><option>Reserved</option><option>Alterations</option><option>Missing</option></select></label> } }
+        @case ('hey-measurements') { <div class="form-grid"><label>Jacket<input [(ngModel)]="form.jacket" /></label><label>Shirt<input [(ngModel)]="form.shirt" /></label><label>Waist<input [(ngModel)]="form.waist" /></label><label>Inseam<input [(ngModel)]="form.inseam" /></label><label>Shoe<input [(ngModel)]="form.shoe" /></label><label>Fit note<input [(ngModel)]="form.note" /></label></div> }
+        @case ('hey-donation') { <div class="form-grid"><label>Item<input [(ngModel)]="form.item" /></label><label>Size<input [(ngModel)]="form.size" /></label><label>Color<input [(ngModel)]="form.color" /></label><label>Quantity<input type="number" [(ngModel)]="form.quantity" /></label><label>Donor / partner<input [(ngModel)]="form.partner" /></label><label>Condition<select [(ngModel)]="form.condition"><option>New</option><option>Excellent</option><option>Good</option></select></label></div> }
+        @case ('hey-inventory-item') { @if (selectedRow()) { <div class="detail-card"><strong>{{ selectedRow()!.title }}</strong><p>{{ selectedRow()!.subtitle }}</p><span>{{ selectedRow()!.meta }}</span></div><label>Status<select [(ngModel)]="form.status"><option>Available</option><option>Reserved</option><option>Assigned</option><option>Alterations</option><option>Cleaning</option><option>Distributed</option><option>Retired</option></select></label> } }
+        @case ('hey-needs') { <section class="drawer-section"><h3>Current donation priorities</h3><div class="need-line high"><b>HIGH</b><span>44R–48R navy/charcoal suits</span></div><div class="need-line high"><b>HIGH</b><span>Size 11–13 dress shoes</span></div><div class="need-line"><b>MEDIUM</b><span>17–18 neck white shirts</span></div><p>Use this view to drive donor communication and partner asks from real operational demand.</p></section> }
+        @case ('hey-add-partner') { <div class="form-grid"><label>Partner name<input [(ngModel)]="form.partner" /></label><label>Type<select [(ngModel)]="form.partnerType"><option>Alteration Partner</option><option>Referral Partner</option><option>Clothing Donor</option><option>Employer</option><option>Workforce Organization</option><option>Church / Community Partner</option></select></label><label>Primary contact<input [(ngModel)]="form.contact" /></label><label>Email / phone<input [(ngModel)]="form.contactInfo" /></label></div> }
+        @case ('hey-partner') { @if (selectedRow()) { <div class="detail-card"><strong>{{ selectedRow()!.title }}</strong><p>{{ selectedRow()!.subtitle }}</p><span>{{ selectedRow()!.meta }}</span></div><section class="drawer-section"><h3>Relationship activity</h3><div class="mini-row"><span>Open handoffs</span><b>{{ selectedRow()!.status }}</b></div><div class="mini-row"><span>Privacy</span><b>Partner-scoped</b></div></section> } }
+        @case ('hey-partner-portal') { <div class="portal-preview"><p class="eyebrow">Partner portal preview</p><h3>Refer a young man</h3><label>Name<input [(ngModel)]="form.person" /></label><label>Need<select [(ngModel)]="form.need"><option>Interview attire</option><option>Professional wardrobe</option><option>Mentorship</option></select></label><label>Important date<input type="date" [(ngModel)]="form.eventDate" /></label><label>Referral notes<textarea [(ngModel)]="form.notes"></textarea></label><div class="privacy-note">Partners see referral status only—not private measurements, mentorship notes or care information.</div></div> }
+        @case ('hey-new-match') { <div class="form-grid"><label>Mentee<input [(ngModel)]="form.person" /></label><label>Mentor<input [(ngModel)]="form.mentor" /></label><label>Cadence<select [(ngModel)]="form.cadence"><option>Weekly</option><option>Every other week</option><option>Monthly</option></select></label><label>Primary focus<select [(ngModel)]="form.focus"><option>Employment</option><option>Spiritual growth</option><option>Leadership</option><option>Character</option><option>Life skills</option></select></label><label class="span-2">Starting goal<input [(ngModel)]="form.goal" /></label></div> }
+        @case ('hey-mentee') { @if (selectedRow()) { <div class="detail-card"><strong>{{ selectedRow()!.title }}</strong><p>{{ selectedRow()!.subtitle }}</p><span>{{ selectedRow()!.meta }}</span></div><section class="drawer-section"><h3>Mentorship boundary</h3><p>General mentorship progress is visible here. Sensitive pastoral disclosures should be escalated into permission-scoped Care.</p></section> } }
+        @case ('hey-meeting') { <div class="form-grid"><label>Mentee<input [(ngModel)]="form.person" /></label><label>Duration<select [(ngModel)]="form.duration"><option>30 minutes</option><option>45 minutes</option><option>60 minutes</option></select></label><label>Topics<input [(ngModel)]="form.topics" /></label><label>Next meeting<input type="date" [(ngModel)]="form.nextDate" /></label><label class="span-2">Mentorship note<textarea [(ngModel)]="form.notes"></textarea></label><label class="span-2">Follow-up action<input [(ngModel)]="form.followup" /></label></div> }
+        @case ('hey-add-goal') { <div class="form-grid"><label>Goal<input [(ngModel)]="form.goal" /></label><label>Category<select [(ngModel)]="form.category"><option>Employment</option><option>Spiritual development</option><option>Life development</option><option>Leadership</option><option>Character</option></select></label><label>Target date<input type="date" [(ngModel)]="form.date" /></label></div> }
+        @case ('hey-cohort') { <div class="drawer-stats"><div><span>Young men</span><strong>12</strong></div><div><span>Leader</span><strong>Pastor Hickman</strong></div><div><span>Sessions</span><strong>7</strong></div></div><section class="drawer-section"><h3>Fall 2027 curriculum</h3><div class="chips"><span>Identity</span><span>Discipline</span><span>Work</span><span>Money</span><span>Prayer</span><span>Leadership</span><span>Purpose</span></div><p>Cohort participation can coexist with one-to-one mentorship without duplicating the young man's People record.</p></section> }
+        @case ('hey-add-milestone') { <div class="form-grid"><label>Date<input type="date" [(ngModel)]="form.date" /></label><label>Milestone<input [(ngModel)]="form.milestone" /></label><label class="span-2">Impact note<textarea [(ngModel)]="form.notes"></textarea></label></div> }
+        @case ('hey-milestone') { @if (selectedMilestone()) { <div class="detail-card"><strong>{{ selectedMilestone()!.date }}</strong><p>{{ selectedMilestone()!.text }}</p></div><section class="drawer-section"><h3>Why this matters</h3><p>Milestones connect service delivery to longer-term outcomes like employment, leadership, service and multiplication.</p></section> } }
+        @case ('hey-impact') { <div class="drawer-stats"><div><span>Men served</span><strong>186</strong></div><div><span>Complete outfits</span><strong>164</strong></div><div><span>Employment milestones</span><strong>18</strong></div></div><section class="drawer-section"><h3>Beyond distribution</h3><p>Impact should show whether clothing opened a door to confidence, employment, mentorship, service and emerging leadership.</p></section> }
+      }
+    </div>
+
+    <footer class="drawer-footer">
+      <button type="button" class="secondary" (click)="closeDrawer()">Close</button>
+      @if (drawer()!.saveLabel) { <button type="button" (click)="saveDrawer()">{{ drawer()!.saveLabel }}</button> }
+    </footer>
+  </aside>
+}

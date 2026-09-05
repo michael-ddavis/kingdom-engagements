@@ -1,62 +1,248 @@
-import { Component, OnInit, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { AfterViewInit, Component, OnDestroy, OnInit, signal } from '@angular/core';
+import { Router, RouterOutlet } from '@angular/router';
 import { EngagementsApiService } from './core/engagements-api.service';
+import { DwcFormationStateService } from './core/dwc-formation-state.service';
 import { ProductInfo } from './core/models';
+import { HickmanItinerantPanelComponent } from './shared/hickman-itinerant-panel.component';
+import { OrganizationCommandCenterComponent } from './shared/organization-command-center.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, OrganizationCommandCenterComponent, HickmanItinerantPanelComponent],
   template: `
     <div class="eng-app">
-      <header class="eng-modulebar">
-        <div class="eng-modulebar__identity">
-          <a
-            class="eng-brand"
-            [href]="product()?.platformUrl || 'http://localhost:5100'"
-            aria-label="Return to ApostolOS"
-            title="Return to ApostolOS">
-            <span class="eng-brand__mark" aria-hidden="true">
-              <img src="/kingdomos-mark.svg" alt="" />
-            </span>
-            <span class="eng-brand__text">
-              <strong>ApostolOS</strong>
-              <small>Engagements</small>
-            </span>
-          </a>
+      @if (!isPublicIntake()) {
+        <header class="eng-modulebar">
+          <div class="eng-modulebar__identity">
+            <a
+              class="eng-brand"
+              [href]="product()?.platformUrl || 'http://localhost:5100'"
+              aria-label="Return to ApostolOS"
+              title="Return to ApostolOS">
+              <span class="eng-brand__mark" aria-hidden="true">
+                <img src="/kingdomos-mark.svg" alt="" />
+              </span>
+              <span class="eng-brand__text">
+                <strong>ApostolOS</strong>
+                <small>Engagements</small>
+              </span>
+            </a>
 
-          <span class="eng-modulebar__divider" aria-hidden="true"></span>
+            <span class="eng-modulebar__divider" aria-hidden="true"></span>
 
-          <div class="eng-tenant">
-            <span class="eng-presence" aria-hidden="true"></span>
-            <span>
-              <small>Organization</small>
-              <strong>{{ product()?.tenantName || 'Cynthia Thompson Global' }}</strong>
-            </span>
+            <div class="eng-tenant">
+              <span class="eng-presence" aria-hidden="true"></span>
+              <span>
+                <small>Organization</small>
+                <strong>{{ organizationName() }}</strong>
+              </span>
+            </div>
           </div>
-        </div>
 
-        <nav class="eng-modulebar__actions" aria-label="Engagements utilities">
-          <a [href]="(product()?.platformUrl || 'http://localhost:5100') + '/appearance'">Settings</a>
-          <span class="eng-avatar" aria-label="Signed in as Michael Davis">MD</span>
-        </nav>
-      </header>
+          <nav class="eng-modulebar__actions" aria-label="Engagements navigation">
+            @if (isDwc()) {
+              @if (isDwcMemberView()) {
+                <span class="eng-view-chip">Member view · {{ formationState.selectedGroup().name }}</span>
+                <a [href]="groupHref('/organization/dwc/formation')">Exit preview</a>
+              } @else {
+                <a [class.current]="isCurrent('/organization/dwc')" [href]="groupHref('/organization/dwc')">DEG Overview</a>
+                <a [class.current]="isCurrentPrefix('/organization/dwc/formation')" [href]="groupHref('/organization/dwc/formation')">Formation</a>
+                <a [class.current]="isCurrent('/organization/dwc/my-group')" [href]="groupHref('/organization/dwc/my-group')">Member Preview</a>
+              }
+            } @else if (isCtg()) {
+              <a [class.current]="isCurrent('/organization/ctg')" href="/organization/ctg">Overview</a>
+              <a [class.current]="isCurrent('/organization/ctg/bookings')" href="/organization/ctg/bookings">Booking Desk</a>
+              <a [class.current]="isCurrentPrefix('/assignments')" href="/assignments">Engagements</a>
+              <a [class.current]="isCurrent('/organization/ctg/programs')" href="/organization/ctg/programs">Events & Programs</a>
+              <a class="eng-primary-action" [class.current]="isCurrent('/organization/ctg/start-invitation')" href="/organization/ctg/start-invitation">+ Start Invitation</a>
+            }
+            @if (!isDwcMemberView()) {
+              <a [href]="(product()?.platformUrl || 'http://localhost:5100') + '/appearance'">Settings</a>
+            }
+            <span class="eng-avatar" aria-label="Signed in as Michael Davis">MD</span>
+          </nav>
+        </header>
+      }
 
-      <main class="eng-main">
+      <main class="eng-main" [class.eng-main--public]="isPublicIntake()">
         <router-outlet />
+        @if (showOrganizationCommandCenter()) {
+          <app-organization-command-center />
+        }
+        @if (showHickmanItinerantPanel()) {
+          <app-hickman-itinerant-panel />
+        }
       </main>
     </div>
   `,
+  styles: [`
+    .eng-view-chip{display:inline-flex;min-height:32px;padding:0 10px;border-radius:999px;align-items:center;color:#6f4a73;background:#efe5ee;font-size:.62rem;font-weight:850;letter-spacing:.04em;text-transform:uppercase}
+    .eng-main--public{max-width:none!important;padding:0!important;margin:0!important}
+  `],
 })
-export class App implements OnInit {
+export class App implements OnInit, AfterViewInit, OnDestroy {
   readonly product = signal<ProductInfo | null>(null);
+  private overlayObserver?: MutationObserver;
 
-  constructor(private readonly api: EngagementsApiService) {}
+  constructor(
+    private readonly api: EngagementsApiService,
+    private readonly router: Router,
+    readonly formationState: DwcFormationStateService,
+  ) {}
 
   ngOnInit(): void {
+    this.syncOrganizationBodyClass();
+
+    const requestedGroup = this.router.parseUrl(this.router.url).queryParams['group'];
+    if (typeof requestedGroup === 'string' && this.formationState.groups().some(group => group.id === requestedGroup)) {
+      this.formationState.selectGroup(requestedGroup);
+    }
+
     this.api.getProduct().subscribe({
       next: product => this.product.set(product),
     });
   }
-}
 
+  ngAfterViewInit(): void {
+    this.overlayObserver = new MutationObserver(() => this.syncOrganizationDrawerPortal());
+    this.overlayObserver.observe(document.body, { childList: true, subtree: true });
+    queueMicrotask(() => this.syncOrganizationDrawerPortal());
+  }
+
+  ngOnDestroy(): void {
+    this.overlayObserver?.disconnect();
+    document.body.classList.remove(
+      'apostolos-org-drawer-open',
+      'apostolos-org-drawer-heyyking',
+      'eng-org-ctg',
+      'eng-org-dwc',
+      'eng-org-heyy',
+    );
+  }
+
+  isDwc(): boolean {
+    return this.currentOrganizationKey() === 'divine-world-changers';
+  }
+
+  isCtg(): boolean {
+    return this.currentOrganizationKey() === 'ctg';
+  }
+
+  isDwcMemberView(): boolean {
+    return this.routePath() === '/organization/dwc/my-group';
+  }
+
+  isPublicIntake(): boolean {
+    const path = this.routePath();
+    return path.startsWith('/register/') || path === '/join-the-12';
+  }
+
+  isCurrent(path: string): boolean {
+    return this.routePath() === path;
+  }
+
+  isCurrentPrefix(path: string): boolean {
+    const current = this.routePath();
+    return current === path || current.startsWith(`${path}/`);
+  }
+
+  showOrganizationCommandCenter(): boolean {
+    const url = this.routePath();
+    return url === '/organization/dwc' || url === '/organization/hey-king';
+  }
+
+  showHickmanItinerantPanel(): boolean {
+    return this.routePath() === '/organization/hey-king';
+  }
+
+  groupHref(path: string): string {
+    return `${path}?group=${encodeURIComponent(this.formationState.selectedGroupId())}`;
+  }
+
+  private routePath(): string {
+    return this.router.url.split('?')[0].replace(/\/$/, '');
+  }
+
+  private syncOrganizationBodyClass(): void {
+    document.body.classList.remove('eng-org-ctg', 'eng-org-dwc', 'eng-org-heyy');
+    const organization = this.currentOrganizationKey();
+    document.body.classList.add(
+      organization === 'divine-world-changers'
+        ? 'eng-org-dwc'
+        : organization === 'heyy-king'
+          ? 'eng-org-heyy'
+          : 'eng-org-ctg',
+    );
+  }
+
+  private syncOrganizationDrawerPortal(): void {
+    const routedBackdrop = document.querySelector<HTMLElement>('app-organization-programs .drawer-backdrop');
+    const routedDrawer = document.querySelector<HTMLElement>('app-organization-programs .demo-drawer');
+
+    this.syncDwcGroupFromDrawer(routedDrawer);
+
+    if (routedBackdrop && routedBackdrop.parentElement !== document.body) {
+      routedBackdrop.classList.add('apostolos-body-overlay');
+      document.body.appendChild(routedBackdrop);
+    }
+
+    if (routedDrawer && routedDrawer.parentElement !== document.body) {
+      routedDrawer.classList.add('apostolos-body-drawer');
+      const isHeyyKing = this.currentOrganizationKey() === 'heyy-king';
+      routedDrawer.style.setProperty('--accent', isHeyyKing ? '#9a6c23' : '#5a328a');
+      document.body.appendChild(routedDrawer);
+    }
+
+    const activeDrawer = document.body.querySelector<HTMLElement>(':scope > .demo-drawer.apostolos-body-drawer');
+    this.syncDwcGroupFromDrawer(activeDrawer);
+
+    const hasDrawer = !!activeDrawer;
+    const isHeyyKing = hasDrawer && this.currentOrganizationKey() === 'heyy-king';
+
+    document.body.classList.toggle('apostolos-org-drawer-open', hasDrawer);
+    document.body.classList.toggle('apostolos-org-drawer-heyyking', isHeyyKing);
+  }
+
+  private syncDwcGroupFromDrawer(drawer: HTMLElement | null): void {
+    if (!drawer || this.currentOrganizationKey() !== 'divine-world-changers') return;
+
+    const label = (drawer.getAttribute('aria-label') || '').trim().toLowerCase();
+    if (!label) return;
+
+    const group = this.formationState.groups().find(
+      item => item.name.trim().toLowerCase() === label,
+    );
+
+    if (group && this.formationState.selectedGroupId() !== group.id) {
+      this.formationState.selectGroup(group.id);
+    }
+  }
+
+  private currentOrganizationKey(): 'divine-world-changers' | 'heyy-king' | 'ctg' {
+    const key = document.cookie
+      .split(';')
+      .map(value => value.trim())
+      .find(value => value.startsWith('KingdomOS.DemoOrganization='));
+    const organization = key
+      ? decodeURIComponent(key.substring(key.indexOf('=') + 1)).toLowerCase()
+      : 'ctg';
+
+    if (organization === 'divine-world-changers' || organization === 'heyy-king') {
+      return organization;
+    }
+    return 'ctg';
+  }
+
+  organizationName(): string {
+    const organization = this.currentOrganizationKey();
+
+    if (organization === 'divine-world-changers') {
+      return 'Divine World Changers International Ministries';
+    }
+    if (organization === 'heyy-king') {
+      return 'Heyy King, Inc.';
+    }
+    return this.product()?.tenantName || 'Cynthia Thompson Global';
+  }
+}

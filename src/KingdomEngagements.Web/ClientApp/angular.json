@@ -32,7 +32,11 @@
             "styles": [
               "src/styles.scss",
               "src/assignment-cleanup.css",
-              "src/assignment-refinement.css"
+              "src/assignment-refinement.css",
+              "src/organization-drawer-motion.css",
+              "src/dwc-warmth.css",
+              "src/engagements-friendly.css",
+              "src/engagements-workspace-friendly.css"
             ],
             "scripts": []
           },

@@ -30,6 +30,43 @@ export interface CreateMinistryResponseInput {
   followUpDueAtUtc: string | null;
 }
 
+export interface CreateEngagementInput {
+  externalAssignmentId: string;
+  title: string;
+  speakerName: string;
+  hostOrganization: string;
+  startsAtUtc: string | null;
+  endsAtUtc: string | null;
+  location: string | null;
+}
+
+export interface CreateEngagementTaskInput {
+  category: string;
+  title: string;
+  owner: string;
+  detail: string | null;
+  dueAtUtc: string | null;
+}
+
+export interface StartSpeakingInvitationInput {
+  contactName: string;
+  contactEmail: string;
+  organizationName: string | null;
+  eventName: string | null;
+  contactPhone: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  note: string | null;
+}
+
+export interface StartedInvitationLinkResult {
+  request: SpeakingRequestDetails;
+  completionUrl: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class EngagementsApiService {
   constructor(private readonly http: HttpClient) {}
@@ -45,6 +82,17 @@ export class EngagementsApiService {
   getRequest(id: string): Observable<SpeakingRequestDetails> {
     return this.http.get<SpeakingRequestDetails>(
       `/api/engagements/requests/${encodeURIComponent(id)}`,
+    );
+  }
+
+  startInvitation(input: StartSpeakingInvitationInput): Observable<StartedInvitationLinkResult> {
+    return this.http.post<StartedInvitationLinkResult>('/api/engagements/requests/start', input);
+  }
+
+  refreshStartedInvitationLink(id: string): Observable<StartedInvitationLinkResult> {
+    return this.http.post<StartedInvitationLinkResult>(
+      `/api/engagements/requests/${encodeURIComponent(id)}/refresh-host-link`,
+      {},
     );
   }
 
@@ -71,6 +119,17 @@ export class EngagementsApiService {
 
   getAssignments(): Observable<readonly EngagementSummary[]> {
     return this.http.get<readonly EngagementSummary[]>('/api/engagements/assignments');
+  }
+
+  createAssignment(input: CreateEngagementInput): Observable<EngagementDetails> {
+    return this.http.post<EngagementDetails>('/api/engagements/assignments', input);
+  }
+
+  addAssignmentTask(assignmentId: string, input: CreateEngagementTaskInput): Observable<EngagementDetails> {
+    return this.http.post<EngagementDetails>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/tasks`,
+      input,
+    );
   }
 
   getAssignment(id: string): Observable<EngagementDetails> {

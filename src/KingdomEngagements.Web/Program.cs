@@ -37,6 +37,19 @@ builder.Services.AddDbContext<SpeakingRequestsDbContext>(options =>
     options.UseInMemoryDatabase("KingdomEngagementsSpeakingRequests");
 });
 
+builder.Services.AddDbContext<GlobalBookingDbContext>(options =>
+{
+    if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
+    {
+        if (string.IsNullOrWhiteSpace(connectionString))
+            throw new InvalidOperationException("ConnectionStrings:EngagementsDatabase is required for SQL Server.");
+        options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure());
+        return;
+    }
+
+    options.UseInMemoryDatabase("KingdomEngagementsGlobalBookings");
+});
+
 builder.Services.AddDbContext<EngagementPreparationDbContext>(options =>
 {
     if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
@@ -65,7 +78,7 @@ builder.Services.AddDbContext<AssignmentWorkspaceDbContext>(options =>
 
 builder.Services.AddDbContext<EngagementCompletionDbContext>(options =>
 {
-    if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
+    if (provider.Equals("Database:Provider", StringComparison.OrdinalIgnoreCase))
     {
         if (string.IsNullOrWhiteSpace(connectionString))
             throw new InvalidOperationException("ConnectionStrings:EngagementsDatabase is required for SQL Server.");
@@ -240,6 +253,7 @@ app.MapGet("/host/terms/{token}", (string token, IWebHostEnvironment environment
 app.MapGet("/host/coordination/{token}", (string token, IWebHostEnvironment environment) =>
     Results.File(Path.Combine(environment.WebRootPath, "coordination.html"), "text/html; charset=utf-8")).AllowAnonymous();
 
+app.MapGlobalBookingDeskEndpoints();
 app.MapSpeakingRequestEndpoints();
 app.MapHickmanSpeakingRequestEndpoints();
 app.MapEngagementPreparationEndpoints();

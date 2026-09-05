@@ -40,21 +40,22 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
             </div>
           </div>
 
-          <nav class="eng-modulebar__actions" aria-label="Engagements utilities">
+          <nav class="eng-modulebar__actions" aria-label="Engagements navigation">
             @if (isDwc()) {
               @if (isDwcMemberView()) {
                 <span class="eng-view-chip">Member view · {{ formationState.selectedGroup().name }}</span>
                 <a [href]="groupHref('/organization/dwc/formation')">Exit preview</a>
               } @else {
-                <a [href]="groupHref('/organization/dwc')">DEG Overview</a>
-                <a [href]="groupHref('/organization/dwc/formation')">Formation</a>
-                <a [href]="groupHref('/organization/dwc/my-group')">Member Preview</a>
+                <a [class.current]="isCurrent('/organization/dwc')" [href]="groupHref('/organization/dwc')">DEG Overview</a>
+                <a [class.current]="isCurrentPrefix('/organization/dwc/formation')" [href]="groupHref('/organization/dwc/formation')">Formation</a>
+                <a [class.current]="isCurrent('/organization/dwc/my-group')" [href]="groupHref('/organization/dwc/my-group')">Member Preview</a>
               }
             } @else if (isCtg()) {
-              <a href="/organization/ctg">Overview</a>
-              <a href="/organization/ctg/bookings">Booking Desk</a>
-              <a href="/assignments">Engagements</a>
-              <a href="/organization/ctg/programs">Events & Programs</a>
+              <a [class.current]="isCurrent('/organization/ctg')" href="/organization/ctg">Overview</a>
+              <a [class.current]="isCurrent('/organization/ctg/bookings')" href="/organization/ctg/bookings">Booking Desk</a>
+              <a [class.current]="isCurrentPrefix('/assignments')" href="/assignments">Engagements</a>
+              <a [class.current]="isCurrent('/organization/ctg/programs')" href="/organization/ctg/programs">Events & Programs</a>
+              <a class="eng-primary-action" [class.current]="isCurrent('/organization/ctg/start-invitation')" href="/organization/ctg/start-invitation">+ Start Invitation</a>
             }
             @if (!isDwcMemberView()) {
               <a [href]="(product()?.platformUrl || 'http://localhost:5100') + '/appearance'">Settings</a>
@@ -91,6 +92,8 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.syncOrganizationBodyClass();
+
     const requestedGroup = this.router.parseUrl(this.router.url).queryParams['group'];
     if (typeof requestedGroup === 'string' && this.formationState.groups().some(group => group.id === requestedGroup)) {
       this.formationState.selectGroup(requestedGroup);
@@ -109,7 +112,13 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.overlayObserver?.disconnect();
-    document.body.classList.remove('apostolos-org-drawer-open', 'apostolos-org-drawer-heyyking');
+    document.body.classList.remove(
+      'apostolos-org-drawer-open',
+      'apostolos-org-drawer-heyyking',
+      'eng-org-ctg',
+      'eng-org-dwc',
+      'eng-org-heyy',
+    );
   }
 
   isDwc(): boolean {
@@ -129,6 +138,15 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
     return path.startsWith('/register/') || path === '/join-the-12';
   }
 
+  isCurrent(path: string): boolean {
+    return this.routePath() === path;
+  }
+
+  isCurrentPrefix(path: string): boolean {
+    const current = this.routePath();
+    return current === path || current.startsWith(`${path}/`);
+  }
+
   showOrganizationCommandCenter(): boolean {
     const url = this.routePath();
     return url === '/organization/dwc' || url === '/organization/hey-king';
@@ -144,6 +162,18 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
 
   private routePath(): string {
     return this.router.url.split('?')[0].replace(/\/$/, '');
+  }
+
+  private syncOrganizationBodyClass(): void {
+    document.body.classList.remove('eng-org-ctg', 'eng-org-dwc', 'eng-org-heyy');
+    const organization = this.currentOrganizationKey();
+    document.body.classList.add(
+      organization === 'divine-world-changers'
+        ? 'eng-org-dwc'
+        : organization === 'heyy-king'
+          ? 'eng-org-heyy'
+          : 'eng-org-ctg',
+    );
   }
 
   private syncOrganizationDrawerPortal(): void {

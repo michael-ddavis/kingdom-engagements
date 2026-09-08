@@ -269,13 +269,18 @@ app.MapEngagementCompletionEndpoints();
 app.MapEngagementsDemoAccessEndpoints();
 app.MapEngagementsEndpoints();
 
-// Preserve legacy /app links while keeping the product on its canonical routes.
-app.MapGet("/app", (HttpRequest request) =>
-    Results.Redirect($"/assignments{request.QueryString}"));
+// Preserve legacy /app links while sending each demo persona to the right workspace.
+app.MapGet("/app", (HttpContext context) =>
+{
+    var target = EngagementsDemoRoles.IsMinister(context.User)
+        ? "/assignments"
+        : "/organization/ctg/bookings";
+    return Results.Redirect($"{target}{context.Request.QueryString}");
+});
 app.MapGet("/app/{*path}", (string? path, HttpRequest request) =>
 {
     var canonicalPath = string.IsNullOrWhiteSpace(path)
-        ? "/assignments"
+        ? "/organization/ctg/bookings"
         : $"/{path.TrimStart('/')}";
 
     return Results.Redirect($"{canonicalPath}{request.QueryString}");

@@ -20,11 +20,13 @@ import {
   engagementBookingGuard,
 } from './core/engagement-demo-role.service';
 import { engagementDemoRoleInterceptor } from './core/engagement-demo-role.interceptor';
+import { CtgHostResponseEnhancementService } from './core/ctg-host-response-enhancement.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideHttpClient(withInterceptors([engagementDemoRoleInterceptor])),
     provideAppInitializer(() => inject(EngagementDemoRoleService).mountSwitcher()),
+    provideAppInitializer(() => inject(CtgHostResponseEnhancementService).mount()),
     provideRouter([
       { path: '', component: OrganizationLandingComponent, pathMatch: 'full' },
       { path: 'invitations', component: InvitationsComponent, canActivate: [engagementBookingGuard] },

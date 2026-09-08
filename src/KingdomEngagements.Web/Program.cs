@@ -163,7 +163,7 @@ app.Use(async (context, next) =>
         if (!KingdomIdentity.TryResolveDevelopmentOrganization(
                 organizationKey,
                 out var resolvedOrganizationKey,
-                out _))
+                out var resolvedTenantId))
         {
             context.Response.StatusCode = StatusCodes.Status400BadRequest;
             await context.Response.WriteAsJsonAsync(new
@@ -173,13 +173,18 @@ app.Use(async (context, next) =>
             return;
         }
 
-        context.User = KingdomIdentity.CreateDevelopmentPrincipal(resolvedOrganizationKey);
+        var demoRole = EngagementsDemoRoles.Resolve(context.Request);
+        context.User = EngagementsDemoRoles.CreateDevelopmentPrincipal(
+            resolvedOrganizationKey,
+            resolvedTenantId,
+            demoRole);
     }
     await next();
 });
 app.UseMiddleware<EngagementsReadinessMiddleware>();
 app.UseMiddleware<EngagementsEntitlementMiddleware>();
 app.UseAuthorization();
+app.UseMiddleware<EngagementsDemoAccessMiddleware>();
 app.Use(async (context, next) =>
 {
     var assignmentMutation =
@@ -261,6 +266,7 @@ app.MapHickmanSpeakingRequestEndpoints();
 app.MapEngagementPreparationEndpoints();
 app.MapAssignmentWorkspaceEndpoints();
 app.MapEngagementCompletionEndpoints();
+app.MapEngagementsDemoAccessEndpoints();
 app.MapEngagementsEndpoints();
 
 // Preserve legacy /app links while keeping the product on its canonical routes.

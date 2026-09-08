@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using KingdomEngagements.Web.Features;
 
@@ -110,11 +111,17 @@ public static class EngagementsDemoRoles
     public static bool IsMinister(ClaimsPrincipal principal) =>
         string.Equals(CurrentRole(principal), Minister, StringComparison.OrdinalIgnoreCase);
 
-    public static bool CanUseBookingDesk(ClaimsPrincipal principal) =>
-        CurrentRole(principal) is Administrator or Coordinator;
+    public static bool CanUseBookingDesk(ClaimsPrincipal principal)
+    {
+        var role = CurrentRole(principal);
+        return role == Administrator || role == Coordinator;
+    }
 
-    public static bool CanViewAllEngagements(ClaimsPrincipal principal) =>
-        CurrentRole(principal) is Administrator or Coordinator;
+    public static bool CanViewAllEngagements(ClaimsPrincipal principal)
+    {
+        var role = CurrentRole(principal);
+        return role == Administrator || role == Coordinator;
+    }
 
     public static bool CanViewFinancials(ClaimsPrincipal principal) =>
         principal.HasClaim(KingdomIdentity.PermissionClaim, "engagements:financial:read");
@@ -147,15 +154,31 @@ public sealed class EngagementsDemoAccessMiddleware(
         HttpContext context,
         EngagementsService engagements)
     {
-        if (!environment.IsDevelopment() ||
-            !EngagementsDemoRoles.IsMinister(context.User) ||
-            HttpMethods.IsOptions(context.Request.Method))
+        if (!environment.IsDevelopment() || HttpMethods.IsOptions(context.Request.Method))
         {
             await next(context);
             return;
         }
 
         var path = context.Request.Path.Value ?? string.Empty;
+
+        // Coordinators can maintain the closeout record, but only the executive/admin
+        // persona may perform the irreversible demo completion action.
+        if (!EngagementsDemoRoles.CanCompleteEngagements(context.User) &&
+            HttpMethods.IsPut(context.Request.Method) &&
+            path.EndsWith("/closeout", StringComparison.OrdinalIgnoreCase) &&
+            await RequestsCompletionAsync(context.Request, context.RequestAborted))
+        {
+            await ForbidAsync(context, "Only the Administrator / Executive role can complete an engagement.");
+            return;
+        }
+
+        if (!EngagementsDemoRoles.IsMinister(context.User))
+        {
+            await next(context);
+            return;
+        }
+
         if (path.StartsWith("/api/engagements/requests", StringComparison.OrdinalIgnoreCase) ||
             path.StartsWith("/api/engagements/global-bookings", StringComparison.OrdinalIgnoreCase))
         {
@@ -214,6 +237,27 @@ public sealed class EngagementsDemoAccessMiddleware(
         }
 
         await next(context);
+    }
+
+    private static async Task<bool> RequestsCompletionAsync(HttpRequest request, CancellationToken cancellationToken)
+    {
+        if (request.ContentLength is null or 0) return false;
+        request.EnableBuffering();
+        try
+        {
+            using var document = await JsonDocument.ParseAsync(request.Body, cancellationToken: cancellationToken);
+            return document.RootElement.ValueKind == JsonValueKind.Object &&
+                   document.RootElement.TryGetProperty("complete", out var complete) &&
+                   complete.ValueKind == JsonValueKind.True;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+        finally
+        {
+            request.Body.Position = 0;
+        }
     }
 
     private static async Task ForbidAsync(HttpContext context, string message)
@@ -278,6 +322,49 @@ public static class EngagementsDemoAccessEndpoints
             return Results.Ok(EngagementsDemoRoles.IsMinister(context.User)
                 ? item with { Notes = null }
                 : item);
+        });
+
+        group.MapPost("/assignments/{id:guid}/archive", async (
+            Guid id,
+            HttpContext context,
+            EngagementsService service,
+            CancellationToken cancellationToken) =>
+        {
+            if (!EngagementsDemoRoles.CanCompleteEngagements(context.User))
+                return Results.Forbid();
+
+            var item = await service.GetAsync(
+                KingdomIdentity.TenantId(context.User, context.Request),
+                id,
+                cancellationToken);
+            if (item is null) return Results.NotFound();
+            if (!string.Equals(item.Summary.Status, "complete", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(item.Summary.Status, "archived", StringComparison.OrdinalIgnoreCase))
+                return Results.Conflict(new { message = "Complete the engagement before archiving it." });
+
+            var updated = await service.UpdateAsync(
+                KingdomIdentity.TenantId(context.User, context.Request),
+                id,
+                new UpdateEngagementRequest(
+                    item.Summary.Title,
+                    item.Summary.SpeakerName,
+                    item.Summary.HostOrganization,
+                    item.HostContactName,
+                    item.HostContactEmail,
+                    item.Summary.Location,
+                    item.Summary.StartsAtUtc,
+                    item.EndsAtUtc,
+                    "archived",
+                    item.Summary.TravelStatus,
+                    item.Summary.LodgingStatus,
+                    item.Summary.TransportationStatus,
+                    item.Summary.HostStatus,
+                    item.Summary.DocumentsStatus,
+                    item.Summary.CloseoutStatus,
+                    item.Notes),
+                cancellationToken);
+
+            return updated is null ? Results.NotFound() : Results.Ok(updated);
         });
 
         return endpoints;

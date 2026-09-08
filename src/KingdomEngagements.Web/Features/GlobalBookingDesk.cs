@@ -179,10 +179,13 @@ public static class GlobalBookingDeskEndpoints
     private static bool TryReadId(JsonElement payload, out Guid id)
     {
         id = Guid.Empty;
-        return payload.ValueKind == JsonValueKind.Object &&
-               payload.TryGetProperty("id", out var value) &&
-               value.ValueKind == JsonValueKind.String &&
-               Guid.TryParse(value.GetString(), out id);
+        if (payload.ValueKind != JsonValueKind.Object) return false;
+        if (!payload.TryGetProperty("id", out var value) || value.ValueKind != JsonValueKind.String) return false;
+
+        var raw = value.GetString();
+        if (!Guid.TryParse(raw, out var parsed)) return false;
+        id = parsed;
+        return true;
     }
 
     private static string? PropertyString(JsonElement payload, string name) =>

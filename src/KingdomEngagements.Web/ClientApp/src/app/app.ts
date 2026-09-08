@@ -41,28 +41,40 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
             </div>
           </div>
 
-          <nav class="eng-modulebar__actions" aria-label="Engagements navigation">
-            @if (isDwc()) {
-              @if (isDwcMemberView()) {
-                <span class="eng-view-chip">Member view · {{ formationState.selectedGroup().name }}</span>
-                <a [href]="groupHref('/organization/dwc/formation')">Exit preview</a>
+          <div class="eng-modulebar__right">
+            <nav class="eng-modulebar__primary" aria-label="Engagements navigation">
+              @if (isDwc()) {
+                @if (isDwcMemberView()) {
+                  <span class="eng-view-chip">Member view · {{ formationState.selectedGroup().name }}</span>
+                  <a class="eng-nav-link eng-nav-link--exit" [href]="groupHref('/organization/dwc/formation')">Exit preview</a>
+                } @else {
+                  <a class="eng-nav-link" [class.current]="isCurrent('/organization/dwc')" [href]="groupHref('/organization/dwc')">DEG Overview</a>
+                  <a class="eng-nav-link" [class.current]="isCurrentPrefix('/organization/dwc/formation')" [href]="groupHref('/organization/dwc/formation')">Formation</a>
+                  <a class="eng-nav-link" [class.current]="isCurrent('/organization/dwc/my-group')" [href]="groupHref('/organization/dwc/my-group')">Member Preview</a>
+                }
+              } @else if (isCtg()) {
+                <a class="eng-nav-link" [class.current]="isCurrent('/organization/ctg')" href="/organization/ctg">Overview</a>
+                <a class="eng-nav-link" [class.current]="isBookingDeskCurrent()" href="/organization/ctg/bookings">Booking Desk</a>
+                <a class="eng-nav-link" [class.current]="isCurrentPrefix('/assignments')" href="/assignments">Engagements</a>
+                <a class="eng-nav-link" [class.current]="isCurrent('/organization/ctg/programs')" href="/organization/ctg/programs">Events & Programs</a>
               } @else {
-                <a [class.current]="isCurrent('/organization/dwc')" [href]="groupHref('/organization/dwc')">DEG Overview</a>
-                <a [class.current]="isCurrentPrefix('/organization/dwc/formation')" [href]="groupHref('/organization/dwc/formation')">Formation</a>
-                <a [class.current]="isCurrent('/organization/dwc/my-group')" [href]="groupHref('/organization/dwc/my-group')">Member Preview</a>
+                <a class="eng-nav-link current" href="/organization/hey-king">Overview</a>
               }
-            } @else if (isCtg()) {
-              <a [class.current]="isCurrent('/organization/ctg')" href="/organization/ctg">Overview</a>
-              <a [class.current]="isCurrent('/organization/ctg/bookings')" href="/organization/ctg/bookings">Booking Desk</a>
-              <a [class.current]="isCurrentPrefix('/assignments')" href="/assignments">Engagements</a>
-              <a [class.current]="isCurrent('/organization/ctg/programs')" href="/organization/ctg/programs">Events & Programs</a>
-              <a class="eng-primary-action" [class.current]="isCurrent('/organization/ctg/start-invitation')" href="/organization/ctg/start-invitation">+ Start Invitation</a>
-            }
-            @if (!isDwcMemberView()) {
-              <a [href]="(product()?.platformUrl || 'http://localhost:5100') + '/appearance'">Settings</a>
-            }
-            <span class="eng-avatar" aria-label="Signed in as Michael Davis">MD</span>
-          </nav>
+            </nav>
+
+            <div class="eng-modulebar__utilities">
+              @if (isCtg()) {
+                <a class="eng-start-action" [class.current]="isCurrent('/organization/ctg/start-invitation')" href="/organization/ctg/start-invitation">
+                  <span aria-hidden="true">＋</span>
+                  <span>Start Invitation</span>
+                </a>
+              }
+              @if (!isDwcMemberView()) {
+                <a class="eng-settings-link" [href]="(product()?.platformUrl || 'http://localhost:5100') + '/appearance'">Settings</a>
+              }
+              <span class="eng-avatar" aria-label="Signed in as Michael Davis">MD</span>
+            </div>
+          </div>
         </header>
       }
 
@@ -78,31 +90,181 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
     </div>
   `,
   styles: [`
-    :root{--kos-action-primary:#172A46;--kos-action-secondary:#6D5BD0;--action-primary:var(--kos-action-primary);--action-secondary:var(--kos-action-secondary)}
-    .eng-view-chip{display:inline-flex;min-height:32px;padding:0 10px;border:1px solid var(--kos-action-primary);border-radius:999px;align-items:center;color:var(--kos-action-primary);background:#fff;font-size:.62rem;font-weight:850;letter-spacing:.04em;text-transform:uppercase}
+    :root{
+      --kos-action-primary:#172A46;
+      --kos-action-secondary:#6D5BD0;
+      --action-primary:var(--kos-action-primary);
+      --action-secondary:var(--kos-action-secondary)
+    }
+
     .eng-main--public{max-width:none!important;padding:0!important;margin:0!important}
 
-    /* Canonical navigation pills: inactive is text-only; selected uses the saved Primary Action fill. */
-    .eng-modulebar__actions{gap:.18rem!important}
-    .eng-modulebar__actions a{min-height:38px!important;padding:0 .78rem!important;border:1px solid transparent!important;border-radius:999px!important;color:#344054!important;background:transparent!important;box-shadow:none!important;font-weight:850!important;transition:border-color .16s ease,background .16s ease,color .16s ease,box-shadow .16s ease}
-    .eng-modulebar__actions a:hover{border-color:transparent!important;color:var(--kos-action-primary)!important;background:color-mix(in srgb,var(--kos-action-primary) 7%,transparent)!important}
-    .eng-modulebar__actions a.current{border-color:transparent!important;color:#fff!important;background:var(--kos-action-primary)!important;box-shadow:0 7px 18px color-mix(in srgb,var(--kos-action-primary) 18%,transparent)!important}
-    .eng-modulebar__actions a.eng-primary-action{border-color:transparent!important;color:#fff!important;background:var(--kos-action-primary)!important;box-shadow:none!important}
-    .eng-modulebar__actions a.eng-primary-action:hover{color:#fff!important;background:var(--kos-action-primary)!important;filter:brightness(.96)}
-    .eng-modulebar__actions a.eng-primary-action.current{border-color:transparent!important;color:#fff!important;background:var(--kos-action-primary)!important;box-shadow:0 7px 18px color-mix(in srgb,var(--kos-action-primary) 18%,transparent)!important}
+    /*
+      Engagements shell navigation only.
+      Page-level tabs keep their own component styles so Formation, Booking Desk,
+      Programs, and legacy assignment filters do not bleed into one another.
+    */
+    .eng-modulebar{
+      min-height:72px;
+      padding:0 28px;
+      gap:24px;
+      border-bottom:1px solid rgba(18,26,44,.10);
+      background:rgba(250,248,244,.96);
+      box-shadow:0 1px 0 rgba(18,26,44,.025);
+    }
 
-    /* One navigation-pill language across DWC and CTG. No inactive outline or underline. */
-    .section-nav,.program-tabs,.tools-tabs,.filters,.legacy-filter-group{border-bottom:0!important}
-    .section-nav{gap:6px!important;padding:2px 0!important}
-    .program-tabs,.tools-tabs,.filters,.legacy-filter-group{gap:6px!important}
-    .section-nav button,.program-tabs button,.tools-tabs button,.filters button,.legacy-filter-group button{border:1px solid transparent!important;border-radius:999px!important;background:transparent!important;color:#344054!important;box-shadow:none!important}
-    .section-nav button{padding:9px 13px!important}
-    .program-tabs button{padding:10px 15px!important}
-    .section-nav button:hover,.program-tabs button:hover,.tools-tabs button:hover,.filters button:hover,.legacy-filter-group button:hover{border-color:transparent!important;background:color-mix(in srgb,var(--kos-action-primary) 7%,transparent)!important;color:var(--kos-action-primary)!important}
-    .section-nav button.active,.program-tabs button.active,.tools-tabs button.active,.filters button.active,.legacy-filter-group button.selected{border-color:transparent!important;background:var(--kos-action-primary)!important;color:#fff!important;box-shadow:0 7px 18px color-mix(in srgb,var(--kos-action-primary) 16%,transparent)!important}
-    .tools-tabs button.active>span,.legacy-filter-group button.selected span{color:#fff!important;background:rgba(255,255,255,.18)!important}
+    .eng-modulebar__identity{flex:0 1 auto;gap:14px}
+    .eng-modulebar__right{
+      display:flex;
+      min-width:0;
+      flex:1 1 auto;
+      align-items:center;
+      justify-content:flex-end;
+      gap:16px;
+    }
 
-    @media(max-width:980px){.eng-modulebar{align-items:flex-start;flex-wrap:wrap;padding-top:.65rem;padding-bottom:.65rem}.eng-modulebar__actions{max-width:100%;overflow-x:auto;padding-bottom:2px}.eng-modulebar__actions a{white-space:nowrap}}
+    .eng-modulebar__primary{
+      display:flex;
+      min-width:0;
+      align-items:center;
+      gap:2px;
+    }
+
+    .eng-nav-link{
+      position:relative;
+      display:inline-flex;
+      min-height:42px;
+      align-items:center;
+      padding:0 11px;
+      border-radius:8px;
+      color:#596476;
+      font-size:.69rem;
+      font-weight:800;
+      line-height:1;
+      text-decoration:none;
+      white-space:nowrap;
+      transition:color .16s ease,background .16s ease;
+    }
+
+    .eng-nav-link:hover{
+      color:var(--kos-action-primary);
+      background:color-mix(in srgb,var(--kos-action-primary) 5%,transparent);
+      text-decoration:none;
+    }
+
+    .eng-nav-link.current{
+      color:var(--kos-action-primary);
+      background:color-mix(in srgb,var(--kos-action-primary) 7%,#fff);
+    }
+
+    .eng-nav-link.current::after{
+      position:absolute;
+      right:11px;
+      bottom:-15px;
+      left:11px;
+      height:2px;
+      border-radius:999px 999px 0 0;
+      background:var(--kos-action-primary);
+      content:'';
+    }
+
+    .eng-nav-link--exit{
+      color:var(--kos-action-primary);
+      background:color-mix(in srgb,var(--kos-action-primary) 6%,#fff);
+    }
+
+    .eng-modulebar__utilities{
+      display:flex;
+      flex:0 0 auto;
+      align-items:center;
+      gap:7px;
+      padding-left:14px;
+      border-left:1px solid rgba(18,26,44,.10);
+    }
+
+    .eng-start-action,
+    .eng-settings-link{
+      display:inline-flex;
+      min-height:38px;
+      align-items:center;
+      justify-content:center;
+      border-radius:8px;
+      font-size:.67rem;
+      font-weight:850;
+      line-height:1;
+      text-decoration:none;
+      white-space:nowrap;
+    }
+
+    .eng-start-action{
+      gap:5px;
+      padding:0 13px;
+      color:#fff;
+      background:var(--kos-action-primary);
+      box-shadow:0 4px 12px color-mix(in srgb,var(--kos-action-primary) 14%,transparent);
+    }
+
+    .eng-start-action:hover{
+      color:#fff;
+      filter:brightness(.96);
+      text-decoration:none;
+    }
+
+    .eng-start-action.current{
+      box-shadow:0 0 0 3px color-mix(in srgb,var(--kos-action-primary) 14%,transparent);
+    }
+
+    .eng-settings-link{
+      padding:0 9px;
+      color:#6b7482;
+      background:transparent;
+    }
+
+    .eng-settings-link:hover{
+      color:var(--eng-ink);
+      background:rgba(255,255,255,.72);
+      text-decoration:none;
+    }
+
+    .eng-view-chip{
+      display:inline-flex;
+      min-height:34px;
+      align-items:center;
+      padding:0 11px;
+      border:1px solid color-mix(in srgb,var(--kos-action-primary) 24%,#d7dce3);
+      border-radius:999px;
+      color:var(--kos-action-primary);
+      background:color-mix(in srgb,var(--kos-action-primary) 5%,#fff);
+      font-size:.61rem;
+      font-weight:850;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+      white-space:nowrap;
+    }
+
+    .eng-avatar{margin-left:1px}
+
+    @media(max-width:1180px){
+      .eng-modulebar{align-items:flex-start;flex-wrap:wrap;padding-top:10px;padding-bottom:9px}
+      .eng-modulebar__identity{min-height:42px}
+      .eng-modulebar__right{width:100%;flex:1 0 100%;justify-content:space-between;gap:10px}
+      .eng-modulebar__primary{max-width:calc(100vw - 250px);overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+      .eng-modulebar__primary::-webkit-scrollbar{display:none}
+      .eng-nav-link.current::after{bottom:-9px}
+    }
+
+    @media(max-width:760px){
+      .eng-modulebar{padding-right:16px;padding-left:16px}
+      .eng-modulebar__divider,.eng-presence{display:none}
+      .eng-tenant strong{max-width:190px}
+      .eng-modulebar__right{align-items:flex-start}
+      .eng-modulebar__primary{max-width:calc(100vw - 92px)}
+      .eng-modulebar__utilities{padding-left:8px;border-left:0}
+      .eng-settings-link{display:none}
+      .eng-start-action{width:38px;padding:0}
+      .eng-start-action span:last-child{display:none}
+      .eng-view-chip{max-width:220px;overflow:hidden;text-overflow:ellipsis}
+    }
   `],
 })
 export class App implements OnInit, AfterViewInit, OnDestroy {
@@ -170,6 +332,11 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
   isCurrentPrefix(path: string): boolean {
     const current = this.routePath();
     return current === path || current.startsWith(`${path}/`);
+  }
+
+  isBookingDeskCurrent(): boolean {
+    const current = this.routePath();
+    return current === '/organization/ctg/bookings' || current === '/invitations';
   }
 
   showOrganizationCommandCenter(): boolean {

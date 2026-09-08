@@ -24,14 +24,22 @@ import { engagementDemoRoleInterceptor } from './core/engagement-demo-role.inter
 import { CtgHostResponseEnhancementService } from './core/ctg-host-response-enhancement.service';
 import { CtgBookingDeskPolishService } from './core/ctg-booking-desk-polish.service';
 import { DwcGroupsBrandingService } from './core/dwc-groups-branding.service';
+import {
+  MutationToastService,
+  mutationToastInterceptor,
+} from './core/mutation-toast.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideHttpClient(withInterceptors([engagementDemoRoleInterceptor])),
+    provideHttpClient(withInterceptors([
+      engagementDemoRoleInterceptor,
+      mutationToastInterceptor,
+    ])),
     provideAppInitializer(() => inject(EngagementDemoRoleService).mountSwitcher()),
     provideAppInitializer(() => inject(CtgHostResponseEnhancementService).mount()),
     provideAppInitializer(() => inject(CtgBookingDeskPolishService).mount()),
     provideAppInitializer(() => inject(DwcGroupsBrandingService).mount()),
+    provideAppInitializer(() => inject(MutationToastService).mount()),
     provideRouter([
       { path: '', component: OrganizationLandingComponent, pathMatch: 'full' },
       { path: 'invitations', component: InvitationsComponent, canActivate: [engagementBookingGuard] },

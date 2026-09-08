@@ -5,7 +5,7 @@ import { EngagementDemoRoleService } from '../core/engagement-demo-role.service'
 @Component({
   selector: 'app-organization-landing',
   standalone: true,
-  template: `<section class="org-loading">Opening the selected organization…</section>`,
+  template: `<section class="org-loading">Opening Engagements…</section>`,
   styles: [`
     .org-loading{max-width:1100px;margin:60px auto;padding:32px;border:1px solid #e0e3e8;border-radius:14px;background:#fff;color:#647089;text-align:center}
   `],
@@ -26,11 +26,17 @@ export class OrganizationLandingComponent implements OnInit {
       void this.router.navigate(['/organization', 'hey-king'], { replaceUrl: true });
       return;
     }
+
+    // Keep the module entry operational and role-aware. Assigned ministers go
+    // directly to their engagement queue; administrators and coordinators enter
+    // through the Global Booking Desk where new opportunities are received and
+    // moved into confirmed assignments.
     if (this.demoRole.isMinister()) {
       void this.router.navigate(['/assignments'], { replaceUrl: true });
       return;
     }
-    void this.router.navigate(['/organization', 'ctg'], { replaceUrl: true });
+
+    void this.router.navigate(['/organization', 'ctg', 'bookings'], { replaceUrl: true });
   }
 
   private selectedOrganization(): string {

@@ -21,12 +21,14 @@ import {
 } from './core/engagement-demo-role.service';
 import { engagementDemoRoleInterceptor } from './core/engagement-demo-role.interceptor';
 import { CtgHostResponseEnhancementService } from './core/ctg-host-response-enhancement.service';
+import { CtgBookingDeskPolishService } from './core/ctg-booking-desk-polish.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideHttpClient(withInterceptors([engagementDemoRoleInterceptor])),
     provideAppInitializer(() => inject(EngagementDemoRoleService).mountSwitcher()),
     provideAppInitializer(() => inject(CtgHostResponseEnhancementService).mount()),
+    provideAppInitializer(() => inject(CtgBookingDeskPolishService).mount()),
     provideRouter([
       { path: '', component: OrganizationLandingComponent, pathMatch: 'full' },
       { path: 'invitations', component: InvitationsComponent, canActivate: [engagementBookingGuard] },

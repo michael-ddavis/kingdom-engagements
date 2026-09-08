@@ -14,7 +14,7 @@ import {
   ManualBookingRecord,
 } from '../core/ctg-booking-desk-state.service';
 
-type DeskFilter = 'needs-me' | 'new' | 'needs-information' | 'under-review' | 'date-hold' | 'approved' | 'all';
+type DeskFilter = 'needs-me' | 'new' | 'needs-information' | 'under-review' | 'date-hold' | 'approved' | 'expiring-holds' | 'all';
 type DeskKind = 'manual' | 'website';
 
 interface BookingDeskItem {
@@ -69,48 +69,44 @@ interface TimelineItem {
         </div>
       </header>
 
-      <section class="today-brief">
-        <div class="section-heading">
-          <div><span class="eyebrow">Needs you today</span><h2>Booking brief</h2></div>
-          <small>{{ activeCount() }} active opportunities</small>
-        </div>
-        <div class="brief-list">
-          @for (signal of briefSignals(); track signal.label) {
-            <button type="button" (click)="setFilter(signal.filter)">
-              <span class="signal-dot" [attr.data-tone]="signal.tone"></span>
-              <span class="brief-value"><strong>{{ signal.value }}</strong><small>{{ signal.label }}</small></span>
-              <em>{{ signal.detail }}</em>
-              <b>View →</b>
-            </button>
-          }
-        </div>
-      </section>
+      @if (briefSignals().length) {
+        <section class="attention-strip" aria-labelledby="attention-heading">
+          <h2 id="attention-heading">Needs attention</h2>
+          <div class="attention-actions">
+            @for (alert of briefSignals(); track alert.filter) {
+              <button type="button" [attr.data-tone]="alert.tone" (click)="showAttention(alert.filter, pipelineHeading, detailDialog)">
+                <span><strong>{{ alert.value }}</strong> {{ alert.label }}</span>
+                <b>{{ alert.action }} →</b>
+              </button>
+            }
+          </div>
+        </section>
+      }
 
-      <section class="outlook">
+      <section class="upcoming" aria-labelledby="upcoming-heading">
         <header class="section-heading">
-          <div><span class="eyebrow">Global ministry outlook</span><h2>Where the calendar is taking shape</h2></div>
-          <span class="region-summary">{{ regionSummary() }}</span>
+          <h2 id="upcoming-heading">Upcoming engagements</h2>
+          @if (timeline().length > 3) {
+            <button type="button" class="text-action" [attr.aria-expanded]="showAllUpcoming()" aria-controls="upcoming-grid" (click)="showAllUpcoming.set(!showAllUpcoming())">{{ showAllUpcoming() ? 'Show next three' : 'View all' }}</button>
+          }
         </header>
-        <div class="travel-timeline">
-          @for (item of timeline(); track item.id; let last = $last) {
-            <article>
-              <div class="timeline-rail"><span class="flag">{{ item.flag }}</span>@if (!last) {<i></i>}</div>
-              <div class="timeline-copy">
-                <small>{{ item.date }} · {{ item.status }}</small>
-                <strong>{{ item.location }}</strong>
-                <span>{{ item.title }}</span>
-                @if (item.href) { <a [href]="item.href">Open →</a> }
-              </div>
+        <div class="upcoming-grid" id="upcoming-grid">
+          @for (item of visibleUpcoming(); track item.id) {
+            <article class="upcoming-card">
+              <time [attr.datetime]="item.sortDate">{{ item.date }}</time>
+              <h3>{{ item.location }}</h3>
+              <p>{{ item.title }}</p>
+              <footer><span class="booking-status">{{ item.status }}</span><a [href]="item.href" [attr.aria-label]="'Open engagement: ' + item.title">Open engagement →</a></footer>
             </article>
           } @empty {
-            <p class="timeline-empty">Confirmed travel and protected dates will appear here.</p>
+            <p class="empty">No upcoming engagements. Requests and date holds are managed below.</p>
           }
         </div>
       </section>
 
       <section class="pipeline">
         <header class="section-heading pipeline-heading">
-          <div><span class="eyebrow">Booking pipeline</span><h2>Requests and opportunities</h2></div>
+          <div><h2 #pipelineHeading tabindex="-1">Requests and opportunities</h2></div>
           <div class="filters" aria-label="Booking filters">
             @for (filter of filters; track filter.id) {
               <button type="button" [class.active]="activeFilter() === filter.id" (click)="setFilter(filter.id)">{{ filter.label }}</button>
@@ -118,6 +114,9 @@ interface TimelineItem {
           </div>
         </header>
 
+        @if (activeFilter() === 'expiring-holds') {
+          <p class="filter-context">Holds expiring within 7 days <button type="button" class="text-action" (click)="setFilter('all')">Clear filter</button></p>
+        }
         <div class="pipeline-list">
           @for (item of filteredBookings(); track item.key) {
             <button type="button" class="booking-row" (click)="openBooking(item, detailDialog)">
@@ -317,7 +316,24 @@ interface TimelineItem {
     </section>
   `,
   styles: [`
-    :host{display:block}.booking-desk{max-width:1320px;margin:0 auto;padding:30px 34px 72px;color:#1d2633}.eyebrow{display:block;color:#936d35;font-size:.61rem;font-weight:900;letter-spacing:.115em;text-transform:uppercase}.desk-hero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:32px;align-items:end;padding:16px 0 28px;border-bottom:1px solid #dfe2e6}.desk-hero h1{max-width:820px;margin:7px 0 9px;font-size:clamp(2.35rem,5vw,4.45rem);line-height:.98;letter-spacing:-.058em}.desk-hero p{max-width:800px;margin:0;color:#707781;line-height:1.65}.hero-actions{display:flex;gap:8px;align-items:center}.hero-actions a,.hero-actions button,.primary,.secondary,.quiet{min-height:40px;padding:0 14px;border:1px solid #d7dce2;border-radius:8px;background:#fff;color:#2b557f;font:inherit;font-size:.69rem;font-weight:850;text-decoration:none;cursor:pointer}.primary{border-color:#17263a!important;background:#17263a!important;color:#fff!important}.primary:disabled,.stage-actions button:disabled{opacity:.55;cursor:wait}.today-brief,.outlook,.pipeline{margin-top:30px}.section-heading{display:flex;justify-content:space-between;gap:20px;align-items:end}.section-heading h2{margin:4px 0 0;font-size:1.42rem;letter-spacing:-.035em}.section-heading>small,.region-summary{color:#7a8088;font-size:.67rem}.brief-list{margin-top:10px;border-top:1px solid #dfe2e6;border-bottom:1px solid #dfe2e6}.brief-list button{display:grid;width:100%;grid-template-columns:9px 180px minmax(0,1fr) auto;gap:13px;align-items:center;padding:13px 4px;border:0;border-bottom:1px solid #e7e9ec;background:transparent;text-align:left;color:inherit;cursor:pointer}.brief-list button:last-child{border-bottom:0}.brief-list button:hover{background:#f8f7f4}.signal-dot{width:7px;height:28px;border-radius:999px;background:#8290a3}.signal-dot[data-tone='red']{background:#b96458}.signal-dot[data-tone='gold']{background:#b88a45}.signal-dot[data-tone='blue']{background:#4e7299}.signal-dot[data-tone='plum']{background:#745372}.brief-value{display:flex;gap:6px;align-items:baseline}.brief-list strong{font-size:1rem}.brief-list small{color:#69717a;font-size:.67rem}.brief-list em{color:#7d838a;font-size:.68rem;font-style:normal}.brief-list b{color:#365f8c;font-size:.65rem}.travel-timeline{display:flex;gap:0;margin-top:14px;padding:18px;border:1px solid #e0e2e5;border-radius:14px;background:#fbfaf7;overflow:auto}.travel-timeline article{display:grid;grid-template-columns:48px minmax(170px,1fr);min-width:270px}.timeline-rail{display:flex;align-items:center;flex-direction:column}.flag{display:grid;width:38px;height:38px;border:1px solid #dedbd3;border-radius:50%;place-items:center;background:#fff;font-size:1.35rem}.timeline-rail i{width:1px;min-height:74px;flex:1;background:#d8d9dc}.timeline-copy{padding:1px 18px 18px 0}.timeline-copy small{display:block;color:#8a8172;font-size:.6rem;font-weight:800;text-transform:uppercase}.timeline-copy strong{display:block;margin-top:5px;font-size:.88rem}.timeline-copy span{display:block;margin-top:3px;color:#777e87;font-size:.7rem;line-height:1.45}.timeline-copy a{display:inline-block;margin-top:8px;color:#315d8e;font-size:.65rem;font-weight:850;text-decoration:none}.timeline-empty{margin:0;color:#7d838a;font-size:.72rem}.pipeline-heading{align-items:center}.filters{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}.filters button{padding:7px 9px;border:1px solid transparent;border-radius:999px;background:transparent;color:#747b84;font-size:.61rem;font-weight:850;cursor:pointer}.filters button.active{border-color:#d7dbe0;background:#fff;color:#263b55}.pipeline-list{margin-top:11px;border:1px solid #dfe2e6;border-radius:12px;overflow:hidden;background:#fff}.booking-row{display:grid;width:100%;grid-template-columns:38px minmax(0,1fr) 150px 100px 16px;gap:12px;align-items:center;padding:14px 16px;border:0;border-bottom:1px solid #e8eaed;background:#fff;text-align:left;color:inherit;cursor:pointer}.booking-row:last-child{border-bottom:0}.booking-row:hover{background:#faf9f6}.country-flag{font-size:1.35rem}.booking-main{display:grid;gap:3px}.booking-main small{color:#92713e;font-size:.58rem;font-weight:900;text-transform:uppercase}.booking-main strong{font-size:.82rem}.booking-main em{color:#777e87;font-size:.66rem;font-style:normal}.booking-date,.booking-signal{display:grid;gap:2px}.booking-date strong,.booking-signal strong{font-size:.72rem}.booking-date small,.booking-signal small{color:#8a9097;font-size:.58rem}.booking-row>b{color:#8b929a;font-size:1.2rem}.empty{padding:34px;text-align:center;color:#7c838c}.quick-dialog,.detail-dialog{padding:0;border:0;background:transparent}.quick-dialog::backdrop,.detail-dialog::backdrop{background:rgba(11,17,26,.44);backdrop-filter:blur(3px)}.quick-dialog{width:min(760px,calc(100vw - 28px));max-width:none}.dialog-shell{overflow:hidden;border-radius:16px;background:#fff;box-shadow:0 30px 100px rgba(10,16,26,.3)}.dialog-shell header,.detail-header{display:flex;justify-content:space-between;gap:20px;padding:22px 24px;border-bottom:1px solid #e1e4e8}.dialog-shell header h2,.detail-header h2{margin:4px 0;font-size:1.55rem}.dialog-shell header p,.detail-header p{margin:0;color:#757c85;font-size:.72rem}.close{width:38px;height:38px;padding:0;border:0;border-radius:50%;background:#f1f2f4;color:#4e5661;font-size:1.15rem;cursor:pointer}.quick-grid,.edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}.quick-grid{padding:22px 24px}.quick-grid label,.edit-grid label{display:grid;gap:6px;color:#5f6670;font-size:.65rem;font-weight:800}.quick-grid .wide,.edit-grid .wide{grid-column:1/-1}.quick-grid input,.quick-grid select,.quick-grid textarea,.edit-grid input,.edit-grid select,.edit-grid textarea{box-sizing:border-box;width:100%;padding:11px;border:1px solid #d3d8df;border-radius:8px;background:#fbfbfa;color:#202a36;font:inherit}.dialog-shell footer,.edit-form footer{display:flex;justify-content:flex-end;gap:8px;padding:16px 24px;border-top:1px solid #e1e4e8}.detail-dialog{width:min(610px,100vw);max-width:none;height:100dvh;max-height:100dvh;margin:0 0 0 auto}.detail-shell{min-height:100dvh;background:#fff;box-shadow:-20px 0 70px rgba(12,18,28,.2)}.detail-header{position:sticky;top:0;z-index:3;background:#fff}.detail-header-actions{display:flex;gap:8px;align-items:center}.quiet{min-height:36px;color:#4f6174;background:#f7f8f8}.detail-body{padding:0 24px 36px}.conflict-panel{margin:18px 24px 0;padding:13px 15px;border-left:3px solid #c47a43;background:#fff5e9}.conflict-panel strong{font-size:.72rem}.conflict-panel p{margin:5px 0 0;color:#755738;font-size:.67rem;line-height:1.5}.detail-section{padding:20px 0;border-bottom:1px solid #e5e7ea}.detail-section:last-child{border-bottom:0}.detail-section h3,.edit-form h3{margin:5px 0 10px;font-size:1rem}.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}.detail-grid div{display:grid;gap:4px;padding:11px;border-radius:9px;background:#f7f7f5}.detail-grid small{color:#858b92;font-size:.58rem;text-transform:uppercase;font-weight:850}.detail-grid strong{font-size:.69rem;line-height:1.45}.contact-line{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;color:#727a84;font-size:.65rem}.alternate{margin:10px 0 0;color:#636b75;font-size:.69rem}.record-note{margin:12px 0 0;padding:12px 14px;border-left:2px solid #b88a45;background:#f8f4ec;color:#606770;font-size:.72rem;line-height:1.6}.check-list{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}.check-list span{padding:6px 8px;border-radius:999px;background:#f1f3f4;color:#68717b;font-size:.6rem;font-weight:800}.check-list span.done{background:#eaf4ed;color:#2d6d49}.check-list span.attention{background:#fff0dc;color:#8b611c}.next-step p{color:#737a83;font-size:.72rem;line-height:1.6}.stage-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}.stage-actions button,.action-link{min-height:39px;padding:0 12px;border:1px solid #d4d9df;border-radius:8px;background:#fff;color:#315b87;font-size:.65rem;font-weight:850;cursor:pointer}.danger{color:#9c4846!important;border-color:#e3c4c2!important}.action-link{display:inline-flex;align-items:center;text-decoration:none}.conversion-error{padding:10px 12px;border-radius:8px;background:#fff0ee!important;color:#954b45!important}.edit-form{padding:0 24px 32px}.edit-form>section{padding:20px 0;border-bottom:1px solid #e5e7ea}.toggle-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 14px}.toggle-grid label{display:flex;gap:8px;align-items:center;padding:10px;border-radius:8px;background:#f7f7f5;color:#58616c;font-size:.65rem;font-weight:800}.edit-form footer{margin:0 -24px -32px}.region-summary{max-width:520px;text-align:right}.secondary{color:#536071!important}@media(max-width:850px){.desk-hero{grid-template-columns:1fr}.hero-actions{justify-content:flex-start}.brief-list button{grid-template-columns:8px 140px 1fr}.brief-list b{display:none}.booking-row{grid-template-columns:36px 1fr 80px 12px}.booking-signal{display:none}.pipeline-heading{display:grid}.filters{justify-content:flex-start;margin-top:9px}.region-summary{display:none}}@media(max-width:600px){.booking-desk{padding:22px 16px 58px}.brief-list button{grid-template-columns:8px 1fr}.brief-list em{display:none}.booking-row{grid-template-columns:30px 1fr 12px}.booking-date{display:none}.quick-grid,.edit-grid,.detail-grid,.toggle-grid{grid-template-columns:1fr}.quick-grid .wide,.edit-grid .wide{grid-column:auto}.hero-actions{display:grid}.travel-timeline article{min-width:240px}.detail-header-actions .quiet{display:none}}
+    .attention-strip{margin-top:24px;padding:16px;border:1px solid #dfe2e6;border-radius:12px;background:#fff}
+    .attention-strip h2{margin:0 0 12px;font-size:1rem}
+    .attention-actions{display:flex;gap:10px;flex-wrap:wrap}
+    .attention-actions button{flex:1 1 220px;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px;border:1px solid #e1e4e8;border-left:3px solid #4e7299;border-radius:8px;background:#fff;text-align:left;color:inherit;cursor:pointer;font:inherit;font-size:.8rem}
+    .attention-actions button[data-tone=red]{border-left-color:#b96458}.attention-actions button[data-tone=gold]{border-left-color:#b88a45}
+    .attention-actions b{font-size:.75rem;white-space:nowrap;color:var(--action-primary,#172a46)}
+    .upcoming{margin-top:24px}.upcoming-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:14px}
+    .upcoming-card{min-width:0;padding:18px;border:1px solid #dfe2e6;border-radius:12px;background:#fff;display:flex;flex-direction:column;gap:8px}
+    .upcoming-card time{font-size:.8rem;font-weight:750;color:#606b79}.upcoming-card h3{font-size:1.05rem;margin:0;overflow-wrap:anywhere}.upcoming-card p{margin:0 0 10px;font-size:.85rem;color:#69717a;overflow-wrap:anywhere}
+    .upcoming-card footer{margin-top:auto;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}.booking-status{padding:4px 8px;border-radius:5px;background:#f1f3f5;font-size:.72rem;color:#465362}
+    .upcoming-card a,.text-action{color:var(--action-primary,#172a46);font:inherit;font-size:.8rem;font-weight:750;text-decoration:none}.text-action{border:0;background:transparent;cursor:pointer;padding:8px}
+    .attention-actions button:hover,.upcoming-card:hover{border-color:var(--action-primary,#172a46)}
+    .attention-actions button:focus-visible,.text-action:focus-visible,.upcoming-card a:focus-visible{outline:2px solid var(--action-primary,#172a46);outline-offset:3px}
+    .filter-context{font-size:.8rem;color:#69717a}.pipeline-heading h2{scroll-margin-top:100px}
+    @media(max-width:760px){.upcoming-grid{grid-template-columns:1fr}.attention-actions{flex-direction:column}.attention-actions button{flex-basis:auto}}
+    @media(prefers-reduced-motion:reduce){:host{scroll-behavior:auto}}
+
+    :host{display:block}.booking-desk{max-width:1320px;margin:0 auto;padding:30px 34px 72px;color:#1d2633}.eyebrow{display:block;color:#936d35;font-size:.61rem;font-weight:900;letter-spacing:.115em;text-transform:uppercase}.desk-hero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:32px;align-items:end;padding:16px 0 28px;border-bottom:1px solid #dfe2e6}.desk-hero h1{max-width:820px;margin:7px 0 9px;font-size:clamp(2.35rem,5vw,4.45rem);line-height:.98;letter-spacing:-.058em}.desk-hero p{max-width:800px;margin:0;color:#707781;line-height:1.65}.hero-actions{display:flex;gap:8px;align-items:center}.hero-actions a,.hero-actions button,.primary,.secondary,.quiet{min-height:40px;padding:0 14px;border:1px solid #d7dce2;border-radius:8px;background:#fff;color:#2b557f;font:inherit;font-size:.69rem;font-weight:850;text-decoration:none;cursor:pointer}.primary{border-color:#17263a!important;background:#17263a!important;color:#fff!important}.primary:disabled,.stage-actions button:disabled{opacity:.55;cursor:wait}.today-brief,.outlook,.pipeline{margin-top:30px}.section-heading{display:flex;justify-content:space-between;gap:20px;align-items:end}.section-heading h2{margin:4px 0 0;font-size:1.42rem;letter-spacing:-.035em}.section-heading>small,.region-summary{color:#7a8088;font-size:.67rem}.pipeline-heading{align-items:center}.filters{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}.filters button{padding:7px 9px;border:1px solid transparent;border-radius:999px;background:transparent;color:#747b84;font-size:.61rem;font-weight:850;cursor:pointer}.filters button.active{border-color:#d7dbe0;background:#fff;color:#263b55}.pipeline-list{margin-top:11px;border:1px solid #dfe2e6;border-radius:12px;overflow:hidden;background:#fff}.booking-row{display:grid;width:100%;grid-template-columns:38px minmax(0,1fr) 150px 100px 16px;gap:12px;align-items:center;padding:14px 16px;border:0;border-bottom:1px solid #e8eaed;background:#fff;text-align:left;color:inherit;cursor:pointer}.booking-row:last-child{border-bottom:0}.booking-row:hover{background:#faf9f6}.country-flag{font-size:1.35rem}.booking-main{display:grid;gap:3px}.booking-main small{color:#92713e;font-size:.58rem;font-weight:900;text-transform:uppercase}.booking-main strong{font-size:.82rem}.booking-main em{color:#777e87;font-size:.66rem;font-style:normal}.booking-date,.booking-signal{display:grid;gap:2px}.booking-date strong,.booking-signal strong{font-size:.72rem}.booking-date small,.booking-signal small{color:#8a9097;font-size:.58rem}.booking-row>b{color:#8b929a;font-size:1.2rem}.empty{padding:34px;text-align:center;color:#7c838c}.quick-dialog,.detail-dialog{padding:0;border:0;background:transparent}.quick-dialog::backdrop,.detail-dialog::backdrop{background:rgba(11,17,26,.44);backdrop-filter:blur(3px)}.quick-dialog{width:min(760px,calc(100vw - 28px));max-width:none}.dialog-shell{overflow:hidden;border-radius:16px;background:#fff;box-shadow:0 30px 100px rgba(10,16,26,.3)}.dialog-shell header,.detail-header{display:flex;justify-content:space-between;gap:20px;padding:22px 24px;border-bottom:1px solid #e1e4e8}.dialog-shell header h2,.detail-header h2{margin:4px 0;font-size:1.55rem}.dialog-shell header p,.detail-header p{margin:0;color:#757c85;font-size:.72rem}.close{width:38px;height:38px;padding:0;border:0;border-radius:50%;background:#f1f2f4;color:#4e5661;font-size:1.15rem;cursor:pointer}.quick-grid,.edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}.quick-grid{padding:22px 24px}.quick-grid label,.edit-grid label{display:grid;gap:6px;color:#5f6670;font-size:.65rem;font-weight:800}.quick-grid .wide,.edit-grid .wide{grid-column:1/-1}.quick-grid input,.quick-grid select,.quick-grid textarea,.edit-grid input,.edit-grid select,.edit-grid textarea{box-sizing:border-box;width:100%;padding:11px;border:1px solid #d3d8df;border-radius:8px;background:#fbfbfa;color:#202a36;font:inherit}.dialog-shell footer,.edit-form footer{display:flex;justify-content:flex-end;gap:8px;padding:16px 24px;border-top:1px solid #e1e4e8}.detail-dialog{width:min(610px,100vw);max-width:none;height:100dvh;max-height:100dvh;margin:0 0 0 auto}.detail-shell{min-height:100dvh;background:#fff;box-shadow:-20px 0 70px rgba(12,18,28,.2)}.detail-header{position:sticky;top:0;z-index:3;background:#fff}.detail-header-actions{display:flex;gap:8px;align-items:center}.quiet{min-height:36px;color:#4f6174;background:#f7f8f8}.detail-body{padding:0 24px 36px}.conflict-panel{margin:18px 24px 0;padding:13px 15px;border-left:3px solid #c47a43;background:#fff5e9}.conflict-panel strong{font-size:.72rem}.conflict-panel p{margin:5px 0 0;color:#755738;font-size:.67rem;line-height:1.5}.detail-section{padding:20px 0;border-bottom:1px solid #e5e7ea}.detail-section:last-child{border-bottom:0}.detail-section h3,.edit-form h3{margin:5px 0 10px;font-size:1rem}.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}.detail-grid div{display:grid;gap:4px;padding:11px;border-radius:9px;background:#f7f7f5}.detail-grid small{color:#858b92;font-size:.58rem;text-transform:uppercase;font-weight:850}.detail-grid strong{font-size:.69rem;line-height:1.45}.contact-line{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;color:#727a84;font-size:.65rem}.alternate{margin:10px 0 0;color:#636b75;font-size:.69rem}.record-note{margin:12px 0 0;padding:12px 14px;border-left:2px solid #b88a45;background:#f8f4ec;color:#606770;font-size:.72rem;line-height:1.6}.check-list{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}.check-list span{padding:6px 8px;border-radius:999px;background:#f1f3f4;color:#68717b;font-size:.6rem;font-weight:800}.check-list span.done{background:#eaf4ed;color:#2d6d49}.check-list span.attention{background:#fff0dc;color:#8b611c}.next-step p{color:#737a83;font-size:.72rem;line-height:1.6}.stage-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}.stage-actions button,.action-link{min-height:39px;padding:0 12px;border:1px solid #d4d9df;border-radius:8px;background:#fff;color:#315b87;font-size:.65rem;font-weight:850;cursor:pointer}.danger{color:#9c4846!important;border-color:#e3c4c2!important}.action-link{display:inline-flex;align-items:center;text-decoration:none}.conversion-error{padding:10px 12px;border-radius:8px;background:#fff0ee!important;color:#954b45!important}.edit-form{padding:0 24px 32px}.edit-form>section{padding:20px 0;border-bottom:1px solid #e5e7ea}.toggle-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 14px}.toggle-grid label{display:flex;gap:8px;align-items:center;padding:10px;border-radius:8px;background:#f7f7f5;color:#58616c;font-size:.65rem;font-weight:800}.edit-form footer{margin:0 -24px -32px}.region-summary{max-width:520px;text-align:right}.secondary{color:#536071!important}@media(max-width:850px){.desk-hero{grid-template-columns:1fr}.hero-actions{justify-content:flex-start}.brief-list button{grid-template-columns:8px 140px 1fr}.brief-list b{display:none}.booking-row{grid-template-columns:36px 1fr 80px 12px}.booking-signal{display:none}.pipeline-heading{display:grid}.filters{justify-content:flex-start;margin-top:9px}.region-summary{display:none}}@media(max-width:600px){.booking-desk{padding:22px 16px 58px}.brief-list button{grid-template-columns:8px 1fr}.brief-list em{display:none}.booking-row{grid-template-columns:30px 1fr 12px}.booking-date{display:none}.quick-grid,.edit-grid,.detail-grid,.toggle-grid{grid-template-columns:1fr}.quick-grid .wide,.edit-grid .wide{grid-column:auto}.hero-actions{display:grid}.travel-timeline article{min-width:240px}.detail-header-actions .quiet{display:none}}
   `],
 })
 export class CtgBookingDeskComponent implements OnInit {
@@ -347,52 +363,50 @@ export class CtgBookingDeskComponent implements OnInit {
     const website = this.requests().map(item => this.fromWebsite(item));
     return [...manual, ...website].sort((a, b) => this.priority(a) - this.priority(b) || a.startDate.localeCompare(b.startDate));
   });
-  readonly activeCount = computed(() => this.allBookings().filter(item => !['declined', 'converted'].includes(item.stage)).length);
-  readonly newCount = computed(() => this.allBookings().filter(item => item.stage === 'new').length);
-  readonly needsInfoCount = computed(() => this.allBookings().filter(item => item.stage === 'needs-information').length);
-  readonly internationalCount = computed(() => this.allBookings().filter(item => !['declined','converted'].includes(item.stage) && this.isInternational(item.country)).length);
-  readonly expiringHoldCount = computed(() => this.allBookings().filter(item => item.stage === 'date-hold' && this.expiresWithinDays(item.holdExpiresAtUtc, 7)).length);
-  readonly stalledCount = computed(() => this.allBookings().filter(item => !['declined','converted'].includes(item.stage) && this.daysSince(item.updatedAtUtc) >= 5).length);
-
+  readonly showAllUpcoming = signal(false);
+  readonly expiringHolds = computed(() => this.allBookings().filter(item => item.stage === 'date-hold' && this.expiresWithinDays(item.holdExpiresAtUtc, 7)));
   readonly briefSignals = computed(() => [
-    { value: this.newCount(), label: 'new invitations', detail: 'Requests that have not entered review yet.', filter: 'new' as DeskFilter, tone: 'blue' },
-    { value: this.needsInfoCount(), label: 'waiting on host information', detail: 'Follow up before discernment can move forward.', filter: 'needs-information' as DeskFilter, tone: 'gold' },
-    { value: this.expiringHoldCount(), label: 'date holds expire this week', detail: 'Release or confirm dates before they quietly lapse.', filter: 'date-hold' as DeskFilter, tone: 'red' },
-    { value: this.internationalCount(), label: 'international opportunities active', detail: `${this.stalledCount()} active request${this.stalledCount() === 1 ? '' : 's'} with no activity for 5+ days.`, filter: 'needs-me' as DeskFilter, tone: 'plum' },
-  ]);
+    { value: this.expiringHolds().length, label: 'holds expiring within 7 days', action: 'Review holds', filter: 'expiring-holds' as DeskFilter, tone: 'red' },
+    { value: this.allBookings().filter(item => item.stage === 'needs-information').length, label: 'awaiting host information', action: 'Follow up', filter: 'needs-information' as DeskFilter, tone: 'gold' },
+    { value: this.allBookings().filter(item => item.stage === 'new').length, label: 'new invitations', action: 'Review invitations', filter: 'new' as DeskFilter, tone: 'blue' },
+  ].filter(alert => alert.value > 0));
+
+  readonly timeline = computed<TimelineItem[]>(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return this.assignments()
+      .filter(item => !!item.startsAtUtc && new Date(item.startsAtUtc).getTime() >= today.getTime() && !['completed', 'cancelled', 'canceled', 'declined'].includes(item.status.toLowerCase()))
+      .map(item => ({ id: item.id, flag: '', location: item.location || 'Location pending', title: item.title, date: this.compactDate(item.startsAtUtc || ''), sortDate: item.startsAtUtc || '', status: this.labelize(item.status), href: `/assignments/${item.id}` }))
+      .sort((a, b) => a.sortDate.localeCompare(b.sortDate));
+  });
+  readonly visibleUpcoming = computed(() => this.showAllUpcoming() ? this.timeline() : this.timeline().slice(0, 3));
 
   readonly filteredBookings = computed(() => {
     const filter = this.activeFilter();
-    if (filter === 'all') return this.allBookings();
-    if (filter === 'needs-me') return this.allBookings().filter(item =>
-      ['new', 'needs-information', 'under-review'].includes(item.stage) ||
-      (item.stage === 'date-hold' && this.expiresWithinDays(item.holdExpiresAtUtc, 7)) ||
-      this.daysSince(item.updatedAtUtc) >= 5,
+    const shownAssignments = new Set(this.visibleUpcoming().map(item => item.id));
+    const bookings = this.allBookings().filter(item => !item.assignmentId || !shownAssignments.has(item.assignmentId));
+    if (filter === 'all') return bookings;
+    if (filter === 'expiring-holds') return this.expiringHolds();
+    if (filter === 'needs-me') return bookings.filter(item =>
+      !['declined', 'converted'].includes(item.stage) && (
+        ['new', 'needs-information', 'under-review'].includes(item.stage) ||
+        (item.stage === 'date-hold' && this.expiresWithinDays(item.holdExpiresAtUtc, 7)) ||
+        this.daysSince(item.updatedAtUtc) >= 5
+      ),
     );
-    return this.allBookings().filter(item => item.stage === filter);
+    return bookings.filter(item => item.stage === filter);
   });
 
-  readonly timeline = computed<TimelineItem[]>(() => {
-    const assignments: TimelineItem[] = this.assignments()
-      .filter(item => !!item.startsAtUtc && item.status !== 'completed')
-      .map(item => {
-        const country = this.countryFromLocation(item.location || '');
-        return { id: `assignment-${item.id}`, flag: this.flagFor(country), location: item.location || 'Location pending', title: item.title, date: this.compactDate(item.startsAtUtc || ''), sortDate: item.startsAtUtc || '', status: item.readinessPercent >= 80 ? 'Confirmed' : `${item.readinessPercent}% ready`, href: `/assignments/${item.id}` };
-      });
-    const protectedDates: TimelineItem[] = this.state.bookings()
-      .filter(item => ['date-hold', 'approved'].includes(item.stage) && !!item.requestedStartDate && !this.assignmentForManual(item.id))
-      .map(item => ({ id: `booking-${item.id}`, flag: this.flagFor(item.country), location: [item.city, item.country].filter(Boolean).join(', '), title: item.eventName, date: this.compactDate(item.requestedStartDate), sortDate: item.requestedStartDate, status: item.stage === 'date-hold' ? 'Date hold' : 'Approved direction' }));
-    return [...assignments, ...protectedDates].sort((a, b) => a.sortDate.localeCompare(b.sortDate)).slice(0, 7);
-  });
-
-  readonly regionSummary = computed(() => {
-    const counts = new Map<string, number>();
-    for (const item of this.allBookings().filter(item => !['declined','converted'].includes(item.stage))) {
-      const region = this.worldRegion(item.country);
-      counts.set(region, (counts.get(region) ?? 0) + 1);
+  showAttention(filter: DeskFilter, heading: HTMLElement, dialog: HTMLDialogElement): void {
+    this.setFilter(filter);
+    const matches = this.filteredBookings();
+    if (matches.length === 1) {
+      this.openBooking(matches[0], dialog);
+      return;
     }
-    return [...counts.entries()].map(([name, count]) => `${name} ${count}`).join(' · ');
-  });
+    heading.focus({ preventScroll: true });
+    heading.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }
 
   constructor(readonly state: CtgBookingDeskStateService, private readonly api: EngagementsApiService) {}
 
@@ -404,6 +418,10 @@ export class CtgBookingDeskComponent implements OnInit {
   setFilter(filter: DeskFilter): void { this.activeFilter.set(filter); }
 
   openBooking(item: BookingDeskItem, dialog: HTMLDialogElement): void {
+    if (item.kind === 'website') {
+      window.location.assign(item.assignmentId ? `/assignments/${item.assignmentId}` : `/invitations?request=${item.id}`);
+      return;
+    }
     this.selected.set(item); this.editing.set(false); this.editDraft.set(null); this.conversionError.set(''); dialog.showModal();
   }
 

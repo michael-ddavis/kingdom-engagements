@@ -40,6 +40,25 @@ export interface CreateEngagementInput {
   location: string | null;
 }
 
+export interface UpdateEngagementInput {
+  title: string;
+  speakerName: string;
+  hostOrganization: string;
+  hostContactName: string | null;
+  hostContactEmail: string | null;
+  location: string | null;
+  startsAtUtc: string | null;
+  endsAtUtc: string | null;
+  status: string;
+  travelStatus: string;
+  lodgingStatus: string;
+  transportationStatus: string;
+  hostStatus: string;
+  documentsStatus: string;
+  closeoutStatus: string;
+  notes: string | null;
+}
+
 export interface CreateEngagementTaskInput {
   category: string;
   title: string;
@@ -123,6 +142,20 @@ export class EngagementsApiService {
 
   createAssignment(input: CreateEngagementInput): Observable<EngagementDetails> {
     return this.http.post<EngagementDetails>('/api/engagements/assignments', input);
+  }
+
+  updateAssignment(id: string, input: UpdateEngagementInput): Observable<EngagementDetails> {
+    return this.http.put<EngagementDetails>(
+      `/api/engagements/assignments/${encodeURIComponent(id)}`,
+      input,
+    );
+  }
+
+  archiveAssignment(id: string): Observable<EngagementDetails> {
+    return this.http.post<EngagementDetails>(
+      `/api/engagements/assignments/${encodeURIComponent(id)}/archive`,
+      {},
+    );
   }
 
   addAssignmentTask(assignmentId: string, input: CreateEngagementTaskInput): Observable<EngagementDetails> {

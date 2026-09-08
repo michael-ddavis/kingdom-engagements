@@ -1,6 +1,8 @@
 import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { EngagementsApiService } from '../../core/engagements-api.service';
+import { EngagementDemoRoleService } from '../../core/engagement-demo-role.service';
 import { Closeout, EngagementCompletion } from '../../core/models';
 
 @Component({
@@ -59,12 +61,26 @@ import { Closeout, EngagementCompletion } from '../../core/models';
 
       <div class="save-dock" role="region" aria-label="Closeout save actions">
         <div>
-          <strong>Closeout record</strong>
-          <span>Save progress at any time, or complete the assignment when every required item is resolved.</span>
+          <strong>{{ completion.closeout.completedAtUtc ? 'Completed assignment' : 'Closeout record' }}</strong>
+          <span>
+            @if (completion.closeout.completedAtUtc) {
+              The engagement is complete. An Administrator / Executive can archive it when it no longer belongs in the completed queue.
+            } @else {
+              Save progress at any time. Final completion is reserved for the Administrator / Executive role.
+            }
+          </span>
         </div>
         <div class="save-dock__actions">
-          <button type="button" class="secondary" [disabled]="saving()" (click)="save(false)">{{ saving() ? 'Saving…' : 'Save closeout' }}</button>
-          <button type="button" class="primary" [disabled]="saving() || !completion.canComplete" (click)="save(true)">Complete assignment</button>
+          @if (!completion.closeout.completedAtUtc) {
+            <button type="button" class="secondary" [disabled]="saving()" (click)="save(false)">{{ saving() ? 'Saving…' : 'Save closeout' }}</button>
+            @if (demoRole.canCompleteEngagements()) {
+              <button type="button" class="primary" [disabled]="saving() || !completion.canComplete" (click)="save(true)">Complete assignment</button>
+            } @else {
+              <span class="executive-required">Executive completion required</span>
+            }
+          } @else if (demoRole.canCompleteEngagements()) {
+            <button type="button" class="primary" [disabled]="saving()" (click)="archive()">{{ saving() ? 'Archiving…' : 'Archive engagement' }}</button>
+          }
         </div>
       </div>
     </section>
@@ -77,8 +93,8 @@ import { Closeout, EngagementCompletion } from '../../core/models';
     .closeout-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(320px,.75fr)}.narrative{display:grid;gap:.8rem;padding:1.2rem 1.3rem;border-right:1px solid var(--eng-line)}label{display:grid;gap:.3rem}label>span{color:#5d6879;font-size:.66rem;font-weight:800}textarea{width:100%;padding:.7rem;border:1px solid #ccd2db;border-radius:7px;color:var(--eng-ink);background:#fff;resize:vertical}
     .closeout-checks{padding:1.2rem}.closeout-checks>p{margin:0 0 .65rem;color:var(--eng-blue);font-size:.68rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase}.closeout-checks label{display:grid;grid-template-columns:20px minmax(0,1fr);gap:.55rem;padding:.7rem 0;border-bottom:1px solid rgba(18,26,44,.08);cursor:pointer}.closeout-checks input{margin-top:.15rem}.closeout-checks label strong,.closeout-checks label small{display:block}.closeout-checks label strong{color:var(--eng-ink);font-size:.76rem}.closeout-checks label small{margin-top:.2rem;color:var(--eng-muted);font-size:.65rem;line-height:1.4}
     .system-check{display:flex;gap:.6rem;align-items:center;padding:.7rem 0;border-bottom:1px solid rgba(18,26,44,.08)}.system-check>span{display:grid;width:25px;height:25px;place-items:center;border-radius:50%;color:#7f8794;background:#eceff2;font-weight:900}.system-check>span.ok{color:#fff;background:#2d7d5c}.system-check strong,.system-check small{display:block}.system-check strong{font-size:.73rem}.system-check small{margin-top:.15rem;color:var(--eng-muted);font-size:.64rem}
-    .save-dock{position:sticky;bottom:.8rem;z-index:15;display:flex;align-items:center;justify-content:space-between;gap:1rem;width:calc(100% - 2rem);margin:1rem 1rem -4.85rem;padding:.8rem .9rem;border:1px solid rgba(18,26,44,.12);border-radius:9px;background:rgba(255,253,250,.96);box-shadow:0 12px 36px rgba(18,26,44,.13);backdrop-filter:blur(14px)}.save-dock>div:first-child strong,.save-dock>div:first-child span{display:block}.save-dock>div:first-child strong{font-size:.72rem}.save-dock>div:first-child span{max-width:620px;margin-top:.12rem;color:var(--eng-muted);font-size:.62rem}.save-dock__actions{display:flex;gap:.5rem}.save-dock button{min-height:42px;padding:.58rem .85rem;border-radius:7px;font-size:.72rem;font-weight:850;cursor:pointer}.secondary{border:1px solid var(--eng-line);color:var(--eng-ink);background:#fff}.primary{border:1px solid transparent;color:#fff;background:var(--eng-ink)}button:disabled{cursor:default;opacity:.45}
-    @media(max-width:850px){.closeout-grid{grid-template-columns:1fr}.narrative{border-right:0;border-bottom:1px solid var(--eng-line)}.save-dock{display:grid;bottom:.5rem}.save-dock__actions{display:grid;grid-template-columns:1fr 1fr}.save-dock button{width:100%}}
+    .save-dock{position:sticky;bottom:.8rem;z-index:15;display:flex;align-items:center;justify-content:space-between;gap:1rem;width:calc(100% - 2rem);margin:1rem 1rem -4.85rem;padding:.8rem .9rem;border:1px solid rgba(18,26,44,.12);border-radius:9px;background:rgba(255,253,250,.96);box-shadow:0 12px 36px rgba(18,26,44,.13);backdrop-filter:blur(14px)}.save-dock>div:first-child strong,.save-dock>div:first-child span{display:block}.save-dock>div:first-child strong{font-size:.72rem}.save-dock>div:first-child span{max-width:620px;margin-top:.12rem;color:var(--eng-muted);font-size:.62rem}.save-dock__actions{display:flex;gap:.5rem;align-items:center}.save-dock button{min-height:42px;padding:.58rem .85rem;border-radius:7px;font-size:.72rem;font-weight:850;cursor:pointer}.secondary{border:1px solid var(--eng-line);color:var(--eng-ink);background:#fff}.primary{border:1px solid transparent;color:#fff;background:var(--eng-ink)}button:disabled{cursor:default;opacity:.45}.executive-required{padding:.55rem .7rem;border-radius:7px;color:#735f3f;background:#f7f0e4;font-size:.65rem;font-weight:800;white-space:nowrap}
+    @media(max-width:850px){.closeout-grid{grid-template-columns:1fr}.narrative{border-right:0;border-bottom:1px solid var(--eng-line)}.save-dock{display:grid;bottom:.5rem}.save-dock__actions{display:grid;grid-template-columns:1fr 1fr}.save-dock button{width:100%}.executive-required{display:grid;place-items:center}}
     @media(max-width:560px){header{display:grid}.save-dock__actions{grid-template-columns:1fr}}
   `],
 })
@@ -99,10 +115,19 @@ export class CloseoutTabComponent {
   readonly message = signal<string | null>(null);
   readonly error = signal<string | null>(null);
 
-  constructor(private readonly api: EngagementsApiService) {}
+  constructor(
+    private readonly api: EngagementsApiService,
+    private readonly router: Router,
+    readonly demoRole: EngagementDemoRoleService,
+  ) {}
 
   save(complete: boolean): void {
     if (this.saving()) return;
+    if (complete && !this.demoRole.canCompleteEngagements()) {
+      this.error.set('Only the Administrator / Executive role can complete an engagement.');
+      return;
+    }
+
     this.saving.set(true);
     this.error.set(null);
     const payload: EngagementCompletion = {
@@ -117,6 +142,23 @@ export class CloseoutTabComponent {
       },
       error: (response) => {
         this.error.set(response?.error?.message ?? 'The closeout record could not be saved.');
+        this.saving.set(false);
+      },
+    });
+  }
+
+  archive(): void {
+    if (this.saving() || !this.demoRole.canCompleteEngagements()) return;
+    this.saving.set(true);
+    this.error.set(null);
+    this.api.archiveAssignment(this.assignmentId).subscribe({
+      next: () => {
+        this.message.set('Engagement archived.');
+        this.saving.set(false);
+        void this.router.navigate(['/assignments'], { queryParams: { view: 'archived' } });
+      },
+      error: (response) => {
+        this.error.set(response?.error?.message ?? 'The engagement could not be archived.');
         this.saving.set(false);
       },
     });

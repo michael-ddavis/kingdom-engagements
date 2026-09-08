@@ -82,33 +82,25 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
     .eng-view-chip{display:inline-flex;min-height:32px;padding:0 10px;border:1px solid var(--kos-action-primary);border-radius:999px;align-items:center;color:var(--kos-action-primary);background:#fff;font-size:.62rem;font-weight:850;letter-spacing:.04em;text-transform:uppercase}
     .eng-main--public{max-width:none!important;padding:0!important;margin:0!important}
 
-    /* Engagements navigation: clear contrast, with the selected destination outlined in the saved Primary Action color. */
-    .eng-modulebar__actions{gap:.42rem!important}
-    .eng-modulebar__actions a{min-height:38px!important;padding:0 .78rem!important;border:1px solid #c8d0da!important;border-radius:999px!important;color:#26364d!important;background:#fff!important;box-shadow:0 1px 2px rgba(17,28,45,.04);font-weight:850!important;transition:border-color .16s ease,background .16s ease,color .16s ease,box-shadow .16s ease}
-    .eng-modulebar__actions a:hover{border-color:#8f9baa!important;color:#111c2d!important;background:#f8fafc!important}
-    .eng-modulebar__actions a.current{border-color:var(--kos-action-primary)!important;color:var(--kos-action-primary)!important;background:#fff!important;box-shadow:0 0 0 1px color-mix(in srgb,var(--kos-action-primary) 12%,transparent)!important}
-    .eng-modulebar__actions a.eng-primary-action{border-color:var(--kos-action-primary)!important;color:#fff!important;background:var(--kos-action-primary)!important;box-shadow:none!important}
-    .eng-modulebar__actions a.eng-primary-action:hover{filter:brightness(.96)}
-    .eng-modulebar__actions a.eng-primary-action.current{border-color:var(--kos-action-primary)!important;color:var(--kos-action-primary)!important;background:#fff!important;box-shadow:0 0 0 1px color-mix(in srgb,var(--kos-action-primary) 12%,transparent)!important}
+    /* Canonical navigation pills: inactive is text-only; selected uses the saved Primary Action fill. */
+    .eng-modulebar__actions{gap:.18rem!important}
+    .eng-modulebar__actions a{min-height:38px!important;padding:0 .78rem!important;border:1px solid transparent!important;border-radius:999px!important;color:#344054!important;background:transparent!important;box-shadow:none!important;font-weight:850!important;transition:border-color .16s ease,background .16s ease,color .16s ease,box-shadow .16s ease}
+    .eng-modulebar__actions a:hover{border-color:transparent!important;color:var(--kos-action-primary)!important;background:color-mix(in srgb,var(--kos-action-primary) 7%,transparent)!important}
+    .eng-modulebar__actions a.current{border-color:transparent!important;color:#fff!important;background:var(--kos-action-primary)!important;box-shadow:0 7px 18px color-mix(in srgb,var(--kos-action-primary) 18%,transparent)!important}
+    .eng-modulebar__actions a.eng-primary-action{border-color:transparent!important;color:#fff!important;background:var(--kos-action-primary)!important;box-shadow:none!important}
+    .eng-modulebar__actions a.eng-primary-action:hover{color:#fff!important;background:var(--kos-action-primary)!important;filter:brightness(.96)}
+    .eng-modulebar__actions a.eng-primary-action.current{border-color:transparent!important;color:#fff!important;background:var(--kos-action-primary)!important;box-shadow:0 7px 18px color-mix(in srgb,var(--kos-action-primary) 18%,transparent)!important}
 
-    /* One active-pill language across DWC and CTG. No underline or overline indicators. */
-    .section-nav{gap:6px!important;padding:2px 0!important;border-bottom:0!important}
-    .section-nav button{border:1px solid #d2d8df!important;border-radius:999px!important;padding:9px 13px!important;background:#fff!important;color:#344054!important}
-    .section-nav button:hover{border-color:#aeb8c4!important;background:#fafbfc!important;color:#1e293b!important}
-    .section-nav button.active{border-color:var(--kos-action-primary)!important;background:#fff!important;color:var(--kos-action-primary)!important;box-shadow:0 0 0 1px color-mix(in srgb,var(--kos-action-primary) 10%,transparent)!important}
-
-    .program-tabs{gap:6px!important;border-bottom:0!important}
-    .program-tabs button{border:1px solid #d2d8df!important;border-radius:999px!important;padding:10px 15px!important;background:#fff!important;color:#344054!important}
-    .program-tabs button:hover{border-color:#aeb8c4!important;background:#fafbfc!important;color:#1e293b!important}
-    .program-tabs button.active{border-color:var(--kos-action-primary)!important;background:#fff!important;color:var(--kos-action-primary)!important;box-shadow:0 0 0 1px color-mix(in srgb,var(--kos-action-primary) 10%,transparent)!important}
-
-    .tools-tabs button.active{border-color:var(--kos-action-primary)!important;color:var(--kos-action-primary)!important;background:#fff!important;box-shadow:0 0 0 1px color-mix(in srgb,var(--kos-action-primary) 10%,transparent)!important}
-    .tools-tabs button.active>span{background:var(--kos-action-primary)!important;color:#fff!important}
-
-    .filters button.active{border-color:var(--kos-action-primary)!important;color:var(--kos-action-primary)!important;background:#fff!important;box-shadow:0 0 0 1px color-mix(in srgb,var(--kos-action-primary) 8%,transparent)!important}
-
-    .legacy-filter-group button.selected{border-color:var(--kos-action-primary)!important;color:var(--kos-action-primary)!important;background:#fff!important;box-shadow:0 0 0 1px color-mix(in srgb,var(--kos-action-primary) 10%,transparent)!important}
-    .legacy-filter-group button.selected span{color:var(--kos-action-primary)!important;background:color-mix(in srgb,var(--kos-action-primary) 9%,white)!important}
+    /* One navigation-pill language across DWC and CTG. No inactive outline or underline. */
+    .section-nav,.program-tabs,.tools-tabs,.filters,.legacy-filter-group{border-bottom:0!important}
+    .section-nav{gap:6px!important;padding:2px 0!important}
+    .program-tabs,.tools-tabs,.filters,.legacy-filter-group{gap:6px!important}
+    .section-nav button,.program-tabs button,.tools-tabs button,.filters button,.legacy-filter-group button{border:1px solid transparent!important;border-radius:999px!important;background:transparent!important;color:#344054!important;box-shadow:none!important}
+    .section-nav button{padding:9px 13px!important}
+    .program-tabs button{padding:10px 15px!important}
+    .section-nav button:hover,.program-tabs button:hover,.tools-tabs button:hover,.filters button:hover,.legacy-filter-group button:hover{border-color:transparent!important;background:color-mix(in srgb,var(--kos-action-primary) 7%,transparent)!important;color:var(--kos-action-primary)!important}
+    .section-nav button.active,.program-tabs button.active,.tools-tabs button.active,.filters button.active,.legacy-filter-group button.selected{border-color:transparent!important;background:var(--kos-action-primary)!important;color:#fff!important;box-shadow:0 7px 18px color-mix(in srgb,var(--kos-action-primary) 16%,transparent)!important}
+    .tools-tabs button.active>span,.legacy-filter-group button.selected span{color:#fff!important;background:rgba(255,255,255,.18)!important}
 
     @media(max-width:980px){.eng-modulebar{align-items:flex-start;flex-wrap:wrap;padding-top:.65rem;padding-bottom:.65rem}.eng-modulebar__actions{max-width:100%;overflow-x:auto;padding-bottom:2px}.eng-modulebar__actions a{white-space:nowrap}}
   `],

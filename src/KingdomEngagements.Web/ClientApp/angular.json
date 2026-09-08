@@ -37,7 +37,8 @@
               "src/dwc-warmth.css",
               "src/engagements-friendly.css",
               "src/engagements-workspace-friendly.css",
-              "src/ctg-engagements-readability.css"
+              "src/ctg-engagements-readability.css",
+              "src/engagement-demo-role.css"
             ],
             "scripts": []
           },

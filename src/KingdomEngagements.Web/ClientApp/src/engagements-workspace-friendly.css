@@ -1,0 +1,196 @@
+/* Friendly assignment workspace treatment. Keeps all depth, lowers visual noise. */
+body.eng-org-ctg .legacy-workspace-page {
+  width: min(1280px, calc(100% - 56px));
+  padding-top: 24px;
+}
+
+body.eng-org-ctg .legacy-back-link {
+  color: #687481;
+  font-size: .68rem;
+  font-weight: 780;
+  text-decoration: none;
+}
+
+body.eng-org-ctg .legacy-workspace-heading {
+  gap: 30px;
+  padding: 18px 0 22px;
+  border-bottom: 1px solid #dedfdc;
+}
+
+body.eng-org-ctg .legacy-workspace-title h1 {
+  color: #202a38;
+  letter-spacing: -.045em;
+}
+
+body.eng-org-ctg .legacy-workspace-title > p {
+  color: #707985;
+}
+
+body.eng-org-ctg .legacy-heading-summary {
+  gap: 10px;
+}
+
+body.eng-org-ctg .legacy-heading-summary article {
+  border-color: #e0e1de;
+  border-radius: 10px;
+  background: #fbfaf7;
+  box-shadow: none;
+}
+
+body.eng-org-ctg .legacy-heading-status {
+  border-radius: 999px;
+  background: #edf3f8;
+  color: #42668b;
+}
+
+/* Make the lifecycle navigation read like a quiet table of contents, not a wall of tabs. */
+body.eng-org-ctg .legacy-assignment-tabs {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 20px;
+  margin-top: 18px;
+  padding: 12px 0;
+  border-top: 1px solid #e1e2df;
+  border-bottom: 1px solid #e1e2df;
+  background: transparent;
+}
+
+body.eng-org-ctg .legacy-assignment-tab-group {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+}
+
+body.eng-org-ctg .legacy-assignment-tab-group-label {
+  color: #92979d;
+  font-size: .56rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+body.eng-org-ctg .legacy-assignment-tab-group-items {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+
+body.eng-org-ctg .legacy-assignment-tab {
+  min-height: 38px;
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #65707d;
+  text-align: left;
+}
+
+body.eng-org-ctg .legacy-assignment-tab strong {
+  display: block;
+  font-size: .68rem;
+}
+
+body.eng-org-ctg .legacy-assignment-tab small {
+  display: none;
+}
+
+body.eng-org-ctg .legacy-assignment-tab:hover {
+  border-color: #e0e2e2;
+  background: #fffefa;
+}
+
+body.eng-org-ctg .legacy-assignment-tab.is-active {
+  border-color: #d9e2eb;
+  color: #284c72;
+  background: #edf3f8;
+  box-shadow: none;
+}
+
+body.eng-org-ctg .legacy-exact-workspace {
+  margin-top: 18px;
+}
+
+body.eng-org-ctg .legacy-overview-grid {
+  gap: 12px;
+}
+
+body.eng-org-ctg .legacy-overview-card {
+  border-color: #dedfdc;
+  border-radius: 12px;
+  background: #fffefa;
+  box-shadow: none;
+}
+
+body.eng-org-ctg .legacy-overview-card--next {
+  border-left: 3px solid #6c87a5;
+}
+
+body.eng-org-ctg .legacy-card-action {
+  border-radius: 8px;
+}
+
+body.eng-org-ctg .legacy-invitation-source-panel,
+body.eng-org-ctg details {
+  border-color: #e0e1de;
+}
+
+body.eng-org-ctg .legacy-workspace-state {
+  border-radius: 11px;
+  background: #fffefa;
+}
+
+/* Make nested preparation tabs and record content easier to read. */
+body.eng-org-ctg .legacy-exact-workspace article,
+body.eng-org-ctg .legacy-exact-workspace section {
+  scroll-margin-top: 92px;
+}
+
+body.eng-org-ctg .legacy-exact-workspace h2,
+body.eng-org-ctg .legacy-exact-workspace h3,
+body.eng-org-ctg .legacy-exact-workspace h4 {
+  color: #26313e;
+}
+
+body.eng-org-ctg .legacy-exact-workspace p,
+body.eng-org-ctg .legacy-exact-workspace small {
+  color: #717a85;
+}
+
+@media (max-width: 1050px) {
+  body.eng-org-ctg .legacy-assignment-tabs {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  body.eng-org-ctg .legacy-assignment-tab-group {
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 760px) {
+  body.eng-org-ctg .legacy-workspace-page {
+    width: calc(100% - 28px);
+  }
+
+  body.eng-org-ctg .legacy-workspace-heading {
+    display: grid;
+  }
+
+  body.eng-org-ctg .legacy-assignment-tab-group {
+    display: grid;
+  }
+
+  body.eng-org-ctg .legacy-assignment-tab-group-items {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+  }
+
+  body.eng-org-ctg .legacy-assignment-tab-group-items::-webkit-scrollbar {
+    display: none;
+  }
+
+  body.eng-org-ctg .legacy-assignment-tab {
+    flex: 0 0 auto;
+  }
+}

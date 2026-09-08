@@ -9,6 +9,7 @@
   const responseSection = document.getElementById('response-section');
   const tokenMatch = window.location.pathname.match(/\/invite\/apostle-cynthia\/requests\/([^/]+)/);
   const token = tokenMatch ? decodeURIComponent(tokenMatch[1]) : null;
+  const startedMode = !!token && new URLSearchParams(window.location.search).get('mode') === 'complete';
   let currentRequest = null;
 
   const value = name => form.elements.namedItem(name)?.value?.trim() ?? '';
@@ -17,7 +18,9 @@
     if (field) field.value = next ?? '';
   };
   const label = text => String(text || '').replaceAll('-', ' ').replace(/\b\w/g, character => character.toUpperCase());
-  const dateLabel = raw => raw ? new Date(`${raw}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+  const dateLabel = raw => raw && raw !== '0001-01-01'
+    ? new Date(`${raw}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+    : 'Pending';
 
   function requestBody() {
     return {
@@ -61,20 +64,41 @@
 
   function populate(item) {
     Object.entries(item).forEach(([name, next]) => setValue(name, next));
+    if (item.startDate === '0001-01-01') setValue('startDate', '');
+    if (item.endDate === '0001-01-01') setValue('endDate', '');
+    if (!item.expectedAttendance) setValue('expectedAttendance', '');
     currentRequest = item;
-    responseSection.hidden = false;
     requestMessage.hidden = false;
-    requestMessage.textContent = item.communications?.at(-1)?.message || 'The ministry team requested an update. Review the invitation and send your changes.';
-    document.getElementById('page-eyebrow').textContent = item.referenceNumber;
-    document.getElementById('form-title').textContent = 'Update speaking invitation';
-    document.getElementById('submit-heading').textContent = 'Send updated invitation';
-    document.getElementById('submit-copy').textContent = 'Every updated field will remain connected to the approved assignment and its host preparation record.';
-    submitButton.firstChild.textContent = 'Send update ';
+    document.getElementById('page-eyebrow').textContent = `Invitation ${item.referenceNumber}`;
+
+    if (startedMode) {
+      responseSection.hidden = true;
+      requestMessage.textContent = `Cynthia Thompson Global started invitation ${item.referenceNumber} for you. Complete the missing host and event details below. Your submission will update this same invitation record—it will not create a new one.`;
+      document.getElementById('form-title').textContent = 'Complete speaking invitation';
+      document.getElementById('form-introduction').textContent = `CTG has already opened ${item.referenceNumber}. Review anything they entered, complete the remaining fields, and return this same invitation to the ministry team.`;
+      document.getElementById('submit-heading').textContent = 'Return this invitation to CTG';
+      document.getElementById('submit-copy').textContent = `Submitting completes ${item.referenceNumber} and moves it to Awaiting Review. This secure completion link will then close.`;
+      submitButton.firstChild.textContent = 'Complete invitation ';
+    } else {
+      responseSection.hidden = false;
+      requestMessage.textContent = item.communications?.at(-1)?.message || 'The ministry team requested an update. Review the invitation and send your changes.';
+      document.getElementById('form-title').textContent = 'Update speaking invitation';
+      document.getElementById('form-introduction').textContent = `You are updating ${item.referenceNumber}. Any changes stay attached to this same CTG invitation record.`;
+      document.getElementById('submit-heading').textContent = 'Send updated invitation';
+      document.getElementById('submit-copy').textContent = 'Every updated field will remain connected to this invitation and its future host preparation record.';
+      submitButton.firstChild.textContent = 'Send update ';
+    }
     readiness();
   }
 
   function showConfirmation(item) {
     currentRequest = item;
+    if (startedMode) {
+      document.getElementById('confirmation-eyebrow').textContent = `Invitation ${item.referenceNumber} completed`;
+      document.getElementById('confirmation-title').textContent = 'Your invitation is now with the CTG ministry team.';
+      document.getElementById('confirmation-copy').textContent = `You completed the invitation CTG started for you. The same record number will remain with this request through review and, if approved, engagement preparation.`;
+      document.getElementById('submit-another').hidden = true;
+    }
     document.getElementById('confirmation-status').textContent = label(item.status);
     document.getElementById('summary-event').textContent = item.eventName;
     document.getElementById('summary-reference').textContent = item.referenceNumber;
@@ -82,7 +106,7 @@
     document.getElementById('summary-dates').textContent = `${dateLabel(item.startDate)} – ${dateLabel(item.endDate)}`;
     document.getElementById('summary-location').textContent = [item.city, item.state || item.region, item.country].filter(Boolean).join(', ');
     document.getElementById('summary-contact').textContent = `${item.contactName} · ${item.contactEmail}`;
-    document.getElementById('summary-submitted').textContent = new Date(item.submittedAtUtc).toLocaleString();
+    document.getElementById('summary-submitted').textContent = new Date(item.updatedAtUtc || item.submittedAtUtc).toLocaleString();
     document.getElementById('summary-readiness').textContent = `${item.readinessPercentage}%`;
     formView.hidden = true; loading.hidden = true; confirmation.hidden = false;
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -101,7 +125,10 @@
     if (!token) return;
     loading.hidden = false; formView.hidden = true;
     try {
-      const item = await responseJson(await fetch(`/api/public/engagements/requests/${encodeURIComponent(token)}`));
+      const apiPath = startedMode
+        ? `/api/public/engagements/started-requests/${encodeURIComponent(token)}`
+        : `/api/public/engagements/requests/${encodeURIComponent(token)}`;
+      const item = await responseJson(await fetch(apiPath));
       populate(item); formView.hidden = false; loading.hidden = true;
     } catch (error) {
       loading.hidden = true; formView.hidden = false; showError(error.message);
@@ -114,12 +141,21 @@
     if (!form.reportValidity()) return;
     const body = requestBody();
     if (body.endDate < body.startDate) return showError('The end date cannot be before the start date.');
-    if (token && !value('responseMessage')) return showError('Add a response message describing what you updated.');
+    if (token && !startedMode && !value('responseMessage')) return showError('Add a response message describing what you updated.');
     submitButton.disabled = true;
     try {
-      const endpoint = token ? `/api/public/engagements/requests/${encodeURIComponent(token)}` : '/api/public/engagements/requests';
-      const payload = token ? { request: body, responseMessage: value('responseMessage') } : body;
-      const item = await responseJson(await fetch(endpoint, { method: token ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }));
+      let endpoint = '/api/public/engagements/requests';
+      let method = 'POST';
+      let payload = body;
+      if (token && startedMode) {
+        endpoint = `/api/public/engagements/started-requests/${encodeURIComponent(token)}`;
+        method = 'PUT';
+      } else if (token) {
+        endpoint = `/api/public/engagements/requests/${encodeURIComponent(token)}`;
+        method = 'PUT';
+        payload = { request: body, responseMessage: value('responseMessage') };
+      }
+      const item = await responseJson(await fetch(endpoint, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }));
       showConfirmation(item);
     } catch (error) {
       showError(error.message);

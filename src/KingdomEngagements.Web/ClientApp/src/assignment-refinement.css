@@ -3,6 +3,56 @@
   display: none !important;
 }
 
+/* Content-sized pills keep long labels inside their own click targets. */
+app-assignment-workspace .legacy-assignment-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+app-assignment-workspace .legacy-assignment-tab-group {
+  flex: 0 1 auto;
+  max-width: 100%;
+}
+
+app-assignment-workspace .legacy-assignment-tab-group-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+app-assignment-workspace .legacy-assignment-tab {
+  flex: 0 0 auto;
+  min-width: max-content;
+  min-height: 44px;
+  padding: 10px 16px;
+  align-items: center;
+  border-radius: 5px;
+  box-shadow: none;
+}
+
+app-assignment-workspace .legacy-assignment-tab strong {
+  font-size: .875rem;
+  line-height: 1.4;
+}
+
+app-assignment-workspace .legacy-assignment-tab.is-active,
+app-assignment-workspace .legacy-assignment-tab.is-active:hover {
+  border-color: var(--action-primary, var(--kos-action-primary, #172a46)) !important;
+  background: var(--action-primary, var(--kos-action-primary, #172a46)) !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+
+app-assignment-workspace .legacy-assignment-tab.is-active::after {
+  content: none;
+}
+
+app-assignment-workspace .legacy-assignment-tab:focus-visible {
+  outline: 2px solid var(--action-primary, var(--kos-action-primary, #172a46));
+  outline-offset: 2px;
+}
+
 /* Keep only the heading-level invitation actions; the duplicate source-panel action stays hidden. */
 .legacy-source-link {
   display: none !important;
@@ -112,4 +162,3 @@
     flex-basis: 38px !important;
   }
 }
-

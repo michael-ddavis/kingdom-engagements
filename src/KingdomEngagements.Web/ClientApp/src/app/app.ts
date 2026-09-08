@@ -270,6 +270,10 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
 export class App implements OnInit, AfterViewInit, OnDestroy {
   readonly product = signal<ProductInfo | null>(null);
   private overlayObserver?: MutationObserver;
+  private readonly refreshAppearance = () => this.syncSavedAppearance();
+  private readonly refreshVisibleAppearance = () => {
+    if (document.visibilityState === 'visible') this.syncSavedAppearance();
+  };
 
   constructor(
     private readonly api: EngagementsApiService,
@@ -279,6 +283,9 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit(): void {
     this.syncSavedAppearance();
+    window.addEventListener('focus', this.refreshAppearance);
+    window.addEventListener('pageshow', this.refreshAppearance);
+    document.addEventListener('visibilitychange', this.refreshVisibleAppearance);
     this.syncOrganizationBodyClass();
 
     const requestedGroup = this.router.parseUrl(this.router.url).queryParams['group'];
@@ -299,6 +306,9 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.overlayObserver?.disconnect();
+    window.removeEventListener('focus', this.refreshAppearance);
+    window.removeEventListener('pageshow', this.refreshAppearance);
+    document.removeEventListener('visibilitychange', this.refreshVisibleAppearance);
     document.body.classList.remove(
       'apostolos-org-drawer-open',
       'apostolos-org-drawer-heyyking',
@@ -362,9 +372,11 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
         .split(';')
         .map(value => value.trim())
         .find(value => value.startsWith(`${name}=`));
-      return match
-        ? decodeURIComponent(match.substring(match.indexOf('=') + 1))
-        : null;
+      try {
+        return match ? decodeURIComponent(match.substring(match.indexOf('=') + 1)) : null;
+      } catch {
+        return null;
+      }
     };
 
     const primary = readCookie('KingdomOS.ActionPrimary');

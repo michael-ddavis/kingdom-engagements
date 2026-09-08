@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { EngagementDemoRoleService } from '../core/engagement-demo-role.service';
 
 @Component({
   selector: 'app-organization-landing',
@@ -10,7 +11,10 @@ import { Router } from '@angular/router';
   `],
 })
 export class OrganizationLandingComponent implements OnInit {
-  constructor(private readonly router: Router) {}
+  constructor(
+    private readonly router: Router,
+    private readonly demoRole: EngagementDemoRoleService,
+  ) {}
 
   ngOnInit(): void {
     const organization = this.selectedOrganization();
@@ -20,6 +24,10 @@ export class OrganizationLandingComponent implements OnInit {
     }
     if (organization === 'heyy-king') {
       void this.router.navigate(['/organization', 'hey-king'], { replaceUrl: true });
+      return;
+    }
+    if (this.demoRole.isMinister()) {
+      void this.router.navigate(['/assignments'], { replaceUrl: true });
       return;
     }
     void this.router.navigate(['/organization', 'ctg'], { replaceUrl: true });

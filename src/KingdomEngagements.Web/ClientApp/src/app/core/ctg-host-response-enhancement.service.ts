@@ -59,12 +59,22 @@ export class CtgHostResponseEnhancementService {
     const nextStep = body?.querySelector<HTMLElement>('.next-step');
     if (!body || !nextStep) return;
 
+    const missing = this.state.missingInformation(record);
+    const signature = JSON.stringify({
+      id: record.id,
+      updatedAtUtc: record.updatedAtUtc,
+      responseCount: record.hostResponses.length,
+      nextFollowUpAtUtc: record.nextFollowUpAtUtc,
+      missing,
+    });
+    if (detail.dataset['hostResponseSignature'] === signature) return;
+    detail.dataset['hostResponseSignature'] = signature;
+
     body.querySelector('.host-response-readiness')?.remove();
     body.querySelector('.host-response-history')?.remove();
 
     const readiness = document.createElement('section');
     readiness.className = 'detail-section host-response-readiness';
-    const missing = this.state.missingInformation(record);
     const followUp = record.nextFollowUpAtUtc
       ? `<p class="hr-follow-up"><strong>Next follow-up:</strong> ${this.escapeText(this.formatDateTime(record.nextFollowUpAtUtc))}</p>`
       : '';
@@ -242,7 +252,7 @@ export class CtgHostResponseEnhancementService {
     const fieldsUpdated: string[] = [];
     const apply = <K extends keyof ManualBookingRecord>(key: K, value: ManualBookingRecord[K], label: string) => {
       if (record[key] !== value) {
-        changes[key] = value;
+        Object.assign(changes, { [key]: value });
         fieldsUpdated.push(label);
       }
     };
@@ -329,7 +339,11 @@ export class CtgHostResponseEnhancementService {
   }
 
   private channelLabel(channel: HostResponseChannel): string {
-    return channel === 'in-person' ? 'In person' : channel === 'whatsapp' ? 'WhatsApp' : channel.charAt(0).toUpperCase() + channel.slice(1);
+    return channel === 'in-person'
+      ? 'In person'
+      : channel === 'whatsapp'
+        ? 'WhatsApp'
+        : channel.charAt(0).toUpperCase() + channel.slice(1);
   }
 
   private formatDateTime(value: string): string {

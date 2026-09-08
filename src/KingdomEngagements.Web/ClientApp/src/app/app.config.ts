@@ -12,6 +12,7 @@ import { CtgProgramsComponent } from './pages/ctg-programs.component';
 import { CtgStartInvitationComponent } from './pages/ctg-start-invitation.component';
 import { DwcFormationHomeContextComponent } from './pages/dwc-formation-home-context.component';
 import { DwcFormationToolsComponent } from './pages/dwc-formation-tools.component';
+import { DwcGroupsHubComponent } from './pages/dwc-groups-hub.component';
 import { DwcMyGroupContextComponent } from './pages/dwc-my-group-context.component';
 import { OrganizationLandingComponent } from './pages/organization-landing.component';
 import { OrganizationProgramsComponent } from './pages/organization-programs.component';
@@ -43,6 +44,9 @@ export const appConfig: ApplicationConfig = {
       { path: 'organization/dwc/formation', component: DwcFormationHomeContextComponent, canActivate: [engagementBookingGuard] },
       { path: 'organization/dwc/formation/tools', component: DwcFormationToolsComponent, canActivate: [engagementBookingGuard] },
       { path: 'organization/dwc/my-group', component: DwcMyGroupContextComponent, canActivate: [engagementBookingGuard] },
+      { path: 'organization/dwc/groups', component: DwcGroupsHubComponent, canActivate: [engagementBookingGuard] },
+      { path: 'organization/dwc/admin', component: OrganizationProgramsComponent, canActivate: [engagementBookingGuard] },
+      { path: 'organization/dwc', component: DwcGroupsHubComponent, canActivate: [engagementBookingGuard] },
       { path: 'organization/:org', component: OrganizationProgramsComponent, canActivate: [engagementBookingGuard] },
       { path: '**', redirectTo: '' },
     ]),

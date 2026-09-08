@@ -26,14 +26,24 @@ export class CtgBookingDeskPolishService {
     const quickAdd = actions.querySelector<HTMLButtonElement>('button');
     if (quickAdd) {
       quickAdd.classList.add('ctg-quick-add');
-      quickAdd.setAttribute('aria-label', 'Quick add booking');
+      if (quickAdd.getAttribute('aria-label') !== 'Quick add booking') {
+        quickAdd.setAttribute('aria-label', 'Quick add booking');
+      }
     }
 
     const review = actions.querySelector<HTMLAnchorElement>('a[href="/invitations"]');
     if (review) {
       review.classList.add('ctg-formal-review-link');
-      review.textContent = 'Review formal invitations →';
-      review.title = 'Open formal invitations that need booking review';
+
+      const reviewLabel = 'Review formal invitations →';
+      if (review.textContent?.trim() !== reviewLabel) {
+        review.textContent = reviewLabel;
+      }
+
+      const reviewTitle = 'Open formal invitations that need booking review';
+      if (review.title !== reviewTitle) {
+        review.title = reviewTitle;
+      }
     }
   }
 

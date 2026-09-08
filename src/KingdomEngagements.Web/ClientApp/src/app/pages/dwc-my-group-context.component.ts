@@ -96,7 +96,7 @@ type MemberTab = 'week' | 'formation' | 'responses' | 'journey';
         <article class="paper history"><p class="eyebrow">Your connected story</p>@for (entry of member().history; track entry.semester + entry.group) { <div><span>{{ entry.semester }}</span><strong>{{ entry.group }}</strong><p>{{ entry.track }}</p><b>{{ entry.outcome }}</b></div> }@for (milestone of member().milestones; track milestone) { <div><span>Current</span><strong>Growth milestone</strong><p>{{ milestone }}</p><b>Formation evidence</b></div> }</article>
       }
 
-      <a class="exit-link" [href]="groupHref('/organization/dwc/formation')">← Exit member preview</a>
+      <a class="exit-link" [href]="groupHref('/organization/dwc/groups')">← Back to Divine Groups</a>
     </section>
   `,
   styles: [`

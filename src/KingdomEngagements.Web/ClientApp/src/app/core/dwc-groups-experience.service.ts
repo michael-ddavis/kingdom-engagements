@@ -119,6 +119,7 @@ export class DwcGroupsExperienceService {
     };
     this.joinRequests.update(items => [item, ...items]);
     this.persist();
+    this.confirm(item.status === 'Waitlisted' ? 'You were added to the group waitlist.' : 'Your group request was submitted.');
     return item;
   }
 
@@ -126,6 +127,7 @@ export class DwcGroupsExperienceService {
     const item: DivineGroupFinderRequest = { ...input, id: crypto.randomUUID(), createdAtUtc: new Date().toISOString(), status: 'Needs placement' };
     this.finderRequests.update(items => [item, ...items]);
     this.persist();
+    this.confirm('Your group finder request was submitted.');
     return item;
   }
 
@@ -133,12 +135,21 @@ export class DwcGroupsExperienceService {
     const item: DivineGroupLeaderInterest = { ...input, id: crypto.randomUUID(), createdAtUtc: new Date().toISOString(), stage: 'Interest received' };
     this.leaderInterests.update(items => [item, ...items]);
     this.persist();
+    this.confirm('Your leader interest was submitted.');
     return item;
   }
 
   updateJoinStatus(id: string, status: DivineJoinStatus): void {
     this.joinRequests.update(items => items.map(item => item.id === id ? { ...item, status } : item));
     this.persist();
+    this.confirm(`Join request updated to ${status}.`);
+  }
+
+  private confirm(message: string): void {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(new CustomEvent('apostolos:mutation-confirmation', {
+      detail: { message, tone: 'success' },
+    }));
   }
 
   private persist(): void {

@@ -1,0 +1,47 @@
+body[data-engagement-demo-role="minister"] .tab-workspace .task-check{
+  pointer-events:none;
+  cursor:default;
+}
+
+body[data-engagement-demo-role="minister"] .travel-workspace input,
+body[data-engagement-demo-role="minister"] .travel-workspace textarea,
+body[data-engagement-demo-role="minister"] .contacts-workspace input,
+body[data-engagement-demo-role="minister"] .contacts-workspace select,
+body[data-engagement-demo-role="minister"] .contacts-workspace textarea{
+  pointer-events:none;
+  color:#344052!important;
+  background:#f7f7f5!important;
+  border-color:#e1e3e5!important;
+}
+
+body[data-engagement-demo-role="minister"] .travel-workspace .save-dock,
+body[data-engagement-demo-role="minister"] .contacts-workspace .save-dock,
+body[data-engagement-demo-role="minister"] .contacts-workspace .section-heading>button,
+body[data-engagement-demo-role="minister"] .contacts-workspace .schedule-actions,
+body[data-engagement-demo-role="minister"] .contacts-workspace .remove,
+body[data-engagement-demo-role="minister"] .documents-workspace .upload-button,
+body[data-engagement-demo-role="minister"] .documents-workspace .file-menu,
+body[data-engagement-demo-role="minister"] .contacts-workspace .context-grid label.wide{
+  display:none!important;
+}
+
+body[data-engagement-demo-role="minister"] .travel-workspace,
+body[data-engagement-demo-role="minister"] .contacts-workspace{
+  padding-bottom:0!important;
+}
+
+body[data-engagement-demo-role="minister"] .travel-workspace:before,
+body[data-engagement-demo-role="minister"] .contacts-workspace:before,
+body[data-engagement-demo-role="minister"] .documents-workspace:before,
+body[data-engagement-demo-role="minister"] .tab-workspace:before{
+  content:'Assigned minister view · read only';
+  display:block;
+  padding:.5rem 1.3rem;
+  border-bottom:1px solid rgba(18,26,44,.08);
+  color:#6c5a39;
+  background:#faf6ee;
+  font-size:.62rem;
+  font-weight:850;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}

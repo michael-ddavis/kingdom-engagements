@@ -371,48 +371,104 @@ public sealed class EngagementPreparationService(
         if (existing is not null)
             return await MapInternalAsync(existing, cancellationToken);
 
-        var assignmentExists = await engagementsDatabase.Assignments.AsNoTracking()
-            .AnyAsync(x => x.TenantId == tenantId && x.Id == assignmentId, cancellationToken);
-        if (!assignmentExists) return null;
+        var assignment = await engagementsDatabase.Assignments.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.TenantId == tenantId && x.Id == assignmentId, cancellationToken);
+        if (assignment is null) return null;
 
         var request = await requestsDatabase.Requests.AsNoTracking()
             .SingleOrDefaultAsync(x => x.TenantId == tenantId && x.AssignmentId == assignmentId && x.Status == "approved", cancellationToken);
-        if (request is null) return null;
 
         var now = DateTimeOffset.UtcNow;
-        var preparation = new EngagementPreparationRecord
+        EngagementPreparationRecord preparation;
+        if (request is not null)
         {
-            Id = Guid.NewGuid(),
-            TenantId = tenantId,
-            AssignmentId = assignmentId,
-            RequestId = request.Id,
-            ReferenceNumber = request.ReferenceNumber,
-            EventName = request.EventName,
-            EventType = request.EventType,
-            HostOrganization = request.OrganizationName,
-            EventStartDate = request.StartDate,
-            EventEndDate = request.EndDate,
-            TermsToken = Guid.NewGuid().ToString("N"),
-            TermsTokenExpiresAtUtc = now.AddDays(30),
-            TermsStatus = request.AgreementStatus == "signed" ? "accepted" : "pending",
-            TermsAcceptedAtUtc = request.AgreementStatus == "signed" ? now : null,
-            TravelCoverageStatus = request.TravelCoverageStatus,
-            LodgingCoverageStatus = request.LodgingCoverageStatus,
-            TravelBookedBy = request.TravelBookedBy,
-            HonorariumStatus = request.HonorariumStatus,
-            HonorariumAmount = request.HonorariumAmount,
-            HonorariumCurrency = request.HonorariumCurrency,
-            PaymentStatus = request.PaymentStatus,
-            CoordinationToken = Guid.NewGuid().ToString("N"),
-            CoordinationTokenExpiresAtUtc = request.AgreementStatus == "signed" ? now.AddDays(30) : null,
-            CoordinationStatus = request.AgreementStatus == "signed" ? "in-progress" : "locked",
-            ContactsJson = JsonSerializer.Serialize(new[]
+            preparation = new EngagementPreparationRecord
             {
-                new HostContactInput("primary", request.ContactName, request.ContactEmail, request.ContactPhone)
-            }, JsonOptions),
-            CreatedAtUtc = now,
-            UpdatedAtUtc = now
-        };
+                Id = Guid.NewGuid(),
+                TenantId = tenantId,
+                AssignmentId = assignmentId,
+                RequestId = request.Id,
+                ReferenceNumber = request.ReferenceNumber,
+                EventName = request.EventName,
+                EventType = request.EventType,
+                HostOrganization = request.OrganizationName,
+                EventStartDate = request.StartDate,
+                EventEndDate = request.EndDate,
+                TermsToken = Guid.NewGuid().ToString("N"),
+                TermsTokenExpiresAtUtc = now.AddDays(30),
+                TermsStatus = request.AgreementStatus == "signed" ? "accepted" : "pending",
+                TermsAcceptedAtUtc = request.AgreementStatus == "signed" ? now : null,
+                TravelCoverageStatus = request.TravelCoverageStatus,
+                LodgingCoverageStatus = request.LodgingCoverageStatus,
+                TravelBookedBy = request.TravelBookedBy,
+                HonorariumStatus = request.HonorariumStatus,
+                HonorariumAmount = request.HonorariumAmount,
+                HonorariumCurrency = request.HonorariumCurrency,
+                PaymentStatus = request.PaymentStatus,
+                CoordinationToken = Guid.NewGuid().ToString("N"),
+                CoordinationTokenExpiresAtUtc = request.AgreementStatus == "signed" ? now.AddDays(30) : null,
+                CoordinationStatus = request.AgreementStatus == "signed" ? "in-progress" : "locked",
+                ContactsJson = JsonSerializer.Serialize(new[]
+                {
+                    new HostContactInput("primary", request.ContactName, request.ContactEmail, request.ContactPhone)
+                }, JsonOptions),
+                CreatedAtUtc = now,
+                UpdatedAtUtc = now
+            };
+        }
+        else
+        {
+            var startAt = assignment.StartsAtUtc ?? now;
+            var endAt = assignment.EndsAtUtc ?? assignment.StartsAtUtc ?? startAt;
+            var startDate = DateOnly.FromDateTime(startAt.UtcDateTime);
+            var endDate = DateOnly.FromDateTime(endAt.UtcDateTime);
+            if (endDate < startDate) endDate = startDate;
+            var reference = assignment.ExternalAssignmentId.Length <= 40
+                ? assignment.ExternalAssignmentId
+                : $"ENG-{assignment.Id:N}";
+            var contacts = string.IsNullOrWhiteSpace(assignment.HostContactName) && string.IsNullOrWhiteSpace(assignment.HostContactEmail)
+                ? Array.Empty<HostContactInput>()
+                : new[]
+                {
+                    new HostContactInput(
+                        "primary",
+                        assignment.HostContactName ?? assignment.HostOrganization,
+                        assignment.HostContactEmail,
+                        null)
+                };
+
+            preparation = new EngagementPreparationRecord
+            {
+                Id = Guid.NewGuid(),
+                TenantId = tenantId,
+                AssignmentId = assignmentId,
+                // Manual/global-booking engagements have no SpeakingRequest row. The assignment
+                // id is a stable, unique lineage key without manufacturing a duplicate invitation.
+                RequestId = assignment.Id,
+                ReferenceNumber = reference,
+                EventName = assignment.Title,
+                EventType = "Engagement",
+                HostOrganization = assignment.HostOrganization,
+                EventStartDate = startDate,
+                EventEndDate = endDate,
+                TermsToken = Guid.NewGuid().ToString("N"),
+                TermsTokenExpiresAtUtc = now.AddDays(30),
+                TermsStatus = "pending",
+                TravelCoverageStatus = "not-determined",
+                LodgingCoverageStatus = "not-determined",
+                TravelBookedBy = "not-determined",
+                HonorariumStatus = "not-determined",
+                HonorariumAmount = 0m,
+                HonorariumCurrency = "USD",
+                PaymentStatus = "not-due",
+                CoordinationToken = Guid.NewGuid().ToString("N"),
+                CoordinationStatus = "locked",
+                ContactsJson = JsonSerializer.Serialize(contacts, JsonOptions),
+                CreatedAtUtc = now,
+                UpdatedAtUtc = now
+            };
+        }
+
         database.Preparations.Add(preparation);
         await database.SaveChangesAsync(cancellationToken);
         return await MapInternalAsync(preparation, cancellationToken);
@@ -657,7 +713,6 @@ public sealed class EngagementPreparationService(
             preparation.TravelCoverageStatus, preparation.LodgingCoverageStatus, preparation.TravelBookedBy,
             preparation.HonorariumStatus, preparation.HonorariumAmount, preparation.HonorariumCurrency, preparation.PaymentStatus,
             preparation.CoordinationStatus, includeCoordinationToken ? preparation.CoordinationToken : null);
-
     private static HostCoordinationDocumentDto MapDocument(HostCoordinationDocumentRecord document) =>
         new(document.Id, document.FileName, document.ContentType, document.Length, document.UploadedAtUtc);
 
@@ -798,7 +853,7 @@ public static class EngagementPreparationEndpoints
         internalGroup.MapGet("/{id:guid}/preparation", async (Guid id, HttpContext context, EngagementPreparationService service, CancellationToken ct) =>
         {
             var item = await service.EnsureAsync(KingdomIdentity.TenantId(context.User, context.Request), id, ct);
-            if (item is null) return Results.NotFound(new { message = "This assignment was not created from an approved speaking invitation." });
+            if (item is null) return Results.NotFound(new { message = "Assignment preparation could not be initialized." });
             var termsUrl = $"{context.Request.Scheme}://{context.Request.Host}/host/terms/{item.TermsToken}";
             var coordinationUrl = item.TermsStatus == "accepted"
                 ? $"{context.Request.Scheme}://{context.Request.Host}/host/coordination/{item.CoordinationToken}"

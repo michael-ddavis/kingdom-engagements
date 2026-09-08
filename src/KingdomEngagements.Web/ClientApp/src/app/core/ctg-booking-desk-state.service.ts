@@ -3,6 +3,29 @@ import { Injectable, computed, signal } from '@angular/core';
 
 export type BookingSource = 'website' | 'email' | 'referral' | 'phone' | 'whatsapp' | 'social' | 'apostle-cynthia' | 'team-member' | 'returning-host' | 'other';
 export type BookingStage = 'new' | 'needs-information' | 'under-review' | 'date-hold' | 'approved' | 'declined' | 'converted';
+export type HostResponseChannel = 'email' | 'phone' | 'whatsapp' | 'text' | 'in-person' | 'other';
+
+export interface HostResponseEntry {
+  id: string;
+  receivedAtUtc: string;
+  channel: HostResponseChannel;
+  summary: string;
+  followUp: string;
+  followUpAtUtc: string | null;
+  owner: string;
+  fieldsUpdated: string[];
+}
+
+export interface HostResponseInput {
+  receivedAtUtc: string;
+  channel: HostResponseChannel;
+  summary: string;
+  followUp: string;
+  followUpAtUtc: string | null;
+  owner: string;
+  changes: Partial<ManualBookingRecord>;
+  fieldsUpdated: string[];
+}
 
 export interface ManualBookingRecord {
   id: string;
@@ -28,6 +51,8 @@ export interface ManualBookingRecord {
   stage: BookingStage;
   owner: string;
   lastResponseAtUtc: string | null;
+  nextFollowUpAtUtc: string | null;
+  hostResponses: HostResponseEntry[];
   holdExpiresAtUtc: string | null;
   passportRequired: boolean;
   visaRequired: boolean;
@@ -89,6 +114,8 @@ export class CtgBookingDeskStateService {
       stage: 'new',
       owner: 'CTG Administration',
       lastResponseAtUtc: null,
+      nextFollowUpAtUtc: null,
+      hostResponses: [],
       holdExpiresAtUtc: null,
       passportRequired: !this.isUnitedStates(input.country),
       visaRequired: false,
@@ -134,8 +161,67 @@ export class CtgBookingDeskStateService {
     });
   }
 
+  /**
+   * Kept as the Booking Desk action entry point so existing templates do not need
+   * to duplicate response behavior. The enhancement service owns the dialog and
+   * calls logHostResponse after the coordinator enters what the host actually said.
+   */
   touchResponse(id: string): void {
-    this.update(id, { lastResponseAtUtc: new Date().toISOString() });
+    window.dispatchEvent(new CustomEvent('apostolos:log-host-response', { detail: { id } }));
+  }
+
+  logHostResponse(id: string, input: HostResponseInput): ManualBookingRecord | null {
+    const existing = this.bookings().find(item => item.id === id);
+    if (!existing) return null;
+
+    const entry: HostResponseEntry = {
+      id: crypto.randomUUID(),
+      receivedAtUtc: input.receivedAtUtc,
+      channel: input.channel,
+      summary: input.summary.trim(),
+      followUp: input.followUp.trim(),
+      followUpAtUtc: input.followUpAtUtc,
+      owner: input.owner.trim() || existing.owner,
+      fieldsUpdated: [...new Set(input.fieldsUpdated.filter(Boolean))],
+    };
+
+    const changes: Partial<ManualBookingRecord> = {
+      ...input.changes,
+      owner: input.owner.trim() || existing.owner,
+      lastResponseAtUtc: entry.receivedAtUtc,
+      nextFollowUpAtUtc: entry.followUpAtUtc,
+      hostResponses: [...existing.hostResponses, entry],
+    };
+
+    this.update(id, changes);
+    const updated = this.bookings().find(item => item.id === id) ?? null;
+    window.dispatchEvent(new CustomEvent('apostolos:host-response-saved', { detail: { id } }));
+    return updated;
+  }
+
+  missingInformation(record: ManualBookingRecord): string[] {
+    const missing: string[] = [];
+    const unresolved = (value: string | null | undefined) => {
+      const normalized = (value ?? '').trim();
+      if (!normalized) return true;
+      return /\b(pending|proposed|confirm|confirmation|verify|verification|provide|not started|not-started|tbd|unknown)\b/i.test(normalized);
+    };
+
+    if (!record.requestedStartDate) missing.push('Requested dates');
+    if (!record.contactEmail && !record.contactPhone && !record.whatsapp) missing.push('Host contact method');
+
+    if (!this.isUnitedStates(record.country)) {
+      if (record.visaRequired && unresolved(record.entryRequirements)) missing.push('Visa / entry documentation');
+      if (unresolved(record.securityNotes)) missing.push('Local security / protocol contact');
+    }
+
+    if (unresolved(record.airfareResponsibility)) missing.push('Airfare responsibility');
+    if (unresolved(record.lodgingResponsibility)) missing.push('Lodging responsibility');
+    if (unresolved(record.groundResponsibility)) missing.push('Ground transportation');
+    if (record.honorariumAmount === null) missing.push('Honorarium confirmation');
+    if (!record.agreementStatus || ['not-started', 'drafting', 'sent'].includes(record.agreementStatus)) missing.push('Agreement');
+
+    return missing;
   }
 
   refresh(): void {
@@ -214,6 +300,8 @@ export class CtgBookingDeskStateService {
       notes: record.notes ?? '',
       owner: record.owner || 'CTG Administration',
       lastResponseAtUtc: record.lastResponseAtUtc ?? null,
+      nextFollowUpAtUtc: record.nextFollowUpAtUtc ?? null,
+      hostResponses: Array.isArray(record.hostResponses) ? record.hostResponses : [],
       holdExpiresAtUtc: record.holdExpiresAtUtc ?? null,
       passportRequired: !!record.passportRequired,
       visaRequired: !!record.visaRequired,
@@ -243,7 +331,7 @@ export class CtgBookingDeskStateService {
         city: 'Lagos', region: 'Lagos State', country: 'Nigeria', timeZone: 'Africa/Lagos', requestedStartDate: '2027-03-18', requestedEndDate: '2027-03-21', alternateDates: 'March 25–28, 2027',
         source: 'apostle-cynthia', sourceDetail: 'Spoke with Apostle after service. Formal information pending.', contactEmail: 'pastor.okoro@example.org', contactPhone: '+234 800 555 0142', whatsapp: '+234 800 555 0142', expectedAttendance: 1200,
         requestedRole: 'Keynote teaching, apostolic impartation, and leadership session', notes: 'Warm invitation. Host is preparing the formal ministry letter and complete schedule.', stage: 'needs-information', owner: 'CTG Administration',
-        lastResponseAtUtc: '2026-09-01T15:00:00Z', holdExpiresAtUtc: null, passportRequired: true, visaRequired: true, invitationLetterRequired: true,
+        lastResponseAtUtc: '2026-09-01T15:00:00Z', nextFollowUpAtUtc: null, hostResponses: [], holdExpiresAtUtc: null, passportRequired: true, visaRequired: true, invitationLetterRequired: true,
         entryRequirements: 'Confirm Nigerian entry visa documentation and passport validity before approval.', nearestAirport: 'LOS · Murtala Muhammed International Airport', interpreterNeeded: false, interpreterLanguage: '',
         localTransportation: 'Host proposes dedicated airport and ministry transportation.', securityNotes: 'Host to provide local protocol/security contact and transportation plan.', honorariumAmount: null, honorariumCurrency: 'USD',
         airfareResponsibility: 'Host proposed', lodgingResponsibility: 'Host proposed', groundResponsibility: 'Host proposed', agreementStatus: 'not-started', createdAtUtc: '2026-08-30T19:15:00Z', updatedAtUtc: '2026-09-01T15:00:00Z',
@@ -253,7 +341,7 @@ export class CtgBookingDeskStateService {
         hostName: 'Dr. Naomi Clarke', hostOrganization: 'Kingdom Embassy Europe', eventName: 'Prophetic & Apostolic Summit', eventType: 'Summit',
         city: 'London', region: 'England', country: 'United Kingdom', timeZone: 'Europe/London', requestedStartDate: '2027-06-10', requestedEndDate: '2027-06-13', alternateDates: '',
         source: 'email', sourceDetail: 'Invitation received by the CTG office email.', contactEmail: 'naomi.clarke@example.org', contactPhone: '+44 20 7946 0191', whatsapp: '', expectedAttendance: 850,
-        requestedRole: 'Opening keynote and prophetic activation', notes: 'Host has provided venue and preliminary itinerary.', stage: 'date-hold', owner: 'CTG Administration', lastResponseAtUtc: new Date(Date.now() - 86400000).toISOString(),
+        requestedRole: 'Opening keynote and prophetic activation', notes: 'Host has provided venue and preliminary itinerary.', stage: 'date-hold', owner: 'CTG Administration', lastResponseAtUtc: new Date(Date.now() - 86400000).toISOString(), nextFollowUpAtUtc: null, hostResponses: [],
         holdExpiresAtUtc: new Date(Date.now() + 4 * 86400000).toISOString(), passportRequired: true, visaRequired: false, invitationLetterRequired: false, entryRequirements: 'Confirm UK ETA/entry requirements closer to travel.',
         nearestAirport: 'LHR · London Heathrow Airport', interpreterNeeded: false, interpreterLanguage: '', localTransportation: 'Executive car service proposed by host.', securityNotes: '', honorariumAmount: 7500, honorariumCurrency: 'USD',
         airfareResponsibility: 'Host', lodgingResponsibility: 'Host', groundResponsibility: 'Host', agreementStatus: 'drafting', createdAtUtc: '2026-08-20T12:00:00Z', updatedAtUtc: new Date(Date.now() - 86400000).toISOString(),
@@ -263,7 +351,7 @@ export class CtgBookingDeskStateService {
         hostName: 'Bishop Alton Reid', hostOrganization: 'Kingdom Dominion Fellowship', eventName: 'Caribbean Prophetic Gathering', eventType: 'Conference',
         city: 'Kingston', region: '', country: 'Jamaica', timeZone: 'America/Jamaica', requestedStartDate: '2027-04-22', requestedEndDate: '2027-04-25', alternateDates: '',
         source: 'returning-host', sourceDetail: 'Returning host reached out directly to CTG administration.', contactEmail: 'bishop.reid@example.org', contactPhone: '+1 876 555 0180', whatsapp: '+1 876 555 0180', expectedAttendance: 600,
-        requestedRole: 'Evening ministry and leaders gathering', notes: 'Previous host relationship. Dates appear workable pending calendar review.', stage: 'under-review', owner: 'CTG Administration', lastResponseAtUtc: new Date(Date.now() - 2 * 86400000).toISOString(),
+        requestedRole: 'Evening ministry and leaders gathering', notes: 'Previous host relationship. Dates appear workable pending calendar review.', stage: 'under-review', owner: 'CTG Administration', lastResponseAtUtc: new Date(Date.now() - 2 * 86400000).toISOString(), nextFollowUpAtUtc: null, hostResponses: [],
         holdExpiresAtUtc: null, passportRequired: true, visaRequired: false, invitationLetterRequired: false, entryRequirements: '', nearestAirport: 'KIN · Norman Manley International Airport', interpreterNeeded: false, interpreterLanguage: '',
         localTransportation: '', securityNotes: '', honorariumAmount: null, honorariumCurrency: 'USD', airfareResponsibility: '', lodgingResponsibility: '', groundResponsibility: '', agreementStatus: 'not-started',
         createdAtUtc: '2026-08-29T17:00:00Z', updatedAtUtc: new Date(Date.now() - 2 * 86400000).toISOString(),

@@ -23,6 +23,7 @@ import {
 import { engagementDemoRoleInterceptor } from './core/engagement-demo-role.interceptor';
 import { CtgHostResponseEnhancementService } from './core/ctg-host-response-enhancement.service';
 import { CtgBookingDeskPolishService } from './core/ctg-booking-desk-polish.service';
+import { DwcGroupsBrandingService } from './core/dwc-groups-branding.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -30,6 +31,7 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => inject(EngagementDemoRoleService).mountSwitcher()),
     provideAppInitializer(() => inject(CtgHostResponseEnhancementService).mount()),
     provideAppInitializer(() => inject(CtgBookingDeskPolishService).mount()),
+    provideAppInitializer(() => inject(DwcGroupsBrandingService).mount()),
     provideRouter([
       { path: '', component: OrganizationLandingComponent, pathMatch: 'full' },
       { path: 'invitations', component: InvitationsComponent, canActivate: [engagementBookingGuard] },

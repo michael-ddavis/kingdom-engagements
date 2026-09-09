@@ -130,6 +130,7 @@ export class MutationToastService {
 }
 
 const mutationMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+const collaborationSyncKey = 'apostolos.engagement-collaboration-sync';
 
 export const mutationToastInterceptor: HttpInterceptorFn = (
   request: HttpRequest<unknown>,
@@ -145,6 +146,7 @@ export const mutationToastInterceptor: HttpInterceptorFn = (
       next: (event) => {
         if (completed || !(event instanceof HttpResponse)) return;
         completed = true;
+        signalCollaborationMutation(request);
         toasts.success(successMessage(request.method));
       },
       error: (error: unknown) => {
@@ -161,6 +163,29 @@ function shouldNotify(request: HttpRequest<unknown>): boolean {
   if (!mutationMethods.has(method)) return false;
   const url = request.url.toLowerCase();
   return url.startsWith('/api/') || url.includes('/api/');
+}
+
+function signalCollaborationMutation(request: HttpRequest<unknown>): void {
+  if (typeof localStorage === 'undefined') return;
+  const url = request.url;
+  const lower = url.toLowerCase();
+  const sharedWorkspaceMutation =
+    lower.includes('/workspace/coordination') ||
+    lower.includes('/workspace/documents');
+  if (!sharedWorkspaceMutation) return;
+
+  const match = url.match(/\/api\/engagements\/assignments\/([^/?#]+)/i);
+  if (!match) return;
+
+  try {
+    localStorage.setItem(collaborationSyncKey, JSON.stringify({
+      assignmentId: decodeURIComponent(match[1]),
+      source: 'ctg',
+      at: Date.now(),
+    }));
+  } catch {
+    // The server save remains authoritative when browser storage is unavailable.
+  }
 }
 
 function successMessage(method: string): string {

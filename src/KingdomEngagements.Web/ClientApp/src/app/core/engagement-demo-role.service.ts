@@ -1,7 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 
-export type EngagementDemoRole = 'administrator' | 'coordinator' | 'minister';
+export type EngagementDemoRole = 'administrator' | 'coordinator' | 'apostle' | 'minister';
 
 export interface EngagementDemoPersona {
   role: EngagementDemoRole;
@@ -51,11 +51,18 @@ const PERSONAS: Record<EngagementDemoRole, EngagementDemoPersona> = {
     person: 'Engagement Coordinator',
     description: 'Invitation intake, booking workflow, scheduling, communication, and assignment preparation.',
   },
+  apostle: {
+    role: 'apostle',
+    label: 'Apostle Cynthia / Executive View',
+    shortLabel: 'Apostle Cynthia',
+    person: 'Cynthia Thompson',
+    description: 'At-a-glance ministry picture: upcoming assignments, readiness, decisions, and movement without operational clutter.',
+  },
   minister: {
     role: 'minister',
     label: 'Assigned Team Member / Minister',
     shortLabel: 'Assigned Minister',
-    person: 'Cynthia Thompson',
+    person: 'Assigned Minister',
     description: 'Assigned engagements only: event details, responsibilities, contacts, logistics, and preparation.',
   },
 };
@@ -66,11 +73,12 @@ export class EngagementDemoRoleService {
   readonly persona = computed(() => PERSONAS[this.role()]);
   readonly isAdministrator = computed(() => this.role() === 'administrator');
   readonly isCoordinator = computed(() => this.role() === 'coordinator');
+  readonly isApostle = computed(() => this.role() === 'apostle');
   readonly isMinister = computed(() => this.role() === 'minister');
-  readonly canManageBookings = computed(() => !this.isMinister());
-  readonly canManageAssignments = computed(() => !this.isMinister());
-  readonly canViewFinancials = computed(() => !this.isMinister());
-  readonly canViewInternalNotes = computed(() => !this.isMinister());
+  readonly canManageBookings = computed(() => this.isAdministrator() || this.isCoordinator());
+  readonly canManageAssignments = computed(() => this.isAdministrator() || this.isCoordinator());
+  readonly canViewFinancials = computed(() => this.isAdministrator() || this.isCoordinator());
+  readonly canViewInternalNotes = computed(() => this.isAdministrator() || this.isCoordinator());
   readonly canCompleteEngagements = computed(() => this.isAdministrator());
 
   switchRole(value: string): void {
@@ -78,6 +86,23 @@ export class EngagementDemoRoleService {
     document.cookie = `${COOKIE_NAME}=${encodeURIComponent(role)}; path=/; max-age=604800; SameSite=Lax`;
     this.role.set(role);
     document.body.dataset['engagementDemoRole'] = role;
+
+    const organization = this.readCookie(ORGANIZATION_COOKIE)?.toLowerCase() ?? 'ctg';
+    if (organization === 'ctg') {
+      if (role === 'apostle') {
+        window.location.assign('/organization/ctg/apostle');
+        return;
+      }
+      if (role === 'minister') {
+        window.location.assign('/assignments');
+        return;
+      }
+      if (window.location.pathname === '/organization/ctg/apostle') {
+        window.location.assign('/organization/ctg/bookings');
+        return;
+      }
+    }
+
     window.location.reload();
   }
 
@@ -175,7 +200,7 @@ export class EngagementDemoRoleService {
         <label class="wide"><span>Location</span><input name="location" value="${this.escapeAttribute(details.summary.location ?? '')}"></label>
         <label><span>Start date</span><input name="startsAtUtc" type="date" value="${this.dateInput(details.summary.startsAtUtc)}"></label>
         <label><span>End date</span><input name="endsAtUtc" type="date" value="${this.dateInput(details.endsAtUtc)}"></label>
-        <label class="wide"><span>Internal coordination note</span><textarea name="notes" rows="5">${this.escapeText(details.notes ?? '')}</textarea><small>Visible to administrators and coordinators; hidden from the assigned minister demo role.</small></label>
+        <label class="wide"><span>Internal coordination note</span><textarea name="notes" rows="5">${this.escapeText(details.notes ?? '')}</textarea><small>Visible to administrators and coordinators; hidden from executive and assigned-minister views.</small></label>
       </div>
       <footer><span class="eng-demo-manage-message" aria-live="polite"></span><button type="button" class="secondary eng-demo-manage-cancel">Cancel</button><button type="submit" class="primary">Save engagement</button></footer>
     `;
@@ -294,7 +319,7 @@ export class EngagementDemoRoleService {
   }
 
   private normalize(value: string | null | undefined): EngagementDemoRole {
-    if (value === 'coordinator' || value === 'minister') return value;
+    if (value === 'coordinator' || value === 'apostle' || value === 'minister') return value;
     return 'administrator';
   }
 
@@ -325,6 +350,10 @@ export class EngagementDemoRoleService {
 export const engagementBookingGuard: CanActivateFn = () => {
   const roles = inject(EngagementDemoRoleService);
   if (roles.canManageBookings()) return true;
+
+  if (roles.isApostle()) {
+    return inject(Router).createUrlTree(['/organization/ctg/apostle']);
+  }
 
   return inject(Router).createUrlTree(['/assignments'], {
     queryParams: { demoAccess: 'assigned-only' },

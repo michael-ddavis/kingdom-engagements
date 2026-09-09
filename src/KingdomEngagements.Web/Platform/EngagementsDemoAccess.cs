@@ -14,6 +14,7 @@ public static class EngagementsDemoRoles
 
     public const string Administrator = "administrator";
     public const string Coordinator = "coordinator";
+    public const string Apostle = "apostle";
     public const string Minister = "minister";
 
     private static readonly string[] MinisterAssignments =
@@ -35,6 +36,7 @@ public static class EngagementsDemoRoles
         value?.Trim().ToLowerInvariant() switch
         {
             Coordinator => Coordinator,
+            Apostle => Apostle,
             Minister => Minister,
             _ => Administrator
         };
@@ -67,6 +69,20 @@ public static class EngagementsDemoRoles
                     new Claim(KingdomIdentity.PermissionClaim, "engagements:financial:read"),
                     new Claim(KingdomIdentity.PermissionClaim, "engagements:internal-notes:read"),
                     new Claim(ClaimTypes.Role, "Coordinator"),
+                ]);
+                break;
+
+            case Apostle:
+                claims.AddRange(
+                [
+                    new Claim(ClaimTypes.NameIdentifier, "demo-apostle-cynthia"),
+                    new Claim(ClaimTypes.Name, "Cynthia Thompson"),
+                    new Claim(ClaimTypes.Email, "cynthia@kingdomos.local"),
+                    new Claim(KingdomIdentity.TenantRoleClaim, "member"),
+                    new Claim(KingdomIdentity.ProductRoleClaim, "engagements:executive"),
+                    new Claim(KingdomIdentity.PermissionClaim, "engagements:assignments:read"),
+                    new Claim(KingdomIdentity.PermissionClaim, "engagements:bookings:read"),
+                    new Claim(ClaimTypes.Role, "Executive"),
                 ]);
                 break;
 
@@ -111,16 +127,19 @@ public static class EngagementsDemoRoles
     public static bool IsMinister(ClaimsPrincipal principal) =>
         string.Equals(CurrentRole(principal), Minister, StringComparison.OrdinalIgnoreCase);
 
+    public static bool IsApostle(ClaimsPrincipal principal) =>
+        string.Equals(CurrentRole(principal), Apostle, StringComparison.OrdinalIgnoreCase);
+
     public static bool CanUseBookingDesk(ClaimsPrincipal principal)
     {
         var role = CurrentRole(principal);
-        return role == Administrator || role == Coordinator;
+        return role == Administrator || role == Coordinator || role == Apostle;
     }
 
     public static bool CanViewAllEngagements(ClaimsPrincipal principal)
     {
         var role = CurrentRole(principal);
-        return role == Administrator || role == Coordinator;
+        return role == Administrator || role == Coordinator || role == Apostle;
     }
 
     public static bool CanViewFinancials(ClaimsPrincipal principal) =>
@@ -281,7 +300,7 @@ public static class EngagementsDemoAccessEndpoints
                 role,
                 name = context.User.Identity?.Name ?? "Engagements user",
                 canViewAllEngagements = EngagementsDemoRoles.CanViewAllEngagements(context.User),
-                canManageBookings = EngagementsDemoRoles.CanUseBookingDesk(context.User),
+                canManageBookings = context.User.HasClaim(KingdomIdentity.PermissionClaim, "engagements:bookings:manage"),
                 canManageAssignments = KingdomIdentity.CanWriteEngagements(context.User),
                 canViewFinancials = EngagementsDemoRoles.CanViewFinancials(context.User),
                 canViewInternalNotes = EngagementsDemoRoles.CanViewInternalNotes(context.User),

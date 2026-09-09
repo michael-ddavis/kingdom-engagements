@@ -27,10 +27,11 @@ export class OrganizationLandingComponent implements OnInit {
       return;
     }
 
-    // Keep the module entry operational and role-aware. Assigned ministers go
-    // directly to their engagement queue; administrators and coordinators enter
-    // through the Global Booking Desk where new opportunities are received and
-    // moved into confirmed assignments.
+    if (this.demoRole.isApostle()) {
+      void this.router.navigate(['/organization', 'ctg', 'apostle'], { replaceUrl: true });
+      return;
+    }
+
     if (this.demoRole.isMinister()) {
       void this.router.navigate(['/assignments'], { replaceUrl: true });
       return;

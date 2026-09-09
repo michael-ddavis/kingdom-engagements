@@ -22,6 +22,7 @@ import {
   engagementBookingGuard,
 } from './core/engagement-demo-role.service';
 import { engagementDemoRoleInterceptor } from './core/engagement-demo-role.interceptor';
+import { CtgApostleShellService } from './core/ctg-apostle-shell.service';
 import { CtgHostResponseEnhancementService } from './core/ctg-host-response-enhancement.service';
 import { CtgBookingDeskPolishService } from './core/ctg-booking-desk-polish.service';
 import { DwcGroupsBrandingService } from './core/dwc-groups-branding.service';
@@ -38,6 +39,7 @@ export const appConfig: ApplicationConfig = {
       mutationToastInterceptor,
     ])),
     provideAppInitializer(() => inject(EngagementDemoRoleService).mountSwitcher()),
+    provideAppInitializer(() => inject(CtgApostleShellService).mount()),
     provideAppInitializer(() => inject(CtgHostResponseEnhancementService).mount()),
     provideAppInitializer(() => inject(CtgBookingDeskPolishService).mount()),
     provideAppInitializer(() => inject(DwcGroupsBrandingService).mount()),

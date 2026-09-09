@@ -4,6 +4,7 @@ const form = document.querySelector('#terms-form');
 const acceptedView = document.querySelector('#accepted-view');
 const coordinationLink = document.querySelector('#coordination-link');
 const token = window.location.pathname.split('/').filter(Boolean).pop();
+const collaborationSyncKey = 'apostolos.engagement-collaboration-sync';
 let terms = null;
 
 function escapeHtml(value) {
@@ -25,6 +26,18 @@ function showState(message, kind = '') {
   stateBox.hidden = !message;
   stateBox.className = `portal-state ${kind}`.trim();
   stateBox.textContent = message || '';
+}
+function broadcastCollaborationUpdate() {
+  if (!terms?.assignmentId) return;
+  try {
+    localStorage.setItem(collaborationSyncKey, JSON.stringify({
+      assignmentId: terms.assignmentId,
+      source: 'host',
+      at: Date.now()
+    }));
+  } catch {
+    // Server persistence remains authoritative if browser storage is unavailable.
+  }
 }
 async function api(url, options = {}) {
   const response = await fetch(url, { ...options, headers: { 'Content-Type':'application/json', ...(options.headers || {}) } });
@@ -83,6 +96,7 @@ form.addEventListener('submit', async event => {
       body:JSON.stringify({ accepted:true, signatoryName:data.get('signatoryName'), signatoryEmail:data.get('signatoryEmail'), note:data.get('note') || null })
     });
     terms = result.terms;
+    broadcastCollaborationUpdate();
     showState('Engagement terms accepted. Host coordination is ready.', 'success');
     render();
     if (result.coordinationUrl) coordinationLink.href = result.coordinationUrl;

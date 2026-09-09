@@ -4,6 +4,7 @@ import { provideRouter } from '@angular/router';
 import { InvitationsComponent } from './pages/invitations.component';
 import { AssignmentListComponent } from './pages/assignment-list.component';
 import { AssignmentWorkspaceComponent } from './pages/assignment-workspace.component';
+import { CtgApostleDashboardComponent } from './pages/ctg-apostle-dashboard.component';
 import { CtgBookingDeskComponent } from './pages/ctg-booking-desk.component';
 import { CtgEngagementsHomeComponent } from './pages/ctg-engagements-home.component';
 import { CtgEventRegistrationComponent } from './pages/ctg-event-registration.component';
@@ -47,6 +48,7 @@ export const appConfig: ApplicationConfig = {
       { path: 'invitations', component: InvitationsComponent, canActivate: [engagementBookingGuard] },
       { path: 'assignments', component: AssignmentListComponent },
       { path: 'assignments/:id', component: AssignmentWorkspaceComponent },
+      { path: 'organization/ctg/apostle', component: CtgApostleDashboardComponent },
       { path: 'organization/ctg', component: CtgEngagementsHomeComponent, canActivate: [engagementBookingGuard] },
       { path: 'organization/ctg/bookings', component: CtgBookingDeskComponent, canActivate: [engagementBookingGuard] },
       { path: 'organization/ctg/start-invitation', component: CtgStartInvitationComponent, canActivate: [engagementBookingGuard] },

@@ -26,11 +26,11 @@ interface CityImage {
 const CITY_IMAGES: readonly CityImage[] = [
   {
     terms: ['atlanta'],
-    url: 'https://images.unsplash.com/photo-1663601460253-aba72eea6edf?auto=format&fit=crop&w=1400&q=82',
+    url: 'https://images.unsplash.com/photo-1675449672066-db3b9a6cd717?auto=format&fit=crop&w=1400&q=82',
   },
   {
     terms: ['charlotte'],
-    url: 'https://images.unsplash.com/photo-1660585238415-517de72185d5?auto=format&fit=crop&w=1400&q=82',
+    url: 'https://images.unsplash.com/photo-1746590809189-666b05b4e58b?auto=format&fit=crop&w=1400&q=82',
   },
   {
     terms: ['baltimore'],
@@ -42,7 +42,7 @@ const CITY_IMAGES: readonly CityImage[] = [
   },
   {
     terms: ['lagos', 'nigeria'],
-    url: 'https://images.unsplash.com/photo-1744907895363-d351aa6019ef?auto=format&fit=crop&w=1400&q=82',
+    url: 'https://images.unsplash.com/photo-1749058387817-8c3a73d0dac0?auto=format&fit=crop&w=1400&q=82',
   },
   {
     terms: ['london', 'united kingdom', 'england'],

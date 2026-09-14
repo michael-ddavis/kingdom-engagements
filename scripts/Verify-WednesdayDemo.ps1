@@ -21,7 +21,7 @@ function Assert-Status {
     }
 }
 
-Write-Host "`nApostolOS Engagements — Wednesday demo verification" -ForegroundColor Cyan
+Write-Host "`nApostolOS Engagements - Wednesday demo verification" -ForegroundColor Cyan
 Write-Host "Target: $BaseUrl`n"
 
 Assert-Status "Engagements health endpoint" {
@@ -102,10 +102,10 @@ Assert-Status "Public host coordination page remains available" {
 
 Write-Host "`nAUTOMATED CHECKS PASSED.`n" -ForegroundColor Green
 Write-Host "Final 5-minute click rehearsal:" -ForegroundColor Cyan
-Write-Host "  1. Demo as Apostle Cynthia → visual dashboard loads with city imagery/fallbacks."
-Write-Host "  2. Click Next Assignment → executive brief, not the operational workspace."
-Write-Host "  3. Back to my overview → returns to Cynthia's dashboard."
-Write-Host "  4. Demo as Coordinator → Booking Desk → convert/open an engagement."
-Write-Host "  5. Open Host Collaboration → save host progress → refresh/verify same engagement updates."
-Write-Host "  6. Switch back to Apostle Cynthia → confirm the high-level picture still reads cleanly."
+Write-Host "  1. Demo as Apostle Cynthia -> visual dashboard loads with city imagery/fallbacks."
+Write-Host "  2. Click Next Assignment -> executive brief, not the operational workspace."
+Write-Host "  3. Back to my overview -> returns to Cynthia's dashboard."
+Write-Host "  4. Demo as Coordinator -> Booking Desk -> convert/open an engagement."
+Write-Host "  5. Open Host Collaboration -> save host progress -> refresh/verify same engagement updates."
+Write-Host "  6. Switch back to Apostle Cynthia -> confirm the high-level picture still reads cleanly."
 Write-Host "`nAfter this passes, treat demo-ready as BUG-FIX ONLY until Wednesday.`n" -ForegroundColor Yellow

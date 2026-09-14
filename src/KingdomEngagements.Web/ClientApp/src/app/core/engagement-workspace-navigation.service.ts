@@ -41,15 +41,27 @@ export class EngagementWorkspaceNavigationService {
       return;
     }
 
-    if (this.roles.isApostle()) {
-      link.href = '/organization/ctg/apostle';
-      link.textContent = '← Back to my overview';
-      return;
-    }
+    const target = this.roles.isApostle()
+      ? '/organization/ctg/apostle'
+      : '/assignments';
 
-    link.href = '/assignments';
-    link.textContent = this.roles.isMinister()
-      ? '← Back to assigned engagements'
-      : '← Back to engagements';
+    link.href = target;
+    link.dataset['apostolosBackTarget'] = target;
+    link.textContent = this.roles.isApostle()
+      ? '← Back to my overview'
+      : this.roles.isMinister()
+        ? '← Back to assigned engagements'
+        : '← Back to engagements';
+
+    if (link.dataset['apostolosBackBound'] === 'true') return;
+    link.dataset['apostolosBackBound'] = 'true';
+    link.addEventListener('click', event => {
+      const anchor = event.currentTarget as HTMLAnchorElement;
+      const nextTarget = anchor.dataset['apostolosBackTarget'];
+      if (!nextTarget) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      window.location.assign(nextTarget);
+    }, { capture: true });
   }
 }

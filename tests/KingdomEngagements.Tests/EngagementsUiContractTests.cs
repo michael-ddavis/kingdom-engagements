@@ -97,7 +97,10 @@ public sealed class EngagementsUiContractTests
             "KingdomEngagements.Web",
             "Program.cs"));
 
-        Assert.Contains("Results.Redirect($\"/assignments{request.QueryString}\")", program, StringComparison.Ordinal);
+        Assert.Contains("var target = EngagementsDemoRoles.IsMinister(context.User)", program, StringComparison.Ordinal);
+        Assert.Contains("? \"/assignments\"", program, StringComparison.Ordinal);
+        Assert.Contains(": \"/organization/ctg/bookings\"", program, StringComparison.Ordinal);
+        Assert.Contains("Results.Redirect($\"{target}{context.Request.QueryString}\")", program, StringComparison.Ordinal);
         Assert.Contains("app.MapGet(\"/app/{*path}\"", program, StringComparison.Ordinal);
         Assert.Contains("$\"/{path.TrimStart('/')}\"", program, StringComparison.Ordinal);
         Assert.DoesNotContain("Path.Combine(environment.WebRootPath, \"app\", \"index.html\")", program, StringComparison.Ordinal);

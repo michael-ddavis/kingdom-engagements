@@ -7,6 +7,7 @@ export class CtgApostleShellService {
   private readonly className = 'ctg-apostle-shell';
   private readonly styleId = 'ctg-apostle-shell-styles';
   private mounted = false;
+  private anchorVersion = 0;
 
   constructor(private readonly router: Router) {}
 
@@ -22,8 +23,25 @@ export class CtgApostleShellService {
   }
 
   private sync(): void {
-    const executive = this.router.url.split('?')[0].replace(/\/$/, '').startsWith('/organization/ctg/apostle');
+    const route = this.router.url.split('?')[0].split('#')[0].replace(/\/$/, '');
+    const executive = route.startsWith('/organization/ctg/apostle');
     document.body.classList.toggle(this.className, executive);
+
+    this.anchorVersion += 1;
+    if (route === '/organization/ctg/apostle') {
+      this.ensureRoadAheadAnchor(this.anchorVersion);
+    }
+  }
+
+  private ensureRoadAheadAnchor(version: number, attempt = 0): void {
+    if (version !== this.anchorVersion) return;
+    const road = document.querySelector<HTMLElement>('.apostle-dashboard .road-section');
+    if (!road) {
+      if (attempt < 24) window.setTimeout(() => this.ensureRoadAheadAnchor(version, attempt + 1), 75);
+      return;
+    }
+    road.id = 'road-ahead';
+    if (window.location.hash === '#road-ahead') road.scrollIntoView({ block: 'start' });
   }
 
   private installImageFallback(): void {
@@ -53,6 +71,7 @@ export class CtgApostleShellService {
       body.${this.className} .eng-tenant strong{font-family:Georgia,'Times New Roman',serif;font-weight:500}
       body.${this.className} .eng-modulebar{background:rgba(250,248,244,.98)}
       body.${this.className} .ctg-city-image-fallback{background:#243447 url('/ctg-world-route.svg') center/cover no-repeat!important}
+      body.${this.className} #road-ahead{scroll-margin-top:92px}
       @media(max-width:760px){body.${this.className} .eng-modulebar__right{width:auto;flex:0 0 auto}body.${this.className} .eng-modulebar{flex-wrap:nowrap}}
     `;
     document.head.appendChild(style);

@@ -14,6 +14,7 @@ export class CtgApostleShellService {
     if (this.mounted || typeof document === 'undefined') return;
     this.mounted = true;
     this.ensureStyles();
+    this.installImageFallback();
     this.sync();
     this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
@@ -21,8 +22,20 @@ export class CtgApostleShellService {
   }
 
   private sync(): void {
-    const executive = this.router.url.split('?')[0].replace(/\/$/, '') === '/organization/ctg/apostle';
+    const executive = this.router.url.split('?')[0].replace(/\/$/, '').startsWith('/organization/ctg/apostle');
     document.body.classList.toggle(this.className, executive);
+  }
+
+  private installImageFallback(): void {
+    document.addEventListener('error', event => {
+      const target = event.target;
+      if (!(target instanceof HTMLImageElement)) return;
+      if (!target.src.includes('images.unsplash.com')) return;
+      if (!target.closest('.apostle-dashboard, .apostle-engagement-brief')) return;
+
+      target.style.display = 'none';
+      target.parentElement?.classList.add('ctg-city-image-fallback');
+    }, true);
   }
 
   private ensureStyles(): void {
@@ -39,6 +52,7 @@ export class CtgApostleShellService {
       body.${this.className} .eng-tenant small{display:none}
       body.${this.className} .eng-tenant strong{font-family:Georgia,'Times New Roman',serif;font-weight:500}
       body.${this.className} .eng-modulebar{background:rgba(250,248,244,.98)}
+      body.${this.className} .ctg-city-image-fallback{background:#243447 url('/ctg-world-route.svg') center/cover no-repeat!important}
       @media(max-width:760px){body.${this.className} .eng-modulebar__right{width:auto;flex:0 0 auto}body.${this.className} .eng-modulebar{flex-wrap:nowrap}}
     `;
     document.head.appendChild(style);

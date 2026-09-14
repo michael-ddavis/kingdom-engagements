@@ -5,6 +5,7 @@ import { InvitationsComponent } from './pages/invitations.component';
 import { AssignmentListComponent } from './pages/assignment-list.component';
 import { AssignmentWorkspaceComponent } from './pages/assignment-workspace.component';
 import { CtgApostleDashboardComponent } from './pages/ctg-apostle-dashboard.component';
+import { CtgApostleEngagementBriefComponent } from './pages/ctg-apostle-engagement-brief.component';
 import { CtgBookingDeskComponent } from './pages/ctg-booking-desk.component';
 import { CtgEngagementsHomeComponent } from './pages/ctg-engagements-home.component';
 import { CtgEventRegistrationComponent } from './pages/ctg-event-registration.component';
@@ -21,7 +22,12 @@ import {
   EngagementDemoRoleService,
   engagementBookingGuard,
 } from './core/engagement-demo-role.service';
+import {
+  engagementAssignmentDetailGuard,
+  engagementAssignmentListGuard,
+} from './core/engagement-apostle-route.guards';
 import { engagementDemoRoleInterceptor } from './core/engagement-demo-role.interceptor';
+import { EngagementWorkspaceNavigationService } from './core/engagement-workspace-navigation.service';
 import { CtgApostleShellService } from './core/ctg-apostle-shell.service';
 import { CtgHostResponseEnhancementService } from './core/ctg-host-response-enhancement.service';
 import { CtgBookingDeskPolishService } from './core/ctg-booking-desk-polish.service';
@@ -40,6 +46,7 @@ export const appConfig: ApplicationConfig = {
     ])),
     provideAppInitializer(() => inject(EngagementDemoRoleService).mountSwitcher()),
     provideAppInitializer(() => inject(CtgApostleShellService).mount()),
+    provideAppInitializer(() => inject(EngagementWorkspaceNavigationService).mount()),
     provideAppInitializer(() => inject(CtgHostResponseEnhancementService).mount()),
     provideAppInitializer(() => inject(CtgBookingDeskPolishService).mount()),
     provideAppInitializer(() => inject(DwcGroupsBrandingService).mount()),
@@ -48,9 +55,10 @@ export const appConfig: ApplicationConfig = {
     provideRouter([
       { path: '', component: OrganizationLandingComponent, pathMatch: 'full' },
       { path: 'invitations', component: InvitationsComponent, canActivate: [engagementBookingGuard] },
-      { path: 'assignments', component: AssignmentListComponent },
-      { path: 'assignments/:id', component: AssignmentWorkspaceComponent },
+      { path: 'assignments', component: AssignmentListComponent, canActivate: [engagementAssignmentListGuard] },
+      { path: 'assignments/:id', component: AssignmentWorkspaceComponent, canActivate: [engagementAssignmentDetailGuard] },
       { path: 'organization/ctg/apostle', component: CtgApostleDashboardComponent },
+      { path: 'organization/ctg/apostle/engagements/:id', component: CtgApostleEngagementBriefComponent },
       { path: 'organization/ctg', component: CtgEngagementsHomeComponent, canActivate: [engagementBookingGuard] },
       { path: 'organization/ctg/bookings', component: CtgBookingDeskComponent, canActivate: [engagementBookingGuard] },
       { path: 'organization/ctg/start-invitation', component: CtgStartInvitationComponent, canActivate: [engagementBookingGuard] },

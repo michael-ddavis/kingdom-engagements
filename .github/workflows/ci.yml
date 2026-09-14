@@ -3,7 +3,7 @@ name: Validate
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, demo-ready]
 
 jobs:
   build-and-test:
@@ -22,13 +22,15 @@ jobs:
         run: |
           npm install
           npm run build:production
+          grep -R --quiet "Executive engagement brief" dist
+          grep -R --quiet "Back to my overview" dist
 
       - run: dotnet restore KingdomEngagements.slnx
       - run: dotnet build KingdomEngagements.slnx --configuration Release --no-restore
       - run: dotnet test KingdomEngagements.slnx --configuration Release --no-build
       - run: docker build --tag kingdom-engagements:ci .
 
-      - name: Verify standalone Angular shell and public host flows
+      - name: Verify standalone Angular shell, executive role, and public host flows
         shell: bash
         run: |
           set -euo pipefail
@@ -48,6 +50,10 @@ jobs:
                 grep --quiet '<app-root' <<<"$invitations_payload"
                 assignments_page="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/assignments)"
                 grep --quiet '<app-root' <<<"$assignments_page"
+                apostle_page="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/organization/ctg/apostle)"
+                grep --quiet '<app-root' <<<"$apostle_page"
+                apostle_brief_page="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/organization/ctg/apostle/engagements/demo-route-check)"
+                grep --quiet '<app-root' <<<"$apostle_brief_page"
 
                 invite_payload="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/invite/apostle-cynthia)"
                 grep --quiet 'Invite Cynthia Thompson' <<<"$invite_payload"
@@ -60,6 +66,11 @@ jobs:
                 grep --quiet 'Kingdom Leadership Gathering' <<<"$assignments_payload"
                 requests_payload="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/api/engagements/requests)"
                 grep --quiet 'eventName' <<<"$requests_payload"
+
+                apostle_assignments="$(docker exec "$container_id" curl --fail --silent -H 'X-Kingdom-Engagements-Demo-Role: apostle' http://localhost:8080/api/engagements/assignments)"
+                grep --quiet 'Cynthia Thompson' <<<"$apostle_assignments"
+                apostle_write_status="$(docker exec "$container_id" sh -c "curl -o /dev/null -s -w '%{http_code}' -X POST -H 'X-Kingdom-Engagements-Demo-Role: apostle' -H 'Content-Type: application/json' http://localhost:8080/api/engagements/assignments --data '{\"externalAssignmentId\":\"ci-apostle-write-check\",\"title\":\"Blocked write\",\"speakerName\":\"Cynthia Thompson\",\"hostOrganization\":\"CI Host\",\"startsAtUtc\":null,\"endsAtUtc\":null,\"location\":null}'")"
+                test "$apostle_write_status" = "403"
                 exit 0
               fi
             fi

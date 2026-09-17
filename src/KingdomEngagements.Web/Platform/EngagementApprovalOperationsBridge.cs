@@ -6,7 +6,8 @@ namespace KingdomEngagements.Web.Platform;
 
 public sealed class EngagementOperationsCoordinationPublisher(
     IHttpClientFactory httpClientFactory,
-    IConfiguration configuration)
+    IConfiguration configuration,
+    EngagementsEntitlementResolver entitlements)
 {
     public Task PublishAsync(
         SpeakingRequestRecord request,
@@ -113,37 +114,44 @@ public sealed class EngagementOperationsCoordinationPublisher(
             }
         };
 
-        var client = httpClientFactory.CreateClient();
-        var platformUrl = (configuration["KingdomOS:PlatformUrl"] ?? "http://platform:8080").TrimEnd('/');
-        var operationsUrl = (configuration["KingdomOS:OperationsUrl"] ?? "http://operations:8080").TrimEnd('/');
+        var platformUrl = (configuration["KingdomOS:PlatformInternalUrl"]
+            ?? configuration["KingdomOS:PlatformUrl"]
+            ?? "http://platform:8080").TrimEnd('/');
         var serviceKey = configuration["KingdomOS:Integration:ServiceKey"]
             ?? "local-kingdomos-integration";
 
-        using (var operationsRequest = new HttpRequestMessage(
-                   HttpMethod.Post,
-                   $"{operationsUrl}/api/integration/events")
-               {
-                   Content = JsonContent.Create(envelope)
-               })
-        {
-            operationsRequest.Headers.TryAddWithoutValidation("X-Kingdom-Service-Key", serviceKey);
-            using var operationsResponse = await client.SendAsync(operationsRequest, cancellationToken);
-            operationsResponse.EnsureSuccessStatusCode();
-        }
+        await SendAsync(platformUrl, envelope, serviceKey, cancellationToken);
 
-        using var platformRequest = new HttpRequestMessage(
+        var operationsState = await entitlements.GetModuleStateAsync(
+            "operations",
+            assignment.TenantId,
+            allowDevelopmentBypass: false,
+            cancellationToken);
+        if (operationsState != ModuleEntitlementState.Enabled) return;
+
+        var operationsUrl = (configuration["KingdomOS:OperationsUrl"] ?? "http://operations:8080")
+            .TrimEnd('/');
+        await SendAsync(operationsUrl, envelope, serviceKey, cancellationToken);
+    }
+
+    private async Task SendAsync(
+        string serviceUrl,
+        object envelope,
+        string serviceKey,
+        CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(
             HttpMethod.Post,
-            $"{platformUrl}/api/integration/events")
+            $"{serviceUrl}/api/integration/events")
         {
             Content = JsonContent.Create(envelope)
         };
-        platformRequest.Headers.TryAddWithoutValidation(
-            "X-Kingdom-Service-Key",
-            serviceKey);
-        using var platformResponse = await client.SendAsync(
-            platformRequest,
-            cancellationToken);
-        platformResponse.EnsureSuccessStatusCode();
+        request.Headers.TryAddWithoutValidation("X-Kingdom-Service-Key", serviceKey);
+
+        using var response = await httpClientFactory
+            .CreateClient()
+            .SendAsync(request, cancellationToken);
+        response.EnsureSuccessStatusCode();
     }
 
     private static string LocationSuffix(string? location) =>

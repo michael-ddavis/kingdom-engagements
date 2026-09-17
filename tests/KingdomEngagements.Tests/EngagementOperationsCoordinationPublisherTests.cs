@@ -1,17 +1,20 @@
 using System.Net;
+using System.Text;
 using System.Text.Json;
 using KingdomEngagements.Web.Features;
 using KingdomEngagements.Web.Platform;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.FileProviders;
 
 namespace KingdomEngagements.Tests;
 
 public sealed class EngagementOperationsCoordinationPublisherTests
 {
     [Fact]
-    public async Task PublishesTheExistingOperationalDependencyContractToOperationsAndPlatform()
+    public async Task PublishesTheExistingOperationalDependencyContractToPlatformAndEnabledOperations()
     {
-        var handler = new RecordingHandler();
+        var handler = new RecordingHandler(operationsEnabled: true);
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
@@ -21,9 +24,8 @@ public sealed class EngagementOperationsCoordinationPublisherTests
                 ["KingdomOS:EngagementsBrowserUrl"] = "https://engagements.test"
             })
             .Build();
-        var publisher = new EngagementOperationsCoordinationPublisher(
-            new TestHttpClientFactory(new HttpClient(handler)),
-            configuration);
+        var client = new HttpClient(handler);
+        var publisher = CreatePublisher(client, configuration);
         var tenantId = Guid.NewGuid();
         var assignmentId = Guid.NewGuid();
         var requestId = Guid.NewGuid();
@@ -51,14 +53,14 @@ public sealed class EngagementOperationsCoordinationPublisherTests
         Assert.Equal(
             new[]
             {
-                "http://operations.test/api/integration/events",
-                "http://platform.test/api/integration/events"
+                "http://platform.test/api/integration/events",
+                "http://operations.test/api/integration/events"
             },
-            handler.Requests.Select(request => request.Uri).ToArray());
-        Assert.All(handler.Requests, request => Assert.Equal("test-key", request.ServiceKey));
-        Assert.Equal(handler.Requests[0].Body, handler.Requests[1].Body);
+            handler.PublishedEvents.Select(request => request.Uri).ToArray());
+        Assert.All(handler.PublishedEvents, request => Assert.Equal("test-key", request.ServiceKey));
+        Assert.Equal(handler.PublishedEvents[0].Body, handler.PublishedEvents[1].Body);
 
-        using var payload = JsonDocument.Parse(handler.Requests[0].Body);
+        using var payload = JsonDocument.Parse(handler.PublishedEvents[0].Body);
         var root = payload.RootElement;
         Assert.Equal(assignmentId, root.GetProperty("eventId").GetGuid());
         Assert.Equal("OperationalDependencyCreated", root.GetProperty("eventName").GetString());
@@ -91,20 +93,74 @@ public sealed class EngagementOperationsCoordinationPublisherTests
             item.GetProperty("ministry").GetString() == "Intercessory Prayer");
     }
 
+    [Fact]
+    public async Task DisabledOperationsDoesNotBlockTheAuthoritativePlatformEvent()
+    {
+        var handler = new RecordingHandler(operationsEnabled: false);
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["KingdomOS:OperationsUrl"] = "http://operations.test",
+                ["KingdomOS:PlatformUrl"] = "http://platform.test",
+                ["KingdomOS:PlatformInternalUrl"] = "http://platform.test",
+                ["KingdomOS:Integration:ServiceKey"] = "test-key"
+            })
+            .Build();
+        var publisher = CreatePublisher(new HttpClient(handler), configuration);
+
+        await publisher.PublishAsync(
+            new EngagementAssignment
+            {
+                Id = Guid.NewGuid(),
+                TenantId = Guid.NewGuid(),
+                Title = "Engagements-only release",
+                SpeakerName = "Cynthia Thompson",
+                HostOrganization = "Covenant Fellowship"
+            },
+            CancellationToken.None);
+
+        var published = Assert.Single(handler.PublishedEvents);
+        Assert.Equal("http://platform.test/api/integration/events", published.Uri);
+    }
+
+    private static EngagementOperationsCoordinationPublisher CreatePublisher(
+        HttpClient client,
+        IConfiguration configuration)
+    {
+        var factory = new TestHttpClientFactory(client);
+        var entitlements = new EngagementsEntitlementResolver(
+            client,
+            configuration,
+            new TestWebHostEnvironment("Production"));
+        return new EngagementOperationsCoordinationPublisher(factory, configuration, entitlements);
+    }
+
     private sealed class TestHttpClientFactory(HttpClient client) : IHttpClientFactory
     {
         public HttpClient CreateClient(string name) => client;
     }
 
-    private sealed class RecordingHandler : HttpMessageHandler
+    private sealed class RecordingHandler(bool operationsEnabled) : HttpMessageHandler
     {
-        public List<RecordedRequest> Requests { get; } = [];
+        public List<RecordedRequest> PublishedEvents { get; } = [];
 
         protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            Requests.Add(new RecordedRequest(
+            if (request.Method == HttpMethod.Get &&
+                request.RequestUri?.AbsolutePath == "/api/modules")
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(
+                        $"[{{\"moduleKey\":\"operations\",\"enabled\":{operationsEnabled.ToString().ToLowerInvariant()}}}]",
+                        Encoding.UTF8,
+                        "application/json")
+                };
+            }
+
+            PublishedEvents.Add(new RecordedRequest(
                 request.RequestUri!.ToString(),
                 request.Headers.GetValues("X-Kingdom-Service-Key").Single(),
                 await request.Content!.ReadAsStringAsync(cancellationToken)));
@@ -113,4 +169,14 @@ public sealed class EngagementOperationsCoordinationPublisherTests
     }
 
     private sealed record RecordedRequest(string Uri, string ServiceKey, string Body);
+
+    private sealed class TestWebHostEnvironment(string environmentName) : IWebHostEnvironment
+    {
+        public string ApplicationName { get; set; } = "KingdomEngagements.Tests";
+        public IFileProvider WebRootFileProvider { get; set; } = new NullFileProvider();
+        public string WebRootPath { get; set; } = Path.GetTempPath();
+        public string EnvironmentName { get; set; } = environmentName;
+        public string ContentRootPath { get; set; } = Path.GetTempPath();
+        public IFileProvider ContentRootFileProvider { get; set; } = new NullFileProvider();
+    }
 }

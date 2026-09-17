@@ -1,55 +1,80 @@
 /*
- * Cynthia Thompson Global tenant theme.
+ * Cynthia Thompson Global Engagements tenant theme.
  *
  * This file intentionally contains presentation only. The body class comes from
  * the authenticated product tenant, so no route, role, or workflow decides
  * whether CTG branding is active.
  */
 body.eng-org-ctg {
-  --ctg-ink: #111111;
-  --ctg-charcoal: #343826;
-  --ctg-copy: #4b4943;
-  --ctg-muted: #77746d;
-  --ctg-line: #d8d7c8;
-  --ctg-line-strong: #b8b2a6;
-  --ctg-paper: #ffffff;
-  --ctg-ivory: #f6f3ea;
-  --ctg-canvas: #eceae3;
-  --ctg-accent: #c5ca52;
-  --ctg-accent-ink: #7d822e;
+  --eng-color-canvas: #eceae3;
+  --eng-color-surface: #ffffff;
+  --eng-color-surface-soft: #f6f3ea;
+  --eng-color-surface-muted: #e7e4da;
+  --eng-color-heading: #111111;
+  --eng-color-text: #4b4943;
+  --eng-color-muted: #77746d;
+  --eng-color-border: #d8d7c8;
+  --eng-color-border-strong: #b8b2a6;
+  --eng-color-accent: #c5ca52;
+  --eng-color-accent-strong: #7d822e;
+  --eng-color-accent-soft: #e3e5a4;
+  --eng-color-on-accent: #111111;
+  --eng-color-action: #343826;
+  --eng-color-action-secondary: #7d822e;
+  --eng-color-header: #111111;
+  --eng-color-on-header: #ffffff;
+  --eng-color-on-header-muted: #b8b2a6;
+  --eng-font-heading: Georgia, 'Times New Roman', serif;
+  --eng-font-body: inherit;
+  --eng-radius-card: 12px;
+  --eng-radius-control: 9px;
+  --eng-shadow-card: none;
+
+  /* Private aliases keep the expressive CTG rules below easy to read. */
+  --ctg-ink: var(--eng-color-heading);
+  --ctg-charcoal: var(--eng-color-action);
+  --ctg-copy: var(--eng-color-text);
+  --ctg-muted: var(--eng-color-muted);
+  --ctg-line: var(--eng-color-border);
+  --ctg-line-strong: var(--eng-color-border-strong);
+  --ctg-paper: var(--eng-color-surface);
+  --ctg-ivory: var(--eng-color-surface-soft);
+  --ctg-canvas: var(--eng-color-canvas);
+  --ctg-accent: var(--eng-color-accent);
+  --ctg-accent-ink: var(--eng-color-accent-strong);
 
   /* Existing pages consume these shared variables. Keeping the translation here
      prevents CTG colors from leaking into DWC, Heyy King, or future tenants. */
-  --eng-canvas: var(--ctg-canvas);
-  --eng-surface: var(--ctg-paper);
-  --eng-ink: var(--ctg-ink);
-  --eng-muted: var(--ctg-muted);
-  --eng-line: var(--ctg-line);
-  --eng-friendly-canvas: var(--ctg-canvas);
-  --eng-friendly-surface: var(--ctg-paper);
-  --eng-friendly-surface-soft: var(--ctg-ivory);
-  --eng-friendly-ink: var(--ctg-ink);
-  --eng-friendly-muted: var(--ctg-muted);
-  --eng-friendly-line: var(--ctg-line);
-  --eng-org-accent: var(--ctg-accent-ink);
-  --eng-org-accent-soft: var(--ctg-ivory);
-  --legacy-page: var(--ctg-canvas);
-  --legacy-surface: var(--ctg-paper);
-  --legacy-surface-soft: var(--ctg-ivory);
-  --legacy-surface-muted: #e7e4da;
-  --legacy-border: var(--ctg-line);
-  --legacy-border-strong: var(--ctg-line-strong);
-  --legacy-ink: var(--ctg-ink);
-  --legacy-ink-2: var(--ctg-copy);
-  --legacy-muted: var(--ctg-muted);
-  --legacy-gold: var(--ctg-accent-ink);
-  --legacy-gold-light: #e3e5a4;
-  --legacy-gold-soft: var(--ctg-ivory);
-  --legacy-navy: var(--ctg-charcoal);
-  --kos-action-primary: var(--ctg-charcoal);
-  --kos-action-secondary: var(--ctg-accent-ink);
-  --action-primary: var(--ctg-charcoal);
-  --action-secondary: var(--ctg-accent-ink);
+  --eng-canvas: var(--eng-color-canvas);
+  --eng-surface: var(--eng-color-surface);
+  --eng-ink: var(--eng-color-heading);
+  --eng-muted: var(--eng-color-muted);
+  --eng-line: var(--eng-color-border);
+  --eng-friendly-canvas: var(--eng-color-canvas);
+  --eng-friendly-surface: var(--eng-color-surface);
+  --eng-friendly-surface-soft: var(--eng-color-surface-soft);
+  --eng-friendly-ink: var(--eng-color-heading);
+  --eng-friendly-muted: var(--eng-color-muted);
+  --eng-friendly-line: var(--eng-color-border);
+  --eng-org-accent: var(--eng-color-accent-strong);
+  --eng-org-accent-soft: var(--eng-color-surface-soft);
+  --legacy-page: var(--eng-color-canvas);
+  --legacy-surface: var(--eng-color-surface);
+  --legacy-surface-soft: var(--eng-color-surface-soft);
+  --legacy-surface-muted: var(--eng-color-surface-muted);
+  --legacy-border: var(--eng-color-border);
+  --legacy-border-strong: var(--eng-color-border-strong);
+  --legacy-ink: var(--eng-color-heading);
+  --legacy-ink-2: var(--eng-color-text);
+  --legacy-muted: var(--eng-color-muted);
+  --legacy-gold: var(--eng-color-accent-strong);
+  --legacy-gold-light: var(--eng-color-accent-soft);
+  --legacy-gold-soft: var(--eng-color-surface-soft);
+  --legacy-navy: var(--eng-color-action);
+  --kos-action-primary: var(--eng-color-action);
+  --kos-action-secondary: var(--eng-color-action-secondary);
+  --action-primary: var(--eng-color-action);
+  --action-secondary: var(--eng-color-action-secondary);
 
   color: var(--ctg-copy);
   background: var(--ctg-canvas);
@@ -132,6 +157,7 @@ body.eng-org-ctg .eng-avatar {
 }
 
 /* Georgia is reserved for high-level editorial headings; operational copy stays sans-serif. */
+body.eng-org-ctg .eng-title,
 body.eng-org-ctg :is(
   .ctg-hero,
   .desk-hero,
@@ -147,7 +173,7 @@ body.eng-org-ctg :is(
 ) h1,
 body.eng-org-ctg :is(.decision-brief, .confirmation-card, .confirmation) h2 {
   color: var(--ctg-ink);
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--eng-font-heading);
   font-weight: 400;
   letter-spacing: -.035em;
 }

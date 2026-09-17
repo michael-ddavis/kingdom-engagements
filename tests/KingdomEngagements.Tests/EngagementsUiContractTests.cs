@@ -197,7 +197,8 @@ public sealed class EngagementsUiContractTests
             "KingdomEngagements.Web",
             "ClientApp",
             "src",
-            "ctg-tenant-theme.css"));
+            "themes",
+            "engagements-ctg.theme.css"));
         Assert.Contains("body.eng-org-ctg", theme, StringComparison.Ordinal);
         Assert.DoesNotContain("body:not(", theme, StringComparison.Ordinal);
     }
@@ -210,7 +211,8 @@ public sealed class EngagementsUiContractTests
             "KingdomEngagements.Web",
             "ClientApp",
             "src",
-            "ctg-tenant-theme.css"));
+            "themes",
+            "engagements-ctg.theme.css"));
 
         Assert.Contains(
             "body.eng-org-ctg .eng-modulebar",
@@ -228,6 +230,79 @@ public sealed class EngagementsUiContractTests
             "app-ctg-apostle-dashboard .travel-hero__map",
             theme,
             StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Engagements_tenant_themes_implement_one_shared_css_contract()
+    {
+        var clientRoot = Path.GetDirectoryName(FindRepositoryFile(
+            "src",
+            "KingdomEngagements.Web",
+            "ClientApp",
+            "src",
+            "main.ts"))!;
+        var contract = File.ReadAllText(Path.Combine(clientRoot, "engagements-theme-contract.css"));
+        var ctgTheme = File.ReadAllText(Path.Combine(clientRoot, "themes", "engagements-ctg.theme.css"));
+        var template = File.ReadAllText(Path.Combine(clientRoot, "themes", "engagements-tenant-theme.template.css"));
+        var angular = File.ReadAllText(Path.Combine(Directory.GetParent(clientRoot)!.FullName, "angular.json"));
+
+        var requiredTokens = new[]
+        {
+            "--eng-color-canvas",
+            "--eng-color-surface",
+            "--eng-color-surface-soft",
+            "--eng-color-heading",
+            "--eng-color-text",
+            "--eng-color-muted",
+            "--eng-color-border",
+            "--eng-color-accent",
+            "--eng-color-on-accent",
+            "--eng-color-header",
+            "--eng-color-on-header",
+            "--eng-font-heading",
+            "--eng-font-body",
+            "--eng-radius-card",
+            "--eng-radius-control",
+            "--eng-shadow-card",
+        };
+
+        Assert.All(requiredTokens, token =>
+        {
+            Assert.Contains(token, contract, StringComparison.Ordinal);
+            Assert.Contains(token, ctgTheme, StringComparison.Ordinal);
+            Assert.Contains(token, template, StringComparison.Ordinal);
+        });
+
+        var requiredHooks = new[]
+        {
+            ".eng-main",
+            ".eng-modulebar",
+            ".eng-title",
+            ".eng-section",
+            ".eng-button--primary",
+            ":focus-visible",
+        };
+
+        Assert.All(requiredHooks, hook =>
+        {
+            Assert.Contains(hook, ctgTheme, StringComparison.Ordinal);
+            Assert.Contains(hook, template, StringComparison.Ordinal);
+        });
+
+        Assert.Contains(":root", contract, StringComparison.Ordinal);
+        Assert.Contains("--eng-canvas: var(--eng-color-canvas);", ctgTheme, StringComparison.Ordinal);
+        Assert.Contains("--legacy-page: var(--eng-color-canvas);", ctgTheme, StringComparison.Ordinal);
+        Assert.Contains("--kos-action-primary: var(--eng-color-action);", ctgTheme, StringComparison.Ordinal);
+        Assert.Contains("--eng-canvas: var(--eng-color-canvas);", template, StringComparison.Ordinal);
+        Assert.Contains("--legacy-page: var(--eng-color-canvas);", template, StringComparison.Ordinal);
+        Assert.Contains("--kos-action-primary: var(--eng-color-action);", template, StringComparison.Ordinal);
+        Assert.Contains("body.eng-org-ctg", ctgTheme, StringComparison.Ordinal);
+        Assert.DoesNotContain("eng-org-dwc", ctgTheme, StringComparison.Ordinal);
+        Assert.DoesNotContain("eng-org-heyy", ctgTheme, StringComparison.Ordinal);
+
+        var contractIndex = angular.IndexOf("src/engagements-theme-contract.css", StringComparison.Ordinal);
+        var ctgIndex = angular.IndexOf("src/themes/engagements-ctg.theme.css", StringComparison.Ordinal);
+        Assert.True(contractIndex >= 0 && contractIndex < ctgIndex);
     }
 
     [Fact]

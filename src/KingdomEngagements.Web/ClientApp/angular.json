@@ -36,9 +36,10 @@
               "src/organization-drawer-motion.css",
               "src/dwc-warmth.css",
               "src/engagements-friendly.css",
+              "src/engagements-theme-contract.css",
               "src/engagements-workspace-friendly.css",
               "src/ctg-engagements-readability.css",
-              "src/ctg-tenant-theme.css",
+              "src/themes/engagements-ctg.theme.css",
               "src/engagement-demo-role.css",
               "src/engagement-minister-readonly.css"
             ],

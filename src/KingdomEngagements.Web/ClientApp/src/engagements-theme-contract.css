@@ -1,0 +1,32 @@
+/*
+ * ApostolOS Engagements tenant theme contract.
+ *
+ * Layout, responsive behavior, and interaction remain in the shared product
+ * styles. Tenant themes override these semantic values and the approved hooks
+ * shown in themes/engagements-tenant-theme.template.css.
+ */
+:root {
+  --eng-color-canvas: #f4f5f7;
+  --eng-color-surface: #ffffff;
+  --eng-color-surface-soft: #fafbfc;
+  --eng-color-surface-muted: #edf0f3;
+  --eng-color-heading: #121a2c;
+  --eng-color-text: #29364a;
+  --eng-color-muted: #6d7482;
+  --eng-color-border: rgba(18, 26, 44, .12);
+  --eng-color-border-strong: #cbd2da;
+  --eng-color-accent: #516d8e;
+  --eng-color-accent-strong: #355b9f;
+  --eng-color-accent-soft: #edf2f7;
+  --eng-color-on-accent: #ffffff;
+  --eng-color-action: #172a46;
+  --eng-color-action-secondary: #6d5bd0;
+  --eng-color-header: rgba(250, 248, 244, .96);
+  --eng-color-on-header: #202a38;
+  --eng-color-on-header-muted: #6b7482;
+  --eng-font-heading: inherit;
+  --eng-font-body: inherit;
+  --eng-radius-card: 12px;
+  --eng-radius-control: 9px;
+  --eng-shadow-card: 0 10px 28px rgba(25, 35, 48, .055);
+}

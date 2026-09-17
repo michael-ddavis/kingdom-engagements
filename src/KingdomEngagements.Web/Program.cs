@@ -44,8 +44,10 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
 });
 
-var keyPath = builder.Configuration["KingdomOS:Identity:KeyPath"];
-if (!string.IsNullOrWhiteSpace(keyPath))
+var keyPath = IdentityKeyStorageConfiguration.GetKeyPath(
+    builder.Configuration,
+    builder.Environment.IsDevelopment());
+if (keyPath is not null)
 {
     Directory.CreateDirectory(keyPath);
     builder.Services.AddDataProtection()

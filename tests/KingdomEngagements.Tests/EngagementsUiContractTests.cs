@@ -231,6 +231,27 @@ public sealed class EngagementsUiContractTests
     }
 
     [Fact]
+    public void Known_ctg_routes_apply_the_tenant_theme_before_angular_renders()
+    {
+        var clientRoot = Path.GetDirectoryName(FindRepositoryFile(
+            "src",
+            "KingdomEngagements.Web",
+            "ClientApp",
+            "src",
+            "main.ts"))!;
+        var index = File.ReadAllText(Path.Combine(clientRoot, "index.html"));
+        var app = File.ReadAllText(Path.Combine(clientRoot, "app", "app.ts"));
+
+        var earlyThemeScript = index.IndexOf("window.location.pathname", StringComparison.Ordinal);
+        var angularRoot = index.IndexOf("<app-root>", StringComparison.Ordinal);
+
+        Assert.True(earlyThemeScript >= 0 && earlyThemeScript < angularRoot);
+        Assert.Contains("path.startsWith('/organization/ctg/')", index, StringComparison.Ordinal);
+        Assert.Contains("document.body.classList.add('eng-org-ctg')", index, StringComparison.Ordinal);
+        Assert.Contains("if (!product) return;", app, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Public_host_views_select_their_experience_from_the_engagement_tenant()
     {
         var feature = File.ReadAllText(FindRepositoryFile(

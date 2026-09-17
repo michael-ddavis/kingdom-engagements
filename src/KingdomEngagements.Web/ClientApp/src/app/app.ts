@@ -403,8 +403,11 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private syncOrganizationBodyClass(): void {
+    const product = this.product();
+    if (!product) return;
+
     document.body.classList.remove('eng-org-ctg', 'eng-org-dwc', 'eng-org-heyy', 'eng-org-default');
-    const organization = this.currentOrganizationKey();
+    const organization = organizationForTenant(product.tenantId);
     document.body.classList.add(
       organization === 'divine-world-changers'
         ? 'eng-org-dwc'

@@ -45,6 +45,7 @@ jobs:
         working-directory: src/KingdomEngagements.Web/ClientApp
         run: |
           npm install
+          npm run test:ci
           npm run build:production
           grep -R --quiet "Executive engagement brief" dist
           grep -R --quiet "Back to my overview" dist

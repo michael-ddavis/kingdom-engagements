@@ -12,6 +12,38 @@ namespace KingdomEngagements.Tests;
 public sealed class EngagementOperationsCoordinationPublisherTests
 {
     [Fact]
+    public async Task MissingServiceKeyUsesTheExistingLocalDevelopmentKey()
+    {
+        var handler = new RecordingHandler(operationsEnabled: true);
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["KingdomOS:OperationsUrl"] = "http://operations.test",
+                ["KingdomOS:PlatformUrl"] = "http://platform.test"
+            })
+            .Build();
+        var publisher = CreatePublisher(
+            new HttpClient(handler),
+            configuration,
+            environmentName: "Development");
+
+        await publisher.PublishAsync(
+            new EngagementAssignment
+            {
+                Id = Guid.NewGuid(),
+                TenantId = Guid.NewGuid(),
+                Title = "Local development assignment",
+                SpeakerName = "Cynthia Thompson",
+                HostOrganization = "Covenant Fellowship"
+            },
+            CancellationToken.None);
+
+        Assert.All(
+            handler.PublishedEvents,
+            request => Assert.Equal("local-kingdomos-integration", request.ServiceKey));
+    }
+
+    [Fact]
     public async Task PublishesTheExistingOperationalDependencyContractToPlatformAndEnabledOperations()
     {
         var handler = new RecordingHandler(operationsEnabled: true);
@@ -125,13 +157,14 @@ public sealed class EngagementOperationsCoordinationPublisherTests
 
     private static EngagementOperationsCoordinationPublisher CreatePublisher(
         HttpClient client,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        string environmentName = "Production")
     {
         var factory = new TestHttpClientFactory(client);
         var entitlements = new EngagementsEntitlementResolver(
             client,
             configuration,
-            new TestWebHostEnvironment("Production"));
+            new TestWebHostEnvironment(environmentName));
         return new EngagementOperationsCoordinationPublisher(factory, configuration, entitlements);
     }
 

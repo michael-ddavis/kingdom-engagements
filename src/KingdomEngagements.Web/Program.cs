@@ -59,6 +59,7 @@ builder.Services.AddAuthentication(KingdomIdentity.Scheme)
     .AddCookie(KingdomIdentity.Scheme, options =>
     {
         options.Cookie.Name = ".KingdomOS.Identity";
+        options.Cookie.Domain = IdentityCookieConfiguration.SharedDomain(builder.Configuration);
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
         options.Events.OnRedirectToLogin = context =>

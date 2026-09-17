@@ -96,6 +96,7 @@ jobs:
                 grep --quiet 'Cynthia Thompson' <<<"$apostle_assignments"
                 apostle_write_status="$(docker exec "$container_id" sh -c "curl -o /dev/null -s -w '%{http_code}' -X POST -H 'X-Kingdom-Engagements-Demo-Role: apostle' -H 'Content-Type: application/json' http://localhost:8080/api/engagements/assignments --data '{\"externalAssignmentId\":\"ci-apostle-write-check\",\"title\":\"Blocked write\",\"speakerName\":\"Cynthia Thompson\",\"hostOrganization\":\"CI Host\",\"startsAtUtc\":null,\"endsAtUtc\":null,\"location\":null}'")"
                 test "$apostle_write_status" = "403"
+                bash .github/scripts/api-authorization-contract.sh "$container_id"
                 exit 0
               fi
             fi

@@ -165,7 +165,14 @@ public sealed class EngagementOperationsCoordinationPublisherTests
             client,
             configuration,
             new TestWebHostEnvironment(environmentName));
-        return new EngagementOperationsCoordinationPublisher(factory, configuration, entitlements);
+        var credentials = IntegrationServiceCredentials.Load(
+            configuration,
+            environmentName == "Development");
+        return new EngagementOperationsCoordinationPublisher(
+            factory,
+            configuration,
+            entitlements,
+            credentials);
     }
 
     private sealed class TestHttpClientFactory(HttpClient client) : IHttpClientFactory

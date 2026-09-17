@@ -7,7 +7,8 @@ namespace KingdomEngagements.Web.Platform;
 public sealed class EngagementOperationsCoordinationPublisher(
     IHttpClientFactory httpClientFactory,
     IConfiguration configuration,
-    EngagementsEntitlementResolver entitlements)
+    EngagementsEntitlementResolver entitlements,
+    IntegrationServiceCredentials credentials)
 {
     public Task PublishAsync(
         SpeakingRequestRecord request,
@@ -117,10 +118,7 @@ public sealed class EngagementOperationsCoordinationPublisher(
         var platformUrl = (configuration["KingdomOS:PlatformInternalUrl"]
             ?? configuration["KingdomOS:PlatformUrl"]
             ?? "http://platform:8080").TrimEnd('/');
-        var serviceKey = configuration["KingdomOS:Integration:ServiceKey"]
-            ?? "local-kingdomos-integration";
-
-        await SendAsync(platformUrl, envelope, serviceKey, cancellationToken);
+        await SendAsync(platformUrl, envelope, credentials.ServiceKey, cancellationToken);
 
         var operationsState = await entitlements.GetModuleStateAsync(
             "operations",
@@ -131,7 +129,7 @@ public sealed class EngagementOperationsCoordinationPublisher(
 
         var operationsUrl = (configuration["KingdomOS:OperationsUrl"] ?? "http://operations:8080")
             .TrimEnd('/');
-        await SendAsync(operationsUrl, envelope, serviceKey, cancellationToken);
+        await SendAsync(operationsUrl, envelope, credentials.ServiceKey, cancellationToken);
     }
 
     private async Task SendAsync(

@@ -7,6 +7,10 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddSingleton(IntegrationServiceCredentials.Load(
+    builder.Configuration,
+    builder.Environment.IsDevelopment()));
+
 void ConfigureDatabase(DbContextOptionsBuilder options, string inMemoryDatabaseName) =>
     EngagementsDatabaseConfiguration.Configure(
         options,

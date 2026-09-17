@@ -5,7 +5,8 @@ namespace KingdomEngagements.Web.Platform;
 
 public sealed class EngagementCareHandoffPublisher(
     IHttpClientFactory httpClientFactory,
-    IConfiguration configuration)
+    IConfiguration configuration,
+    IntegrationServiceCredentials credentials)
 {
     public async Task PublishAsync(
         EngagementAssignment assignment,
@@ -44,15 +45,15 @@ public sealed class EngagementCareHandoffPublisher(
 
         var careUrl = (configuration["KingdomOS:CareInternalUrl"] ?? "http://care:8080")
             .TrimEnd('/');
-        var serviceKey = configuration["KingdomOS:Integration:ServiceKey"]
-            ?? "local-kingdomos-integration";
         using var request = new HttpRequestMessage(
             HttpMethod.Post,
             $"{careUrl}/api/integration/events")
         {
             Content = JsonContent.Create(envelope)
         };
-        request.Headers.TryAddWithoutValidation("X-Kingdom-Service-Key", serviceKey);
+        request.Headers.TryAddWithoutValidation(
+            "X-Kingdom-Service-Key",
+            credentials.ServiceKey);
 
         var client = httpClientFactory.CreateClient();
         using var responseMessage = await client.SendAsync(request, cancellationToken);

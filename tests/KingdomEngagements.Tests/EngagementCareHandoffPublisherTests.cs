@@ -20,7 +20,8 @@ public sealed class EngagementCareHandoffPublisherTests
             .Build();
         var publisher = new EngagementCareHandoffPublisher(
             new TestHttpClientFactory(new HttpClient(handler)),
-            configuration);
+            configuration,
+            IntegrationServiceCredentials.Load(configuration, isDevelopment: true));
 
         await publisher.PublishAsync(
             new EngagementAssignment
@@ -56,7 +57,8 @@ public sealed class EngagementCareHandoffPublisherTests
             .Build();
         var publisher = new EngagementCareHandoffPublisher(
             new TestHttpClientFactory(new HttpClient(handler)),
-            configuration);
+            configuration,
+            IntegrationServiceCredentials.Load(configuration, isDevelopment: false));
         var tenantId = Guid.NewGuid();
         var assignmentId = Guid.NewGuid();
         var responseId = Guid.NewGuid();

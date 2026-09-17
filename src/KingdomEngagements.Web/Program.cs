@@ -7,87 +7,33 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var provider = builder.Configuration["Database:Provider"] ?? "InMemory";
-var connectionString = builder.Configuration.GetConnectionString("EngagementsDatabase");
+void ConfigureDatabase(DbContextOptionsBuilder options, string inMemoryDatabaseName) =>
+    EngagementsDatabaseConfiguration.Configure(
+        options,
+        builder.Configuration,
+        builder.Environment,
+        inMemoryDatabaseName);
+
 builder.Services.AddDbContext<EngagementsDbContext>(options =>
 {
     options.ReplaceService<IModelCustomizer, EngagementsModelCustomizer>();
-    if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
-    {
-        if (string.IsNullOrWhiteSpace(connectionString))
-            throw new InvalidOperationException("ConnectionStrings:EngagementsDatabase is required for SQL Server.");
-        options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure());
-        return;
-    }
-
-    options.UseInMemoryDatabase("KingdomEngagements");
+    ConfigureDatabase(options, "KingdomEngagements");
 });
 
 builder.Services.AddDbContext<SpeakingRequestsDbContext>(options =>
 {
     options.ReplaceService<IModelCustomizer, SpeakingRequestsModelCustomizer>();
-    if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
-    {
-        if (string.IsNullOrWhiteSpace(connectionString))
-            throw new InvalidOperationException("ConnectionStrings:EngagementsDatabase is required for SQL Server.");
-        options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure());
-        return;
-    }
-
-    options.UseInMemoryDatabase("KingdomEngagementsSpeakingRequests");
+    ConfigureDatabase(options, "KingdomEngagementsSpeakingRequests");
 });
 
 builder.Services.AddDbContext<GlobalBookingDbContext>(options =>
-{
-    if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
-    {
-        if (string.IsNullOrWhiteSpace(connectionString))
-            throw new InvalidOperationException("ConnectionStrings:EngagementsDatabase is required for SQL Server.");
-        options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure());
-        return;
-    }
-
-    options.UseInMemoryDatabase("KingdomEngagementsGlobalBookings");
-});
-
+    ConfigureDatabase(options, "KingdomEngagementsGlobalBookings"));
 builder.Services.AddDbContext<EngagementPreparationDbContext>(options =>
-{
-    if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
-    {
-        if (string.IsNullOrWhiteSpace(connectionString))
-            throw new InvalidOperationException("ConnectionStrings:EngagementsDatabase is required for SQL Server.");
-        options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure());
-        return;
-    }
-
-    options.UseInMemoryDatabase("KingdomEngagementsPreparation");
-});
-
+    ConfigureDatabase(options, "KingdomEngagementsPreparation"));
 builder.Services.AddDbContext<AssignmentWorkspaceDbContext>(options =>
-{
-    if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
-    {
-        if (string.IsNullOrWhiteSpace(connectionString))
-            throw new InvalidOperationException("ConnectionStrings:EngagementsDatabase is required for SQL Server.");
-        options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure());
-        return;
-    }
-
-    options.UseInMemoryDatabase("KingdomEngagementsAssignmentWorkspace");
-});
-
+    ConfigureDatabase(options, "KingdomEngagementsAssignmentWorkspace"));
 builder.Services.AddDbContext<EngagementCompletionDbContext>(options =>
-{
-    if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
-    {
-        if (string.IsNullOrWhiteSpace(connectionString))
-            throw new InvalidOperationException("ConnectionStrings:EngagementsDatabase is required for SQL Server.");
-        options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure());
-        return;
-    }
-
-    options.UseInMemoryDatabase("KingdomEngagementsCompletion");
-});
+    ConfigureDatabase(options, "KingdomEngagementsCompletion"));
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {

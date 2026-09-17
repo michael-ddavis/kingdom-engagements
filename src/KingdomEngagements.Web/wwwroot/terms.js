@@ -7,6 +7,10 @@ const token = window.location.pathname.split('/').filter(Boolean).pop();
 const collaborationSyncKey = 'apostolos.engagement-collaboration-sync';
 let terms = null;
 
+function applyExperience(experienceKey) {
+  document.documentElement.dataset.engagementExperience = experienceKey === 'ctg' ? 'ctg' : 'default';
+}
+
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>'"]/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[char]));
 }
@@ -77,6 +81,7 @@ async function load() {
   try {
     showState('Loading approved engagement terms…');
     terms = await api(`/api/public/engagements/preparation/terms/${encodeURIComponent(token)}`);
+    applyExperience(terms.experienceKey);
     showState('');
     render();
   } catch (error) {
@@ -96,6 +101,7 @@ form.addEventListener('submit', async event => {
       body:JSON.stringify({ accepted:true, signatoryName:data.get('signatoryName'), signatoryEmail:data.get('signatoryEmail'), note:data.get('note') || null })
     });
     terms = result.terms;
+    applyExperience(terms.experienceKey);
     broadcastCollaborationUpdate();
     showState('Engagement terms accepted. Host coordination is ready.', 'success');
     render();

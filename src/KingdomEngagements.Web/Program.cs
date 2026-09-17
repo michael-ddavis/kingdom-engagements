@@ -179,6 +179,7 @@ app.MapGet("/api/product", async (
         cancellationToken);
     return Results.Ok(new
     {
+        tenantId = tenantId,
         moduleKey = "engagements",
         shortName = "Engagements",
         name = "Kingdom Engagements",

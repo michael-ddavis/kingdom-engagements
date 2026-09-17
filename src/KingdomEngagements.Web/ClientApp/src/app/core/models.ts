@@ -1,4 +1,5 @@
 export interface ProductInfo {
+  tenantId: string;
   moduleKey: string;
   shortName: string;
   name: string;
@@ -122,6 +123,7 @@ export interface HostCoordinationDetails {
   prayerFocus: string | null;
   hostNotes: string | null;
   documents: readonly HostCoordinationDocument[];
+  experienceKey: string;
 }
 
 export interface EngagementPreparationDetails {

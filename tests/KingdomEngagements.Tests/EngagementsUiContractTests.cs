@@ -172,6 +172,59 @@ public sealed class EngagementsUiContractTests
         Assert.Contains("enableRangeProcessing: true", feature, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Product_identity_drives_tenant_presentation_without_a_ctg_fallback()
+    {
+        var program = File.ReadAllText(FindRepositoryFile(
+            "src",
+            "KingdomEngagements.Web",
+            "Program.cs"));
+        Assert.Contains("tenantId = tenantId", program, StringComparison.Ordinal);
+
+        var app = File.ReadAllText(FindRepositoryFile(
+            "src",
+            "KingdomEngagements.Web",
+            "ClientApp",
+            "src",
+            "app",
+            "app.ts"));
+        Assert.Contains("organizationForTenant(this.product()?.tenantId)", app, StringComparison.Ordinal);
+        Assert.Contains("'eng-org-default'", app, StringComparison.Ordinal);
+        Assert.DoesNotContain(": 'ctg';", app, StringComparison.Ordinal);
+
+        var theme = File.ReadAllText(FindRepositoryFile(
+            "src",
+            "KingdomEngagements.Web",
+            "ClientApp",
+            "src",
+            "ctg-tenant-theme.css"));
+        Assert.Contains("body.eng-org-ctg", theme, StringComparison.Ordinal);
+        Assert.DoesNotContain("body:not(", theme, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Public_host_views_select_their_experience_from_the_engagement_tenant()
+    {
+        var feature = File.ReadAllText(FindRepositoryFile(
+            "src",
+            "KingdomEngagements.Web",
+            "Features",
+            "EngagementPreparation.cs"));
+        Assert.Contains("ExperienceKey(preparation.TenantId)", feature, StringComparison.Ordinal);
+        Assert.Contains("tenantId == KingdomIdentity.DemoTenantId ? \"ctg\" : \"default\"", feature, StringComparison.Ordinal);
+
+        var wwwroot = FindWwwroot();
+        foreach (var fileName in new[] { "terms.js", "coordination.js" })
+        {
+            var source = File.ReadAllText(Path.Combine(wwwroot, fileName));
+            Assert.Contains("applyExperience(", source, StringComparison.Ordinal);
+            Assert.Contains("dataset.engagementExperience", source, StringComparison.Ordinal);
+        }
+
+        var hostTheme = File.ReadAllText(Path.Combine(wwwroot, "host-portal-tenant-theme.css"));
+        Assert.Contains("html[data-engagement-experience=\"ctg\"]", hostTheme, StringComparison.Ordinal);
+    }
+
     private static string FindWwwroot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

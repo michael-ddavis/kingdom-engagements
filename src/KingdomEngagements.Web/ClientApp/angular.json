@@ -38,6 +38,7 @@
               "src/engagements-friendly.css",
               "src/engagements-workspace-friendly.css",
               "src/ctg-engagements-readability.css",
+              "src/ctg-tenant-theme.css",
               "src/engagement-demo-role.css",
               "src/engagement-minister-readonly.css"
             ],

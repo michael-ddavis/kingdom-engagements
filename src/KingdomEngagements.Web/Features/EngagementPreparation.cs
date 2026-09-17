@@ -300,7 +300,8 @@ public sealed record EngagementTermsDetails(
     string HonorariumCurrency,
     string PaymentStatus,
     string CoordinationStatus,
-    string? CoordinationToken);
+    string? CoordinationToken,
+    string ExperienceKey);
 
 public sealed record HostCoordinationDetails(
     Guid AssignmentId,
@@ -338,7 +339,8 @@ public sealed record HostCoordinationDetails(
     string? PromotionRequirements,
     string? PrayerFocus,
     string? HostNotes,
-    IReadOnlyList<HostCoordinationDocumentDto> Documents);
+    IReadOnlyList<HostCoordinationDocumentDto> Documents,
+    string ExperienceKey);
 
 public sealed record EngagementPreparationDetails(
     Guid AssignmentId,
@@ -703,7 +705,7 @@ public sealed class EngagementPreparationService(
             preparation.TransportationPlan, preparation.PickupContactName, preparation.PickupContactPhone,
             DeserializeSchedule(preparation.ScheduleJson), DeserializeContacts(preparation.ContactsJson),
             preparation.PromotionRequirements, preparation.PrayerFocus, preparation.HostNotes,
-            documents.Select(MapDocument).ToArray());
+            documents.Select(MapDocument).ToArray(), ExperienceKey(preparation.TenantId));
     }
 
     private static EngagementTermsDetails MapTerms(EngagementPreparationRecord preparation, bool includeCoordinationToken) =>
@@ -712,7 +714,12 @@ public sealed class EngagementPreparationService(
             preparation.TermsStatus, preparation.TermsAcceptedAtUtc, preparation.TermsAcceptedByName, preparation.TermsAcceptedByEmail,
             preparation.TravelCoverageStatus, preparation.LodgingCoverageStatus, preparation.TravelBookedBy,
             preparation.HonorariumStatus, preparation.HonorariumAmount, preparation.HonorariumCurrency, preparation.PaymentStatus,
-            preparation.CoordinationStatus, includeCoordinationToken ? preparation.CoordinationToken : null);
+            preparation.CoordinationStatus, includeCoordinationToken ? preparation.CoordinationToken : null,
+            ExperienceKey(preparation.TenantId));
+
+    private static string ExperienceKey(Guid tenantId) =>
+        tenantId == KingdomIdentity.DemoTenantId ? "ctg" : "default";
+
     private static HostCoordinationDocumentDto MapDocument(HostCoordinationDocumentRecord document) =>
         new(document.Id, document.FileName, document.ContentType, document.Length, document.UploadedAtUtc);
 

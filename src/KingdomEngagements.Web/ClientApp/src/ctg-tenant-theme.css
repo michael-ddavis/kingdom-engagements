@@ -1,0 +1,391 @@
+/*
+ * Cynthia Thompson Global tenant theme.
+ *
+ * This file intentionally contains presentation only. The body class comes from
+ * the authenticated product tenant, so no route, role, or workflow decides
+ * whether CTG branding is active.
+ */
+body.eng-org-ctg {
+  --ctg-ink: #111111;
+  --ctg-charcoal: #343826;
+  --ctg-copy: #4b4943;
+  --ctg-muted: #77746d;
+  --ctg-line: #d8d7c8;
+  --ctg-line-strong: #b8b2a6;
+  --ctg-paper: #ffffff;
+  --ctg-ivory: #f6f3ea;
+  --ctg-canvas: #eceae3;
+  --ctg-accent: #c5ca52;
+  --ctg-accent-ink: #7d822e;
+
+  /* Existing pages consume these shared variables. Keeping the translation here
+     prevents CTG colors from leaking into DWC, Heyy King, or future tenants. */
+  --eng-canvas: var(--ctg-canvas);
+  --eng-surface: var(--ctg-paper);
+  --eng-ink: var(--ctg-ink);
+  --eng-muted: var(--ctg-muted);
+  --eng-line: var(--ctg-line);
+  --eng-friendly-canvas: var(--ctg-canvas);
+  --eng-friendly-surface: var(--ctg-paper);
+  --eng-friendly-surface-soft: var(--ctg-ivory);
+  --eng-friendly-ink: var(--ctg-ink);
+  --eng-friendly-muted: var(--ctg-muted);
+  --eng-friendly-line: var(--ctg-line);
+  --eng-org-accent: var(--ctg-accent-ink);
+  --eng-org-accent-soft: var(--ctg-ivory);
+  --legacy-page: var(--ctg-canvas);
+  --legacy-surface: var(--ctg-paper);
+  --legacy-surface-soft: var(--ctg-ivory);
+  --legacy-surface-muted: #e7e4da;
+  --legacy-border: var(--ctg-line);
+  --legacy-border-strong: var(--ctg-line-strong);
+  --legacy-ink: var(--ctg-ink);
+  --legacy-ink-2: var(--ctg-copy);
+  --legacy-muted: var(--ctg-muted);
+  --legacy-gold: var(--ctg-accent-ink);
+  --legacy-gold-light: #e3e5a4;
+  --legacy-gold-soft: var(--ctg-ivory);
+  --legacy-navy: var(--ctg-charcoal);
+  --kos-action-primary: var(--ctg-charcoal);
+  --kos-action-secondary: var(--ctg-accent-ink);
+  --action-primary: var(--ctg-charcoal);
+  --action-secondary: var(--ctg-accent-ink);
+
+  color: var(--ctg-copy);
+  background: var(--ctg-canvas);
+}
+
+body.eng-org-ctg .eng-main {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .42), transparent 22rem),
+    var(--ctg-canvas) !important;
+}
+
+/* The email library's full-bleed header becomes a compact application anchor. */
+body.eng-org-ctg .eng-modulebar {
+  border-top: 4px solid var(--ctg-accent);
+  border-bottom-color: #2c2c2a;
+  background: var(--ctg-ink);
+  box-shadow: 0 4px 18px rgba(17, 17, 17, .12);
+}
+
+body.eng-org-ctg .eng-brand strong,
+body.eng-org-ctg .eng-tenant strong {
+  color: #ffffff;
+}
+
+body.eng-org-ctg .eng-brand small,
+body.eng-org-ctg .eng-tenant small,
+body.eng-org-ctg .eng-settings-link {
+  color: #b8b2a6;
+}
+
+body.eng-org-ctg .eng-brand__mark {
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+body.eng-org-ctg .eng-modulebar__divider,
+body.eng-org-ctg .eng-modulebar__utilities {
+  border-color: #3f3d37;
+}
+
+body.eng-org-ctg .eng-presence {
+  background: var(--ctg-accent);
+  box-shadow: 0 0 0 4px rgba(197, 202, 82, .13);
+}
+
+body.eng-org-ctg .eng-nav-link {
+  color: #d8d7c8;
+}
+
+body.eng-org-ctg .eng-nav-link:hover {
+  color: #ffffff;
+  background: #262624;
+}
+
+body.eng-org-ctg .eng-nav-link.current {
+  color: #ffffff;
+  background: var(--ctg-charcoal);
+}
+
+body.eng-org-ctg .eng-nav-link.current::after {
+  background: var(--ctg-accent);
+}
+
+body.eng-org-ctg .eng-start-action {
+  color: var(--ctg-ink);
+  background: var(--ctg-accent);
+  box-shadow: none;
+}
+
+body.eng-org-ctg .eng-start-action:hover {
+  color: var(--ctg-ink);
+  background: #d1d66a;
+}
+
+body.eng-org-ctg .eng-avatar {
+  color: var(--ctg-ink);
+  background: var(--ctg-accent);
+}
+
+/* Georgia is reserved for high-level editorial headings; operational copy stays sans-serif. */
+body.eng-org-ctg :is(
+  .ctg-hero,
+  .desk-hero,
+  .programs-header,
+  .page-header,
+  .page-heading,
+  .legacy-assignment-hero,
+  .legacy-workspace-heading,
+  .travel-hero,
+  .destination-hero,
+  .event-hero,
+  .power12-hero
+) h1,
+body.eng-org-ctg :is(.decision-brief, .confirmation-card, .confirmation) h2 {
+  color: var(--ctg-ink);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 400;
+  letter-spacing: -.035em;
+}
+
+body.eng-org-ctg :is(.eyebrow, .eng-eyebrow, .kicker) {
+  color: var(--ctg-accent-ink);
+}
+
+body.eng-org-ctg :is(a, button, input, select, textarea):focus-visible {
+  outline: 3px solid rgba(197, 202, 82, .55);
+  outline-offset: 2px;
+}
+
+/* Shared surfaces use warm paper and hairline stone borders from the source design. */
+body.eng-org-ctg :is(
+  .eng-section,
+  .legacy-assignment-card,
+  .legacy-readiness-panel,
+  .legacy-overview-card,
+  .request-queue,
+  .request-detail,
+  .section-block,
+  .start-form,
+  .handoff-card
+) {
+  border-color: var(--ctg-line);
+  background: var(--ctg-paper);
+  box-shadow: none;
+}
+
+body.eng-org-ctg :is(
+  .legacy-assignment-card-heading,
+  .legacy-assignment-card-footer,
+  .legacy-heading-summary article,
+  .host-handoff,
+  .review-panel,
+  .summary-note,
+  .record-strip,
+  .message-box
+) {
+  border-color: var(--ctg-line);
+  background: var(--ctg-ivory);
+}
+
+/* Use chartreuse as an accent line, never as a large content field. */
+body.eng-org-ctg :is(
+  app-ctg-engagements-home .ctg-hero aside,
+  app-ctg-start-invitation .form-intro,
+  app-invitations .host-handoff,
+  app-assignment-workspace .legacy-overview-card--next
+) {
+  border-left: 4px solid var(--ctg-accent);
+  background: var(--ctg-ivory);
+}
+
+body.eng-org-ctg :is(
+  .eng-button--primary,
+  .primary,
+  .submit,
+  .legacy-card-action,
+  .action-link
+) {
+  border-color: var(--ctg-charcoal);
+  color: #ffffff;
+  background: var(--ctg-charcoal);
+  box-shadow: none;
+}
+
+body.eng-org-ctg :is(
+  .eng-button--primary,
+  .primary,
+  .submit,
+  .legacy-card-action,
+  .action-link
+):hover {
+  color: #ffffff;
+  background: var(--ctg-ink);
+}
+
+body.eng-org-ctg :is(.secondary, .quiet, .public-links a, .header-actions a) {
+  border-color: var(--ctg-line-strong);
+  color: var(--ctg-charcoal);
+  background: var(--ctg-paper);
+}
+
+/* Home and booking desk */
+body.eng-org-ctg app-ctg-engagements-home .ctg-home,
+body.eng-org-ctg app-ctg-booking-desk .booking-desk,
+body.eng-org-ctg app-ctg-programs .programs-page,
+body.eng-org-ctg app-ctg-start-invitation .start-page {
+  color: var(--ctg-copy);
+}
+
+body.eng-org-ctg app-ctg-engagements-home .ctg-hero,
+body.eng-org-ctg app-ctg-booking-desk .desk-hero,
+body.eng-org-ctg app-ctg-programs .programs-header,
+body.eng-org-ctg app-ctg-start-invitation .page-header {
+  border-bottom-color: var(--ctg-line);
+}
+
+body.eng-org-ctg app-ctg-engagements-home .ctg-hero aside,
+body.eng-org-ctg app-ctg-booking-desk :is(.detail-section, .dialog-shell),
+body.eng-org-ctg app-ctg-programs :is(.power12-intro, .cohort-strip) {
+  border-color: var(--ctg-line);
+  background: var(--ctg-ivory);
+}
+
+body.eng-org-ctg app-ctg-engagements-home :is(.flow-list, .flow-list article, .executive-brief, .executive-brief a, .public-entry),
+body.eng-org-ctg app-ctg-booking-desk :is(.booking-row, .brief-list button, .travel-timeline, .detail-section),
+body.eng-org-ctg app-ctg-programs :is(.summary-strip, .summary-strip article, .section-block, th, td) {
+  border-color: var(--ctg-line);
+}
+
+body.eng-org-ctg app-ctg-engagements-home :is(.flow-list a, .public-links a, .ctg-hero aside a),
+body.eng-org-ctg app-ctg-booking-desk :is(.timeline-copy a, .back-link),
+body.eng-org-ctg app-ctg-programs :is(.section-heading a, .event-card.selected) {
+  color: var(--ctg-accent-ink);
+}
+
+body.eng-org-ctg app-ctg-booking-desk :is(.filters button.active, .booking-row.active),
+body.eng-org-ctg app-ctg-programs :is(.program-tabs button.active, .event-card.selected) {
+  border-color: var(--ctg-accent-ink);
+  color: var(--ctg-charcoal);
+  background: var(--ctg-ivory);
+}
+
+body.eng-org-ctg app-ctg-booking-desk .travel-timeline {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .78), var(--ctg-ivory));
+}
+
+body.eng-org-ctg app-ctg-booking-desk .timeline-rail i {
+  background: linear-gradient(90deg, var(--ctg-accent), var(--ctg-line));
+}
+
+/* Invitation review and engagement workspaces */
+body.eng-org-ctg app-invitations :is(.page-heading, .detail-heading),
+body.eng-org-ctg app-assignment-list .legacy-assignment-hero,
+body.eng-org-ctg app-assignment-workspace .legacy-workspace-heading {
+  border-color: var(--ctg-line);
+}
+
+body.eng-org-ctg app-invitations .request-row.active,
+body.eng-org-ctg app-assignment-list .legacy-filter-group button.selected,
+body.eng-org-ctg app-assignment-workspace .legacy-assignment-tab.is-active {
+  border-color: var(--ctg-charcoal);
+  color: #ffffff;
+  background: var(--ctg-charcoal);
+}
+
+body.eng-org-ctg app-invitations :is(.summary-grid > div, .terms-grid > div),
+body.eng-org-ctg app-assignment-workspace :is(.legacy-source-facts, .legacy-heading-summary article) {
+  border-color: var(--ctg-line);
+  background: var(--ctg-ivory);
+}
+
+body.eng-org-ctg app-assignment-workspace .legacy-overview-card--next {
+  background: linear-gradient(120deg, var(--ctg-ivory), var(--ctg-paper) 72%);
+}
+
+/* Apostle Cynthia's executive experience keeps its editorial warmth and hierarchy. */
+body.eng-org-ctg app-ctg-apostle-dashboard .apostle-dashboard,
+body.eng-org-ctg app-ctg-apostle-engagement-brief .apostle-engagement-brief {
+  color: var(--ctg-copy);
+  background: var(--ctg-canvas);
+}
+
+body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero {
+  border-top: 5px solid var(--ctg-accent);
+  background: linear-gradient(120deg, var(--ctg-ink), var(--ctg-charcoal));
+}
+
+body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero h1,
+body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero :is(p, .eyebrow) {
+  color: #ffffff;
+}
+
+body.eng-org-ctg app-ctg-apostle-dashboard :is(
+  .next-assignment,
+  .pulse-grid article,
+  .decision-card,
+  .road-card,
+  .movement-panel,
+  .decision-brief
+) {
+  border-color: var(--ctg-line);
+  background: var(--ctg-paper);
+  box-shadow: none;
+}
+
+body.eng-org-ctg app-ctg-apostle-dashboard :is(.gold-action, .section-icon, .road-card__date span) {
+  color: var(--ctg-accent-ink);
+}
+
+body.eng-org-ctg app-ctg-apostle-dashboard .gold-action {
+  border-color: var(--ctg-charcoal);
+  color: #ffffff;
+  background: var(--ctg-charcoal);
+}
+
+/* Public CTG pages use the same system without inheriting the authenticated shell. */
+body.eng-org-ctg app-ctg-event-registration,
+body.eng-org-ctg app-ctg-power12-application {
+  --public-ctg-paper: var(--ctg-ivory);
+}
+
+body.eng-org-ctg app-ctg-event-registration .event-hero,
+body.eng-org-ctg app-ctg-power12-application .power12-hero {
+  border-top: 6px solid var(--ctg-accent);
+  background: linear-gradient(125deg, var(--ctg-ink), var(--ctg-charcoal));
+}
+
+body.eng-org-ctg app-ctg-event-registration .event-hero h1,
+body.eng-org-ctg app-ctg-power12-application .power12-hero h1 {
+  color: #ffffff;
+}
+
+body.eng-org-ctg app-ctg-event-registration :is(.registration-form, .event-summary, .confirmation-card),
+body.eng-org-ctg app-ctg-power12-application :is(.application-layout form, .program-summary, .confirmation) {
+  border-color: var(--ctg-line);
+  color: var(--ctg-copy);
+  background: var(--ctg-ivory);
+  box-shadow: none;
+}
+
+body.eng-org-ctg app-ctg-event-registration :is(.tier-card.selected, .summary-note),
+body.eng-org-ctg app-ctg-power12-application :is(.choice-grid label.selected, .investment) {
+  border-color: var(--ctg-accent-ink);
+  background: #eeeed4;
+}
+
+body.eng-org-ctg app-ctg-event-registration :is(input, textarea),
+body.eng-org-ctg app-ctg-power12-application :is(input, textarea) {
+  border-color: var(--ctg-line-strong);
+  background: var(--ctg-paper);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.eng-org-ctg *,
+  body.eng-org-ctg *::before,
+  body.eng-org-ctg *::after {
+    scroll-behavior: auto !important;
+  }
+}

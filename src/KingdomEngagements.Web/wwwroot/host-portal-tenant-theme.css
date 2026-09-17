@@ -1,0 +1,74 @@
+/* Host URLs are shared. Only an API-verified CTG engagement receives this layer. */
+html[data-engagement-experience="ctg"] {
+  --ink: #3f3d37;
+  --muted: #77746d;
+  --line: #d8d7c8;
+  --paper: #ffffff;
+  --accent: #7d822e;
+  --gold: #c5ca52;
+}
+
+html[data-engagement-experience="ctg"] body {
+  color: var(--ink);
+  background: #eceae3;
+}
+
+html[data-engagement-experience="ctg"] .host-brand {
+  border-top: 6px solid #c5ca52;
+  color: #ffffff;
+  background: #111111;
+}
+
+html[data-engagement-experience="ctg"] .host-brand::after {
+  background: linear-gradient(180deg, rgba(17, 17, 17, .12), rgba(17, 17, 17, .9) 76%);
+}
+
+html[data-engagement-experience="ctg"] :is(.host-brand-copy .eyebrow, .eyebrow) {
+  color: #7d822e;
+}
+
+html[data-engagement-experience="ctg"] .host-brand-copy .eyebrow {
+  color: #c5ca52;
+}
+
+html[data-engagement-experience="ctg"] :is(.terms-grid article, .summary-grid article, .agreement-copy, .status-line, .portal-section) {
+  border-color: #d8d7c8;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+html[data-engagement-experience="ctg"] :is(.field input, .field select, .field textarea) {
+  border-color: #b8b2a6;
+  color: #3f3d37;
+  background: #ffffff;
+}
+
+html[data-engagement-experience="ctg"] :is(.field input, .field select, .field textarea):focus {
+  border-color: #7d822e;
+  box-shadow: 0 0 0 3px rgba(197, 202, 82, .24);
+}
+
+html[data-engagement-experience="ctg"] :is(.primary-button, .submitted-banner) {
+  border-color: #343826;
+}
+
+html[data-engagement-experience="ctg"] .primary-button {
+  color: #ffffff;
+  background: #343826;
+}
+
+html[data-engagement-experience="ctg"] .secondary-button {
+  border-color: #b8b2a6;
+  color: #343826;
+  background: #ffffff;
+}
+
+html[data-engagement-experience="ctg"] .submitted-banner {
+  border-left-color: #c5ca52;
+  background: #f6f3ea;
+}
+
+html[data-engagement-experience="ctg"] :is(a, button, input, select, textarea):focus-visible {
+  outline: 3px solid rgba(197, 202, 82, .55);
+  outline-offset: 2px;
+}

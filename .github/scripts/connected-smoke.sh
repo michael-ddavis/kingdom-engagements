@@ -7,6 +7,15 @@ platform_name="engagements-platform"
 app_name="engagements-app"
 password='LocalKingdom0S!'
 
+assert_response_contains() {
+  local expected="$1"
+  shift
+
+  local response
+  response="$("$@")"
+  grep --fixed-strings --quiet -- "$expected" <<<"$response"
+}
+
 cleanup() {
   docker logs "$app_name" 2>/dev/null || true
   docker rm --force "$app_name" "$platform_name" "$sql_name" >/dev/null 2>&1 || true
@@ -58,8 +67,8 @@ docker run --detach --name "$app_name" --network "$network" \
 
 live=false
 for attempt in {1..30}; do
-  if docker exec "$app_name" curl --fail --silent http://localhost:8080/health/live \
-    | grep --quiet '"module":"engagements"'; then
+  if assert_response_contains '"module":"engagements"' \
+    docker exec "$app_name" curl --fail --silent http://localhost:8080/health/live; then
     live=true
     break
   fi
@@ -72,8 +81,8 @@ fi
 
 ready=false
 for attempt in {1..60}; do
-  if docker exec "$app_name" curl --fail --silent http://localhost:8080/health \
-    | grep --quiet '"platformEntitlement":"enabled"'; then
+  if assert_response_contains '"platformEntitlement":"enabled"' \
+    docker exec "$app_name" curl --fail --silent http://localhost:8080/health; then
     ready=true
     break
   fi
@@ -85,8 +94,8 @@ if [ "$ready" != true ]; then
   exit 1
 fi
 
-docker exec "$app_name" curl --fail --silent http://localhost:8080/invite/apostle-cynthia \
-  | grep --quiet 'Invite Cynthia Thompson'
+assert_response_contains 'Invite Cynthia Thompson' \
+  docker exec "$app_name" curl --fail --silent http://localhost:8080/invite/apostle-cynthia
 
 request_json="$(docker exec -i "$app_name" curl --fail --silent \
   -X POST http://localhost:8080/api/public/engagements/requests \
@@ -123,8 +132,8 @@ JSON
 )"
 request_id="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])' <<<"$request_json")"
 
-docker exec "$app_name" curl --fail --silent http://localhost:8080/api/engagements/requests \
-  | grep --quiet 'CI Kingdom Leadership Gathering'
+assert_response_contains 'CI Kingdom Leadership Gathering' \
+  docker exec "$app_name" curl --fail --silent http://localhost:8080/api/engagements/requests
 
 rfi_json="$(docker exec "$app_name" curl --fail --silent \
   -X POST "http://localhost:8080/api/engagements/requests/$request_id/request-information" \
@@ -173,8 +182,9 @@ approval_json="$(docker exec "$app_name" curl --fail --silent \
   -H 'Content-Type: application/json' -d '{}')"
 assignment_id="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["assignmentId"])' <<<"$approval_json")"
 
-docker exec "$app_name" curl --fail --silent "http://localhost:8080/api/engagements/assignments/$assignment_id" \
-  | grep --quiet 'CI Kingdom Leadership Gathering'
+assert_response_contains 'CI Kingdom Leadership Gathering' \
+  docker exec "$app_name" curl --fail --silent \
+  "http://localhost:8080/api/engagements/assignments/$assignment_id"
 
 preparation_json="$(docker exec "$app_name" curl --fail --silent \
   "http://localhost:8080/api/engagements/assignments/$assignment_id/preparation")"
@@ -182,12 +192,12 @@ terms_token="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["preparat
 coordination_status="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["preparation"]["coordinationStatus"])' <<<"$preparation_json")"
 test "$coordination_status" = "locked"
 
-docker exec "$app_name" curl --fail --silent \
-  "http://localhost:8080/api/public/engagements/preparation/terms/$terms_token" \
-  | grep --quiet '"termsStatus":"pending"'
+assert_response_contains '"termsStatus":"pending"' \
+  docker exec "$app_name" curl --fail --silent \
+  "http://localhost:8080/api/public/engagements/preparation/terms/$terms_token"
 
-docker exec "$app_name" curl --fail --silent "http://localhost:8080/host/terms/$terms_token" \
-  | grep --quiet 'Accepted engagement terms'
+assert_response_contains 'Accepted engagement terms' \
+  docker exec "$app_name" curl --fail --silent "http://localhost:8080/host/terms/$terms_token"
 
 accepted_json="$(docker exec "$app_name" curl --fail --silent \
   -X POST "http://localhost:8080/api/public/engagements/preparation/terms/$terms_token/accept" \
@@ -195,12 +205,13 @@ accepted_json="$(docker exec "$app_name" curl --fail --silent \
   -d '{"accepted":true,"signatoryName":"Pastor Jordan Ellis","signatoryEmail":"jordan@example.org","note":"Confirmed for CI."}')"
 coordination_token="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["terms"]["coordinationToken"])' <<<"$accepted_json")"
 
-docker exec "$app_name" curl --fail --silent \
-  "http://localhost:8080/api/engagements/requests/$request_id" \
-  | grep --quiet '"agreementStatus":"signed"'
+assert_response_contains '"agreementStatus":"signed"' \
+  docker exec "$app_name" curl --fail --silent \
+  "http://localhost:8080/api/engagements/requests/$request_id"
 
-docker exec "$app_name" curl --fail --silent "http://localhost:8080/host/coordination/$coordination_token" \
-  | grep --quiet 'Host coordination'
+assert_response_contains 'Host coordination' \
+  docker exec "$app_name" curl --fail --silent \
+  "http://localhost:8080/host/coordination/$coordination_token"
 
 docker exec -i "$app_name" curl --fail --silent \
   -X PUT "http://localhost:8080/api/public/engagements/preparation/coordination/$coordination_token" \
@@ -243,9 +254,9 @@ document_json="$(docker exec "$app_name" curl --fail --silent \
   -F 'file=@/tmp/final-schedule.txt;type=text/plain')"
 document_id="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])' <<<"$document_json")"
 
-docker exec "$app_name" curl --fail --silent \
-  "http://localhost:8080/api/engagements/assignments/$assignment_id/preparation/documents/$document_id" \
-  | grep --quiet 'final host schedule'
+assert_response_contains 'final host schedule' \
+  docker exec "$app_name" curl --fail --silent \
+  "http://localhost:8080/api/engagements/assignments/$assignment_id/preparation/documents/$document_id"
 
 assignment_json="$(docker exec "$app_name" curl --fail --silent \
   "http://localhost:8080/api/engagements/assignments/$assignment_id")"
@@ -311,9 +322,9 @@ ministry_document_json="$(docker exec "$app_name" curl --fail --silent \
   -F 'file=@/tmp/ministry-packet.txt;type=text/plain')"
 ministry_document_id="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])' <<<"$ministry_document_json")"
 
-docker exec "$app_name" curl --fail --silent \
-  "http://localhost:8080/api/engagements/assignments/$assignment_id/preparation/documents/$ministry_document_id" \
-  | grep --quiet 'ministry team packet'
+assert_response_contains 'ministry team packet' \
+  docker exec "$app_name" curl --fail --silent \
+  "http://localhost:8080/api/engagements/assignments/$assignment_id/preparation/documents/$ministry_document_id"
 
 workspace_json="$(docker exec "$app_name" curl --fail --silent \
   "http://localhost:8080/api/engagements/assignments/$assignment_id/workspace")"
@@ -328,5 +339,5 @@ workspace_json="$(docker exec "$app_name" curl --fail --silent \
 grep --quiet 'Assignment document removed' <<<"$workspace_json"
 grep --quiet '"overallPercent":100' <<<"$workspace_json"
 
-docker exec "$app_name" curl --fail --silent http://localhost:8080/api/engagements/assignments \
-  | grep --quiet 'Kingdom Leadership Gathering'
+assert_response_contains 'Kingdom Leadership Gathering' \
+  docker exec "$app_name" curl --fail --silent http://localhost:8080/api/engagements/assignments

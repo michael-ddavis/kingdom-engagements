@@ -65,7 +65,9 @@ body.eng-org-ctg .eng-main {
 body.eng-org-ctg .eng-modulebar {
   border-top: 4px solid var(--ctg-accent);
   border-bottom-color: #2c2c2a;
-  background: var(--ctg-ink);
+  /* The legacy shared shell intentionally uses !important. This tenant-scoped
+     override must match it so CTG can own its header without affecting others. */
+  background: var(--ctg-ink) !important;
   box-shadow: 0 4px 18px rgba(17, 17, 17, .12);
 }
 
@@ -317,9 +319,30 @@ body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero {
   background: linear-gradient(120deg, var(--ctg-ink), var(--ctg-charcoal));
 }
 
+/* The dashboard's original ivory map overlay is almost opaque. Re-tone the
+   overlay as well as the surface so the CTG header is visibly authoritative. */
+body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero::after {
+  background: linear-gradient(
+    90deg,
+    rgba(17, 17, 17, .98),
+    rgba(17, 17, 17, .88) 42%,
+    rgba(52, 56, 38, .62) 78%,
+    rgba(17, 17, 17, .9)
+  );
+}
+
+body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero__map {
+  opacity: .2;
+  filter: grayscale(1);
+}
+
 body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero h1,
-body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero :is(p, .eyebrow) {
+body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero p {
   color: #ffffff;
+}
+
+body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero :is(.eyebrow, .travel-hero__mission) {
+  color: #d1d66a;
 }
 
 body.eng-org-ctg app-ctg-apostle-dashboard :is(
@@ -337,6 +360,16 @@ body.eng-org-ctg app-ctg-apostle-dashboard :is(
 
 body.eng-org-ctg app-ctg-apostle-dashboard :is(.gold-action, .section-icon, .road-card__date span) {
   color: var(--ctg-accent-ink);
+}
+
+body.eng-org-ctg app-ctg-apostle-dashboard :is(
+  .metric-icon,
+  .status-row > span.ready b,
+  .movement-icon,
+  .decision-pill
+) {
+  color: var(--ctg-accent-ink);
+  background: #f1f2ce;
 }
 
 body.eng-org-ctg app-ctg-apostle-dashboard .gold-action {

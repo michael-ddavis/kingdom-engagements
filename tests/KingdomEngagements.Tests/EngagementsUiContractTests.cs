@@ -203,6 +203,34 @@ public sealed class EngagementsUiContractTests
     }
 
     [Fact]
+    public void Ctg_executive_theme_visibly_overrides_the_legacy_shell()
+    {
+        var theme = File.ReadAllText(FindRepositoryFile(
+            "src",
+            "KingdomEngagements.Web",
+            "ClientApp",
+            "src",
+            "ctg-tenant-theme.css"));
+
+        Assert.Contains(
+            "body.eng-org-ctg .eng-modulebar",
+            theme,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "background: var(--ctg-ink) !important;",
+            theme,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "app-ctg-apostle-dashboard .travel-hero::after",
+            theme,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "app-ctg-apostle-dashboard .travel-hero__map",
+            theme,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Public_host_views_select_their_experience_from_the_engagement_tenant()
     {
         var feature = File.ReadAllText(FindRepositoryFile(

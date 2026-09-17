@@ -352,7 +352,8 @@ export class CtgApostleDashboardComponent implements OnInit {
   }
 
   ring(percent: number): string {
-    return `conic-gradient(#b58a45 ${Math.max(0, Math.min(100, percent))}%, #eee9df 0)`;
+    const readiness = Math.max(0, Math.min(100, percent));
+    return `conic-gradient(var(--ctg-accent-ink, #b58a45) ${readiness}%, var(--ctg-line, #eee9df) 0)`;
   }
 
   isConfirmed(value: string): boolean {

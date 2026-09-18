@@ -23,7 +23,7 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
               aria-label="Return to ApostolOS"
               title="Return to ApostolOS">
               <span class="eng-brand__mark" aria-hidden="true">
-                <img src="/kingdomos-mark.svg" alt="" />
+                <img src="/apostolos-mark-dark.webp" alt="" />
               </span>
               <span class="eng-brand__text">
                 <strong>ApostolOS</strong>

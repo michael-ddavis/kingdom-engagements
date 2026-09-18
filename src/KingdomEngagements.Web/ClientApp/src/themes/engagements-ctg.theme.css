@@ -111,8 +111,10 @@ body.eng-org-ctg .eng-settings-link {
 }
 
 body.eng-org-ctg .eng-brand__mark {
-  border-radius: 8px;
-  background: #ffffff;
+  overflow: hidden;
+  border-radius: 7px;
+  background: #060a10;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .08);
 }
 
 body.eng-org-ctg .eng-tenant__brand {
@@ -438,8 +440,7 @@ body.eng-org-ctg app-ctg-apostle-dashboard :is(
   .next-assignment,
   .today-brief,
   .decision-section,
-  .road-section,
-  .movement-panel
+  .road-section
 ) {
   box-shadow: 0 12px 30px rgba(17, 17, 17, .06);
 }

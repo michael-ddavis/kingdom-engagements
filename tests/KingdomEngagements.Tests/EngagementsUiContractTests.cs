@@ -250,14 +250,18 @@ public sealed class EngagementsUiContractTests
         var publicRoot = Path.Combine(Directory.GetParent(clientRoot)!.FullName, "public");
         var logoPath = Path.Combine(publicRoot, "ctg", "ctg-signature-white.webp");
         var portraitPath = Path.Combine(publicRoot, "ctg", "apostle-cynthia-portrait.webp");
+        var apostolosMarkPath = Path.Combine(publicRoot, "apostolos-mark-dark.webp");
 
         Assert.True(File.Exists(logoPath), $"Missing CTG signature asset: {logoPath}");
         Assert.True(File.Exists(portraitPath), $"Missing CTG portrait asset: {portraitPath}");
+        Assert.True(File.Exists(apostolosMarkPath), $"Missing dark ApostolOS mark: {apostolosMarkPath}");
         Assert.True(new FileInfo(logoPath).Length > 0);
         Assert.True(new FileInfo(portraitPath).Length > 0);
+        Assert.True(new FileInfo(apostolosMarkPath).Length > 0);
 
         var app = File.ReadAllText(Path.Combine(clientRoot, "app", "app.ts"));
         Assert.Contains("eng-tenant__brand", app, StringComparison.Ordinal);
+        Assert.Contains("/apostolos-mark-dark.webp", app, StringComparison.Ordinal);
 
         var theme = File.ReadAllText(Path.Combine(clientRoot, "themes", "engagements-ctg.theme.css"));
         Assert.Contains("--eng-brand-logo-image: url('/ctg/ctg-signature-white.webp');", theme, StringComparison.Ordinal);
@@ -324,6 +328,8 @@ public sealed class EngagementsUiContractTests
         Assert.Contains("[href]=\"assignmentHref(next.id)\"", dashboard, StringComparison.Ordinal);
         Assert.Contains("{{ next.readinessPercent }}%", dashboard, StringComparison.Ordinal);
         Assert.Contains("daysUntil(next.startsAtUtc)", dashboard, StringComparison.Ordinal);
+        Assert.Contains("[style.background]=\"ring(next.readinessPercent)\"", dashboard, StringComparison.Ordinal);
+        Assert.Contains("[attr.aria-label]=\"next.readinessPercent + '% ready'\"", dashboard, StringComparison.Ordinal);
         Assert.Contains("id=\"decisions\"", dashboard, StringComparison.Ordinal);
         Assert.Contains("(click)=\"openSignal(signal)\"", dashboard, StringComparison.Ordinal);
         Assert.Contains("cityImage(signal.place)", dashboard, StringComparison.Ordinal);
@@ -338,6 +344,7 @@ public sealed class EngagementsUiContractTests
         Assert.Contains("aria-label=\"Return to ApostolOS\"", app, StringComparison.Ordinal);
         Assert.Contains("<strong>ApostolOS</strong>", app, StringComparison.Ordinal);
         Assert.Contains("<small>Engagements</small>", app, StringComparison.Ordinal);
+        Assert.DoesNotContain("movement-panel", dashboard, StringComparison.Ordinal);
     }
 
     [Fact]

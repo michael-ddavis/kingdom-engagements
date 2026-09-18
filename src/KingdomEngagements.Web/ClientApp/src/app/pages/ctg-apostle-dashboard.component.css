@@ -266,22 +266,67 @@ button {
   margin-top: 22px;
 }
 
-.next-assignment__footer > div {
+.assignment-readiness {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  align-items: center;
+  gap: 12px;
 }
 
-.next-assignment__footer > div strong {
+.assignment-readiness__ring {
+  display: grid;
+  width: 72px;
+  height: 72px;
+  flex: 0 0 72px;
+  place-items: center;
+  padding: 6px;
+  border-radius: 50%;
+}
+
+.assignment-readiness__ring > span {
+  display: grid;
+  width: 60px;
+  height: 60px;
+  place-content: center;
+  border-radius: 50%;
+  background: var(--apostle-paper);
+  text-align: center;
+}
+
+.assignment-readiness__ring strong,
+.assignment-readiness__ring small {
+  display: block;
+}
+
+.assignment-readiness__ring strong {
   color: var(--apostle-ink);
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: 1.45rem;
+  font-size: 1.12rem;
   font-weight: 400;
+  line-height: 1;
 }
 
-.next-assignment__footer > div span {
+.assignment-readiness__ring small {
+  margin-top: 4px;
   color: var(--apostle-muted);
-  font-size: .58rem;
+  font-size: .44rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.assignment-readiness__copy {
+  display: grid;
+  gap: 4px;
+}
+
+.assignment-readiness__copy strong {
+  color: var(--apostle-ink);
+  font-size: .64rem;
+}
+
+.assignment-readiness__copy span {
+  color: var(--apostle-muted);
+  font-size: .52rem;
   text-transform: uppercase;
 }
 
@@ -372,11 +417,9 @@ button {
   color: var(--apostle-accent);
 }
 
-/* Decisions, road ahead, and movement */
+/* Decisions and road ahead */
 .dashboard-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 330px;
-  gap: 16px;
+  display: block;
 }
 
 .dashboard-grid__main {
@@ -385,8 +428,7 @@ button {
 }
 
 .decision-section,
-.road-section,
-.movement-panel {
+.road-section {
   overflow: hidden;
   border: 1px solid var(--apostle-line);
   border-radius: 14px;
@@ -720,77 +762,6 @@ button {
   text-align: center;
 }
 
-.movement-list {
-  display: grid;
-}
-
-.movement-list > a,
-.movement-empty {
-  display: grid;
-  grid-template-columns: 34px 1fr auto;
-  gap: 10px;
-  align-items: center;
-  padding: 17px 18px;
-  border-bottom: 1px solid var(--apostle-line);
-  color: inherit;
-  text-decoration: none;
-}
-
-.movement-list > a:hover {
-  background: var(--apostle-ivory);
-}
-
-.movement-list > a > span {
-  color: var(--apostle-accent-strong);
-}
-
-.movement-icon {
-  display: grid;
-  width: 32px;
-  height: 32px;
-  place-items: center;
-  border-radius: 50%;
-  color: var(--apostle-accent-strong);
-  background: #f1f2ce;
-}
-
-.movement-list strong {
-  color: var(--apostle-ink);
-  font-size: .66rem;
-}
-
-.movement-list p {
-  margin: 2px 0;
-  color: var(--apostle-copy);
-  font-size: .58rem;
-}
-
-.movement-list small {
-  color: var(--apostle-muted);
-  font-size: .5rem;
-}
-
-.movement-quote {
-  min-height: 180px;
-  padding: 28px;
-  color: #ffffff;
-  background: linear-gradient(135deg, rgba(17, 17, 17, .96), rgba(52, 56, 38, .92)), url('/ctg-world-route.svg') center / cover;
-}
-
-.movement-quote span {
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: 1.08rem;
-  line-height: 1.35;
-}
-
-.movement-quote i {
-  display: block;
-  width: 35px;
-  height: 2px;
-  margin-top: 14px;
-  background: var(--apostle-accent);
-}
-
 .executive-footer {
   display: flex;
   align-items: center;
@@ -975,18 +946,8 @@ button {
     grid-template-columns: minmax(0, 64%) minmax(260px, 36%);
   }
 
-  .executive-briefing-grid,
-  .dashboard-grid {
+  .executive-briefing-grid {
     grid-template-columns: 1fr;
-  }
-
-  .movement-panel {
-    display: grid;
-    grid-template-columns: 1fr 280px;
-  }
-
-  .movement-panel > .section-heading {
-    grid-column: 1 / -1;
   }
 }
 
@@ -1073,10 +1034,6 @@ button {
 
   .road-card {
     grid-template-columns: 110px 1fr 54px;
-  }
-
-  .movement-panel {
-    display: block;
   }
 
   .decision-brief {

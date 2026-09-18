@@ -103,7 +103,19 @@ const CITY_IMAGES: readonly CityImage[] = [
                 </div>
 
                 <footer class="next-assignment__footer">
-                  <div><strong>{{ next.readinessPercent }}%</strong><span>ready · {{ daysUntil(next.startsAtUtc) }} days away</span></div>
+                  <div class="assignment-readiness">
+                    <div
+                      class="assignment-readiness__ring"
+                      role="img"
+                      [attr.aria-label]="next.readinessPercent + '% ready'"
+                      [style.background]="ring(next.readinessPercent)">
+                      <span><strong>{{ next.readinessPercent }}%</strong><small>ready</small></span>
+                    </div>
+                    <div class="assignment-readiness__copy">
+                      <strong>Preparation progress</strong>
+                      <span>{{ daysUntil(next.startsAtUtc) }} days away</span>
+                    </div>
+                  </div>
                   <a class="gold-action" [href]="assignmentHref(next.id)">Open ministry brief <span>→</span></a>
                 </footer>
               </div>
@@ -205,30 +217,6 @@ const CITY_IMAGES: readonly CityImage[] = [
               </div>
             </section>
           </div>
-
-          <aside class="movement-panel">
-            <div class="section-heading">
-              <div><span class="section-icon">⌁</span><h2>Ministry movement</h2></div>
-              <a href="/assignments">View all →</a>
-            </div>
-
-            <div class="movement-list">
-              @for (item of recentMovement(); track item.id; let i = $index) {
-                <a [href]="assignmentHref(item.id)" [attr.aria-label]="'Open update for ' + item.title">
-                  <div class="movement-icon">{{ movementIcon(item, i) }}</div>
-                  <div><strong>{{ movementTitle(item) }}</strong><p>{{ item.title }}</p><small>{{ item.location || item.hostOrganization }} · {{ dateTime(item.updatedAtUtc) }}</small></div>
-                  <span>→</span>
-                </a>
-              } @empty {
-                <div class="movement-empty"><div class="movement-icon">✓</div><div><strong>All quiet</strong><p>No recent assignment movement.</p><small>Your team updates will surface here.</small></div></div>
-              }
-            </div>
-
-            <div class="movement-quote">
-              <span>“More people.<br>More nations.<br>More of Him.”</span>
-              <i></i>
-            </div>
-          </aside>
         </section>
 
         <footer class="executive-footer">
@@ -302,10 +290,6 @@ export class CtgApostleDashboardComponent implements OnInit {
     return [...manual, ...formal].sort((a, b) => b.priority - a.priority).slice(0, 3);
   });
 
-  readonly recentMovement = computed(() => [...this.activeAssignments()]
-    .sort((a, b) => this.time(b.updatedAtUtc) - this.time(a.updatedAtUtc))
-    .slice(0, 4));
-
   constructor(
     readonly bookingState: CtgBookingDeskStateService,
     private readonly api: EngagementsApiService,
@@ -351,8 +335,6 @@ export class CtgApostleDashboardComponent implements OnInit {
 
   day(value: string | null): string { return value ? new Date(value).getDate().toString() : '—'; }
   year(value: string | null): string { return value ? new Date(value).getFullYear().toString() : ''; }
-  dateTime(value: string): string { return new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); }
-
   daysUntil(value: string | null): number | string {
     if (!value) return '—';
     return Math.max(0, Math.ceil((new Date(value).getTime() - Date.now()) / 86400000));
@@ -371,20 +353,6 @@ export class CtgApostleDashboardComponent implements OnInit {
   placeCode(value: string): string {
     const city = value.split(',')[0].trim();
     return city ? city.toUpperCase() : 'GLOBAL';
-  }
-
-  movementIcon(item: EngagementSummary, index: number): string {
-    if (item.readinessPercent >= 90) return '✓';
-    if (item.travelStatus === 'confirmed') return '✈';
-    if (item.hostStatus === 'confirmed') return '●';
-    return ['↗', '✦', '◎', '•'][index % 4];
-  }
-
-  movementTitle(item: EngagementSummary): string {
-    if (item.readinessPercent >= 90) return 'Ready for ministry';
-    if (item.hostStatus === 'confirmed') return 'Host coordination confirmed';
-    if (item.travelStatus === 'confirmed' && item.lodgingStatus === 'confirmed') return 'Travel plan confirmed';
-    return 'Preparation moved forward';
   }
 
   executiveAsk(signal: ExecutiveSignal): string {

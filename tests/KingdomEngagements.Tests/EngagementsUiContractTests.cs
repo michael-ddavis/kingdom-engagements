@@ -311,6 +311,7 @@ public sealed class EngagementsUiContractTests
             "app",
             "pages",
             "ctg-apostle-dashboard.component.ts"));
+        var app = File.ReadAllText(Path.Combine(clientRoot, "app", "app.ts"));
 
         Assert.Contains(
             "path: 'organization/ctg/apostle', component: CtgApostleDashboardComponent",
@@ -321,6 +322,8 @@ public sealed class EngagementsUiContractTests
             dashboard,
             StringComparison.Ordinal);
         Assert.Contains("[href]=\"assignmentHref(next.id)\"", dashboard, StringComparison.Ordinal);
+        Assert.Contains("{{ next.readinessPercent }}%", dashboard, StringComparison.Ordinal);
+        Assert.Contains("daysUntil(next.startsAtUtc)", dashboard, StringComparison.Ordinal);
         Assert.Contains("id=\"decisions\"", dashboard, StringComparison.Ordinal);
         Assert.Contains("(click)=\"openSignal(signal)\"", dashboard, StringComparison.Ordinal);
         Assert.Contains("cityImage(signal.place)", dashboard, StringComparison.Ordinal);
@@ -332,6 +335,9 @@ public sealed class EngagementsUiContractTests
         Assert.Contains("decisionSignals()", dashboard, StringComparison.Ordinal);
         Assert.Contains("activeAssignments()", dashboard, StringComparison.Ordinal);
         Assert.Contains("readyAssignments()", dashboard, StringComparison.Ordinal);
+        Assert.Contains("aria-label=\"Return to ApostolOS\"", app, StringComparison.Ordinal);
+        Assert.Contains("<strong>ApostolOS</strong>", app, StringComparison.Ordinal);
+        Assert.Contains("<small>Engagements</small>", app, StringComparison.Ordinal);
     }
 
     [Fact]

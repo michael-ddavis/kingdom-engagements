@@ -140,7 +140,7 @@ const CITY_IMAGES: readonly CityImage[] = [
             <section class="decision-section" id="decisions">
               <div class="section-heading">
                 <div><span class="section-icon">◉</span><h2>What needs your eye</h2></div>
-                <small>{{ decisionSignals().length }} items</small>
+                <small>{{ decisionSignals().length }} item{{ decisionSignals().length === 1 ? '' : 's' }}</small>
               </div>
 
               @if (decisionSignals().length) {

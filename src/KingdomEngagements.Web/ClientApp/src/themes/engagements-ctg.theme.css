@@ -414,15 +414,42 @@ body.eng-org-ctg app-ctg-apostle-dashboard {
   --apostle-line: var(--ctg-line);
   --apostle-accent: var(--ctg-accent);
   --apostle-accent-strong: var(--ctg-accent-ink);
+  --apostle-hero-background:
+    radial-gradient(circle at 78% 45%, rgba(239, 242, 156, .42), transparent 22%),
+    linear-gradient(100deg, #111111 0%, #111111 49%, #202217 57%, #666b32 68%, var(--ctg-accent) 82%, var(--ctg-accent) 100%);
 }
 
 body.eng-org-ctg app-ctg-apostle-dashboard .editorial-hero {
   border-top-color: var(--ctg-accent);
-  background: var(--ctg-ink);
+  background: var(--apostle-hero-background);
+  box-shadow: 0 18px 48px rgba(17, 17, 17, .12);
+}
+
+/* The shared CTG heading rule uses dark ink on paper. This hero is intentionally dark. */
+body.eng-org-ctg app-ctg-apostle-dashboard .editorial-hero h1 {
+  color: #ffffff;
 }
 
 body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero__portrait-stage {
-  background: var(--ctg-accent);
+  background: transparent;
+}
+
+body.eng-org-ctg app-ctg-apostle-dashboard :is(
+  .next-assignment,
+  .today-brief,
+  .decision-section,
+  .road-section,
+  .movement-panel
+) {
+  box-shadow: 0 12px 30px rgba(17, 17, 17, .06);
+}
+
+body.eng-org-ctg app-ctg-apostle-dashboard :is(.decision-card, .road-card) {
+  box-shadow: 0 7px 18px rgba(17, 17, 17, .04);
+}
+
+body.eng-org-ctg app-ctg-apostle-dashboard :is(.decision-card, .road-card):hover {
+  box-shadow: 0 13px 26px rgba(17, 17, 17, .08);
 }
 
 body.eng-org-ctg app-ctg-apostle-engagement-brief :is(

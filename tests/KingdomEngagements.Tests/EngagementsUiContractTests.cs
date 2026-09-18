@@ -230,6 +230,12 @@ public sealed class EngagementsUiContractTests
             "app-ctg-apostle-dashboard .travel-hero__portrait-stage",
             theme,
             StringComparison.Ordinal);
+        Assert.Contains("--apostle-hero-background", theme, StringComparison.Ordinal);
+        Assert.Contains("linear-gradient(100deg", theme, StringComparison.Ordinal);
+        Assert.Contains(
+            "app-ctg-apostle-dashboard .editorial-hero h1",
+            theme,
+            StringComparison.Ordinal);
     }
 
     [Fact]

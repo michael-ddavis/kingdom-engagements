@@ -172,6 +172,301 @@ public sealed class EngagementsUiContractTests
         Assert.Contains("enableRangeProcessing: true", feature, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Product_identity_drives_tenant_presentation_without_a_ctg_fallback()
+    {
+        var program = File.ReadAllText(FindRepositoryFile(
+            "src",
+            "KingdomEngagements.Web",
+            "Program.cs"));
+        Assert.Contains("tenantId = tenantId", program, StringComparison.Ordinal);
+
+        var app = File.ReadAllText(FindRepositoryFile(
+            "src",
+            "KingdomEngagements.Web",
+            "ClientApp",
+            "src",
+            "app",
+            "app.ts"));
+        Assert.Contains("organizationForTenant(this.product()?.tenantId)", app, StringComparison.Ordinal);
+        Assert.Contains("'eng-org-default'", app, StringComparison.Ordinal);
+        Assert.DoesNotContain(": 'ctg';", app, StringComparison.Ordinal);
+
+        var theme = File.ReadAllText(FindRepositoryFile(
+            "src",
+            "KingdomEngagements.Web",
+            "ClientApp",
+            "src",
+            "themes",
+            "engagements-ctg.theme.css"));
+        Assert.Contains("body.eng-org-ctg", theme, StringComparison.Ordinal);
+        Assert.DoesNotContain("body:not(", theme, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Ctg_executive_theme_visibly_overrides_the_legacy_shell()
+    {
+        var theme = File.ReadAllText(FindRepositoryFile(
+            "src",
+            "KingdomEngagements.Web",
+            "ClientApp",
+            "src",
+            "themes",
+            "engagements-ctg.theme.css"));
+
+        Assert.Contains(
+            "body.eng-org-ctg .eng-modulebar",
+            theme,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "background: var(--ctg-ink) !important;",
+            theme,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "app-ctg-apostle-dashboard .editorial-hero",
+            theme,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "app-ctg-apostle-dashboard .travel-hero__portrait-stage",
+            theme,
+            StringComparison.Ordinal);
+        Assert.Contains("--apostle-hero-background", theme, StringComparison.Ordinal);
+        Assert.Contains("linear-gradient(100deg", theme, StringComparison.Ordinal);
+        Assert.Contains(
+            "app-ctg-apostle-dashboard .editorial-hero h1",
+            theme,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Ctg_brand_assets_are_local_and_used_by_each_ctg_entry_experience()
+    {
+        var clientRoot = Path.GetDirectoryName(FindRepositoryFile(
+            "src",
+            "KingdomEngagements.Web",
+            "ClientApp",
+            "src",
+            "main.ts"))!;
+        var publicRoot = Path.Combine(Directory.GetParent(clientRoot)!.FullName, "public");
+        var logoPath = Path.Combine(publicRoot, "ctg", "ctg-signature-white.webp");
+        var portraitPath = Path.Combine(publicRoot, "ctg", "apostle-cynthia-portrait.webp");
+        var apostolosMarkPath = Path.Combine(publicRoot, "apostolos-mark-dark.webp");
+
+        Assert.True(File.Exists(logoPath), $"Missing CTG signature asset: {logoPath}");
+        Assert.True(File.Exists(portraitPath), $"Missing CTG portrait asset: {portraitPath}");
+        Assert.True(File.Exists(apostolosMarkPath), $"Missing dark ApostolOS mark: {apostolosMarkPath}");
+        Assert.True(new FileInfo(logoPath).Length > 0);
+        Assert.True(new FileInfo(portraitPath).Length > 0);
+        Assert.True(new FileInfo(apostolosMarkPath).Length > 0);
+
+        var app = File.ReadAllText(Path.Combine(clientRoot, "app", "app.ts"));
+        Assert.Contains("eng-tenant__brand", app, StringComparison.Ordinal);
+        Assert.Contains("/apostolos-mark-dark.webp", app, StringComparison.Ordinal);
+
+        var theme = File.ReadAllText(Path.Combine(clientRoot, "themes", "engagements-ctg.theme.css"));
+        Assert.Contains("--eng-brand-logo-image: url('/ctg/ctg-signature-white.webp');", theme, StringComparison.Ordinal);
+
+        var dashboard = File.ReadAllText(Path.Combine(
+            clientRoot,
+            "app",
+            "pages",
+            "ctg-apostle-dashboard.component.ts"));
+        Assert.Contains("travel-hero__portrait", dashboard, StringComparison.Ordinal);
+        Assert.Contains("/ctg/apostle-cynthia-portrait.webp", dashboard, StringComparison.Ordinal);
+        Assert.Contains("executive-briefing-grid", dashboard, StringComparison.Ordinal);
+        Assert.Contains("today-brief", dashboard, StringComparison.Ordinal);
+        Assert.Contains(
+            "styleUrl: './ctg-apostle-dashboard.component.css'",
+            dashboard,
+            StringComparison.Ordinal);
+
+        var dashboardStyles = File.ReadAllText(Path.Combine(
+            clientRoot,
+            "app",
+            "pages",
+            "ctg-apostle-dashboard.component.css"));
+        Assert.Contains(".travel-hero {", dashboardStyles, StringComparison.Ordinal);
+        Assert.Contains(".executive-briefing-grid", dashboardStyles, StringComparison.Ordinal);
+        Assert.Contains(".today-brief", dashboardStyles, StringComparison.Ordinal);
+        Assert.Contains("@media (max-width: 760px)", dashboardStyles, StringComparison.Ordinal);
+
+        var wwwroot = FindWwwroot();
+        foreach (var fileName in new[] { "invite.html", "terms.html", "coordination.html" })
+        {
+            var html = File.ReadAllText(Path.Combine(wwwroot, fileName));
+            Assert.Contains("/ctg/ctg-signature-white.webp", html, StringComparison.Ordinal);
+            Assert.Contains("/ctg/apostle-cynthia-portrait.webp", html, StringComparison.Ordinal);
+            Assert.DoesNotContain("raw.githubusercontent.com", html, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Fact]
+    public void Ctg_apostle_dashboard_preserves_its_executive_behavior_contract()
+    {
+        var clientRoot = Path.GetDirectoryName(FindRepositoryFile(
+            "src",
+            "KingdomEngagements.Web",
+            "ClientApp",
+            "src",
+            "main.ts"))!;
+        var routes = File.ReadAllText(Path.Combine(clientRoot, "app", "app.config.ts"));
+        var dashboard = File.ReadAllText(Path.Combine(
+            clientRoot,
+            "app",
+            "pages",
+            "ctg-apostle-dashboard.component.ts"));
+        var app = File.ReadAllText(Path.Combine(clientRoot, "app", "app.ts"));
+
+        Assert.Contains(
+            "path: 'organization/ctg/apostle', component: CtgApostleDashboardComponent",
+            routes,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "forkJoin({ requests: this.api.getRequests(), assignments: this.api.getAssignments() })",
+            dashboard,
+            StringComparison.Ordinal);
+        Assert.Contains("[href]=\"assignmentHref(next.id)\"", dashboard, StringComparison.Ordinal);
+        Assert.Contains("{{ next.readinessPercent }}%", dashboard, StringComparison.Ordinal);
+        Assert.Contains("daysUntil(next.startsAtUtc)", dashboard, StringComparison.Ordinal);
+        Assert.Contains("[style.background]=\"ring(next.readinessPercent)\"", dashboard, StringComparison.Ordinal);
+        Assert.Contains("[attr.aria-label]=\"next.readinessPercent + '% ready'\"", dashboard, StringComparison.Ordinal);
+        Assert.Contains("id=\"decisions\"", dashboard, StringComparison.Ordinal);
+        Assert.Contains("(click)=\"openSignal(signal)\"", dashboard, StringComparison.Ordinal);
+        Assert.Contains("cityImage(signal.place)", dashboard, StringComparison.Ordinal);
+        Assert.Contains("cityImage(item.location)", dashboard, StringComparison.Ordinal);
+        Assert.Contains("cityImageAlt(signal.place)", dashboard, StringComparison.Ordinal);
+        Assert.Contains("cityImageAlt(item.location)", dashboard, StringComparison.Ordinal);
+        Assert.Contains("role=\"dialog\"", dashboard, StringComparison.Ordinal);
+        Assert.Contains("aria-modal=\"true\"", dashboard, StringComparison.Ordinal);
+        Assert.Contains("decisionSignals()", dashboard, StringComparison.Ordinal);
+        Assert.Contains("activeAssignments()", dashboard, StringComparison.Ordinal);
+        Assert.Contains("readyAssignments()", dashboard, StringComparison.Ordinal);
+        Assert.Contains("aria-label=\"Return to ApostolOS\"", app, StringComparison.Ordinal);
+        Assert.Contains("<strong>ApostolOS</strong>", app, StringComparison.Ordinal);
+        Assert.Contains("<small>Engagements</small>", app, StringComparison.Ordinal);
+        Assert.DoesNotContain("movement-panel", dashboard, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Engagements_tenant_themes_implement_one_shared_css_contract()
+    {
+        var clientRoot = Path.GetDirectoryName(FindRepositoryFile(
+            "src",
+            "KingdomEngagements.Web",
+            "ClientApp",
+            "src",
+            "main.ts"))!;
+        var contract = File.ReadAllText(Path.Combine(clientRoot, "engagements-theme-contract.css"));
+        var ctgTheme = File.ReadAllText(Path.Combine(clientRoot, "themes", "engagements-ctg.theme.css"));
+        var template = File.ReadAllText(Path.Combine(clientRoot, "themes", "engagements-tenant-theme.template.css"));
+        var angular = File.ReadAllText(Path.Combine(Directory.GetParent(clientRoot)!.FullName, "angular.json"));
+
+        var requiredTokens = new[]
+        {
+            "--eng-color-canvas",
+            "--eng-color-surface",
+            "--eng-color-surface-soft",
+            "--eng-color-heading",
+            "--eng-color-text",
+            "--eng-color-muted",
+            "--eng-color-border",
+            "--eng-color-accent",
+            "--eng-color-on-accent",
+            "--eng-color-header",
+            "--eng-color-on-header",
+            "--eng-font-heading",
+            "--eng-font-body",
+            "--eng-brand-logo-image",
+            "--eng-brand-logo-width",
+            "--eng-brand-logo-height",
+            "--eng-radius-card",
+            "--eng-radius-control",
+            "--eng-shadow-card",
+        };
+
+        Assert.All(requiredTokens, token =>
+        {
+            Assert.Contains(token, contract, StringComparison.Ordinal);
+            Assert.Contains(token, ctgTheme, StringComparison.Ordinal);
+            Assert.Contains(token, template, StringComparison.Ordinal);
+        });
+
+        var requiredHooks = new[]
+        {
+            ".eng-main",
+            ".eng-modulebar",
+            ".eng-title",
+            ".eng-section",
+            ".eng-button--primary",
+            ":focus-visible",
+        };
+
+        Assert.All(requiredHooks, hook =>
+        {
+            Assert.Contains(hook, ctgTheme, StringComparison.Ordinal);
+            Assert.Contains(hook, template, StringComparison.Ordinal);
+        });
+
+        Assert.Contains(":root", contract, StringComparison.Ordinal);
+        Assert.Contains("--eng-canvas: var(--eng-color-canvas);", ctgTheme, StringComparison.Ordinal);
+        Assert.Contains("--legacy-page: var(--eng-color-canvas);", ctgTheme, StringComparison.Ordinal);
+        Assert.Contains("--kos-action-primary: var(--eng-color-action);", ctgTheme, StringComparison.Ordinal);
+        Assert.Contains("--eng-canvas: var(--eng-color-canvas);", template, StringComparison.Ordinal);
+        Assert.Contains("--legacy-page: var(--eng-color-canvas);", template, StringComparison.Ordinal);
+        Assert.Contains("--kos-action-primary: var(--eng-color-action);", template, StringComparison.Ordinal);
+        Assert.Contains("body.eng-org-ctg", ctgTheme, StringComparison.Ordinal);
+        Assert.DoesNotContain("eng-org-dwc", ctgTheme, StringComparison.Ordinal);
+        Assert.DoesNotContain("eng-org-heyy", ctgTheme, StringComparison.Ordinal);
+
+        var contractIndex = angular.IndexOf("src/engagements-theme-contract.css", StringComparison.Ordinal);
+        var ctgIndex = angular.IndexOf("src/themes/engagements-ctg.theme.css", StringComparison.Ordinal);
+        Assert.True(contractIndex >= 0 && contractIndex < ctgIndex);
+    }
+
+    [Fact]
+    public void Known_ctg_routes_apply_the_tenant_theme_before_angular_renders()
+    {
+        var clientRoot = Path.GetDirectoryName(FindRepositoryFile(
+            "src",
+            "KingdomEngagements.Web",
+            "ClientApp",
+            "src",
+            "main.ts"))!;
+        var index = File.ReadAllText(Path.Combine(clientRoot, "index.html"));
+        var app = File.ReadAllText(Path.Combine(clientRoot, "app", "app.ts"));
+
+        var earlyThemeScript = index.IndexOf("window.location.pathname", StringComparison.Ordinal);
+        var angularRoot = index.IndexOf("<app-root>", StringComparison.Ordinal);
+
+        Assert.True(earlyThemeScript >= 0 && earlyThemeScript < angularRoot);
+        Assert.Contains("path.startsWith('/organization/ctg/')", index, StringComparison.Ordinal);
+        Assert.Contains("document.body.classList.add('eng-org-ctg')", index, StringComparison.Ordinal);
+        Assert.Contains("if (!product) return;", app, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Public_host_views_select_their_experience_from_the_engagement_tenant()
+    {
+        var feature = File.ReadAllText(FindRepositoryFile(
+            "src",
+            "KingdomEngagements.Web",
+            "Features",
+            "EngagementPreparation.cs"));
+        Assert.Contains("ExperienceKey(preparation.TenantId)", feature, StringComparison.Ordinal);
+        Assert.Contains("tenantId == KingdomIdentity.DemoTenantId ? \"ctg\" : \"default\"", feature, StringComparison.Ordinal);
+
+        var wwwroot = FindWwwroot();
+        foreach (var fileName in new[] { "terms.js", "coordination.js" })
+        {
+            var source = File.ReadAllText(Path.Combine(wwwroot, fileName));
+            Assert.Contains("applyExperience(", source, StringComparison.Ordinal);
+            Assert.Contains("dataset.engagementExperience", source, StringComparison.Ordinal);
+        }
+
+        var hostTheme = File.ReadAllText(Path.Combine(wwwroot, "host-portal-tenant-theme.css"));
+        Assert.Contains("html[data-engagement-experience=\"ctg\"]", hostTheme, StringComparison.Ordinal);
+    }
+
     private static string FindWwwroot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

@@ -210,7 +210,10 @@ export class CtgApostleEngagementBriefComponent implements OnInit {
 
   dateLabel(value: string): string { return new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); }
   daysUntil(value: string | null): number | string { return value ? Math.max(0, Math.ceil((new Date(value).getTime() - Date.now()) / 86400000)) : '—'; }
-  ring(percent: number): string { return `conic-gradient(#b58a45 ${Math.max(0, Math.min(100, percent))}%, #eee9df 0)`; }
+  ring(percent: number): string {
+    const readiness = Math.max(0, Math.min(100, percent));
+    return `conic-gradient(var(--eng-color-accent, #b58a45) ${readiness}%, var(--eng-color-border, #eee9df) 0)`;
+  }
   isReady(value: string): boolean { return ['confirmed', 'complete', 'received', 'waived'].includes((value || '').toLowerCase()); }
 
   statusLabel(value: string | null | undefined): string {

@@ -36,8 +36,10 @@
               "src/organization-drawer-motion.css",
               "src/dwc-warmth.css",
               "src/engagements-friendly.css",
+              "src/engagements-theme-contract.css",
               "src/engagements-workspace-friendly.css",
               "src/ctg-engagements-readability.css",
+              "src/themes/engagements-ctg.theme.css",
               "src/engagement-demo-role.css",
               "src/engagement-minister-readonly.css"
             ],
@@ -80,7 +82,10 @@
           "defaultConfiguration": "development"
         },
         "test": {
-          "builder": "@angular/build:unit-test"
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "tsconfig.spec.json"
+          }
         }
       }
     }

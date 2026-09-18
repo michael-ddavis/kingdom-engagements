@@ -1,6 +1,6 @@
 import { ApplicationConfig, inject, provideAppInitializer } from '@angular/core';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Routes } from '@angular/router';
 import { InvitationsComponent } from './pages/invitations.component';
 import { AssignmentListComponent } from './pages/assignment-list.component';
 import { AssignmentWorkspaceComponent } from './pages/assignment-workspace.component';
@@ -38,6 +38,29 @@ import {
   mutationToastInterceptor,
 } from './core/mutation-toast.service';
 
+export const engagementRoutes: Routes = [
+  { path: '', component: OrganizationLandingComponent, pathMatch: 'full' },
+  { path: 'invitations', component: InvitationsComponent, canActivate: [engagementBookingGuard] },
+  { path: 'assignments', component: AssignmentListComponent, canActivate: [engagementAssignmentListGuard] },
+  { path: 'assignments/:id', component: AssignmentWorkspaceComponent, canActivate: [engagementAssignmentDetailGuard] },
+  { path: 'organization/ctg/apostle/engagements/:id', component: CtgApostleEngagementBriefComponent },
+  { path: 'organization/ctg/apostle', component: CtgApostleDashboardComponent },
+  { path: 'organization/ctg', component: CtgEngagementsHomeComponent, canActivate: [engagementBookingGuard] },
+  { path: 'organization/ctg/bookings', component: CtgBookingDeskComponent, canActivate: [engagementBookingGuard] },
+  { path: 'organization/ctg/start-invitation', component: CtgStartInvitationComponent, canActivate: [engagementBookingGuard] },
+  { path: 'organization/ctg/programs', component: CtgProgramsComponent, canActivate: [engagementBookingGuard] },
+  { path: 'register/:eventId', component: CtgEventRegistrationComponent },
+  { path: 'join-the-12', component: CtgPower12ApplicationComponent },
+  { path: 'organization/dwc/formation', component: DwcFormationHomeContextComponent, canActivate: [engagementBookingGuard] },
+  { path: 'organization/dwc/formation/tools', component: DwcFormationToolsComponent, canActivate: [engagementBookingGuard] },
+  { path: 'organization/dwc/my-group', component: DwcMyGroupContextComponent, canActivate: [engagementBookingGuard] },
+  { path: 'organization/dwc/groups', component: DwcGroupsHubComponent, canActivate: [engagementBookingGuard] },
+  { path: 'organization/dwc/admin', component: OrganizationProgramsComponent, canActivate: [engagementBookingGuard] },
+  { path: 'organization/dwc', component: DwcGroupsHubComponent, canActivate: [engagementBookingGuard] },
+  { path: 'organization/:org', component: OrganizationProgramsComponent, canActivate: [engagementBookingGuard] },
+  { path: '**', redirectTo: '' },
+];
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideHttpClient(withInterceptors([
@@ -52,27 +75,6 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => inject(DwcGroupsBrandingService).mount()),
     provideAppInitializer(() => inject(MutationToastService).mount()),
     provideAppInitializer(() => inject(HostCollaborationLinkService).mount()),
-    provideRouter([
-      { path: '', component: OrganizationLandingComponent, pathMatch: 'full' },
-      { path: 'invitations', component: InvitationsComponent, canActivate: [engagementBookingGuard] },
-      { path: 'assignments', component: AssignmentListComponent, canActivate: [engagementAssignmentListGuard] },
-      { path: 'assignments/:id', component: AssignmentWorkspaceComponent, canActivate: [engagementAssignmentDetailGuard] },
-      { path: 'organization/ctg/apostle/engagements/:id', component: CtgApostleEngagementBriefComponent },
-      { path: 'organization/ctg/apostle', component: CtgApostleDashboardComponent },
-      { path: 'organization/ctg', component: CtgEngagementsHomeComponent, canActivate: [engagementBookingGuard] },
-      { path: 'organization/ctg/bookings', component: CtgBookingDeskComponent, canActivate: [engagementBookingGuard] },
-      { path: 'organization/ctg/start-invitation', component: CtgStartInvitationComponent, canActivate: [engagementBookingGuard] },
-      { path: 'organization/ctg/programs', component: CtgProgramsComponent, canActivate: [engagementBookingGuard] },
-      { path: 'register/:eventId', component: CtgEventRegistrationComponent },
-      { path: 'join-the-12', component: CtgPower12ApplicationComponent },
-      { path: 'organization/dwc/formation', component: DwcFormationHomeContextComponent, canActivate: [engagementBookingGuard] },
-      { path: 'organization/dwc/formation/tools', component: DwcFormationToolsComponent, canActivate: [engagementBookingGuard] },
-      { path: 'organization/dwc/my-group', component: DwcMyGroupContextComponent, canActivate: [engagementBookingGuard] },
-      { path: 'organization/dwc/groups', component: DwcGroupsHubComponent, canActivate: [engagementBookingGuard] },
-      { path: 'organization/dwc/admin', component: OrganizationProgramsComponent, canActivate: [engagementBookingGuard] },
-      { path: 'organization/dwc', component: DwcGroupsHubComponent, canActivate: [engagementBookingGuard] },
-      { path: 'organization/:org', component: OrganizationProgramsComponent, canActivate: [engagementBookingGuard] },
-      { path: '**', redirectTo: '' },
-    ]),
+    provideRouter(engagementRoutes),
   ],
 };

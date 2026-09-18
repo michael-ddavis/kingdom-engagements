@@ -13,6 +13,10 @@ let formDirty = false;
 let saveResetTimer = null;
 let confirmationTimer = null;
 
+function applyExperience(experienceKey) {
+  document.documentElement.dataset.engagementExperience = experienceKey === 'ctg' ? 'ctg' : 'default';
+}
+
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>'"]/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[char]));
 }
@@ -162,6 +166,7 @@ async function load(syncMessage = '') {
   try {
     showState('Loading secure host coordination…');
     coordination = await api(`/api/public/engagements/preparation/coordination/${encodeURIComponent(token)}`);
+    applyExperience(coordination.experienceKey);
     showState('');
     render();
     if (syncMessage) showConfirmation(syncMessage, 'info');
@@ -181,6 +186,7 @@ async function save(submit) {
   try {
     if (submit) showState('Submitting host coordination…');
     coordination = await api(`/api/public/engagements/preparation/coordination/${encodeURIComponent(token)}`, { method:'PUT', body:JSON.stringify(payload(submit)) });
+    applyExperience(coordination.experienceKey);
     formDirty = false;
     broadcastCollaborationUpdate('host');
     if (submit) {

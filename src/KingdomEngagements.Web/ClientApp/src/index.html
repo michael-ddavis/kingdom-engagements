@@ -14,6 +14,16 @@
   </style>
 </head>
 <body>
+  <script>
+    (() => {
+      // Known organization routes may select presentation before Angular starts.
+      // The authenticated product response still verifies and owns tenant identity.
+      const path = window.location.pathname.replace(/\/+$/, '') || '/';
+      if (path === '/organization/ctg' || path.startsWith('/organization/ctg/')) {
+        document.body.classList.add('eng-org-ctg');
+      }
+    })();
+  </script>
   <app-root></app-root>
 </body>
 </html>

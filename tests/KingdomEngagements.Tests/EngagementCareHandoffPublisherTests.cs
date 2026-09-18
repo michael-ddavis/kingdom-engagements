@@ -9,6 +9,41 @@ namespace KingdomEngagements.Tests;
 public sealed class EngagementCareHandoffPublisherTests
 {
     [Fact]
+    public async Task MissingServiceKeyUsesTheExistingLocalDevelopmentKey()
+    {
+        var handler = new RecordingHandler();
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["KingdomOS:CareInternalUrl"] = "http://care.test"
+            })
+            .Build();
+        var publisher = new EngagementCareHandoffPublisher(
+            new TestHttpClientFactory(new HttpClient(handler)),
+            configuration,
+            IntegrationServiceCredentials.Load(configuration, isDevelopment: true));
+
+        await publisher.PublishAsync(
+            new EngagementAssignment
+            {
+                Id = Guid.NewGuid(),
+                TenantId = Guid.NewGuid(),
+                Title = "Local development assignment"
+            },
+            new MinistryResponseRecord
+            {
+                Id = Guid.NewGuid(),
+                TenantId = Guid.NewGuid(),
+                AssignmentId = Guid.NewGuid(),
+                Type = "pastoral-follow-up",
+                PersonName = "Local Test"
+            },
+            CancellationToken.None);
+
+        Assert.Equal("local-kingdomos-integration", handler.ServiceKey);
+    }
+
+    [Fact]
     public async Task Publishes_an_idempotent_consented_response_handoff_to_care()
     {
         var handler = new RecordingHandler();
@@ -22,7 +57,8 @@ public sealed class EngagementCareHandoffPublisherTests
             .Build();
         var publisher = new EngagementCareHandoffPublisher(
             new TestHttpClientFactory(new HttpClient(handler)),
-            configuration);
+            configuration,
+            IntegrationServiceCredentials.Load(configuration, isDevelopment: false));
         var tenantId = Guid.NewGuid();
         var assignmentId = Guid.NewGuid();
         var responseId = Guid.NewGuid();

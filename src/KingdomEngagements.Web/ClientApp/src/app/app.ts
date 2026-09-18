@@ -2,6 +2,7 @@ import { AfterViewInit, Component, OnDestroy, OnInit, signal, ViewEncapsulation 
 import { Router, RouterOutlet } from '@angular/router';
 import { EngagementsApiService } from './core/engagements-api.service';
 import { DwcFormationStateService } from './core/dwc-formation-state.service';
+import { EngagementOrganization, organizationForTenant } from './core/engagement-organization';
 import { ProductInfo } from './core/models';
 import { HickmanItinerantPanelComponent } from './shared/hickman-itinerant-panel.component';
 import { OrganizationCommandCenterComponent } from './shared/organization-command-center.component';
@@ -22,7 +23,7 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
               aria-label="Return to ApostolOS"
               title="Return to ApostolOS">
               <span class="eng-brand__mark" aria-hidden="true">
-                <img src="/kingdomos-mark.svg" alt="" />
+                <img src="/apostolos-mark-dark.webp" alt="" />
               </span>
               <span class="eng-brand__text">
                 <strong>ApostolOS</strong>
@@ -34,7 +35,12 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
 
             <div class="eng-tenant">
               <span class="eng-presence" aria-hidden="true"></span>
-              <span>
+              <span
+                class="eng-tenant__brand"
+                role="img"
+                [attr.aria-label]="organizationName()"
+                [title]="organizationName()"></span>
+              <span class="eng-tenant__copy">
                 <small>Organization</small>
                 <strong>{{ organizationName() }}</strong>
               </span>
@@ -57,7 +63,7 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
                 <a class="eng-nav-link" [class.current]="isBookingDeskCurrent()" href="/organization/ctg/bookings">Booking Desk</a>
                 <a class="eng-nav-link" [class.current]="isCurrentPrefix('/assignments')" href="/assignments">Engagements</a>
                 <a class="eng-nav-link" [class.current]="isCurrent('/organization/ctg/programs')" href="/organization/ctg/programs">Events & Programs</a>
-              } @else {
+              } @else if (isHeyyKing()) {
                 <a class="eng-nav-link current" href="/organization/hey-king">Overview</a>
               }
             </nav>
@@ -294,7 +300,10 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
     }
 
     this.api.getProduct().subscribe({
-      next: product => this.product.set(product),
+      next: product => {
+        this.product.set(product);
+        this.syncOrganizationBodyClass();
+      },
     });
   }
 
@@ -315,6 +324,7 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
       'eng-org-ctg',
       'eng-org-dwc',
       'eng-org-heyy',
+      'eng-org-default',
     );
   }
 
@@ -324,6 +334,10 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
 
   isCtg(): boolean {
     return this.currentOrganizationKey() === 'ctg';
+  }
+
+  isHeyyKing(): boolean {
+    return this.currentOrganizationKey() === 'heyy-king';
   }
 
   isDwcMemberView(): boolean {
@@ -394,14 +408,19 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private syncOrganizationBodyClass(): void {
-    document.body.classList.remove('eng-org-ctg', 'eng-org-dwc', 'eng-org-heyy');
-    const organization = this.currentOrganizationKey();
+    const product = this.product();
+    if (!product) return;
+
+    document.body.classList.remove('eng-org-ctg', 'eng-org-dwc', 'eng-org-heyy', 'eng-org-default');
+    const organization = organizationForTenant(product.tenantId);
     document.body.classList.add(
       organization === 'divine-world-changers'
         ? 'eng-org-dwc'
         : organization === 'heyy-king'
           ? 'eng-org-heyy'
-          : 'eng-org-ctg',
+          : organization === 'ctg'
+            ? 'eng-org-ctg'
+            : 'eng-org-default',
     );
   }
 
@@ -448,19 +467,8 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  private currentOrganizationKey(): 'divine-world-changers' | 'heyy-king' | 'ctg' {
-    const key = document.cookie
-      .split(';')
-      .map(value => value.trim())
-      .find(value => value.startsWith('KingdomOS.DemoOrganization='));
-    const organization = key
-      ? decodeURIComponent(key.substring(key.indexOf('=') + 1)).toLowerCase()
-      : 'ctg';
-
-    if (organization === 'divine-world-changers' || organization === 'heyy-king') {
-      return organization;
-    }
-    return 'ctg';
+  private currentOrganizationKey(): EngagementOrganization {
+    return organizationForTenant(this.product()?.tenantId);
   }
 
   organizationName(): string {
@@ -472,6 +480,6 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
     if (organization === 'heyy-king') {
       return 'Heyy King, Inc.';
     }
-    return this.product()?.tenantName || 'Cynthia Thompson Global';
+    return this.product()?.tenantName || 'Organization';
   }
 }

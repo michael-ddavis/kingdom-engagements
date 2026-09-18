@@ -317,6 +317,10 @@ public sealed class EngagementsUiContractTests
         Assert.Contains("[href]=\"assignmentHref(next.id)\"", dashboard, StringComparison.Ordinal);
         Assert.Contains("id=\"decisions\"", dashboard, StringComparison.Ordinal);
         Assert.Contains("(click)=\"openSignal(signal)\"", dashboard, StringComparison.Ordinal);
+        Assert.Contains("cityImage(signal.place)", dashboard, StringComparison.Ordinal);
+        Assert.Contains("cityImage(item.location)", dashboard, StringComparison.Ordinal);
+        Assert.Contains("cityImageAlt(signal.place)", dashboard, StringComparison.Ordinal);
+        Assert.Contains("cityImageAlt(item.location)", dashboard, StringComparison.Ordinal);
         Assert.Contains("role=\"dialog\"", dashboard, StringComparison.Ordinal);
         Assert.Contains("aria-modal=\"true\"", dashboard, StringComparison.Ordinal);
         Assert.Contains("decisionSignals()", dashboard, StringComparison.Ordinal);

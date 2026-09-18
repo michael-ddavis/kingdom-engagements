@@ -1,0 +1,1097 @@
+:host {
+  display: block;
+  min-height: calc(100vh - 72px);
+  color: var(--apostle-copy);
+  background: var(--apostle-canvas);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+a,
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.apostle-dashboard {
+  width: min(1480px, 100%);
+  margin: 0 auto;
+  padding: 24px 28px 54px;
+}
+
+.eyebrow {
+  display: block;
+  color: var(--apostle-accent-strong);
+  font-size: .61rem;
+  font-weight: 900;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+}
+
+.loading-card {
+  padding: 48px;
+  border: 1px solid var(--apostle-line);
+  background: var(--apostle-paper);
+  text-align: center;
+  color: var(--apostle-muted);
+}
+
+/* Executive hero */
+.travel-hero {
+  position: relative;
+  display: grid;
+  min-height: 268px;
+  grid-template-columns: minmax(0, 64%) minmax(280px, 36%);
+  overflow: hidden;
+  margin: -24px -28px 18px;
+  border-top: 6px solid var(--apostle-accent);
+  background: var(--apostle-ink);
+}
+
+.travel-hero__map {
+  position: absolute;
+  z-index: 0;
+  inset: 0 36% 0 0;
+  background: url('/ctg-world-route.svg') center / cover no-repeat;
+  opacity: .06;
+  filter: grayscale(1);
+}
+
+.travel-hero__content {
+  position: relative;
+  z-index: 2;
+  align-self: center;
+  padding: 40px 42px;
+  color: #ffffff;
+}
+
+.travel-hero__content .eyebrow {
+  color: var(--apostle-accent);
+}
+
+.travel-hero h1 {
+  max-width: 760px;
+  margin: 10px 0 12px;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(2.8rem, 5vw, 4.9rem);
+  font-weight: 400;
+  line-height: .96;
+  letter-spacing: -.052em;
+}
+
+.travel-hero p {
+  max-width: 560px;
+  margin: 0;
+  color: #c9c5ba;
+  font-size: .88rem;
+  line-height: 1.55;
+}
+
+.travel-hero__portrait-stage {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--apostle-accent);
+}
+
+.travel-hero__portrait-stage::before {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background: linear-gradient(90deg, var(--apostle-ink), transparent 38%);
+  content: '';
+  pointer-events: none;
+}
+
+.travel-hero__portrait {
+  position: absolute;
+  right: 4%;
+  bottom: -58%;
+  width: min(78%, 390px);
+  height: auto;
+  max-height: 430px;
+  object-fit: contain;
+  filter: drop-shadow(-18px 12px 20px rgba(17, 17, 17, .24));
+}
+
+/* The executive briefing replaces the former photo card and metric tiles. */
+.executive-briefing-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(300px, .75fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.executive-briefing-grid--without-assignment {
+  grid-template-columns: 1fr;
+}
+
+.next-assignment {
+  min-width: 0;
+  border: 1px solid var(--apostle-line);
+  border-left: 5px solid var(--apostle-accent);
+  background: var(--apostle-paper);
+}
+
+.next-assignment__main {
+  padding: 27px 28px 24px;
+}
+
+.next-assignment__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.pin-line {
+  display: block;
+  margin-top: 14px;
+  color: var(--apostle-accent-strong);
+  font-size: .68rem;
+  font-weight: 850;
+}
+
+.next-assignment h2 {
+  margin: 5px 0 4px;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(1.65rem, 2.6vw, 2.35rem);
+  font-weight: 400;
+  line-height: 1.08;
+  letter-spacing: -.025em;
+}
+
+.next-assignment h2 a {
+  color: var(--apostle-ink);
+  text-decoration: none;
+}
+
+.next-assignment h2 a:hover {
+  color: var(--apostle-accent-strong);
+}
+
+.next-assignment p {
+  margin: 0;
+  color: var(--apostle-muted);
+  font-size: .72rem;
+}
+
+.date-tile {
+  display: grid;
+  min-width: 76px;
+  place-items: center;
+  padding: 9px 8px;
+  border: 1px solid var(--apostle-line);
+  background: var(--apostle-ivory);
+}
+
+.date-tile span {
+  color: var(--apostle-accent-strong);
+  font-size: .56rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.date-tile strong {
+  color: var(--apostle-ink);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 2.2rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.date-tile small {
+  color: var(--apostle-muted);
+  font-size: .55rem;
+}
+
+.status-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(100px, 1fr));
+  gap: 1px;
+  margin-top: 26px;
+  background: var(--apostle-line);
+}
+
+.status-row > span {
+  display: grid;
+  min-height: 70px;
+  grid-template-columns: 28px 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 9px;
+  align-content: center;
+  align-items: center;
+  padding: 11px 13px;
+  background: var(--apostle-ivory);
+}
+
+.status-row b {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  grid-row: 1 / 3;
+  place-items: center;
+  color: var(--apostle-muted);
+  background: #e8e5db;
+}
+
+.status-row small {
+  color: var(--apostle-muted);
+  font-size: .52rem;
+  font-weight: 800;
+}
+
+.status-row strong {
+  color: var(--apostle-ink);
+  font-size: .58rem;
+}
+
+.status-row > span.ready b {
+  color: var(--apostle-ink);
+  background: #eeefc8;
+}
+
+.next-assignment__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 22px;
+}
+
+.next-assignment__footer > div {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.next-assignment__footer > div strong {
+  color: var(--apostle-ink);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.45rem;
+  font-weight: 400;
+}
+
+.next-assignment__footer > div span {
+  color: var(--apostle-muted);
+  font-size: .58rem;
+  text-transform: uppercase;
+}
+
+.gold-action {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  border-radius: 999px;
+  color: var(--apostle-ink);
+  background: var(--apostle-accent);
+  font-size: .65rem;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.gold-action:hover {
+  background: #d1d66a;
+}
+
+.today-brief {
+  color: #ffffff;
+  background: var(--apostle-olive);
+}
+
+.today-brief header {
+  padding: 23px 22px 14px;
+}
+
+.today-brief header .eyebrow {
+  color: var(--apostle-accent);
+}
+
+.today-brief h2 {
+  margin: 6px 0 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.55rem;
+  font-weight: 400;
+}
+
+.today-brief > a {
+  display: grid;
+  min-height: 68px;
+  grid-template-columns: 28px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 20px;
+  border-top: 1px solid rgba(255, 255, 255, .14);
+  color: inherit;
+  text-decoration: none;
+}
+
+.today-brief > a:hover {
+  background: rgba(255, 255, 255, .06);
+}
+
+.today-brief__icon {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--apostle-ink);
+  background: var(--apostle-accent);
+  font-size: .72rem;
+  font-weight: 900;
+}
+
+.today-brief strong,
+.today-brief small {
+  display: block;
+}
+
+.today-brief strong {
+  font-size: .66rem;
+}
+
+.today-brief small {
+  margin-top: 4px;
+  color: #c8c7be;
+  font-size: .55rem;
+}
+
+.today-brief > a > b {
+  color: var(--apostle-accent);
+}
+
+/* Decisions, road ahead, and movement */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  gap: 14px;
+}
+
+.dashboard-grid__main {
+  display: grid;
+  gap: 14px;
+}
+
+.decision-section,
+.road-section,
+.movement-panel {
+  overflow: hidden;
+  border: 1px solid var(--apostle-line);
+  background: var(--apostle-paper);
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--apostle-line);
+  border-left: 4px solid var(--apostle-accent);
+  background: var(--apostle-ivory);
+}
+
+.section-heading > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-heading h2 {
+  margin: 0;
+  color: var(--apostle-ink);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.03rem;
+  font-weight: 400;
+}
+
+.section-heading small,
+.section-heading > a {
+  color: var(--apostle-muted);
+  font-size: .57rem;
+  font-weight: 800;
+}
+
+.section-heading > a {
+  color: var(--apostle-accent-strong);
+  text-decoration: none;
+}
+
+.section-icon {
+  color: var(--apostle-accent-strong);
+}
+
+.decision-cards,
+.road-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 11px;
+}
+
+.decision-card {
+  display: grid;
+  min-height: 138px;
+  grid-template-columns: 100px minmax(0, 1fr) 18px;
+  gap: 10px;
+  align-items: center;
+  overflow: hidden;
+  padding: 0 10px 0 0;
+  border: 1px solid var(--apostle-line);
+  border-radius: 3px;
+  color: inherit;
+  background: #ffffff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .15s ease, transform .15s ease;
+}
+
+.decision-card:hover,
+.road-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--apostle-accent-strong);
+}
+
+.decision-card__visual,
+.road-card__visual,
+.decision-brief__photo {
+  position: relative;
+  overflow: hidden;
+  background: #243447;
+}
+
+.decision-card__visual {
+  align-self: stretch;
+  min-height: 138px;
+}
+
+.decision-card__visual img,
+.road-card__visual img,
+.decision-brief__photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-fallback {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  background: #243447 url('/ctg-world-route.svg') center / cover no-repeat;
+}
+
+.decision-card__visual img {
+  position: absolute;
+  inset: 0;
+}
+
+.decision-card__photo-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(8, 12, 18, .05), rgba(8, 12, 18, .68));
+}
+
+.decision-card__visual > b {
+  position: absolute;
+  z-index: 1;
+  left: 9px;
+  bottom: 9px;
+  color: #ffffff;
+  font-size: .55rem;
+  letter-spacing: .1em;
+}
+
+.decision-card__body small {
+  display: block;
+  color: var(--apostle-muted);
+  font-size: .53rem;
+}
+
+.decision-card__body > strong {
+  display: block;
+  margin: 3px 0 6px;
+  color: var(--apostle-ink);
+  font-size: .72rem;
+}
+
+.decision-pill {
+  display: inline-block;
+  padding: 4px 7px;
+  border-radius: 999px;
+  color: var(--apostle-accent-strong);
+  background: #f1f2ce;
+  font-size: .5rem;
+  font-weight: 900;
+}
+
+.decision-card[data-tone='rose'] .decision-pill {
+  color: #a94f45;
+  background: #fae9e6;
+}
+
+.decision-card[data-tone='blue'] .decision-pill {
+  color: #426b95;
+  background: #eaf0f6;
+}
+
+.decision-card__body p {
+  margin: 6px 0 0;
+  color: var(--apostle-muted);
+  font-size: .57rem;
+  line-height: 1.4;
+}
+
+.decision-card__arrow {
+  color: var(--apostle-accent-strong);
+}
+
+.all-clear {
+  display: flex;
+  gap: 10px;
+  padding: 25px;
+}
+
+.all-clear > span {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 50%;
+  color: #397156;
+  background: #e9f4ed;
+}
+
+.all-clear p {
+  margin: 4px 0;
+  color: var(--apostle-muted);
+  font-size: .65rem;
+}
+
+.road-card {
+  display: grid;
+  min-height: 102px;
+  grid-template-columns: 100px minmax(0, 1fr) 58px;
+  gap: 10px;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid var(--apostle-line);
+  border-radius: 3px;
+  color: inherit;
+  background: #ffffff;
+  text-decoration: none;
+  transition: border-color .15s ease, transform .15s ease;
+}
+
+.road-card__visual {
+  height: 102px;
+}
+
+.road-card__visual img {
+  position: absolute;
+  inset: 0;
+}
+
+.road-card__visual::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(8, 12, 18, .08), rgba(8, 12, 18, .6));
+  content: '';
+}
+
+.road-card__date {
+  position: absolute;
+  z-index: 1;
+  top: 8px;
+  left: 8px;
+  display: grid;
+  width: 39px;
+  place-items: center;
+  padding: 4px;
+  background: rgba(255, 255, 255, .93);
+}
+
+.road-card__date span {
+  color: var(--apostle-accent-strong);
+  font-size: .46rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.road-card__date strong {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.18rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.road-card__visual > small {
+  position: absolute;
+  z-index: 1;
+  left: 9px;
+  bottom: 8px;
+  color: #ffffff;
+  font-size: .5rem;
+  font-weight: 900;
+  letter-spacing: .1em;
+}
+
+.road-card__body small,
+.road-card__body span {
+  display: block;
+  color: var(--apostle-muted);
+  font-size: .54rem;
+}
+
+.road-card__body strong {
+  display: block;
+  margin: 3px 0;
+  color: var(--apostle-ink);
+  font-size: .68rem;
+}
+
+.road-card__ready {
+  text-align: center;
+}
+
+.mini-ring {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  margin: auto;
+  place-items: center;
+  padding: 4px;
+  border-radius: 50%;
+}
+
+.mini-ring > span {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--apostle-ink);
+  background: #ffffff;
+  font-size: .53rem;
+  font-weight: 900;
+}
+
+.road-card__ready > small {
+  color: var(--apostle-muted);
+  font-size: .45rem;
+  text-transform: uppercase;
+}
+
+.empty-road {
+  grid-column: 1 / -1;
+  padding: 25px;
+  color: var(--apostle-muted);
+  text-align: center;
+}
+
+.movement-list {
+  display: grid;
+}
+
+.movement-list > a,
+.movement-empty {
+  display: grid;
+  grid-template-columns: 34px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 14px 15px;
+  border-bottom: 1px solid var(--apostle-line);
+  color: inherit;
+  text-decoration: none;
+}
+
+.movement-list > a:hover {
+  background: var(--apostle-ivory);
+}
+
+.movement-list > a > span {
+  color: var(--apostle-accent-strong);
+}
+
+.movement-icon {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--apostle-accent-strong);
+  background: #f1f2ce;
+}
+
+.movement-list strong {
+  color: var(--apostle-ink);
+  font-size: .66rem;
+}
+
+.movement-list p {
+  margin: 2px 0;
+  color: var(--apostle-copy);
+  font-size: .58rem;
+}
+
+.movement-list small {
+  color: var(--apostle-muted);
+  font-size: .5rem;
+}
+
+.movement-quote {
+  min-height: 150px;
+  padding: 23px;
+  color: #ffffff;
+  background: linear-gradient(135deg, rgba(17, 17, 17, .96), rgba(52, 56, 38, .92)), url('/ctg-world-route.svg') center / cover;
+}
+
+.movement-quote span {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.08rem;
+  line-height: 1.35;
+}
+
+.movement-quote i {
+  display: block;
+  width: 35px;
+  height: 2px;
+  margin-top: 14px;
+  background: var(--apostle-accent);
+}
+
+.executive-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 15px;
+  padding: 14px 2px;
+  color: var(--apostle-muted);
+  font-size: .56rem;
+}
+
+.executive-footer span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.executive-footer i {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--apostle-accent);
+}
+
+.executive-footer a {
+  color: var(--apostle-accent-strong);
+  font-size: .6rem;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+/* Executive decision brief */
+.brief-backdrop {
+  position: fixed;
+  z-index: 10000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(13, 18, 24, .48);
+  backdrop-filter: blur(7px);
+}
+
+.decision-brief {
+  display: grid;
+  width: min(760px, 95vw);
+  grid-template-columns: 270px minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, .25);
+  background: #ffffff;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, .24);
+}
+
+.decision-brief__photo {
+  min-height: 340px;
+}
+
+.decision-brief__photo img {
+  position: absolute;
+  inset: 0;
+}
+
+.decision-brief__photo::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(10, 15, 21, .05), rgba(10, 15, 21, .76));
+  content: '';
+}
+
+.decision-brief__photo > div:last-child {
+  position: absolute;
+  z-index: 1;
+  right: 20px;
+  bottom: 20px;
+  left: 20px;
+  color: #ffffff;
+}
+
+.decision-brief__photo span,
+.decision-brief__photo strong {
+  display: block;
+}
+
+.decision-brief__photo span {
+  color: var(--apostle-accent);
+  font-size: .55rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.decision-brief__photo strong {
+  margin-top: 4px;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.25rem;
+  font-weight: 400;
+}
+
+.decision-brief__content {
+  position: relative;
+  padding: 28px;
+}
+
+.decision-brief__content h2 {
+  margin: 7px 0 8px;
+  color: var(--apostle-ink);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.8rem;
+  font-weight: 400;
+}
+
+.decision-brief__content > p {
+  color: var(--apostle-copy);
+  line-height: 1.55;
+}
+
+.close-button {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  color: var(--apostle-copy);
+  background: var(--apostle-ivory);
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.brief-note {
+  display: grid;
+  gap: 5px;
+  margin: 22px 0;
+  padding: 15px;
+  border-left: 4px solid var(--apostle-accent);
+  background: var(--apostle-ivory);
+}
+
+.brief-note span {
+  color: var(--apostle-accent-strong);
+  font-size: .55rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.brief-note strong {
+  font-size: .76rem;
+}
+
+.brief-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.brief-actions button,
+.brief-actions a {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  padding: 0 13px;
+  border-radius: 999px;
+  font-size: .62rem;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.brief-actions button {
+  border: 1px solid var(--apostle-line);
+  color: var(--apostle-copy);
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.brief-actions a {
+  color: var(--apostle-ink);
+  background: var(--apostle-accent);
+}
+
+@media (max-width: 1100px) {
+  .travel-hero {
+    grid-template-columns: minmax(0, 68%) minmax(230px, 32%);
+  }
+
+  .executive-briefing-grid,
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .decision-cards,
+  .road-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .movement-panel {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+  }
+
+  .movement-panel > .section-heading {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 760px) {
+  .apostle-dashboard {
+    padding: 18px 14px 45px;
+  }
+
+  .travel-hero {
+    min-height: 260px;
+    grid-template-columns: 1fr;
+    margin: -18px -14px 14px;
+  }
+
+  .travel-hero__map {
+    inset: 0;
+  }
+
+  .travel-hero__content {
+    z-index: 3;
+    padding: 32px 20px;
+  }
+
+  .travel-hero__content::after {
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(17, 17, 17, .98), rgba(17, 17, 17, .78) 74%, rgba(17, 17, 17, .42));
+    content: '';
+  }
+
+  .travel-hero h1 {
+    max-width: 90%;
+    font-size: clamp(2.35rem, 12vw, 3.6rem);
+  }
+
+  .travel-hero p {
+    max-width: 78%;
+  }
+
+  .travel-hero__portrait-stage {
+    position: absolute;
+    inset: 0 0 0 45%;
+    opacity: .5;
+  }
+
+  .travel-hero__portrait-stage::before {
+    background: linear-gradient(90deg, var(--apostle-ink), transparent 64%);
+  }
+
+  .travel-hero__portrait {
+    right: -24%;
+    bottom: -46%;
+    width: 125%;
+    max-height: 410px;
+  }
+
+  .next-assignment__main {
+    padding: 22px 18px;
+  }
+
+  .next-assignment__heading {
+    gap: 14px;
+  }
+
+  .status-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .next-assignment__footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .gold-action {
+    justify-content: center;
+  }
+
+  .decision-card,
+  .road-card {
+    grid-template-columns: 92px 1fr 28px;
+  }
+
+  .movement-panel {
+    display: block;
+  }
+
+  .decision-brief {
+    grid-template-columns: 1fr;
+  }
+
+  .decision-brief__photo {
+    min-height: 190px;
+  }
+
+  .executive-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 430px) {
+  .next-assignment__heading {
+    display: grid;
+  }
+
+  .date-tile {
+    grid-row: 1;
+    min-width: 68px;
+    width: fit-content;
+  }
+
+  .status-row {
+    grid-template-columns: 1fr;
+  }
+
+  .decision-card,
+  .road-card {
+    grid-template-columns: 82px 1fr 22px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .decision-card,
+  .road-card {
+    transition: none;
+  }
+}

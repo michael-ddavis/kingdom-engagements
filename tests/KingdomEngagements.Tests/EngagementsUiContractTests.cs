@@ -223,11 +223,11 @@ public sealed class EngagementsUiContractTests
             theme,
             StringComparison.Ordinal);
         Assert.Contains(
-            "app-ctg-apostle-dashboard .travel-hero::after",
+            "app-ctg-apostle-dashboard .editorial-hero",
             theme,
             StringComparison.Ordinal);
         Assert.Contains(
-            "app-ctg-apostle-dashboard .travel-hero__map",
+            "app-ctg-apostle-dashboard .travel-hero__portrait-stage",
             theme,
             StringComparison.Ordinal);
     }
@@ -261,10 +261,24 @@ public sealed class EngagementsUiContractTests
             "app",
             "pages",
             "ctg-apostle-dashboard.component.ts"));
-        Assert.Contains("travel-hero__signature", dashboard, StringComparison.Ordinal);
-        Assert.Contains("/ctg/ctg-signature-white.webp", dashboard, StringComparison.Ordinal);
         Assert.Contains("travel-hero__portrait", dashboard, StringComparison.Ordinal);
         Assert.Contains("/ctg/apostle-cynthia-portrait.webp", dashboard, StringComparison.Ordinal);
+        Assert.Contains("executive-briefing-grid", dashboard, StringComparison.Ordinal);
+        Assert.Contains("today-brief", dashboard, StringComparison.Ordinal);
+        Assert.Contains(
+            "styleUrl: './ctg-apostle-dashboard.component.css'",
+            dashboard,
+            StringComparison.Ordinal);
+
+        var dashboardStyles = File.ReadAllText(Path.Combine(
+            clientRoot,
+            "app",
+            "pages",
+            "ctg-apostle-dashboard.component.css"));
+        Assert.Contains(".editorial-hero", dashboardStyles, StringComparison.Ordinal);
+        Assert.Contains(".executive-briefing-grid", dashboardStyles, StringComparison.Ordinal);
+        Assert.Contains(".today-brief", dashboardStyles, StringComparison.Ordinal);
+        Assert.Contains("@media (max-width: 760px)", dashboardStyles, StringComparison.Ordinal);
 
         var wwwroot = FindWwwroot();
         foreach (var fileName in new[] { "invite.html", "terms.html", "coordination.html" })
@@ -274,6 +288,40 @@ public sealed class EngagementsUiContractTests
             Assert.Contains("/ctg/apostle-cynthia-portrait.webp", html, StringComparison.Ordinal);
             Assert.DoesNotContain("raw.githubusercontent.com", html, StringComparison.OrdinalIgnoreCase);
         }
+    }
+
+    [Fact]
+    public void Ctg_apostle_dashboard_preserves_its_executive_behavior_contract()
+    {
+        var clientRoot = Path.GetDirectoryName(FindRepositoryFile(
+            "src",
+            "KingdomEngagements.Web",
+            "ClientApp",
+            "src",
+            "main.ts"))!;
+        var routes = File.ReadAllText(Path.Combine(clientRoot, "app", "app.config.ts"));
+        var dashboard = File.ReadAllText(Path.Combine(
+            clientRoot,
+            "app",
+            "pages",
+            "ctg-apostle-dashboard.component.ts"));
+
+        Assert.Contains(
+            "path: 'organization/ctg/apostle', component: CtgApostleDashboardComponent",
+            routes,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "forkJoin({ requests: this.api.getRequests(), assignments: this.api.getAssignments() })",
+            dashboard,
+            StringComparison.Ordinal);
+        Assert.Contains("[href]=\"assignmentHref(next.id)\"", dashboard, StringComparison.Ordinal);
+        Assert.Contains("id=\"decisions\"", dashboard, StringComparison.Ordinal);
+        Assert.Contains("(click)=\"openSignal(signal)\"", dashboard, StringComparison.Ordinal);
+        Assert.Contains("role=\"dialog\"", dashboard, StringComparison.Ordinal);
+        Assert.Contains("aria-modal=\"true\"", dashboard, StringComparison.Ordinal);
+        Assert.Contains("decisionSignals()", dashboard, StringComparison.Ordinal);
+        Assert.Contains("activeAssignments()", dashboard, StringComparison.Ordinal);
+        Assert.Contains("readyAssignments()", dashboard, StringComparison.Ordinal);
     }
 
     [Fact]

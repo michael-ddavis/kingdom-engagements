@@ -401,135 +401,28 @@ body.eng-org-ctg app-assignment-workspace :is(
   box-shadow: none;
 }
 
-/* Apostle Cynthia's executive experience keeps its editorial warmth and hierarchy. */
-body.eng-org-ctg app-ctg-apostle-dashboard .apostle-dashboard,
-body.eng-org-ctg app-ctg-apostle-engagement-brief .apostle-engagement-brief {
-  color: var(--ctg-copy);
-  background: var(--ctg-canvas);
+/* Apostle Cynthia executive dashboard uses a small, tenant-owned token set.
+   Layout and behavior remain inside the feature component. */
+body.eng-org-ctg app-ctg-apostle-dashboard {
+  --apostle-canvas: var(--ctg-canvas);
+  --apostle-paper: var(--ctg-paper);
+  --apostle-ivory: var(--ctg-ivory);
+  --apostle-ink: var(--ctg-ink);
+  --apostle-olive: var(--ctg-charcoal);
+  --apostle-copy: var(--ctg-copy);
+  --apostle-muted: var(--ctg-muted);
+  --apostle-line: var(--ctg-line);
+  --apostle-accent: var(--ctg-accent);
+  --apostle-accent-strong: var(--ctg-accent-ink);
 }
 
-body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero {
-  min-height: 270px;
-  padding: 44px 42px 34px;
-  border-top: 6px solid var(--ctg-accent);
-  background: linear-gradient(90deg, var(--ctg-ink) 0 64%, var(--ctg-accent) 64% 100%);
+body.eng-org-ctg app-ctg-apostle-dashboard .editorial-hero {
+  border-top-color: var(--ctg-accent);
+  background: var(--ctg-ink);
 }
 
-/* The dashboard's original ivory map overlay is almost opaque. Re-tone the
-   overlay as well as the surface so the CTG header is visibly authoritative. */
-body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero::after {
-  background: linear-gradient(
-    90deg,
-    rgba(17, 17, 17, .98),
-    rgba(17, 17, 17, .94) 50%,
-    rgba(17, 17, 17, .56) 66%,
-    rgba(52, 56, 38, .08) 100%
-  );
-}
-
-body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero__map {
-  opacity: .12;
-  filter: grayscale(1);
-}
-
-body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero__signature {
-  position: absolute;
-  z-index: 2;
-  top: 18px;
-  right: 12%;
-  width: min(34vw, 470px);
-  height: 170px;
-  object-fit: contain;
-  opacity: .42;
-  pointer-events: none;
-}
-
-body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero__portrait {
-  position: absolute;
-  z-index: 3;
-  right: 3.5%;
-  bottom: -58%;
-  width: auto;
-  height: 158%;
-  object-fit: contain;
-  filter: drop-shadow(-18px 12px 20px rgba(17, 17, 17, .26));
-  pointer-events: none;
-}
-
-body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero__content {
-  z-index: 4;
-  max-width: 62%;
-  padding-bottom: 42px;
-}
-
-body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero__mission {
-  z-index: 4;
-  top: auto;
-  right: auto;
-  bottom: 28px;
-  left: 42px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero__mission span:not(:last-of-type)::after {
-  margin-left: 12px;
-  color: rgba(197, 202, 82, .46);
-  content: '·';
-}
-
-body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero h1,
-body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero p {
-  color: #ffffff;
-}
-
-body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero :is(.eyebrow, .travel-hero__mission) {
-  color: #d1d66a;
-}
-
-body.eng-org-ctg app-ctg-apostle-dashboard :is(
-  .next-assignment,
-  .pulse-grid > a,
-  .decision-section,
-  .road-section,
-  .decision-card,
-  .road-card,
-  .movement-panel,
-  .decision-brief
-) {
-  border-radius: var(--eng-radius-card);
-  border-color: var(--ctg-line);
-  background: var(--ctg-paper);
-  box-shadow: none;
-}
-
-body.eng-org-ctg app-ctg-apostle-dashboard :is(.gold-action, .section-icon, .road-card__date span) {
-  color: var(--ctg-accent-ink);
-}
-
-body.eng-org-ctg app-ctg-apostle-dashboard :is(
-  .metric-icon,
-  .status-row > span.ready b,
-  .movement-icon,
-  .decision-pill
-) {
-  color: var(--ctg-accent-ink);
-  background: #f1f2ce;
-}
-
-body.eng-org-ctg app-ctg-apostle-dashboard .gold-action {
-  border-color: var(--ctg-accent);
-  color: var(--ctg-ink);
+body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero__portrait-stage {
   background: var(--ctg-accent);
-}
-
-body.eng-org-ctg app-ctg-apostle-dashboard :is(.section-heading, .next-assignment__readiness) {
-  background: var(--ctg-ivory);
-}
-
-body.eng-org-ctg app-ctg-apostle-dashboard .section-heading {
-  border-left: 4px solid var(--ctg-accent);
 }
 
 body.eng-org-ctg app-ctg-apostle-engagement-brief :is(
@@ -624,60 +517,6 @@ body.eng-org-ctg app-ctg-power12-application .power12-hero::after {
   height: 6px;
   background: var(--ctg-accent);
   content: '';
-}
-
-@media (max-width: 900px) {
-  body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero {
-    min-height: 245px;
-    padding-right: 28px;
-    padding-left: 28px;
-  }
-
-  body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero__content {
-    max-width: 72%;
-  }
-
-  body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero__portrait {
-    right: -3%;
-    opacity: .78;
-  }
-
-  body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero__signature {
-    right: 4%;
-    width: 44vw;
-  }
-}
-
-@media (max-width: 720px) {
-  body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero {
-    min-height: 260px;
-    padding: 30px 20px;
-    background: linear-gradient(110deg, var(--ctg-ink) 0 72%, var(--ctg-charcoal) 100%);
-  }
-
-  body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero__content {
-    max-width: 100%;
-    padding-bottom: 0;
-  }
-
-  body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero__portrait {
-    right: -20%;
-    bottom: -46%;
-    height: 145%;
-    opacity: .22;
-  }
-
-  body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero__signature {
-    top: auto;
-    right: -8%;
-    bottom: -22px;
-    width: 72vw;
-    opacity: .12;
-  }
-
-  body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero__mission {
-    display: none;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

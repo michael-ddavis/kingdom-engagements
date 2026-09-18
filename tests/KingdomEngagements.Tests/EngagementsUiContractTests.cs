@@ -233,6 +233,50 @@ public sealed class EngagementsUiContractTests
     }
 
     [Fact]
+    public void Ctg_brand_assets_are_local_and_used_by_each_ctg_entry_experience()
+    {
+        var clientRoot = Path.GetDirectoryName(FindRepositoryFile(
+            "src",
+            "KingdomEngagements.Web",
+            "ClientApp",
+            "src",
+            "main.ts"))!;
+        var publicRoot = Path.Combine(Directory.GetParent(clientRoot)!.FullName, "public");
+        var logoPath = Path.Combine(publicRoot, "ctg", "ctg-signature-white.webp");
+        var portraitPath = Path.Combine(publicRoot, "ctg", "apostle-cynthia-portrait.webp");
+
+        Assert.True(File.Exists(logoPath), $"Missing CTG signature asset: {logoPath}");
+        Assert.True(File.Exists(portraitPath), $"Missing CTG portrait asset: {portraitPath}");
+        Assert.True(new FileInfo(logoPath).Length > 0);
+        Assert.True(new FileInfo(portraitPath).Length > 0);
+
+        var app = File.ReadAllText(Path.Combine(clientRoot, "app", "app.ts"));
+        Assert.Contains("eng-tenant__brand", app, StringComparison.Ordinal);
+
+        var theme = File.ReadAllText(Path.Combine(clientRoot, "themes", "engagements-ctg.theme.css"));
+        Assert.Contains("--eng-brand-logo-image: url('/ctg/ctg-signature-white.webp');", theme, StringComparison.Ordinal);
+
+        var dashboard = File.ReadAllText(Path.Combine(
+            clientRoot,
+            "app",
+            "pages",
+            "ctg-apostle-dashboard.component.ts"));
+        Assert.Contains("travel-hero__signature", dashboard, StringComparison.Ordinal);
+        Assert.Contains("/ctg/ctg-signature-white.webp", dashboard, StringComparison.Ordinal);
+        Assert.Contains("travel-hero__portrait", dashboard, StringComparison.Ordinal);
+        Assert.Contains("/ctg/apostle-cynthia-portrait.webp", dashboard, StringComparison.Ordinal);
+
+        var wwwroot = FindWwwroot();
+        foreach (var fileName in new[] { "invite.html", "terms.html", "coordination.html" })
+        {
+            var html = File.ReadAllText(Path.Combine(wwwroot, fileName));
+            Assert.Contains("/ctg/ctg-signature-white.webp", html, StringComparison.Ordinal);
+            Assert.Contains("/ctg/apostle-cynthia-portrait.webp", html, StringComparison.Ordinal);
+            Assert.DoesNotContain("raw.githubusercontent.com", html, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Fact]
     public void Engagements_tenant_themes_implement_one_shared_css_contract()
     {
         var clientRoot = Path.GetDirectoryName(FindRepositoryFile(
@@ -261,6 +305,9 @@ public sealed class EngagementsUiContractTests
             "--eng-color-on-header",
             "--eng-font-heading",
             "--eng-font-body",
+            "--eng-brand-logo-image",
+            "--eng-brand-logo-width",
+            "--eng-brand-logo-height",
             "--eng-radius-card",
             "--eng-radius-control",
             "--eng-shadow-card",

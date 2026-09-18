@@ -26,7 +26,21 @@
   --eng-color-on-header-muted: #6b7482;
   --eng-font-heading: inherit;
   --eng-font-body: inherit;
+  --eng-brand-logo-image: none;
+  --eng-brand-logo-width: 0px;
+  --eng-brand-logo-height: 0px;
   --eng-radius-card: 12px;
   --eng-radius-control: 9px;
   --eng-shadow-card: 0 10px 28px rgba(25, 35, 48, .055);
+}
+
+.eng-tenant__brand {
+  display: none;
+  width: var(--eng-brand-logo-width);
+  height: var(--eng-brand-logo-height);
+  flex: 0 0 var(--eng-brand-logo-width);
+  background-image: var(--eng-brand-logo-image);
+  background-position: left center;
+  background-repeat: no-repeat;
+  background-size: contain;
 }

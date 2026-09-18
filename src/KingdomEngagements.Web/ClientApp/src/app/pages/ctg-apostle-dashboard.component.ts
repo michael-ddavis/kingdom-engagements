@@ -61,6 +61,8 @@ const CITY_IMAGES: readonly CityImage[] = [
     <section class="apostle-dashboard">
       <header class="travel-hero">
         <div class="travel-hero__map" aria-hidden="true"></div>
+        <img class="travel-hero__signature" src="/ctg/ctg-signature-white.webp" alt="" aria-hidden="true" />
+        <img class="travel-hero__portrait" src="/ctg/apostle-cynthia-portrait.webp" alt="Apostle Cynthia Thompson" />
         <div class="travel-hero__content">
           <span class="eyebrow">Cynthia Thompson Global · Executive view</span>
           <h1>Good morning, Apostle Cynthia.</h1>
@@ -353,7 +355,7 @@ export class CtgApostleDashboardComponent implements OnInit {
 
   ring(percent: number): string {
     const readiness = Math.max(0, Math.min(100, percent));
-    return `conic-gradient(var(--ctg-accent-ink, #b58a45) ${readiness}%, var(--ctg-line, #eee9df) 0)`;
+    return `conic-gradient(var(--eng-color-accent, #b58a45) ${readiness}%, var(--eng-color-border, #eee9df) 0)`;
   }
 
   isConfirmed(value: string): boolean {

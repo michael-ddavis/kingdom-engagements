@@ -35,7 +35,12 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
 
             <div class="eng-tenant">
               <span class="eng-presence" aria-hidden="true"></span>
-              <span>
+              <span
+                class="eng-tenant__brand"
+                role="img"
+                [attr.aria-label]="organizationName()"
+                [title]="organizationName()"></span>
+              <span class="eng-tenant__copy">
                 <small>Organization</small>
                 <strong>{{ organizationName() }}</strong>
               </span>

@@ -26,8 +26,11 @@ body.eng-org-ctg {
   --eng-color-on-header-muted: #b8b2a6;
   --eng-font-heading: Georgia, 'Times New Roman', serif;
   --eng-font-body: inherit;
-  --eng-radius-card: 12px;
-  --eng-radius-control: 9px;
+  --eng-brand-logo-image: url('/ctg/ctg-signature-white.webp');
+  --eng-brand-logo-width: 138px;
+  --eng-brand-logo-height: 46px;
+  --eng-radius-card: 4px;
+  --eng-radius-control: 4px;
   --eng-shadow-card: none;
 
   /* Private aliases keep the expressive CTG rules below easy to read. */
@@ -110,6 +113,14 @@ body.eng-org-ctg .eng-settings-link {
 body.eng-org-ctg .eng-brand__mark {
   border-radius: 8px;
   background: #ffffff;
+}
+
+body.eng-org-ctg .eng-tenant__brand {
+  display: block;
+}
+
+body.eng-org-ctg .eng-tenant__copy {
+  display: none;
 }
 
 body.eng-org-ctg .eng-modulebar__divider,
@@ -199,6 +210,7 @@ body.eng-org-ctg :is(
   .start-form,
   .handoff-card
 ) {
+  border-radius: var(--eng-radius-card);
   border-color: var(--ctg-line);
   background: var(--ctg-paper);
   box-shadow: none;
@@ -233,12 +245,13 @@ body.eng-org-ctg :is(
   .eng-button--primary,
   .primary,
   .submit,
-  .legacy-card-action,
+  .legacy-card-action:not(.legacy-card-action--disabled),
   .action-link
 ) {
-  border-color: var(--ctg-charcoal);
-  color: #ffffff;
-  background: var(--ctg-charcoal);
+  border-color: var(--ctg-accent);
+  border-radius: 999px;
+  color: var(--ctg-ink);
+  background: var(--ctg-accent);
   box-shadow: none;
 }
 
@@ -246,17 +259,22 @@ body.eng-org-ctg :is(
   .eng-button--primary,
   .primary,
   .submit,
-  .legacy-card-action,
+  .legacy-card-action:not(.legacy-card-action--disabled),
   .action-link
 ):hover {
-  color: #ffffff;
-  background: var(--ctg-ink);
+  color: var(--ctg-ink);
+  background: #d1d66a;
 }
 
 body.eng-org-ctg :is(.secondary, .quiet, .public-links a, .header-actions a) {
   border-color: var(--ctg-line-strong);
+  border-radius: 999px;
   color: var(--ctg-charcoal);
   background: var(--ctg-paper);
+}
+
+body.eng-org-ctg :is(input, select, textarea) {
+  border-radius: var(--eng-radius-control);
 }
 
 /* Home and booking desk */
@@ -287,6 +305,14 @@ body.eng-org-ctg app-ctg-programs :is(.summary-strip, .summary-strip article, .s
   border-color: var(--ctg-line);
 }
 
+body.eng-org-ctg app-ctg-engagements-home .executive-brief a:hover {
+  background: var(--ctg-ivory);
+}
+
+body.eng-org-ctg app-ctg-engagements-home .number {
+  color: var(--ctg-accent-ink);
+}
+
 body.eng-org-ctg app-ctg-engagements-home :is(.flow-list a, .public-links a, .ctg-hero aside a),
 body.eng-org-ctg app-ctg-booking-desk :is(.timeline-copy a, .back-link),
 body.eng-org-ctg app-ctg-programs :is(.section-heading a, .event-card.selected) {
@@ -306,6 +332,25 @@ body.eng-org-ctg app-ctg-booking-desk .travel-timeline {
 
 body.eng-org-ctg app-ctg-booking-desk .timeline-rail i {
   background: linear-gradient(90deg, var(--ctg-accent), var(--ctg-line));
+}
+
+body.eng-org-ctg app-ctg-booking-desk :is(
+  .booking-row,
+  .upcoming-card,
+  .detail-section,
+  .dialog-shell,
+  .attention-strip,
+  .conflict-panel
+),
+body.eng-org-ctg app-ctg-programs :is(
+  .section-block,
+  .event-card,
+  .applicant-card,
+  .summary-strip article
+),
+body.eng-org-ctg app-ctg-start-invitation :is(.start-form, .handoff-card, .record-strip, .message-box) {
+  border-radius: var(--eng-radius-card);
+  box-shadow: none;
 }
 
 /* Invitation review and engagement workspaces */
@@ -333,6 +378,29 @@ body.eng-org-ctg app-assignment-workspace .legacy-overview-card--next {
   background: linear-gradient(120deg, var(--ctg-ivory), var(--ctg-paper) 72%);
 }
 
+body.eng-org-ctg app-invitations :is(
+  .request-row,
+  .detail-section,
+  .review-panel,
+  .host-handoff,
+  .decision-modal
+),
+body.eng-org-ctg app-assignment-list :is(
+  .legacy-assignment-card,
+  .legacy-assignment-summary article,
+  .legacy-attention-banner
+),
+body.eng-org-ctg app-assignment-workspace :is(
+  .legacy-overview-card,
+  .legacy-readiness-panel,
+  .legacy-ministry-request-card,
+  .legacy-invitation-source-panel,
+  .legacy-response-form
+) {
+  border-radius: var(--eng-radius-card);
+  box-shadow: none;
+}
+
 /* Apostle Cynthia's executive experience keeps its editorial warmth and hierarchy. */
 body.eng-org-ctg app-ctg-apostle-dashboard .apostle-dashboard,
 body.eng-org-ctg app-ctg-apostle-engagement-brief .apostle-engagement-brief {
@@ -341,8 +409,10 @@ body.eng-org-ctg app-ctg-apostle-engagement-brief .apostle-engagement-brief {
 }
 
 body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero {
-  border-top: 5px solid var(--ctg-accent);
-  background: linear-gradient(120deg, var(--ctg-ink), var(--ctg-charcoal));
+  min-height: 270px;
+  padding: 44px 42px 34px;
+  border-top: 6px solid var(--ctg-accent);
+  background: linear-gradient(90deg, var(--ctg-ink) 0 64%, var(--ctg-accent) 64% 100%);
 }
 
 /* The dashboard's original ivory map overlay is almost opaque. Re-tone the
@@ -351,15 +421,62 @@ body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero::after {
   background: linear-gradient(
     90deg,
     rgba(17, 17, 17, .98),
-    rgba(17, 17, 17, .88) 42%,
-    rgba(52, 56, 38, .62) 78%,
-    rgba(17, 17, 17, .9)
+    rgba(17, 17, 17, .94) 50%,
+    rgba(17, 17, 17, .56) 66%,
+    rgba(52, 56, 38, .08) 100%
   );
 }
 
 body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero__map {
-  opacity: .2;
+  opacity: .12;
   filter: grayscale(1);
+}
+
+body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero__signature {
+  position: absolute;
+  z-index: 2;
+  top: 18px;
+  right: 12%;
+  width: min(34vw, 470px);
+  height: 170px;
+  object-fit: contain;
+  opacity: .42;
+  pointer-events: none;
+}
+
+body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero__portrait {
+  position: absolute;
+  z-index: 3;
+  right: 3.5%;
+  bottom: -58%;
+  width: auto;
+  height: 158%;
+  object-fit: contain;
+  filter: drop-shadow(-18px 12px 20px rgba(17, 17, 17, .26));
+  pointer-events: none;
+}
+
+body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero__content {
+  z-index: 4;
+  max-width: 62%;
+  padding-bottom: 42px;
+}
+
+body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero__mission {
+  z-index: 4;
+  top: auto;
+  right: auto;
+  bottom: 28px;
+  left: 42px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero__mission span:not(:last-of-type)::after {
+  margin-left: 12px;
+  color: rgba(197, 202, 82, .46);
+  content: '·';
 }
 
 body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero h1,
@@ -373,12 +490,15 @@ body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero :is(.eyebrow, .travel-he
 
 body.eng-org-ctg app-ctg-apostle-dashboard :is(
   .next-assignment,
-  .pulse-grid article,
+  .pulse-grid > a,
+  .decision-section,
+  .road-section,
   .decision-card,
   .road-card,
   .movement-panel,
   .decision-brief
 ) {
+  border-radius: var(--eng-radius-card);
   border-color: var(--ctg-line);
   background: var(--ctg-paper);
   box-shadow: none;
@@ -399,9 +519,51 @@ body.eng-org-ctg app-ctg-apostle-dashboard :is(
 }
 
 body.eng-org-ctg app-ctg-apostle-dashboard .gold-action {
-  border-color: var(--ctg-charcoal);
-  color: #ffffff;
-  background: var(--ctg-charcoal);
+  border-color: var(--ctg-accent);
+  color: var(--ctg-ink);
+  background: var(--ctg-accent);
+}
+
+body.eng-org-ctg app-ctg-apostle-dashboard :is(.section-heading, .next-assignment__readiness) {
+  background: var(--ctg-ivory);
+}
+
+body.eng-org-ctg app-ctg-apostle-dashboard .section-heading {
+  border-left: 4px solid var(--ctg-accent);
+}
+
+body.eng-org-ctg app-ctg-apostle-engagement-brief :is(
+  .destination-hero,
+  .glance-grid article,
+  .brief-card,
+  .state-card
+) {
+  border-radius: var(--eng-radius-card);
+  border-color: var(--ctg-line);
+  background: var(--ctg-paper);
+  box-shadow: none;
+}
+
+body.eng-org-ctg app-ctg-apostle-engagement-brief :is(.brief-card > header, .prayer-focus) {
+  background: var(--ctg-ivory);
+}
+
+body.eng-org-ctg app-ctg-apostle-engagement-brief .brief-card > header {
+  border-left: 4px solid var(--ctg-accent);
+}
+
+body.eng-org-ctg app-ctg-apostle-engagement-brief :is(.section-mark, .date-tile span, .travel-grid small) {
+  color: var(--ctg-accent-ink);
+}
+
+body.eng-org-ctg app-ctg-apostle-engagement-brief :is(.lane-meter i, .movement-list article > span) {
+  background: var(--ctg-accent);
+}
+
+body.eng-org-ctg app-ctg-apostle-engagement-brief .overview-action {
+  border-radius: 999px;
+  color: var(--ctg-ink);
+  background: var(--ctg-accent);
 }
 
 /* Public CTG pages use the same system without inheriting the authenticated shell. */
@@ -423,6 +585,7 @@ body.eng-org-ctg app-ctg-power12-application .power12-hero h1 {
 
 body.eng-org-ctg app-ctg-event-registration :is(.registration-form, .event-summary, .confirmation-card),
 body.eng-org-ctg app-ctg-power12-application :is(.application-layout form, .program-summary, .confirmation) {
+  border-radius: var(--eng-radius-card);
   border-color: var(--ctg-line);
   color: var(--ctg-copy);
   background: var(--ctg-ivory);
@@ -439,6 +602,82 @@ body.eng-org-ctg app-ctg-event-registration :is(input, textarea),
 body.eng-org-ctg app-ctg-power12-application :is(input, textarea) {
   border-color: var(--ctg-line-strong);
   background: var(--ctg-paper);
+}
+
+body.eng-org-ctg app-ctg-event-registration .brand--signature,
+body.eng-org-ctg app-ctg-power12-application .brand--signature {
+  width: 210px;
+  height: 82px;
+}
+
+body.eng-org-ctg app-ctg-event-registration .event-hero,
+body.eng-org-ctg app-ctg-power12-application .power12-hero {
+  position: relative;
+}
+
+body.eng-org-ctg app-ctg-event-registration .event-hero::after,
+body.eng-org-ctg app-ctg-power12-application .power12-hero::after {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: min(32vw, 440px);
+  height: 6px;
+  background: var(--ctg-accent);
+  content: '';
+}
+
+@media (max-width: 900px) {
+  body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero {
+    min-height: 245px;
+    padding-right: 28px;
+    padding-left: 28px;
+  }
+
+  body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero__content {
+    max-width: 72%;
+  }
+
+  body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero__portrait {
+    right: -3%;
+    opacity: .78;
+  }
+
+  body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero__signature {
+    right: 4%;
+    width: 44vw;
+  }
+}
+
+@media (max-width: 720px) {
+  body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero {
+    min-height: 260px;
+    padding: 30px 20px;
+    background: linear-gradient(110deg, var(--ctg-ink) 0 72%, var(--ctg-charcoal) 100%);
+  }
+
+  body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero__content {
+    max-width: 100%;
+    padding-bottom: 0;
+  }
+
+  body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero__portrait {
+    right: -20%;
+    bottom: -46%;
+    height: 145%;
+    opacity: .22;
+  }
+
+  body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero__signature {
+    top: auto;
+    right: -8%;
+    bottom: -22px;
+    width: 72vw;
+    opacity: .12;
+  }
+
+  body.eng-org-ctg app-ctg-apostle-dashboard .travel-hero__mission {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

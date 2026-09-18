@@ -275,7 +275,7 @@ public sealed class EngagementsUiContractTests
             "app",
             "pages",
             "ctg-apostle-dashboard.component.css"));
-        Assert.Contains(".editorial-hero", dashboardStyles, StringComparison.Ordinal);
+        Assert.Contains(".travel-hero {", dashboardStyles, StringComparison.Ordinal);
         Assert.Contains(".executive-briefing-grid", dashboardStyles, StringComparison.Ordinal);
         Assert.Contains(".today-brief", dashboardStyles, StringComparison.Ordinal);
         Assert.Contains("@media (max-width: 760px)", dashboardStyles, StringComparison.Ordinal);

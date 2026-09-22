@@ -35,6 +35,7 @@ export interface EngagementTask {
   category: string;
   title: string;
   owner: string;
+  ownerSubject?: string | null;
   status: string;
   detail: string | null;
   dueAtUtc: string | null;
@@ -269,4 +270,60 @@ export interface CareNetworkState {
   selectedPartnerByResponse: Record<string, number>;
   partners: readonly CarePartner[];
   referrals: readonly CareReferral[];
+}
+
+
+export interface ResponsibilityLaneDefinition {
+  key: string;
+  label: string;
+  group: string;
+  defaultApplicable: boolean;
+  description: string;
+}
+
+export interface ResponsibilityOwner {
+  userSubject: string;
+  displayName: string;
+  email: string | null;
+  source: 'standing' | 'engagement' | string;
+}
+
+export interface ResponsibilityLaneState {
+  key: string;
+  label: string;
+  group: string;
+  description: string;
+  isApplicable: boolean;
+  status: string;
+  detail: string | null;
+  dueAtUtc: string | null;
+  isOverdue: boolean;
+  owner: ResponsibilityOwner | null;
+  updatedByName: string | null;
+  updatedAtUtc: string | null;
+  completedByName: string | null;
+  completedAtUtc: string | null;
+}
+
+export interface StandingResponsibilityAssignment {
+  id: string;
+  tenantId: string;
+  laneKey: string;
+  userSubject: string;
+  displayName: string;
+  email: string | null;
+  isActive: boolean;
+  updatedBySubject: string;
+  updatedByName: string;
+  updatedAtUtc: string;
+}
+
+export interface EngagementResponsibilitySnapshot {
+  assignment: EngagementSummary;
+  lanes: readonly ResponsibilityLaneState[];
+}
+
+export interface MyResponsibilityWorkItem {
+  assignment: EngagementSummary;
+  lane: ResponsibilityLaneState;
 }

@@ -69,7 +69,9 @@ public static class EngagementsDemoRoles
                     new Claim(KingdomIdentity.PermissionClaim, "engagements:bookings:manage"),
                     new Claim(KingdomIdentity.PermissionClaim, "engagements:financial:read"),
                     new Claim(KingdomIdentity.PermissionClaim, "engagements:internal-notes:read"),
+                    new Claim(KingdomIdentity.PermissionClaim, "engagements:closeout:complete"),
                     new Claim(ClaimTypes.Role, "Coordinator"),
+                    new Claim(ClaimTypes.Role, "EngagementDirector"),
                 ]);
                 break;
 
@@ -134,7 +136,7 @@ public static class EngagementsDemoRoles
     public static bool CanUseBookingDesk(ClaimsPrincipal principal)
     {
         var role = CurrentRole(principal);
-        return role == Administrator || role == Coordinator || role == Apostle;
+        return role == Administrator || role == Coordinator;
     }
 
     public static bool CanViewAllEngagements(ClaimsPrincipal principal)
@@ -182,8 +184,8 @@ public sealed class EngagementsDemoAccessMiddleware(
 
         var path = context.Request.Path.Value ?? string.Empty;
 
-        // Coordinators can maintain the closeout record, but only the executive/admin
-        // persona may perform the irreversible demo completion action.
+        // Engagement completion is reserved for users with the explicit closeout permission.
+        // Courtney's engagement-director persona carries that permission.
         if (!EngagementsDemoRoles.CanCompleteEngagements(context.User) &&
             HttpMethods.IsPut(context.Request.Method) &&
             path.EndsWith("/closeout", StringComparison.OrdinalIgnoreCase) &&

@@ -1,7 +1,7 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { Observable, catchError, forkJoin, of } from 'rxjs';
 import {
   EngagementsApiService,
   MediaAssetInput,
@@ -580,7 +580,9 @@ export class CtgDirectorEngagementComponent implements OnInit {
       workspace: this.api.getWorkspace(this.assignmentId),
       responsibilities: this.api.getAssignmentResponsibilities(this.assignmentId),
       host: this.api.getHostCoordinationLane(this.assignmentId),
-      thread: this.api.getHostCoordinationMessages(this.assignmentId),
+      thread: this.api.getHostCoordinationMessages(this.assignmentId).pipe(
+        catchError(() => of({ isClosed: false, messages: [] as const })),
+      ),
       travel: this.api.getTravelLane(this.assignmentId),
       lodging: this.api.getLodgingLane(this.assignmentId),
       transportation: this.api.getTransportationLane(this.assignmentId),
@@ -1001,7 +1003,7 @@ export class CtgDirectorEngagementComponent implements OnInit {
     });
   }
 
-  private saveLane<T>(observable: { subscribe: Function }, apply: (value: T) => void, message: string): void {
+  private saveLane<T>(observable: Observable<T>, apply: (value: T) => void, message: string): void {
     this.beginSave();
     observable.subscribe({
       next: (value: T) => {

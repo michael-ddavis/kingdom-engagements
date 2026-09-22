@@ -467,6 +467,22 @@ public sealed class EngagementResponsibilityService(EngagementsDbContext databas
         return lanes?.Single(item => item.Key == lane.Key);
     }
 
+    public async Task<IReadOnlySet<string>> GetOwnedLaneKeysAsync(
+        Guid tenantId,
+        Guid assignmentId,
+        string userSubject,
+        CancellationToken cancellationToken)
+    {
+        var lanes = await GetAssignmentLanesAsync(tenantId, assignmentId, cancellationToken);
+        if (lanes is null) return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        return lanes
+            .Where(lane => lane.Owner is not null &&
+                           string.Equals(lane.Owner.UserSubject, userSubject, StringComparison.OrdinalIgnoreCase))
+            .Select(lane => lane.Key)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
+
     public async Task<bool> IsEffectiveOwnerAsync(
         Guid tenantId,
         Guid assignmentId,

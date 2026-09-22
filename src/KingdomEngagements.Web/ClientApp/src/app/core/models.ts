@@ -86,6 +86,20 @@ export interface HostCoordinationDocument {
   uploadedAtUtc: string;
 }
 
+export interface HostCoordinationMessage {
+  id: string;
+  senderType: 'host' | 'ministry' | string;
+  senderName: string;
+  message: string;
+  createdAtUtc: string;
+}
+
+export interface HostCoordinationThread {
+  isClosed: boolean;
+  messages: readonly HostCoordinationMessage[];
+}
+
+
 export interface HostCoordinationDetails {
   assignmentId: string;
   referenceNumber: string;

@@ -28,7 +28,7 @@ window.ApostolOSRealtime = {
     handlers: EngagementRealtimeHandlers,
   ): Promise<() => Promise<void>> {
     const connection = new signalR.HubConnectionBuilder()
-      .withUrl('/hubs/engagements')
+      .withUrl('/hubs/engagements/host')
       .withAutomaticReconnect([0, 2000, 5000, 10000])
       .configureLogging(signalR.LogLevel.Warning)
       .build();

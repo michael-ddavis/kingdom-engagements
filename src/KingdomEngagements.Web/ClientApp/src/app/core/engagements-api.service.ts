@@ -68,6 +68,7 @@ export interface CreateEngagementTaskInput {
   category: string;
   title: string;
   owner: string;
+  ownerSubject?: string | null;
   detail: string | null;
   dueAtUtc: string | null;
 }
@@ -190,6 +191,7 @@ export class EngagementsApiService {
       {
         status,
         owner: task.owner,
+        ownerSubject: task.ownerSubject ?? null,
         detail: task.detail,
         dueAtUtc: task.dueAtUtc,
       },

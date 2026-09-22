@@ -39,6 +39,9 @@ public sealed class EngagementTeamService(
             HttpMethod.Get,
             $"{platformUrl.TrimEnd('/')}/api/integration/identity/people");
         request.Headers.TryAddWithoutValidation("X-Kingdom-Tenant", tenantId.ToString("D"));
+        request.Headers.TryAddWithoutValidation(
+            "X-Kingdom-Service-Key",
+            configuration["KingdomOS:Integration:ServiceKey"] ?? "local-kingdomos-integration");
 
         try
         {

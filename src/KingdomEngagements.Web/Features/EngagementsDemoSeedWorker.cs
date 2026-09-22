@@ -14,6 +14,9 @@ public sealed class EngagementsDemoSeedWorker(
     [
         "assignment-demo-001",
         "assignment-demo-002",
+        "assignment-demo-003",
+        "assignment-demo-004",
+        "assignment-demo-005",
         "assignment-demo-007"
     ];
 
@@ -40,7 +43,7 @@ public sealed class EngagementsDemoSeedWorker(
                 await RemoveRetiredSourceRowsAsync(engagements, requests, stoppingToken);
 
                 logger.LogInformation(
-                    "Kingdom Engagements focused demo data is ready: three assignments and one incoming invitation.");
+                    "Kingdom Engagements executive demo data is ready: five upcoming assignments, one completed assignment, and one incoming invitation.");
                 return;
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -99,17 +102,42 @@ public sealed class EngagementsDemoSeedWorker(
         var now = DateTimeOffset.UtcNow;
         var seeds = new[]
         {
-            Assignment("assignment-demo-001", "Kingdom Leadership Gathering", "Cynthia Thompson", "New Covenant Fellowship", "Jordan Ellis", "jordan@newcovenant.example", "Atlanta, Georgia", 21, 23, "planning", "in-progress", "confirmed", "needs-attention", "confirmed", "in-progress", "not-started", "Host logistics are moving. Airport pickup and the final itinerary still need attention.",
-                Task("travel", "Confirm flight itinerary", "Engagement Coordinator", "in-progress", 7, "Confirm final flight numbers and arrival time."),
-                Task("transportation", "Confirm airport pickup", "Host Coordinator", "open", 12, "Name the driver and confirm pickup instructions."),
-                Task("host", "Approve final event schedule", "Host Organization", "complete", 5, "Final platform and service times approved.")),
-            Assignment("assignment-demo-002", "Women of Purpose Summit", "Cynthia Thompson", "Grace City Church", "Danielle Brooks", "danielle@gracecity.example", "Charlotte, North Carolina", 38, 40, "planning", "confirmed", "confirmed", "confirmed", "confirmed", "received", "not-started", "Travel, lodging, and host coordination are confirmed. Final ministry-preparation items remain.",
-                Task("documents", "Review final event brief", "Engagement Coordinator", "open", 24, "Review audience profile, ministry focus, and final host notes."),
-                Task("host", "Confirm green room schedule", "Host Coordinator", "complete", 20, "Green room and pre-service prayer timing confirmed.")),
+            Assignment("assignment-demo-001", "Kingdom Leadership Gathering", "Cynthia Thompson", "New Covenant Fellowship", "Jordan Ellis", "jordan@newcovenant.example", "Atlanta, Georgia", 5, 7, "planning", "in-progress", "confirmed", "needs-attention", "confirmed", "in-progress", "not-started", "The Atlanta assignment is next. Most preparation is complete; final travel confirmation and the last itinerary details are still moving.",
+                Task("travel", "Confirm outbound itinerary", "Engagement Coordinator", "complete", 1, "Outbound flight and arrival window confirmed."),
+                Task("lodging", "Confirm hotel reservation", "Engagement Coordinator", "complete", 1, "Hotel reservation and check-in notes confirmed."),
+                Task("host", "Approve final event schedule", "Host Organization", "complete", 2, "Final platform and service times approved."),
+                Task("documents", "Receive speaker brief", "Engagement Coordinator", "complete", 2, "Speaker brief and ministry focus received."),
+                Task("transportation", "Assign airport pickup", "Host Coordinator", "complete", 3, "Primary driver assigned for airport pickup."),
+                Task("host", "Confirm venue details", "Host Coordinator", "complete", 3, "Venue access and arrival instructions confirmed."),
+                Task("ministry", "Review prayer focus", "Ministry Team", "complete", 4, "Prayer focus reviewed with the ministry team."),
+                Task("travel", "Final travel confirmation", "Engagement Coordinator", "open", 4, "Confirm final flight numbers and pickup handoff.")),
+            Assignment("assignment-demo-002", "Women of Purpose Summit", "Cynthia Thompson", "Grace City Church", "Danielle Brooks", "danielle@gracecity.example", "Charlotte, North Carolina", 11, 13, "planning", "confirmed", "confirmed", "confirmed", "confirmed", "received", "not-started", "Charlotte is fully prepared and ready for ministry.",
+                Task("travel", "Confirm flight itinerary", "Engagement Coordinator", "complete", 3, "Travel itinerary confirmed."),
+                Task("lodging", "Confirm lodging", "Engagement Coordinator", "complete", 4, "Lodging confirmed."),
+                Task("transportation", "Confirm ground transportation", "Host Coordinator", "complete", 5, "Ground transportation confirmed."),
+                Task("host", "Approve host schedule", "Host Organization", "complete", 6, "Host schedule approved."),
+                Task("documents", "Receive final event brief", "Engagement Coordinator", "received", 7, "Final event brief received.")),
+            Assignment("assignment-demo-003", "Global Church Summit", "Cynthia Thompson", "Kingdom Life London", "Rachel Morgan", "rachel@kingdomlife.example", "London, United Kingdom", 18, 20, "planning", "confirmed", "confirmed", "confirmed", "needs-attention", "received", "not-started", "Travel is confirmed for London. The host team is still finalizing two ministry-facing details.",
+                Task("travel", "Confirm international itinerary", "Engagement Coordinator", "complete", 7, "International itinerary confirmed."),
+                Task("lodging", "Confirm London lodging", "Engagement Coordinator", "complete", 8, "Lodging confirmed."),
+                Task("documents", "Receive conference brief", "Engagement Coordinator", "received", 9, "Conference brief received."),
+                Task("host", "Confirm final service flow", "Host Coordinator", "open", 12, "Host team is finalizing the service flow."),
+                Task("host", "Confirm leadership reception", "Host Coordinator", "open", 13, "Leadership reception details are pending.")),
+            Assignment("assignment-demo-004", "Rebuilders Conference", "Cynthia Thompson", "New City Fellowship", "Miriam Njoroge", "miriam@newcity.example", "Nairobi, Kenya", 24, 26, "planning", "in-progress", "confirmed", "confirmed", "confirmed", "received", "not-started", "Nairobi is on track. Travel confirmation is the primary remaining preparation item.",
+                Task("lodging", "Confirm Nairobi lodging", "Engagement Coordinator", "complete", 12, "Lodging confirmed."),
+                Task("host", "Approve conference schedule", "Host Organization", "complete", 14, "Conference schedule approved."),
+                Task("documents", "Receive ministry brief", "Engagement Coordinator", "received", 16, "Ministry brief received."),
+                Task("travel", "Finalize international ticketing", "Engagement Coordinator", "open", 18, "Final ticketing confirmation is pending.")),
+            Assignment("assignment-demo-005", "Kingdom Impact Gathering", "Cynthia Thompson", "Kingdom Embassy Accra", "Abena Mensah", "abena@kingdomembassy.example", "Accra, Ghana", 29, 31, "planning", "confirmed", "confirmed", "confirmed", "confirmed", "received", "not-started", "Accra is confirmed and ready from an executive-view perspective.",
+                Task("travel", "Confirm Accra itinerary", "Engagement Coordinator", "complete", 15, "Travel itinerary confirmed."),
+                Task("lodging", "Confirm Accra lodging", "Engagement Coordinator", "complete", 16, "Lodging confirmed."),
+                Task("transportation", "Confirm airport and venue transport", "Host Coordinator", "complete", 18, "Transportation confirmed."),
+                Task("host", "Approve gathering schedule", "Host Organization", "complete", 20, "Gathering schedule approved."),
+                Task("documents", "Receive final ministry packet", "Engagement Coordinator", "received", 21, "Final ministry packet received.")),
             Assignment("assignment-demo-007", "Daughters Arise Conference", "Cynthia Thompson", "Living Waters Assembly", "Nicole Carter", "nicole@livingwaters.example", "Baltimore, Maryland", -18, -16, "complete", "complete", "complete", "complete", "complete", "received", "complete", "Completed assignment with responses and closeout finished for demo history.",
                 Task("closeout", "Send host thank-you", "Engagement Coordinator", "complete", -14, "Thank-you and final follow-up sent."),
                 Task("closeout", "Archive final documents", "Engagement Coordinator", "complete", -13, "Final records reviewed and retained."))
-        };
+        };       };
 
         foreach (var seed in seeds)
         {
@@ -147,34 +175,79 @@ public sealed class EngagementsDemoSeedWorker(
                 db.Assignments.Add(existing);
             }
 
+            // Repair the development demo on every startup so the executive dashboard
+            // always reflects a useful rolling 30-day road-ahead view.
+            existing.Title = seed.Title;
+            existing.SpeakerName = seed.Speaker;
+            existing.HostOrganization = seed.Host;
+            existing.HostContactName = seed.ContactName;
+            existing.HostContactEmail = seed.ContactEmail;
+            existing.Location = seed.Location;
+            existing.StartsAtUtc = now.AddDays(seed.StartDays);
+            existing.EndsAtUtc = now.AddDays(seed.EndDays);
+            existing.Status = seed.Status;
+            existing.TravelStatus = seed.TravelStatus;
+            existing.LodgingStatus = seed.LodgingStatus;
+            existing.TransportationStatus = seed.TransportationStatus;
+            existing.HostStatus = seed.HostStatus;
+            existing.DocumentsStatus = seed.DocumentsStatus;
+            existing.CloseoutStatus = seed.CloseoutStatus;
+            existing.Notes = seed.Notes;
+            existing.UpdatedAtUtc = now;
+
+            var seededTaskKeys = seed.Tasks
+                .Select(task => $"{task.Category}|{task.Title}")
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var retiredTasks = existing.Tasks
+                .Where(task => !seededTaskKeys.Contains($"{task.Category}|{task.Title}"))
+                .ToArray();
+            if (retiredTasks.Length > 0)
+                db.Tasks.RemoveRange(retiredTasks);
+
             foreach (var taskSeed in seed.Tasks)
             {
-                if (existing.Tasks.Any(x => string.Equals(x.Category, taskSeed.Category, StringComparison.OrdinalIgnoreCase)
-                    && string.Equals(x.Title, taskSeed.Title, StringComparison.OrdinalIgnoreCase))) continue;
-                existing.Tasks.Add(new EngagementTask
+                var task = existing.Tasks.SingleOrDefault(x =>
+                    string.Equals(x.Category, taskSeed.Category, StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(x.Title, taskSeed.Title, StringComparison.OrdinalIgnoreCase));
+                if (task is null)
                 {
-                    Id = Guid.NewGuid(),
-                    Category = taskSeed.Category,
-                    Title = taskSeed.Title,
-                    Owner = taskSeed.Owner,
-                    Status = taskSeed.Status,
-                    Detail = taskSeed.Detail,
-                    DueAtUtc = now.AddDays(taskSeed.DueDays),
-                    UpdatedAtUtc = now
-                });
+                    task = new EngagementTask { Id = Guid.NewGuid() };
+                    existing.Tasks.Add(task);
+                }
+
+                task.Category = taskSeed.Category;
+                task.Title = taskSeed.Title;
+                task.Owner = taskSeed.Owner;
+                task.Status = taskSeed.Status;
+                task.Detail = taskSeed.Detail;
+                task.DueAtUtc = now.AddDays(taskSeed.DueDays);
+                task.UpdatedAtUtc = now;
             }
 
-            foreach (var document in DocumentsFor(seed.ExternalId))
+            var seededDocuments = DocumentsFor(seed.ExternalId);
+            var seededDocumentNames = seededDocuments
+                .Select(document => document.Name)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var retiredDocuments = existing.Documents
+                .Where(document => !seededDocumentNames.Contains(document.Name))
+                .ToArray();
+            if (retiredDocuments.Length > 0)
+                db.Documents.RemoveRange(retiredDocuments);
+
+            foreach (var documentSeed in seededDocuments)
             {
-                if (existing.Documents.Any(x => string.Equals(x.Name, document.Name, StringComparison.OrdinalIgnoreCase))) continue;
-                existing.Documents.Add(new EngagementDocument
+                var document = existing.Documents.SingleOrDefault(x =>
+                    string.Equals(x.Name, documentSeed.Name, StringComparison.OrdinalIgnoreCase));
+                if (document is null)
                 {
-                    Id = Guid.NewGuid(),
-                    Name = document.Name,
-                    Category = document.Category,
-                    Status = document.Status,
-                    UpdatedAtUtc = now
-                });
+                    document = new EngagementDocument { Id = Guid.NewGuid() };
+                    existing.Documents.Add(document);
+                }
+
+                document.Name = documentSeed.Name;
+                document.Category = documentSeed.Category;
+                document.Status = documentSeed.Status;
+                document.UpdatedAtUtc = now;
             }
         }
 
@@ -323,6 +396,9 @@ public sealed class EngagementsDemoSeedWorker(
     {
         "assignment-demo-001" => [new("Speaker agreement", "agreement", "received"), new("Final itinerary", "travel", "requested")],
         "assignment-demo-002" => [new("Signed agreement", "agreement", "received"), new("Event brief", "host", "received")],
+        "assignment-demo-003" => [new("Signed agreement", "agreement", "received"), new("International ministry brief", "host", "received")],
+        "assignment-demo-004" => [new("Signed agreement", "agreement", "received"), new("Nairobi ministry brief", "host", "received")],
+        "assignment-demo-005" => [new("Signed agreement", "agreement", "received"), new("Accra ministry packet", "host", "received")],
         "assignment-demo-007" => [new("Signed agreement", "agreement", "received"), new("Final ministry report", "closeout", "received")],
         _ => []
     };

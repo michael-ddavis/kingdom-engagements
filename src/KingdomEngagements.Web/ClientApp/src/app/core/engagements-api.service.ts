@@ -283,6 +283,16 @@ export class EngagementsApiService {
     return this.http.get<EngagementDetails>(`/api/engagements/assignments/${encodeURIComponent(id)}`);
   }
 
+  getMyAssignments(): Observable<readonly EngagementSummary[]> {
+    return this.http.get<readonly EngagementSummary[]>('/api/engagements/my-assignments');
+  }
+
+  getMyAssignment(id: string): Observable<EngagementDetails> {
+    return this.http.get<EngagementDetails>(
+      `/api/engagements/my-assignments/${encodeURIComponent(id)}`,
+    );
+  }
+
   getWorkspace(id: string): Observable<AssignmentWorkspaceEnvelope> {
     return this.http.get<AssignmentWorkspaceEnvelope>(
       `/api/engagements/assignments/${encodeURIComponent(id)}/workspace`,

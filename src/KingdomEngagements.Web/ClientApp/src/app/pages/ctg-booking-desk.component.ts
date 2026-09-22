@@ -58,14 +58,10 @@ interface TimelineItem {
   template: `
     <section class="booking-desk">
       <header class="desk-hero">
-        <div>
-          <span class="eyebrow">Cynthia Thompson Global · Global Booking Desk</span>
-          <h1>Every invitation. One clear place.</h1>
-          <p>Capture requests from anywhere, see what needs a response, protect Apostle Cynthia's calendar, and move approved ministry into preparation without losing the original relationship.</p>
-        </div>
+        <h1>Booking Desk</h1>
         <div class="hero-actions">
           <button type="button" class="primary" (click)="quickDialog.showModal()">+ Quick Add Booking</button>
-          <a href="/invitations">Formal invitation review</a>
+          <a href="/invitations">Invitation review</a>
         </div>
       </header>
 

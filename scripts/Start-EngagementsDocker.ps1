@@ -41,16 +41,24 @@ $infrastructureRoot = Join-Path $reposRoot "kingdom-infrastructure"
 $platformRoot = Join-Path $reposRoot "kingdom-platform"
 $operationsRoot = Join-Path $reposRoot "kingdom-operations"
 
-foreach ($requiredPath in @($infrastructureRoot, $platformRoot, $operationsRoot)) {
+foreach ($requiredPath in @($infrastructureRoot, $platformRoot)) {
     if (-not (Test-Path $requiredPath)) {
         throw "Required KingdomOS repository was not found: $requiredPath"
     }
 }
 
+$modules = "engagements"
+if (Test-Path $operationsRoot) {
+    $modules = "operations,engagements"
+}
+
 Write-Host ""
 Write-Host "KingdomOS Docker startup"
 Write-Host "Repos root: $reposRoot"
-Write-Host "Modules: operations, engagements"
+Write-Host "Modules: $modules"
+if (-not (Test-Path $operationsRoot)) {
+    Write-Host "Operations repository not found; starting Platform + Engagements only."
+}
 Write-Host ""
 
 try {
@@ -69,7 +77,7 @@ try {
     Write-Host "Rebuilding KingdomOS Platform + Operations + Engagements..."
     Write-Host ""
 
-    npm run kingdom -- up --modules operations,engagements
+    npm run kingdom -- up --modules $modules
 
     if ($LASTEXITCODE -ne 0) {
         throw "KingdomOS Docker startup failed."
@@ -77,7 +85,7 @@ try {
 
     Write-Host ""
     Write-Host "Docker status:"
-    npm run kingdom -- status --modules operations,engagements
+    npm run kingdom -- status --modules $modules
 }
 finally {
     Pop-Location
@@ -90,7 +98,9 @@ Write-Host ""
 Write-Host "KingdomOS is running in Docker."
 Write-Host "Platform:           $platformUrl"
 Write-Host "Courtney Command:   $engagementsUrl"
-Write-Host "Operations:         http://localhost:5101"
+if (Test-Path $operationsRoot) {
+    Write-Host "Operations:         http://localhost:5101"
+}
 Write-Host ""
 
 if (-not $NoBrowser) {

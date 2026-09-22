@@ -88,6 +88,15 @@ interface HostActivityPreview {
           </div>
         }
 
+        <div class="status-legend" aria-label="Status color legend">
+          <span><i class="legend-swatch complete"></i>Complete</span>
+          <span><i class="legend-swatch progress"></i>In Progress</span>
+          <span><i class="legend-swatch waiting"></i>Waiting on Host</span>
+          <span><i class="legend-swatch warning"></i>Unassigned</span>
+          <span><i class="legend-swatch danger"></i>Blocked / Overdue</span>
+          <span><i class="legend-swatch neutral"></i>Not Started</span>
+        </div>
+
         <section class="command-board">
           <header>
             <h2>{{ attentionOnly() ? 'Needs attention' : 'Upcoming engagements' }}</h2>
@@ -309,6 +318,16 @@ interface HostActivityPreview {
     .window-switcher{display:flex;gap:4px;padding:4px;border:1px solid #dde1df;border-radius:9px;background:#fff}
     .window-switcher button,.clear-filter{border:0;border-radius:6px;padding:7px 10px;background:transparent;color:#68716d;font-weight:800;font-size:.68rem;cursor:pointer}
     .window-switcher button.selected{color:#fff;background:#172a46}.clear-filter{border:1px solid #dde1df;background:#fff}
+    .status-legend{display:flex;align-items:center;justify-content:flex-end;gap:10px 14px;flex-wrap:wrap;margin:2px 2px 10px;color:#6e7672;font-size:.56rem;font-weight:750}
+    .status-legend>span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+    .legend-swatch{display:inline-block;width:9px;height:9px;border:1px solid var(--status-neutral-border);border-radius:3px;background:var(--status-neutral-bg)}
+    .legend-swatch.complete{border-color:var(--status-complete-border);background:var(--status-complete-bg)}
+    .legend-swatch.progress{border-color:var(--status-progress-border);background:var(--status-progress-bg)}
+    .legend-swatch.waiting{border-color:var(--status-waiting-border);background:var(--status-waiting-bg)}
+    .legend-swatch.warning{border-color:var(--status-warning-border);background:var(--status-warning-bg)}
+    .legend-swatch.danger{border-color:var(--status-danger-border);background:var(--status-danger-bg)}
+    .legend-swatch.neutral{border-color:var(--status-neutral-border);background:var(--status-neutral-bg)}
+
     .command-board,.director-panel{border:1px solid #dde1df;border-radius:14px;background:#fffdfa;box-shadow:0 8px 24px rgba(18,26,44,.03)}
     .command-board>header,.director-panel>header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:15px 18px;border-bottom:1px solid #e4e6e4}
     .command-board h2,.director-panel h2{font-size:1.12rem}.command-board>header>span{display:grid;min-width:28px;height:28px;place-items:center;border-radius:999px;background:#f0f2f0;color:#5f6763;font-size:.68rem;font-weight:900}.director-panel header>a{color:#315faf;font-size:.7rem;font-weight:800;text-decoration:none}

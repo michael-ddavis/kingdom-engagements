@@ -41,6 +41,22 @@ public static class KingdomIdentity
             claim.Type == ClaimTypes.Role && Matches(claim.Value, "Administrator", "Coordinator", "OrganizationAdministrator", "Organization Administrator", "SuperAdmin", "Super Administrator"));
     }
 
+    public static bool CanViewAllEngagements(ClaimsPrincipal principal)
+    {
+        static bool Matches(string value, params string[] accepted) =>
+            accepted.Contains(value, StringComparer.OrdinalIgnoreCase);
+
+        return principal.Claims.Any(claim =>
+            claim.Type == PermissionClaim && Matches(claim.Value, "engagements:assignments:read-all") ||
+            claim.Type == ProductRoleClaim && Matches(claim.Value, "engagements:administrator", "engagements:director", "engagements:coordinator", "engagements:executive") ||
+            claim.Type == TenantRoleClaim && Matches(claim.Value, "owner", "administrator", "organization-administrator", "super-admin") ||
+            claim.Type == ClaimTypes.Role && Matches(claim.Value, "Administrator", "EngagementDirector", "Coordinator", "Executive", "OrganizationAdministrator", "Organization Administrator", "SuperAdmin", "Super Administrator"));
+    }
+
+    public static bool CanViewInternalNotes(ClaimsPrincipal principal) =>
+        CanDirectEngagements(principal) ||
+        principal.HasClaim(PermissionClaim, "engagements:internal-notes:read");
+
     public static bool CanDirectEngagements(ClaimsPrincipal principal)
     {
         static bool Matches(string value, params string[] accepted) =>

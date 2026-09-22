@@ -132,6 +132,10 @@ builder.Services.AddHttpClient<EngagementsEntitlementResolver>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(3);
 });
+builder.Services.AddHttpClient<EngagementTeamService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(3);
+});
 builder.Services.AddScoped<EngagementsInitializer>();
 builder.Services.AddScoped<EngagementsService>();
 builder.Services.AddScoped<EngagementResponsibilityService>();
@@ -291,6 +295,7 @@ app.MapAssignmentWorkspaceEndpoints();
 app.MapEngagementCompletionEndpoints();
 app.MapEngagementsDemoAccessEndpoints();
 app.MapEngagementResponsibilityEndpoints();
+app.MapEngagementTeamEndpoints();
 app.MapEngagementLaneWorkspaceEndpoints();
 app.MapEngagementsEndpoints();
 

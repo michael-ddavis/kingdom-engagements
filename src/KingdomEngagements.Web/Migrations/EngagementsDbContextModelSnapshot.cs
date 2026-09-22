@@ -74,6 +74,7 @@ public sealed class EngagementsDbContextModelSnapshot : ModelSnapshot
             entity.Property(x => x.Category).HasMaxLength(40).IsRequired();
             entity.Property(x => x.Title).HasMaxLength(240).IsRequired();
             entity.Property(x => x.Owner).HasMaxLength(180).IsRequired();
+            entity.Property(x => x.OwnerSubject).HasMaxLength(180);
             entity.Property(x => x.Status).HasMaxLength(40).IsRequired();
             entity.Property(x => x.Detail).HasMaxLength(3000);
             entity.Property(x => x.DueAtUtc);
@@ -81,6 +82,62 @@ public sealed class EngagementsDbContextModelSnapshot : ModelSnapshot
             entity.HasKey(x => x.Id);
             entity.HasIndex(x => new { x.AssignmentId, x.Category, x.Title }).IsUnique();
             entity.ToTable("EngagementTasks");
+        });
+
+        modelBuilder.Entity<StandingResponsibilityAssignment>(entity =>
+        {
+            entity.Property(x => x.Id).ValueGeneratedNever().HasColumnType("uniqueidentifier");
+            entity.Property(x => x.TenantId).HasColumnType("uniqueidentifier");
+            entity.Property(x => x.LaneKey).HasMaxLength(80).IsRequired();
+            entity.Property(x => x.UserSubject).HasMaxLength(180).IsRequired();
+            entity.Property(x => x.DisplayName).HasMaxLength(180).IsRequired();
+            entity.Property(x => x.Email).HasMaxLength(320);
+            entity.Property(x => x.IsActive);
+            entity.Property(x => x.UpdatedBySubject).HasMaxLength(180).IsRequired();
+            entity.Property(x => x.UpdatedByName).HasMaxLength(180).IsRequired();
+            entity.Property(x => x.UpdatedAtUtc);
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => new { x.TenantId, x.LaneKey }).IsUnique();
+            entity.ToTable("StandingResponsibilityAssignments");
+        });
+
+        modelBuilder.Entity<EngagementResponsibilityOverride>(entity =>
+        {
+            entity.Property(x => x.Id).ValueGeneratedNever().HasColumnType("uniqueidentifier");
+            entity.Property(x => x.TenantId).HasColumnType("uniqueidentifier");
+            entity.Property(x => x.AssignmentId).HasColumnType("uniqueidentifier");
+            entity.Property(x => x.LaneKey).HasMaxLength(80).IsRequired();
+            entity.Property(x => x.UserSubject).HasMaxLength(180).IsRequired();
+            entity.Property(x => x.DisplayName).HasMaxLength(180).IsRequired();
+            entity.Property(x => x.Email).HasMaxLength(320);
+            entity.Property(x => x.IsActive);
+            entity.Property(x => x.UpdatedBySubject).HasMaxLength(180).IsRequired();
+            entity.Property(x => x.UpdatedByName).HasMaxLength(180).IsRequired();
+            entity.Property(x => x.UpdatedAtUtc);
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => new { x.AssignmentId, x.LaneKey }).IsUnique();
+            entity.ToTable("EngagementResponsibilityOverrides");
+        });
+
+        modelBuilder.Entity<EngagementLaneProgress>(entity =>
+        {
+            entity.Property(x => x.Id).ValueGeneratedNever().HasColumnType("uniqueidentifier");
+            entity.Property(x => x.TenantId).HasColumnType("uniqueidentifier");
+            entity.Property(x => x.AssignmentId).HasColumnType("uniqueidentifier");
+            entity.Property(x => x.LaneKey).HasMaxLength(80).IsRequired();
+            entity.Property(x => x.IsApplicable);
+            entity.Property(x => x.Status).HasMaxLength(40).IsRequired();
+            entity.Property(x => x.Detail).HasMaxLength(3000);
+            entity.Property(x => x.DueAtUtc);
+            entity.Property(x => x.UpdatedBySubject).HasMaxLength(180).IsRequired();
+            entity.Property(x => x.UpdatedByName).HasMaxLength(180).IsRequired();
+            entity.Property(x => x.UpdatedAtUtc);
+            entity.Property(x => x.CompletedBySubject).HasMaxLength(180);
+            entity.Property(x => x.CompletedByName).HasMaxLength(180);
+            entity.Property(x => x.CompletedAtUtc);
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => new { x.AssignmentId, x.LaneKey }).IsUnique();
+            entity.ToTable("EngagementLaneProgress");
         });
 
         modelBuilder.Entity<EngagementDocument>()
@@ -93,6 +150,20 @@ public sealed class EngagementsDbContextModelSnapshot : ModelSnapshot
         modelBuilder.Entity<EngagementTask>()
             .HasOne(x => x.Assignment)
             .WithMany(x => x.Tasks)
+            .HasForeignKey(x => x.AssignmentId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .IsRequired();
+
+        modelBuilder.Entity<EngagementResponsibilityOverride>()
+            .HasOne(x => x.Assignment)
+            .WithMany()
+            .HasForeignKey(x => x.AssignmentId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .IsRequired();
+
+        modelBuilder.Entity<EngagementLaneProgress>()
+            .HasOne(x => x.Assignment)
+            .WithMany()
             .HasForeignKey(x => x.AssignmentId)
             .OnDelete(DeleteBehavior.Cascade)
             .IsRequired();

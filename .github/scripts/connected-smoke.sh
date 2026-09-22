@@ -7,11 +7,13 @@ redis_name="engagements-redis"
 minio_name="engagements-minio"
 platform_name="engagements-platform"
 app_name="engagements-app"
+second_app_name="engagements-app-2"
 password='LocalKingdom0S!'
 
 cleanup() {
   docker logs "$app_name" 2>/dev/null || true
-  docker rm --force "$app_name" "$platform_name" "$minio_name" "$redis_name" "$sql_name" >/dev/null 2>&1 || true
+  docker logs "$second_app_name" 2>/dev/null || true
+  docker rm --force "$second_app_name" "$app_name" "$platform_name" "$minio_name" "$redis_name" "$sql_name" >/dev/null 2>&1 || true
   docker network rm "$network" >/dev/null 2>&1 || true
   rm -rf .ci-platform
 }
@@ -88,54 +90,49 @@ docker run --detach --name "$platform_name" --network "$network" \
   -v "$PWD/.ci-platform:/srv:ro" -w /srv \
   python:3.12-alpine python -m http.server 8080 >/dev/null
 
-docker run --detach --name "$app_name" --network "$network" \
-  -e ASPNETCORE_ENVIRONMENT=Development \
-  -e Database__Provider=SqlServer \
-  -e Database__RequireRelational=true \
-  -e "ConnectionStrings__EngagementsDatabase=Server=$sql_name;Database=KingdomEngagements;User ID=sa;Password=$password;TrustServerCertificate=True" \
-  -e "ConnectionStrings__Redis=$redis_name:6379" \
-  -e KingdomOS__DistributedRuntime__RequireRedis=true \
-  -e KingdomOS__DocumentStorage__Provider=S3 \
-  -e KingdomOS__DocumentStorage__S3__BucketName=engagements-ci \
-  -e KingdomOS__DocumentStorage__S3__Region=us-east-1 \
-  -e "KingdomOS__DocumentStorage__S3__ServiceUrl=http://$minio_name:9000" \
-  -e KingdomOS__DocumentStorage__S3__ForcePathStyle=true \
-  -e AWS_ACCESS_KEY_ID=minioadmin \
-  -e AWS_SECRET_ACCESS_KEY=minioadmin \
-  -e "KingdomOS__PlatformInternalUrl=http://$platform_name:8080" \
-  -e KingdomOS__Identity__DemoProfilesEnabled=true \
-  -e KingdomOS__Entitlements__BypassInDevelopment=false \
-  -e KingdomOS__Entitlements__FailOpenInDevelopment=false \
-  kingdom-engagements:ci >/dev/null
+run_engagements_app() {
+  local container_name="$1"
 
-live=false
-for attempt in {1..30}; do
-  if docker exec "$app_name" curl --fail --silent http://localhost:8080/health/live \
-    | grep --quiet '"module":"engagements"'; then
-    live=true
-    break
-  fi
-  sleep 1
-done
-if [ "$live" != true ]; then
-  echo 'Engagements process never became live.' >&2
-  exit 1
-fi
+  docker run --detach --name "$container_name" --network "$network" \
+    -e ASPNETCORE_ENVIRONMENT=Development \
+    -e Database__Provider=SqlServer \
+    -e Database__RequireRelational=true \
+    -e "ConnectionStrings__EngagementsDatabase=Server=$sql_name;Database=KingdomEngagements;User ID=sa;Password=$password;TrustServerCertificate=True" \
+    -e "ConnectionStrings__Redis=$redis_name:6379" \
+    -e KingdomOS__DistributedRuntime__RequireRedis=true \
+    -e KingdomOS__DocumentStorage__Provider=S3 \
+    -e KingdomOS__DocumentStorage__S3__BucketName=engagements-ci \
+    -e KingdomOS__DocumentStorage__S3__Region=us-east-1 \
+    -e "KingdomOS__DocumentStorage__S3__ServiceUrl=http://$minio_name:9000" \
+    -e KingdomOS__DocumentStorage__S3__ForcePathStyle=true \
+    -e AWS_ACCESS_KEY_ID=minioadmin \
+    -e AWS_SECRET_ACCESS_KEY=minioadmin \
+    -e "KingdomOS__PlatformInternalUrl=http://$platform_name:8080" \
+    -e KingdomOS__Identity__DemoProfilesEnabled=true \
+    -e KingdomOS__Entitlements__BypassInDevelopment=false \
+    -e KingdomOS__Entitlements__FailOpenInDevelopment=false \
+    kingdom-engagements:ci >/dev/null
+}
 
-ready=false
-for attempt in {1..60}; do
-  if docker exec "$app_name" curl --fail --silent http://localhost:8080/health \
-    | grep --quiet '"platformEntitlement":"enabled"'; then
-    ready=true
-    break
-  fi
-  sleep 2
-done
-if [ "$ready" != true ]; then
-  echo 'Engagements never became connected-runtime ready.' >&2
-  docker exec "$app_name" curl --silent http://localhost:8080/health >&2 || true
-  exit 1
-fi
+wait_for_app() {
+  local container_name="$1"
+
+  for attempt in {1..60}; do
+    if docker exec "$container_name" curl --fail --silent http://localhost:8080/health \
+      | grep --quiet '"platformEntitlement":"enabled"'; then
+      return 0
+    fi
+    sleep 2
+  done
+
+  echo "Engagements container $container_name never became connected-runtime ready." >&2
+  docker exec "$container_name" curl --silent http://localhost:8080/health >&2 || true
+  return 1
+}
+
+run_engagements_app "$app_name"
+
+wait_for_app "$app_name"
 
 docker exec "$app_name" curl --fail --silent http://localhost:8080/invite/apostle-cynthia \
   | grep --quiet 'Invite Cynthia Thompson'
@@ -253,6 +250,20 @@ docker exec "$app_name" curl --fail --silent \
   -F "token=$host_invitation_token" \
   -o /dev/null
 
+data_protection_key_exists="$(docker exec "$redis_name" redis-cli EXISTS ApostolOS:DataProtectionKeys | tr -d '\r')"
+test "$data_protection_key_exists" = "1"
+
+run_engagements_app "$second_app_name"
+wait_for_app "$second_app_name"
+
+docker exec "$app_name" cat /tmp/host-cookies.txt \
+  | docker exec -i "$second_app_name" sh -c 'cat > /tmp/host-cookies.txt'
+
+docker exec "$second_app_name" curl --fail --silent \
+  -b /tmp/host-cookies.txt \
+  http://localhost:8080/api/host/engagement/terms \
+  | grep --quiet '"termsStatus":"pending"'
+
 host_terms_json="$(docker exec "$app_name" curl --fail --silent \
   -b /tmp/host-cookies.txt \
   http://localhost:8080/api/host/engagement/terms)"
@@ -321,6 +332,19 @@ document_json="$(docker exec "$app_name" curl --fail --silent \
   -X POST http://localhost:8080/api/host/engagement/coordination/documents \
   -F 'file=@/tmp/final-schedule.txt;type=text/plain')"
 document_id="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])' <<<"$document_json")"
+document_id_compact="${document_id//-/}"
+
+storage_row="$(docker exec "$sql_name" /opt/mssql-tools18/bin/sqlcmd \
+  -S localhost -U sa -P "$password" -C \
+  -d KingdomEngagements -h -1 -W -s '|' \
+  -Q "SET NOCOUNT ON; SELECT [StorageProvider], DATALENGTH([Content]) FROM [dbo].[EngagementHostCoordinationDocuments] WHERE [Id] = '$document_id'")"
+storage_provider="$(cut -d '|' -f 1 <<<"$storage_row" | xargs)"
+stored_content_length="$(cut -d '|' -f 2 <<<"$storage_row" | xargs)"
+test "$storage_provider" = "s3"
+test "$stored_content_length" = "0"
+
+docker exec "$minio_name" mc ls --recursive local/engagements-ci \
+  | grep --quiet "$document_id_compact"
 
 docker exec "$app_name" curl --fail --silent \
   "http://localhost:8080/api/engagements/assignments/$assignment_id/preparation/documents/$document_id" \

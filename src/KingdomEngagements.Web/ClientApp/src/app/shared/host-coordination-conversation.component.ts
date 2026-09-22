@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import { Component, Input, OnDestroy, OnInit, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { EngagementsApiService } from '../core/engagements-api.service';
@@ -16,6 +17,7 @@ interface CoordinationUpdatedEvent {
 @Component({
   selector: 'app-host-coordination-conversation',
   standalone: true,
+  imports: [DatePipe],
   template: `
     <section class="conversation-card">
       <header>

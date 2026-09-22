@@ -62,7 +62,7 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
                   <a class="eng-nav-link" [class.current]="isCurrent('/organization/ctg/hosts')" href="/organization/ctg/hosts">Hosts</a>
                   <a class="eng-nav-link" [class.current]="isCurrent('/organization/ctg/programs')" href="/organization/ctg/programs">Programs</a>
                 } @else {
-                  <a class="eng-nav-link" [class.current]="isCurrentPrefix('/assignments')" href="/assignments">Engagements</a>
+                  <a class="eng-nav-link" [class.current]="isCurrentPrefix('/organization/ctg/engagements')" href="/organization/ctg/engagements">Engagements</a>
                 }
               } @else {
                 <a class="eng-nav-link current" href="/organization/hey-king">Overview</a>

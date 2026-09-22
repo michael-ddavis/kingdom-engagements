@@ -4,6 +4,7 @@ import { catchError, forkJoin, of } from 'rxjs';
 import { EngagementsApiService } from '../core/engagements-api.service';
 import {
   EngagementResponsibilitySnapshot,
+  EngagementSummary,
   HostCoordinationMessage,
   ResponsibilityLaneState,
 } from '../core/models';
@@ -83,6 +84,13 @@ interface HostActivityPreview {
             <button class="clear-filter" type="button" (click)="attentionOnly.set(false)">Show all engagements</button>
           }
         </div>
+
+        @if (responsibilityDataUnavailable()) {
+          <div class="director-state director-state--warning">
+            <strong>Responsibility details are temporarily unavailable.</strong>
+            <span>The engagement list is still shown below. Restart the Engagements backend after pulling the latest code to load ownership, readiness lanes, and accountability details.</span>
+          </div>
+        }
 
         <section class="command-board">
           <header>
@@ -298,6 +306,7 @@ export class CtgCommandCenterComponent implements OnInit {
   readonly attentionOnly = signal(false);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
+  readonly responsibilityDataUnavailable = signal(false);
 
   readonly visibleSnapshots = computed(() => {
     const days = this.window();
@@ -399,10 +408,7 @@ export class CtgCommandCenterComponent implements OnInit {
         this.loading.set(false);
         this.loadHostActivity(snapshots);
       },
-      error: () => {
-        this.error.set('The Command Center could not be loaded.');
-        this.loading.set(false);
-      },
+      error: () => this.loadAssignmentFallback(),
     });
   }
 
@@ -453,6 +459,36 @@ export class CtgCommandCenterComponent implements OnInit {
 
   truncate(value: string, length: number): string {
     return value.length <= length ? value : `${value.slice(0, length - 1)}…`;
+  }
+
+  private loadAssignmentFallback(): void {
+    this.responsibilityDataUnavailable.set(true);
+    this.api.getAssignments().subscribe({
+      next: assignments => {
+        const snapshots = assignments
+          .filter(assignment => !['complete', 'completed', 'archived', 'cancelled'].includes(assignment.status))
+          .map(assignment => this.fallbackSnapshot(assignment));
+        this.snapshots.set(snapshots);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.error.set('The Command Center could not be loaded.');
+        this.loading.set(false);
+      },
+    });
+  }
+
+  private fallbackSnapshot(assignment: EngagementSummary): EngagementResponsibilitySnapshot {
+    return {
+      assignment,
+      lanes: [],
+      responsibilityReadinessPercent: assignment.readinessPercent,
+      hostCoordinationPercent: assignment.hostStatus === 'confirmed' ? 100 : 0,
+      completedLaneCount: 0,
+      applicableLaneCount: 0,
+      overdueLaneCount: 0,
+      unassignedLaneCount: 0,
+    };
   }
 
   private loadHostActivity(snapshots: readonly EngagementResponsibilitySnapshot[]): void {

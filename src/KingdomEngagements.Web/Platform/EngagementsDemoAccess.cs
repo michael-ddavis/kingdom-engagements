@@ -364,7 +364,7 @@ public static class EngagementsDemoAccessEndpoints
 {
     public static IEndpointRouteBuilder MapEngagementsDemoAccessEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        var group = endpoints.MapGroup("/api/engagements").RequireAuthorization();
+        var group = endpoints.MapGroup("/api/engagements").RequireAuthorization("EngagementsAccess");
 
         group.MapGet("/demo-persona", (HttpContext context) =>
         {

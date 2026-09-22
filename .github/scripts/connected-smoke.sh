@@ -63,12 +63,12 @@ fi
 docker run --detach --name "$minio_name" --network "$network" \
   -e MINIO_ROOT_USER=minioadmin \
   -e MINIO_ROOT_PASSWORD=minioadmin \
-  minio/minio:latest server /data >/dev/null
+  quay.io/minio/minio:latest server /data >/dev/null
 
 minio_ready=false
 for attempt in {1..30}; do
-  if docker run --rm --network "$network" --entrypoint /bin/sh minio/mc:latest \
-    -c "mc alias set local http://$minio_name:9000 minioadmin minioadmin >/dev/null 2>&1 && mc ready local >/dev/null 2>&1"; then
+  if docker exec "$minio_name" mc alias set local http://localhost:9000 minioadmin minioadmin >/dev/null 2>&1 \
+    && docker exec "$minio_name" mc ready local >/dev/null 2>&1; then
     minio_ready=true
     break
   fi
@@ -80,8 +80,7 @@ if [ "$minio_ready" != true ]; then
   exit 1
 fi
 
-docker run --rm --network "$network" --entrypoint /bin/sh minio/mc:latest \
-  -c "mc alias set local http://$minio_name:9000 minioadmin minioadmin >/dev/null && mc mb --ignore-existing local/engagements-ci >/dev/null"
+docker exec "$minio_name" mc mb --ignore-existing local/engagements-ci >/dev/null
 
 mkdir -p .ci-platform/api
 printf '%s\n' '[{"moduleKey":"engagements","enabled":true}]' > .ci-platform/api/modules

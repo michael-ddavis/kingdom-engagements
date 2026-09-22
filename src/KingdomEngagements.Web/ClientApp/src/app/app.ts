@@ -79,7 +79,13 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
               @if (!isDwcMemberView()) {
                 <a class="eng-settings-link" [href]="(product()?.platformUrl || 'http://localhost:5100') + '/appearance'">Settings</a>
               }
-              <span class="eng-avatar" [attr.aria-label]="'Signed in as ' + roles.persona().person">{{ personaInitials() }}</span>
+              <a
+                class="eng-avatar"
+                [href]="product()?.platformUrl || 'http://localhost:5100'"
+                [attr.aria-label]="'Account for ' + roles.persona().person"
+                title="Account">
+                {{ personaInitials() }}
+              </a>
             </div>
           </div>
         </header>
@@ -249,7 +255,7 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
       white-space:nowrap;
     }
 
-    .eng-avatar{margin-left:1px}
+    .eng-avatar{text-decoration:none;margin-left:1px}
 
     @media(max-width:1180px){
       .eng-modulebar{align-items:flex-start;flex-wrap:wrap;padding-top:10px;padding-bottom:9px}

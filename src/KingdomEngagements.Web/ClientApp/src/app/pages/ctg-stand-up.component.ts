@@ -107,10 +107,9 @@ import { EngagementResponsibilitySnapshot, ResponsibilityLaneState } from '../co
   styles: [`
     :host{display:block;background:#f5f3ee;min-height:calc(100vh - 72px)}
     .standup-page{width:min(1180px,calc(100% - 36px));margin:0 auto;padding:28px 0 60px}
-    .standup-header{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:20px}
-    .standup-header p{margin:0;color:#8c7434;font-size:.68rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase}
-    .standup-header h1{margin:5px 0;font:500 clamp(2rem,4vw,3.5rem)/1 Georgia,'Times New Roman',serif;color:#17243a}
-    .standup-header span{color:#6c746f}.standup-header>div:last-child{display:flex;gap:8px;flex-wrap:wrap}
+    .standup-header{display:flex;justify-content:space-between;align-items:center;gap:24px;margin-bottom:20px;padding:4px 0 14px;border-bottom:1px solid #dce0dd}
+    .standup-header h1{margin:0;font:500 clamp(1.8rem,2.8vw,2.6rem)/1 Georgia,'Times New Roman',serif;color:#17243a}
+    .standup-header>div:last-child{display:flex;gap:8px;flex-wrap:wrap}
     .standup-header a,.standup-header button,.standup-controls a,.standup-controls button{min-height:40px;padding:0 13px;border:1px solid #d8ddda;border-radius:9px;background:#fff;color:#172a46;font:800 .72rem system-ui,sans-serif;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
     .standup-header button,.standup-controls button:last-child{color:#fff;background:#172a46;border-color:#172a46}.standup-controls button:disabled{opacity:.35;cursor:not-allowed}
     .standup-progress{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:14px;margin:12px 0;color:#68716d;font-size:.7rem;font-weight:800}.standup-progress div{height:5px;background:#e0e3e0;border-radius:999px;overflow:hidden}.standup-progress i{display:block;height:100%;background:#9d7438}

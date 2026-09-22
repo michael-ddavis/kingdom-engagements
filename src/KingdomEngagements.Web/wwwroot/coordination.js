@@ -10,8 +10,14 @@ const scheduleList = document.querySelector('#schedule-list');
 const contactList = document.querySelector('#contact-list');
 const documentList = document.querySelector('#document-list');
 const saveProgressButton = document.querySelector('#save-progress');
+const messageList = document.querySelector('#message-list');
+const messageDraft = document.querySelector('#message-draft');
+const sendMessageButton = document.querySelector('#send-message');
+const realtimeStatus = document.querySelector('#realtime-status');
 const collaborationSyncKey = 'apostolos.engagement-collaboration-sync';
 let coordination = null;
+let messageThread = null;
+let realtimeConnection = null;
 let saveInFlight = false;
 let formDirty = false;
 let saveResetTimer = null;
@@ -162,12 +168,177 @@ function render() {
   view.hidden = false;
   formDirty = false;
 }
+
+function setRealtimeStatus(label, state = '') {
+  if (!realtimeStatus) return;
+  realtimeStatus.textContent = label;
+  realtimeStatus.className = `realtime-status ${state}`.trim();
+}
+
+function renderMessages() {
+  if (!messageList || !sendMessageButton || !messageDraft) return;
+
+  const messages = messageThread?.messages || [];
+  messageList.innerHTML = messages.length
+    ? messages.map(message => {
+        const senderClass = message.senderType === 'host' ? 'is-host' : 'is-ministry';
+        const senderLabel = message.senderType === 'host' ? 'You' : message.senderName;
+        return `<article class="coordination-message ${senderClass}" data-message-id="${escapeHtml(message.id)}">
+          <div class="coordination-message__meta"><strong>${escapeHtml(senderLabel)}</strong><time>${escapeHtml(new Date(message.createdAtUtc).toLocaleString())}</time></div>
+          <p>${escapeHtml(message.message)}</p>
+        </article>`;
+      }).join('')
+    : '<p class="coordination-message-empty">No messages yet. Use this thread when you need a quick answer from the ministry team.</p>';
+
+  const closed = messageThread?.isClosed === true;
+  sendMessageButton.disabled = closed;
+  messageDraft.disabled = closed;
+  messageDraft.placeholder = closed
+    ? 'This conversation is closed because host coordination was submitted.'
+    : 'Ask a question or send an update to the ministry team.';
+
+  document.querySelector('.coordination-message-composer')?.classList.toggle('is-closed', closed);
+
+  if (messages.length) {
+    messageList.scrollTop = messageList.scrollHeight;
+  }
+}
+
+async function loadMessages() {
+  try {
+    messageThread = await api(`${coordinationApiUrl}/messages`);
+    renderMessages();
+  } catch (error) {
+    if (messageList) {
+      messageList.innerHTML = `<p class="coordination-message-empty">${escapeHtml(error.message || 'Messages could not be loaded.')}</p>`;
+    }
+  }
+}
+
+async function sendHostMessage() {
+  if (!messageDraft || !sendMessageButton) return;
+
+  const message = String(messageDraft.value || '').trim();
+  if (!message) {
+    showConfirmation('Write a message before sending.', 'error');
+    return;
+  }
+
+  sendMessageButton.disabled = true;
+  sendMessageButton.textContent = 'Sending…';
+
+  try {
+    const request = legacyToken
+      ? { senderName: 'Host', message }
+      : { message };
+
+    messageThread = await api(`${coordinationApiUrl}/messages`, {
+      method: 'POST',
+      body: JSON.stringify(request)
+    });
+
+    messageDraft.value = '';
+    renderMessages();
+  } catch (error) {
+    showConfirmation(error.message || 'The message could not be sent.', 'error');
+  } finally {
+    sendMessageButton.disabled = messageThread?.isClosed === true;
+    sendMessageButton.textContent = 'Send message';
+  }
+}
+
+async function connectRealtime() {
+  if (legacyToken || !coordination?.assignmentId) {
+    setRealtimeStatus(legacyToken ? 'Development mode' : 'Offline', 'is-offline');
+    return;
+  }
+
+  if (!window.signalR) {
+    setRealtimeStatus('Realtime unavailable', 'is-offline');
+    return;
+  }
+
+  if (realtimeConnection) return;
+
+  const connection = new window.signalR.HubConnectionBuilder()
+    .withUrl('/hubs/engagements')
+    .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
+    .configureLogging(window.signalR.LogLevel.Warning)
+    .build();
+
+  realtimeConnection = connection;
+
+  connection.on('coordinationMessageCreated', message => {
+    if (!message?.id) return;
+
+    const existing = messageThread?.messages?.some(item => item.id === message.id);
+    if (existing) return;
+
+    messageThread = {
+      isClosed: messageThread?.isClosed === true,
+      messages: [...(messageThread?.messages || []), message]
+    };
+    renderMessages();
+  });
+
+  connection.on('coordinationUpdated', update => {
+    if (!coordination || update?.assignmentId !== coordination.assignmentId || update?.source !== 'internal') {
+      return;
+    }
+
+    if (formDirty || saveInFlight) {
+      showConfirmation('The ministry team updated this engagement. Save your work, then refresh to load the latest details.', 'info');
+      return;
+    }
+
+    void load('The ministry team updated this engagement. Latest details loaded.');
+  });
+
+  connection.on('coordinationDocumentAdded', update => {
+    if (!coordination || update?.assignmentId !== coordination.assignmentId || update?.source !== 'internal') {
+      return;
+    }
+
+    if (formDirty || saveInFlight) {
+      showConfirmation('The ministry team added a document to this engagement.', 'info');
+      return;
+    }
+
+    void load('The ministry team added a document. Latest engagement details loaded.');
+  });
+
+  connection.onreconnecting(() => setRealtimeStatus('Reconnecting…'));
+  connection.onreconnected(async () => {
+    setRealtimeStatus('Live', 'is-live');
+    try {
+      await connection.invoke('JoinEngagement', coordination.assignmentId);
+    } catch {
+      setRealtimeStatus('Reconnect failed', 'is-offline');
+    }
+  });
+  connection.onclose(() => {
+    realtimeConnection = null;
+    setRealtimeStatus('Offline', 'is-offline');
+  });
+
+  try {
+    await connection.start();
+    await connection.invoke('JoinEngagement', coordination.assignmentId);
+    setRealtimeStatus('Live', 'is-live');
+  } catch {
+    realtimeConnection = null;
+    setRealtimeStatus('Offline', 'is-offline');
+  }
+}
+
 async function load(syncMessage = '') {
   try {
     showState('Loading secure host coordination…');
     coordination = await api(coordinationApiUrl);
     showState('');
     render();
+    await loadMessages();
+    await connectRealtime();
     if (syncMessage) showConfirmation(syncMessage, 'info');
   } catch (error) {
     view.hidden = true;
@@ -217,6 +388,13 @@ form.addEventListener('change', () => { formDirty = true; });
 document.querySelector('#add-schedule').addEventListener('click', () => { addSchedule({ date: coordination?.eventStartDate }); formDirty = true; });
 document.querySelector('#add-contact').addEventListener('click', () => { addContact(); formDirty = true; });
 saveProgressButton.addEventListener('click', () => save(false));
+sendMessageButton?.addEventListener('click', () => void sendHostMessage());
+messageDraft?.addEventListener('keydown', event => {
+  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+    event.preventDefault();
+    void sendHostMessage();
+  }
+});
 form.addEventListener('submit', event => { event.preventDefault(); save(true); });
 document.querySelector('#upload-document').addEventListener('click', async () => {
   const input = document.querySelector('#document-file');

@@ -90,6 +90,15 @@
               <div class="upload-panel"><input id="document-file" type="file" /><button class="secondary-button" type="button" id="upload-document">Upload document</button></div>
               <div id="document-list" class="document-list"></div>
             </section>
+
+            <section class="portal-section">
+              <header><div><p class="eyebrow">07 · Messages</p><h3>Coordinate with the ministry team</h3><p>Messages are saved to this engagement and delivered to the ministry team in real time.</p></div><span id="realtime-status" class="realtime-status">Connecting…</span></header>
+              <div id="message-list" class="coordination-messages" aria-live="polite"></div>
+              <form id="message-form" class="coordination-message-form">
+                <label class="field wide"><span>Message</span><textarea id="message-input" rows="3" maxlength="4000" placeholder="Send a coordination update…"></textarea></label>
+                <button class="secondary-button" type="submit">Send message</button>
+              </form>
+            </section>
           </div>
           <div class="button-row"><button class="secondary-button" type="button" id="save-progress">Save progress</button><button class="primary-button" type="submit">Submit host coordination →</button></div>
         </form>
@@ -97,6 +106,7 @@
       </section>
     </section>
   </main>
+  <script src="/host-realtime.js" defer></script>
   <script src="/coordination.js" defer></script>
 </body>
 </html>

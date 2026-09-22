@@ -690,6 +690,40 @@ public sealed class EngagementLaneWorkspaceService(
         return new DocumentsLaneDetails(assignmentId, lane, documentRecords.Select(MapDocument).ToArray());
     }
 
+    public async Task<HostCoordinationDocumentRecord?> GetLaneDocumentContentAsync(
+        Guid tenantId,
+        Guid assignmentId,
+        string laneKey,
+        Guid documentId,
+        CancellationToken ct)
+    {
+        var lane = EngagementResponsibilityLanes.Get(laneKey);
+        var document = await engagementsDatabase.Documents.AsNoTracking()
+            .SingleOrDefaultAsync(
+                x => x.AssignmentId == assignmentId &&
+                     x.Id == documentId &&
+                     x.Assignment != null &&
+                     x.Assignment.TenantId == tenantId,
+                ct);
+        if (document is null) return null;
+
+        if (!string.Equals(lane.Key, "documents", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(document.Category, lane.Key, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("That document belongs to a different responsibility lane.");
+
+        const string prefix = "coordination-document:";
+        if (string.IsNullOrWhiteSpace(document.StorageReference) ||
+            !document.StorageReference.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ||
+            !Guid.TryParse(document.StorageReference[prefix.Length..], out var sourceDocumentId))
+            return null;
+
+        return await preparationService.GetDocumentForAssignmentAsync(
+            tenantId,
+            assignmentId,
+            sourceDocumentId,
+            ct);
+    }
+
     public async Task<LaneDocumentDto?> CreateLaneDocumentAsync(
         Guid tenantId,
         Guid assignmentId,
@@ -1291,6 +1325,51 @@ public static class EngagementLaneWorkspaceEndpoints
             var item = await lanes.GetDocumentsAsync(
                 KingdomIdentity.TenantId(context.User, context.Request), id, ct);
             return item is null ? Results.NotFound() : Results.Ok(item);
+        });
+
+        group.MapGet("/{id:guid}/lanes/{laneKey}/documents/{documentId:guid}/content", async (
+            Guid id,
+            string laneKey,
+            Guid documentId,
+            bool? download,
+            HttpContext context,
+            EngagementLaneWorkspaceService lanes,
+            EngagementResponsibilityService responsibilities,
+            CancellationToken ct) =>
+        {
+            if (!await CanAccessLaneAsync(context, responsibilities, id, laneKey, ct))
+                return Results.Forbid();
+
+            try
+            {
+                var document = await lanes.GetLaneDocumentContentAsync(
+                    KingdomIdentity.TenantId(context.User, context.Request),
+                    id,
+                    laneKey,
+                    documentId,
+                    ct);
+                if (document is null) return Results.NotFound();
+
+                return download is true
+                    ? Results.File(
+                        document.Content,
+                        document.ContentType,
+                        document.FileName,
+                        enableRangeProcessing: true)
+                    : Results.File(
+                        document.Content,
+                        document.ContentType,
+                        enableRangeProcessing: true);
+            }
+            catch (ArgumentException exception)
+            {
+                return Results.ValidationProblem(
+                    new Dictionary<string, string[]> { ["document"] = [exception.Message] });
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Results.Conflict(new { message = exception.Message });
+            }
         });
 
         group.MapPost("/{id:guid}/lanes/{laneKey}/documents", async (

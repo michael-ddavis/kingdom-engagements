@@ -156,6 +156,7 @@ builder.Services.AddAuthentication(KingdomIdentity.Scheme)
             return Task.CompletedTask;
         };
     });
+builder.Services.AddSignalR();
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("EngagementsAccess", policy => policy.RequireAssertion(context =>
@@ -190,6 +191,8 @@ builder.Services.AddScoped<HickmanSpeakingRequestsService>();
 builder.Services.AddScoped<EngagementPreparationService>();
 builder.Services.AddScoped<HostAccessService>();
 builder.Services.AddScoped<IAuthorizationHandler, HostAccessAuthorizationHandler>();
+builder.Services.AddScoped<EngagementRealtimeAccessService>();
+builder.Services.AddScoped<EngagementRealtimeNotifier>();
 builder.Services.AddScoped<AssignmentWorkspaceService>();
 builder.Services.AddScoped<EngagementCompletionService>();
 builder.Services.AddScoped<EngagementOperationsCoordinationPublisher>();
@@ -307,6 +310,7 @@ app.UseMiddleware<EngagementApprovalOperationsBridge>();
 app.UseMiddleware<HickmanSpeakingRequestReviewMiddleware>();
 
 app.MapEngagementsHealth();
+app.MapHub<EngagementRealtimeHub>("/hubs/engagements");
 app.MapGet("/api/product", async (
     HttpContext context,
     IConfiguration configuration,

@@ -34,7 +34,7 @@ body[data-engagement-demo-role="minister"] .travel-workspace:before,
 body[data-engagement-demo-role="minister"] .contacts-workspace:before,
 body[data-engagement-demo-role="minister"] .documents-workspace:before,
 body[data-engagement-demo-role="minister"] .tab-workspace:before{
-  content:'Assigned minister view · read only';
+  content:'Read only';
   display:block;
   padding:.5rem 1.3rem;
   border-bottom:1px solid rgba(18,26,44,.08);
@@ -44,4 +44,10 @@ body[data-engagement-demo-role="minister"] .tab-workspace:before{
   font-weight:850;
   letter-spacing:.04em;
   text-transform:uppercase;
+}
+
+
+body[data-engagement-demo-role="minister"] .legacy-assignment-hero .invitation-actions,
+body[data-engagement-demo-role="minister"] .legacy-filter-group button:nth-child(2){
+  display:none!important;
 }

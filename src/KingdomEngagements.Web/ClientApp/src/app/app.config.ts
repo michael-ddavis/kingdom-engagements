@@ -7,7 +7,12 @@ import { AssignmentWorkspaceComponent } from './pages/assignment-workspace.compo
 import { CtgApostleDashboardComponent } from './pages/ctg-apostle-dashboard.component';
 import { CtgApostleEngagementBriefComponent } from './pages/ctg-apostle-engagement-brief.component';
 import { CtgBookingDeskComponent } from './pages/ctg-booking-desk.component';
+import { CtgCommandCenterComponent } from './pages/ctg-command-center.component';
+import { CtgDirectorEngagementComponent } from './pages/ctg-director-engagement.component';
 import { CtgEngagementsHomeComponent } from './pages/ctg-engagements-home.component';
+import { CtgHostActivityComponent } from './pages/ctg-host-activity.component';
+import { CtgStandUpComponent } from './pages/ctg-stand-up.component';
+import { CtgTeamResponsibilitiesComponent } from './pages/ctg-team-responsibilities.component';
 import { CtgEventRegistrationComponent } from './pages/ctg-event-registration.component';
 import { CtgPower12ApplicationComponent } from './pages/ctg-power12-application.component';
 import { CtgProgramsComponent } from './pages/ctg-programs.component';
@@ -21,6 +26,7 @@ import { OrganizationProgramsComponent } from './pages/organization-programs.com
 import {
   EngagementDemoRoleService,
   engagementBookingGuard,
+  engagementDirectorGuard,
 } from './core/engagement-demo-role.service';
 import {
   engagementAssignmentDetailGuard,
@@ -59,6 +65,11 @@ export const appConfig: ApplicationConfig = {
       { path: 'assignments/:id', component: AssignmentWorkspaceComponent, canActivate: [engagementAssignmentDetailGuard] },
       { path: 'organization/ctg/apostle/engagements/:id', component: CtgApostleEngagementBriefComponent },
       { path: 'organization/ctg/apostle', component: CtgApostleDashboardComponent },
+      { path: 'organization/ctg/command-center', component: CtgCommandCenterComponent, canActivate: [engagementDirectorGuard] },
+      { path: 'organization/ctg/stand-up', component: CtgStandUpComponent, canActivate: [engagementDirectorGuard] },
+      { path: 'organization/ctg/team', component: CtgTeamResponsibilitiesComponent, canActivate: [engagementDirectorGuard] },
+      { path: 'organization/ctg/hosts', component: CtgHostActivityComponent, canActivate: [engagementDirectorGuard] },
+      { path: 'organization/ctg/engagements/:id', component: CtgDirectorEngagementComponent, canActivate: [engagementDirectorGuard] },
       { path: 'organization/ctg', component: CtgEngagementsHomeComponent, canActivate: [engagementBookingGuard] },
       { path: 'organization/ctg/bookings', component: CtgBookingDeskComponent, canActivate: [engagementBookingGuard] },
       { path: 'organization/ctg/start-invitation', component: CtgStartInvitationComponent, canActivate: [engagementBookingGuard] },

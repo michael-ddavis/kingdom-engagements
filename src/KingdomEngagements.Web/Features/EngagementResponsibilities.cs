@@ -836,7 +836,7 @@ public static class EngagementResponsibilityEndpoints
                 id,
                 ct);
             return lanes is null ? Results.NotFound() : Results.Ok(lanes);
-        });
+        }).RequireAuthorization("EngagementsDirect");
 
         group.MapPut("/assignments/{id:guid}/responsibilities/{laneKey}/owner", async (
             Guid id,

@@ -864,6 +864,15 @@ export class CtgDirectorEngagementComponent implements OnInit {
     return item.owner?.displayName ?? 'Unassigned';
   }
 
+  initials(value: string): string {
+    return value
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map(item => item[0]?.toUpperCase())
+      .join('') || '?';
+  }
+
   editResponsibility(item: ResponsibilityLaneState): void {
     this.responsibilityDraft.set({
       laneKey: item.key,

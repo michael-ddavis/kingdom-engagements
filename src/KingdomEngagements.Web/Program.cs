@@ -122,6 +122,8 @@ builder.Services.AddAuthentication(KingdomIdentity.Scheme)
     });
 builder.Services.AddAuthorization(options =>
 {
+    options.AddPolicy("EngagementsAccess", policy => policy.RequireAssertion(context =>
+        KingdomIdentity.HasEngagementsAccess(context.User)));
     options.AddPolicy("EngagementsWrite", policy => policy.RequireAssertion(context =>
         KingdomIdentity.CanWriteEngagements(context.User)));
     options.AddPolicy("EngagementsDirect", policy => policy.RequireAssertion(context =>

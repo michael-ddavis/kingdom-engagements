@@ -6,16 +6,23 @@ const legacyToken = legacyTokenMatch ? decodeURIComponent(legacyTokenMatch[1]) :
 const coordinationApiUrl = legacyToken
   ? `/api/public/engagements/preparation/coordination/${encodeURIComponent(legacyToken)}`
   : '/api/host/engagement/coordination';
+const messagesApiUrl = `${coordinationApiUrl}/messages`;
 const scheduleList = document.querySelector('#schedule-list');
 const contactList = document.querySelector('#contact-list');
 const documentList = document.querySelector('#document-list');
 const saveProgressButton = document.querySelector('#save-progress');
+const messageList = document.querySelector('#message-list');
+const messageForm = document.querySelector('#message-form');
+const messageInput = document.querySelector('#message-input');
+const realtimeStatus = document.querySelector('#realtime-status');
 const collaborationSyncKey = 'apostolos.engagement-collaboration-sync';
 let coordination = null;
 let saveInFlight = false;
 let formDirty = false;
 let saveResetTimer = null;
 let confirmationTimer = null;
+let messageThread = { isClosed: false, messages: [] };
+let stopRealtime = null;
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>'"]/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[char]));
@@ -138,6 +145,104 @@ function renderDocuments() {
   const docs = coordination.documents || [];
   documentList.innerHTML = docs.length ? docs.map(doc => `<article class="document-row"><div><a href="${coordinationApiUrl}/documents/${doc.id}" target="_blank" rel="noopener">${escapeHtml(doc.fileName)}</a><small>${Math.max(1, Math.round(doc.length / 1024))} KB · ${new Date(doc.uploadedAtUtc).toLocaleString()}</small></div><strong>Received</strong></article>`).join('') : '<p>No host documents uploaded yet.</p>';
 }
+
+function renderMessages() {
+  if (!messageList) return;
+
+  const messages = messageThread?.messages || [];
+  messageList.innerHTML = messages.length
+    ? messages.map(message => `
+        <article class="coordination-message ${message.senderType === 'host' ? 'is-host' : ''}">
+          <strong>${escapeHtml(message.senderName)}</strong>
+          <p>${escapeHtml(message.message)}</p>
+          <time>${new Date(message.createdAtUtc).toLocaleString()}</time>
+        </article>`).join('')
+    : '<p>No coordination messages yet.</p>';
+
+  messageList.scrollTop = messageList.scrollHeight;
+
+  if (messageInput) messageInput.disabled = Boolean(messageThread?.isClosed);
+  const sendButton = messageForm?.querySelector('button[type="submit"]');
+  if (sendButton) {
+    sendButton.disabled = Boolean(messageThread?.isClosed);
+    sendButton.textContent = messageThread?.isClosed ? 'Conversation closed' : 'Send message';
+  }
+}
+
+async function loadMessages() {
+  try {
+    messageThread = await api(messagesApiUrl);
+    renderMessages();
+  } catch (error) {
+    if (messageList) {
+      messageList.innerHTML = `<p>${escapeHtml(error.message || 'Messages are unavailable.')}</p>`;
+    }
+  }
+}
+
+function applyRealtimeMessage(event) {
+  if (!event || event.assignmentId !== coordination?.assignmentId || !event.message) return;
+
+  const messages = messageThread?.messages || [];
+  if (messages.some(message => message.id === event.message.id)) return;
+
+  messageThread = {
+    ...messageThread,
+    messages: [...messages, event.message]
+  };
+  renderMessages();
+}
+
+async function connectRealtime() {
+  if (legacyToken || stopRealtime || !coordination?.assignmentId) return;
+
+  if (!window.ApostolOSRealtime) {
+    if (realtimeStatus) realtimeStatus.textContent = 'Live updates unavailable';
+    return;
+  }
+
+  try {
+    stopRealtime = await window.ApostolOSRealtime.connectToEngagement(
+      coordination.assignmentId,
+      {
+        messageCreated: applyRealtimeMessage,
+        coordinationUpdated: async event => {
+          if (!event || event.assignmentId !== coordination?.assignmentId || event.updatedBy !== 'ministry') return;
+
+          if (formDirty || saveInFlight) {
+            showConfirmation('The ministry team updated this engagement. Save your current work before loading their changes.', 'info');
+            return;
+          }
+
+          await load('The ministry team updated this engagement. Latest details loaded.');
+        },
+        documentAdded: event => {
+          if (!event || event.assignmentId !== coordination?.assignmentId || event.updatedBy !== 'ministry' || !event.document) return;
+
+          const documents = coordination.documents || [];
+          if (!documents.some(document => document.id === event.document.id)) {
+            coordination.documents = [event.document, ...documents];
+            renderDocuments();
+            showConfirmation('The ministry team added a document to this engagement.', 'info');
+          }
+        },
+        reconnected: async () => {
+          await loadMessages();
+        }
+      }
+    );
+
+    if (realtimeStatus) {
+      realtimeStatus.textContent = 'Live';
+      realtimeStatus.classList.add('is-live');
+    }
+  } catch {
+    if (realtimeStatus) {
+      realtimeStatus.textContent = 'Saved updates only';
+      realtimeStatus.classList.remove('is-live');
+    }
+  }
+}
 function render() {
   document.querySelector('#reference').textContent = coordination.referenceNumber;
   document.querySelector('#event-name').textContent = coordination.eventName;
@@ -168,6 +273,8 @@ async function load(syncMessage = '') {
     coordination = await api(coordinationApiUrl);
     showState('');
     render();
+    await loadMessages();
+    await connectRealtime();
     if (syncMessage) showConfirmation(syncMessage, 'info');
   } catch (error) {
     view.hidden = true;
@@ -218,6 +325,34 @@ document.querySelector('#add-schedule').addEventListener('click', () => { addSch
 document.querySelector('#add-contact').addEventListener('click', () => { addContact(); formDirty = true; });
 saveProgressButton.addEventListener('click', () => save(false));
 form.addEventListener('submit', event => { event.preventDefault(); save(true); });
+
+messageForm?.addEventListener('submit', async event => {
+  event.preventDefault();
+
+  const message = String(messageInput?.value || '').trim();
+  if (!message || messageThread?.isClosed) return;
+
+  const sendButton = messageForm.querySelector('button[type="submit"]');
+  if (sendButton) sendButton.disabled = true;
+
+  try {
+    const body = legacyToken
+      ? { senderName: 'Host', message }
+      : { message };
+
+    messageThread = await api(messagesApiUrl, {
+      method: 'POST',
+      body: JSON.stringify(body)
+    });
+
+    if (messageInput) messageInput.value = '';
+    renderMessages();
+  } catch (error) {
+    showConfirmation(error.message || 'The message could not be sent.', 'error');
+  } finally {
+    if (sendButton && !messageThread?.isClosed) sendButton.disabled = false;
+  }
+});
 document.querySelector('#upload-document').addEventListener('click', async () => {
   const input = document.querySelector('#document-file');
   const file = input.files?.[0];

@@ -217,11 +217,11 @@ public sealed class EngagementResponsibilityService(EngagementsDbContext databas
 
         await SyncTaskOwnersAsync(
             tenantId,
-            assignmentId: null,
+            null,
             lane.Key,
             userSubject,
             displayName,
-            skipEngagementOverrides: true,
+            true,
             now,
             cancellationToken);
 
@@ -242,11 +242,11 @@ public sealed class EngagementResponsibilityService(EngagementsDbContext databas
         database.StandingResponsibilityAssignments.Remove(item);
         await SyncTaskOwnersAsync(
             tenantId,
-            assignmentId: null,
+            null,
             lane.Key,
-            userSubject: null,
-            displayName: "Unassigned",
-            skipEngagementOverrides: true,
+            null,
+            "Unassigned",
+            true,
             DateTimeOffset.UtcNow,
             cancellationToken);
 
@@ -298,7 +298,7 @@ public sealed class EngagementResponsibilityService(EngagementsDbContext databas
             lane.Key,
             item.UserSubject,
             item.DisplayName,
-            skipEngagementOverrides: false,
+            false,
             now,
             cancellationToken);
 
@@ -332,7 +332,7 @@ public sealed class EngagementResponsibilityService(EngagementsDbContext databas
             lane.Key,
             standingOwner?.UserSubject,
             standingOwner?.DisplayName ?? "Unassigned",
-            skipEngagementOverrides: false,
+            false,
             DateTimeOffset.UtcNow,
             cancellationToken);
 

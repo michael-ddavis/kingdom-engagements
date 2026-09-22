@@ -17,14 +17,10 @@ type EngagementFilter = 'active' | 'attention' | 'upcoming' | 'completed';
   template: `
     <section class="director-engagements">
       <header class="page-heading">
-        <div>
-          <p class="eyebrow">Cynthia Thompson Global · Engagement Director</p>
-          <h1>Engagements</h1>
-          <p>Every approved assignment in one operational view. Open an engagement to direct its owners, readiness, host coordination, travel, media, documents, finance, and ministry preparation.</p>
-        </div>
+        <h1>Engagements</h1>
         <div class="heading-actions">
           <a class="secondary" routerLink="/organization/ctg/command-center">Command Center</a>
-          <a class="primary" routerLink="/organization/ctg/stand-up">Start stand-up →</a>
+          <a class="primary" routerLink="/organization/ctg/stand-up">Stand-up →</a>
         </div>
       </header>
 
@@ -129,8 +125,8 @@ type EngagementFilter = 'active' | 'attention' | 'upcoming' | 'completed';
   `,
   styles: [`
     :host{display:block}.director-engagements{width:min(1380px,calc(100% - 42px));margin:0 auto;padding:28px 0 64px;color:#17202b}
-    .page-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:26px;margin-bottom:18px;padding:24px 26px;border:1px solid #dde1df;border-radius:18px;background:#fffdfa;box-shadow:0 12px 32px rgba(18,26,44,.045)}
-    .page-heading h1,.engagement-list h2,.identity h3{font-family:Georgia,'Times New Roman',serif;color:#17243a;font-weight:500}.page-heading h1{margin:4px 0 8px;font-size:clamp(2rem,3vw,3rem)}.page-heading p{max-width:800px;margin:0;color:#69716d;line-height:1.62}
+    .page-heading{display:flex;align-items:center;justify-content:space-between;gap:26px;margin-bottom:18px;padding:4px 0 14px;border-bottom:1px solid #dde1df}
+    .page-heading h1,.engagement-list h2,.identity h3{font-family:Georgia,'Times New Roman',serif;color:#17243a;font-weight:500}.page-heading h1{margin:0;font-size:clamp(1.8rem,2.6vw,2.5rem)}
     .eyebrow{margin:0!important;color:#7c6b38!important;font:800 .66rem/1.2 system-ui,sans-serif!important;letter-spacing:.11em;text-transform:uppercase}.heading-actions{display:flex;gap:8px;flex-wrap:wrap}.heading-actions a{display:inline-flex;min-height:40px;align-items:center;padding:0 14px;border-radius:9px;font-size:.72rem;font-weight:850;text-decoration:none}.heading-actions .primary{background:#172a46;color:#fff}.heading-actions .secondary{border:1px solid #d6dbe0;background:#fff;color:#172a46}
     .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}.summary button{appearance:none;padding:16px 18px;border:1px solid #dde1df;border-radius:12px;background:#fffdfa;color:inherit;text-align:left;cursor:pointer}.summary button.selected{border-color:#9d7438;box-shadow:0 0 0 2px rgba(157,116,56,.11)}.summary small,.summary strong,.summary span{display:block}.summary small{color:#7b827e;font-size:.62rem;font-weight:850;text-transform:uppercase}.summary strong{margin:5px 0 2px;font-size:1.5rem}.summary span{color:#858b87;font-size:.64rem}
     .engagement-list{overflow:hidden;border:1px solid #dde1df;border-radius:16px;background:#fffdfa}.engagement-list>header{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 20px;border-bottom:1px solid #e4e6e4}.engagement-list h2{margin:4px 0 0;font-size:1.3rem}.engagement-list>header>a{color:#315faf;font-size:.71rem;font-weight:850;text-decoration:none}

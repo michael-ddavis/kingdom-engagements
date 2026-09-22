@@ -31,7 +31,9 @@ public static class HostAccessIdentity
         user.Identity?.Name?.Trim() is { Length: > 0 } name ? name : "Host";
 }
 
-public sealed class HostAccessRequirement : IAuthorizationRequirement;
+public sealed class HostAccessRequirement : IAuthorizationRequirement
+{
+}
 
 public sealed class HostAccessAuthorizationHandler(HostAccessDbContext database)
     : AuthorizationHandler<HostAccessRequirement>
@@ -46,8 +48,6 @@ public sealed class HostAccessAuthorizationHandler(HostAccessDbContext database)
 
         if (accessId is null || tenantId is null || assignmentId is null)
             return;
-
-        await database.EnsureSchemaAsync(CancellationToken.None);
 
         var now = DateTimeOffset.UtcNow;
         var isActive = await database.Invitations.AsNoTracking().AnyAsync(invitation =>
@@ -460,6 +460,7 @@ public static class HostAccessEndpoints
             HttpContext context,
             EngagementPreparationService preparationService,
             HostAccessService hostAccess,
+            IConfiguration configuration,
             CancellationToken ct) =>
         {
             var tenantId = KingdomIdentity.TenantId(context.User, context.Request);
@@ -472,8 +473,12 @@ public static class HostAccessEndpoints
             if (invitation is null)
                 return Results.NotFound(new { message = "The engagement was not found." });
 
-            var invitationUrl =
-                $"{context.Request.Scheme}://{context.Request.Host}/host/access/{invitation.Token}";
+            var configuredBaseUrl = configuration["KingdomOS:HostAccess:PublicBaseUrl"]?.TrimEnd('/');
+            var publicBaseUrl = string.IsNullOrWhiteSpace(configuredBaseUrl)
+                ? $"{context.Request.Scheme}://{context.Request.Host}"
+                : configuredBaseUrl;
+
+            var invitationUrl = $"{publicBaseUrl}/host/access/{invitation.Token}";
 
             return Results.Ok(new
             {

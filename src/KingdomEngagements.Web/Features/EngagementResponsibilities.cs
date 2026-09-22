@@ -128,7 +128,12 @@ public sealed record ResponsibilityLaneState(
 
 public sealed record EngagementResponsibilitySnapshot(
     EngagementSummary Assignment,
-    IReadOnlyList<ResponsibilityLaneState> Lanes);
+    IReadOnlyList<ResponsibilityLaneState> Lanes,
+    int ResponsibilityReadinessPercent,
+    int CompletedLaneCount,
+    int ApplicableLaneCount,
+    int OverdueLaneCount,
+    int UnassignedLaneCount);
 
 public sealed record MyResponsibilityWorkItem(
     EngagementSummary Assignment,
@@ -463,7 +468,22 @@ public sealed class EngagementResponsibilityService(EngagementsDbContext databas
         {
             var lanes = await GetAssignmentLanesAsync(tenantId, assignment.Id, cancellationToken)
                 ?? Array.Empty<ResponsibilityLaneState>();
-            result.Add(new EngagementResponsibilitySnapshot(MapSummary(assignment), lanes));
+            var applicable = lanes.Where(lane => lane.IsApplicable).ToArray();
+            var completed = applicable.Count(lane => lane.Status == "complete");
+            var readiness = applicable.Length == 0
+                ? 100
+                : (int)Math.Round(completed / (double)applicable.Length * 100);
+            var overdue = applicable.Count(lane => lane.IsOverdue);
+            var unassigned = applicable.Count(lane => lane.Owner is null);
+
+            result.Add(new EngagementResponsibilitySnapshot(
+                MapSummary(assignment),
+                lanes,
+                readiness,
+                completed,
+                applicable.Length,
+                overdue,
+                unassigned));
         }
 
         return result;

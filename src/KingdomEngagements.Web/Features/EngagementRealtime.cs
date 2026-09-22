@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using KingdomEngagements.Web.Platform;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
@@ -39,8 +40,8 @@ public sealed class EngagementRealtimeHub(
     EngagementResponsibilityService responsibilities,
     HostAccessDbContext hostAccessDatabase) : Hub
 {
-    public const string PolicyName = "EngagementRealtimeAccess";
-    public const string Route = "/hubs/engagements";
+    public const string InternalRoute = "/hubs/engagements";
+    public const string HostRoute = "/hubs/engagements/host";
 
     public async Task JoinEngagement(Guid assignmentId)
     {
@@ -164,6 +165,8 @@ public sealed class EngagementRealtimePublisher(
         object payload,
         CancellationToken cancellationToken)
     {
+        await hostAccessDatabase.EnsureSchemaAsync(cancellationToken);
+
         await hub.Clients
             .Group(EngagementRealtimeGroups.Internal(tenantId, assignmentId))
             .SendAsync(eventName, payload, cancellationToken);

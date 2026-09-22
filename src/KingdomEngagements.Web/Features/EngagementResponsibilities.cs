@@ -215,6 +215,16 @@ public sealed class EngagementResponsibilityService(EngagementsDbContext databas
         item.UpdatedByName = actorName;
         item.UpdatedAtUtc = now;
 
+        await SyncTaskOwnersAsync(
+            tenantId,
+            assignmentId: null,
+            lane.Key,
+            userSubject,
+            displayName,
+            skipEngagementOverrides: true,
+            now,
+            cancellationToken);
+
         await database.SaveChangesAsync(cancellationToken);
         return item;
     }
@@ -230,6 +240,16 @@ public sealed class EngagementResponsibilityService(EngagementsDbContext databas
         if (item is null) return false;
 
         database.StandingResponsibilityAssignments.Remove(item);
+        await SyncTaskOwnersAsync(
+            tenantId,
+            assignmentId: null,
+            lane.Key,
+            userSubject: null,
+            displayName: "Unassigned",
+            skipEngagementOverrides: true,
+            DateTimeOffset.UtcNow,
+            cancellationToken);
+
         await database.SaveChangesAsync(cancellationToken);
         return true;
     }
@@ -272,6 +292,16 @@ public sealed class EngagementResponsibilityService(EngagementsDbContext databas
         item.UpdatedByName = actorName;
         item.UpdatedAtUtc = now;
 
+        await SyncTaskOwnersAsync(
+            tenantId,
+            assignmentId,
+            lane.Key,
+            item.UserSubject,
+            item.DisplayName,
+            skipEngagementOverrides: false,
+            now,
+            cancellationToken);
+
         await database.SaveChangesAsync(cancellationToken);
         return item;
     }
@@ -290,6 +320,22 @@ public sealed class EngagementResponsibilityService(EngagementsDbContext databas
         if (item is null) return false;
 
         database.EngagementResponsibilityOverrides.Remove(item);
+
+        var standingOwner = await database.StandingResponsibilityAssignments.AsNoTracking()
+            .SingleOrDefaultAsync(
+                x => x.TenantId == tenantId && x.LaneKey == lane.Key && x.IsActive,
+                cancellationToken);
+
+        await SyncTaskOwnersAsync(
+            tenantId,
+            assignmentId,
+            lane.Key,
+            standingOwner?.UserSubject,
+            standingOwner?.DisplayName ?? "Unassigned",
+            skipEngagementOverrides: false,
+            DateTimeOffset.UtcNow,
+            cancellationToken);
+
         await database.SaveChangesAsync(cancellationToken);
         return true;
     }
@@ -504,6 +550,52 @@ public sealed class EngagementResponsibilityService(EngagementsDbContext databas
                 .Select(lane => new MyResponsibilityWorkItem(item.Assignment, lane)))
             .OrderBy(item => item.Lane.DueAtUtc ?? item.Assignment.StartsAtUtc ?? DateTimeOffset.MaxValue)
             .ToArray();
+    }
+
+    private async Task SyncTaskOwnersAsync(
+        Guid tenantId,
+        Guid? assignmentId,
+        string laneKey,
+        string? userSubject,
+        string displayName,
+        bool skipEngagementOverrides,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        var query = database.Tasks
+            .Include(task => task.Assignment)
+            .Where(task => task.Assignment != null && task.Assignment.TenantId == tenantId);
+
+        if (assignmentId is Guid id)
+            query = query.Where(task => task.AssignmentId == id);
+
+        var tasks = await query.ToListAsync(cancellationToken);
+        HashSet<Guid> overriddenAssignments = [];
+
+        if (skipEngagementOverrides)
+        {
+            overriddenAssignments = await database.EngagementResponsibilityOverrides.AsNoTracking()
+                .Where(item => item.TenantId == tenantId && item.LaneKey == laneKey && item.IsActive)
+                .Select(item => item.AssignmentId)
+                .ToHashSetAsync(cancellationToken);
+        }
+
+        foreach (var task in tasks)
+        {
+            if (!string.Equals(
+                    EngagementResponsibilityLanes.Normalize(task.Category),
+                    laneKey,
+                    StringComparison.OrdinalIgnoreCase))
+                continue;
+            if (skipEngagementOverrides && overriddenAssignments.Contains(task.AssignmentId))
+                continue;
+
+            task.Owner = displayName;
+            task.OwnerSubject = userSubject;
+            task.UpdatedAtUtc = now;
+            if (task.Assignment is not null)
+                task.Assignment.UpdatedAtUtc = now;
+        }
     }
 
     private async Task<EngagementLaneProgress> GetOrCreateProgressAsync(

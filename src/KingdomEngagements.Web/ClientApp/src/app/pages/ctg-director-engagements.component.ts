@@ -182,7 +182,7 @@ export class CtgDirectorEngagementsComponent implements OnInit {
     const director = this.roles.canManageAssignments();
 
     forkJoin({
-      assignments:this.api.getAssignments(),
+      assignments:director ? this.api.getAssignments() : this.api.getMyAssignments(),
       snapshots:director
         ? this.api.getCommandCenter().pipe(
             catchError(() => {

@@ -58,8 +58,8 @@ public sealed class EngagementPreparationDbContext(DbContextOptions<EngagementPr
         preparation.Property(x => x.ContactsJson).HasMaxLength(12000).IsRequired();
         preparation.Property(x => x.PromotionRequirements).HasMaxLength(4000);
         preparation.Property(x => x.PrayerFocus).HasMaxLength(4000);
-        preparation.Property(x => x.MinistryPreparationNotes).HasMaxLength(6000);
-        preparation.Property(x => x.HospitalityNotes).HasMaxLength(6000);
+        preparation.Property(x => x.MinistryPreparationNotes).HasColumnType("nvarchar(max)");
+        preparation.Property(x => x.HospitalityNotes).HasColumnType("nvarchar(max)");
         preparation.Property(x => x.HostNotes).HasMaxLength(4000);
 
         var document = modelBuilder.Entity<HostCoordinationDocumentRecord>();
@@ -148,8 +148,8 @@ BEGIN
         [ContactsJson] nvarchar(max) NOT NULL,
         [PromotionRequirements] nvarchar(4000) NULL,
         [PrayerFocus] nvarchar(4000) NULL,
-        [MinistryPreparationNotes] nvarchar(6000) NULL,
-        [HospitalityNotes] nvarchar(6000) NULL,
+        [MinistryPreparationNotes] nvarchar(max) NULL,
+        [HospitalityNotes] nvarchar(max) NULL,
         [HostNotes] nvarchar(4000) NULL,
         [SubmittedAtUtc] datetimeoffset NULL,
         [CreatedAtUtc] datetimeoffset NOT NULL,
@@ -189,10 +189,10 @@ END;
 
         const string laneColumnsSql = """
 IF COL_LENGTH(N'dbo.EngagementPreparations', N'MinistryPreparationNotes') IS NULL
-    ALTER TABLE [dbo].[EngagementPreparations] ADD [MinistryPreparationNotes] nvarchar(6000) NULL;
+    ALTER TABLE [dbo].[EngagementPreparations] ADD [MinistryPreparationNotes] nvarchar(max) NULL;
 
 IF COL_LENGTH(N'dbo.EngagementPreparations', N'HospitalityNotes') IS NULL
-    ALTER TABLE [dbo].[EngagementPreparations] ADD [HospitalityNotes] nvarchar(6000) NULL;
+    ALTER TABLE [dbo].[EngagementPreparations] ADD [HospitalityNotes] nvarchar(max) NULL;
 """;
         await Database.ExecuteSqlRawAsync(laneColumnsSql, cancellationToken);
 

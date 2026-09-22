@@ -1,29 +1,13 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
-import { forkJoin } from 'rxjs';
-import {
-  CtgBookingDeskStateService,
-  ManualBookingRecord,
-} from '../core/ctg-booking-desk-state.service';
 import { EngagementsApiService } from '../core/engagements-api.service';
 import { EngagementSummary } from '../core/models';
-import { SpeakingRequestDetails } from '../core/speaking-request.models';
 
-interface ExecutiveSignal {
-  key: string;
-  title: string;
-  place: string;
-  kicker: string;
-  detail: string;
-  priority: number;
-  tone: 'gold' | 'blue' | 'rose';
-}
-
-interface CityImage {
+interface DestinationImage {
   terms: readonly string[];
   url: string;
 }
 
-const CITY_IMAGES: readonly CityImage[] = [
+const DESTINATION_IMAGES: readonly DestinationImage[] = [
   {
     terms: ['atlanta'],
     url: 'https://images.unsplash.com/photo-1675449672066-db3b9a6cd717?auto=format&fit=crop&w=1400&q=82',
@@ -58,283 +42,447 @@ const CITY_IMAGES: readonly CityImage[] = [
   selector: 'app-ctg-apostle-dashboard',
   standalone: true,
   template: `
-    <section class="apostle-dashboard">
-      <header class="travel-hero">
-        <div class="travel-hero__map" aria-hidden="true"></div>
-        <div class="travel-hero__content">
-          <span class="eyebrow">Cynthia Thompson Global · Executive view</span>
-          <h1>Good morning, Apostle Cynthia.</h1>
-          <p>Here is what matters right now. Your team is carrying the details.</p>
+    <section class="executive-view">
+      <header class="executive-hero">
+        <div class="executive-hero__copy">
+          <span class="hero-eyebrow">Global reach · Eternal impact.</span>
+          <h1>Apostle Cynthia<br><em>Executive View</em></h1>
+          <p>Your road ahead at a glance.</p>
+          <div class="hero-rule"></div>
+          <small>People · Places · Purpose · A greater tomorrow</small>
         </div>
-        <div class="travel-hero__mission" aria-hidden="true">
-          <span>People</span><span>Cities</span><span>Nations</span><strong>A brighter tomorrow</strong>
+
+        <div class="executive-hero__scripture" aria-hidden="true">
+          <strong>Until<br>all nations<br>hear.</strong>
+          <span>Matthew 24:14</span>
+          <i></i>
         </div>
+
         <img
-          class="travel-hero__portrait"
-          src="https://static.wixstatic.com/media/eac3f1_5cea273ab5c0434eb2e3f3145ea9757a~mv2.png"
+          class="executive-hero__portrait"
+          src="/ctg-apostle-cynthia.webp"
           alt="Apostle Cynthia Thompson"
         />
       </header>
 
       @if (loading()) {
-        <div class="loading-card">Preparing your ministry picture…</div>
+        <div class="loading-card">Preparing your road ahead…</div>
       } @else {
-        @if (nextAssignment(); as next) {
-          <section class="next-assignment" aria-label="Next assignment">
-            <a class="next-assignment__photo" [href]="assignmentHref(next.id)" [attr.aria-label]="'Open ' + next.title">
-              @if (cityImage(next.location); as photo) {
-                <img [src]="photo" [alt]="cityImageAlt(next.location)" />
+        <section class="metric-grid" aria-label="Executive engagement summary">
+          <article class="metric-card">
+            <span class="metric-icon">▦</span>
+            <div>
+              <small>Next engagement</small>
+              @if (nextAssignment(); as next) {
+                <strong>{{ shortDate(next.startsAtUtc) }}</strong>
+                <p>{{ next.location || 'Location being finalized' }}</p>
               } @else {
-                <div class="photo-fallback" aria-hidden="true"></div>
+                <strong>None scheduled</strong>
+                <p>Your team will add the next confirmed assignment here.</p>
               }
-              <div class="photo-shade"></div>
-              <div class="art-copy">
-                <span>{{ cityCode(next.location) }}</span>
-                <strong>{{ next.location || 'Global ministry assignment' }}</strong>
-                <small>Next destination · Open engagement →</small>
-              </div>
-            </a>
+            </div>
+          </article>
 
-            <div class="next-assignment__main">
-              <span class="eyebrow">Next assignment</span>
-              <div class="next-assignment__identity">
-                <div class="date-tile">
+          <article class="metric-card">
+            <span class="metric-icon">●●●</span>
+            <div>
+              <small>Upcoming engagements</small>
+              <strong>{{ nextThirtyDays().length }}</strong>
+              <p>Next 30 days</p>
+            </div>
+          </article>
+
+          <article class="metric-card metric-card--readiness">
+            <div class="metric-ring" [style.background]="readinessRing(averageReadiness())">
+              <span>{{ averageReadiness() }}%</span>
+            </div>
+            <div>
+              <small>Average readiness</small>
+              <strong>{{ averageReadiness() }}%</strong>
+              <p>Across upcoming engagements</p>
+            </div>
+          </article>
+
+          <article class="metric-card">
+            <span class="metric-icon">◆</span>
+            <div>
+              <small>Cities / nations ahead</small>
+              <strong>{{ destinationCities() }}</strong>
+              <p>{{ destinationRegions() }} regions · {{ destinationCities() }} cities</p>
+            </div>
+          </article>
+        </section>
+
+        <section class="executive-grid">
+          <article class="panel next-panel">
+            <header class="panel-heading">
+              <div><span class="panel-icon">▦</span><h2>Next Engagement</h2></div>
+              @if (nextAssignment(); as next) {
+                <a [href]="assignmentHref(next.id)">Open engagement <span>→</span></a>
+              }
+            </header>
+
+            @if (nextAssignment(); as next) {
+              <div class="next-summary">
+                <div class="date-card">
                   <span>{{ month(next.startsAtUtc) }}</span>
                   <strong>{{ day(next.startsAtUtc) }}</strong>
                   <small>{{ year(next.startsAtUtc) }}</small>
                 </div>
-                <div>
-                  <span class="pin-line">● {{ next.location || 'Location being finalized' }}</span>
-                  <h2><a [href]="assignmentHref(next.id)">{{ next.title }}</a></h2>
-                  <p>Host: {{ next.hostOrganization }}</p>
+
+                <div class="next-summary__copy">
+                  <h3>{{ next.title }}</h3>
+                  <p><span>●</span>{{ next.location || 'Location being finalized' }}</p>
+                  <p><span>▰</span>{{ next.hostOrganization }}</p>
+                </div>
+
+                <div class="readiness">
+                  <div class="readiness-ring" [style.background]="readinessRing(next.readinessPercent)">
+                    <div>{{ next.readinessPercent }}%</div>
+                  </div>
+                  <small>Readiness</small>
                 </div>
               </div>
 
-              <div class="status-row" aria-label="Preparation status">
-                <span [class.ready]="isConfirmed(next.travelStatus)"><b>✈</b><small>Travel</small><strong>{{ stateLabel(next.travelStatus) }}</strong></span>
-                <span [class.ready]="isConfirmed(next.lodgingStatus)"><b>▰</b><small>Lodging</small><strong>{{ stateLabel(next.lodgingStatus) }}</strong></span>
-                <span [class.ready]="isConfirmed(next.hostStatus)"><b>●</b><small>Host</small><strong>{{ stateLabel(next.hostStatus) }}</strong></span>
-                <span [class.ready]="isConfirmed(next.documentsStatus)"><b>▤</b><small>Documents</small><strong>{{ stateLabel(next.documentsStatus) }}</strong></span>
-              </div>
-            </div>
-
-            <div class="next-assignment__readiness">
-              <div class="readiness-ring" [style.background]="ring(next.readinessPercent)">
-                <div><strong>{{ next.readinessPercent }}%</strong><span>ready</span></div>
-              </div>
-              <a class="gold-action" [href]="assignmentHref(next.id)">View details <span>→</span></a>
-              <small>{{ daysUntil(next.startsAtUtc) }} days away</small>
-            </div>
-          </section>
-        }
-
-        <section class="pulse-grid" aria-label="Ministry pulse">
-          <a href="/organization/ctg/apostle#decisions" aria-label="Review open opportunities">
-            <div class="metric-icon">◎</div>
-            <div><strong>{{ openOpportunities() }}</strong><span>Open opportunities</span><small>Invitations the team is stewarding</small></div><b>→</b>
-          </a>
-          <a href="/assignments" aria-label="View confirmed ministry engagements">
-            <div class="metric-icon">▦</div>
-            <div><strong>{{ activeAssignments().length }}</strong><span>Confirmed ministry</span><small>Assignments currently on the road ahead</small></div><b>→</b>
-          </a>
-          <a href="/assignments" aria-label="View ready engagements">
-            <div class="metric-icon">✈</div>
-            <div><strong>{{ readyAssignments() }}</strong><span>Ready to go</span><small>80% readiness or better</small></div><b>→</b>
-          </a>
-          <a href="/organization/ctg/apostle#decisions" aria-label="Review items needing your eye">
-            <div class="metric-icon">!</div>
-            <div><strong>{{ decisionSignals().length }}</strong><span>Needs your eye</span><small>Only decisions worth surfacing to you</small></div><b>→</b>
-          </a>
-        </section>
-
-        <section class="dashboard-grid">
-          <div class="dashboard-grid__main">
-            <section class="decision-section" id="decisions">
-              <div class="section-heading">
-                <div><span class="section-icon">◉</span><h2>What needs your eye</h2></div>
-                <small>{{ decisionSignals().length }} items</small>
-              </div>
-
-              @if (decisionSignals().length) {
-                <div class="decision-cards">
-                  @for (signal of decisionSignals(); track signal.key) {
-                    <button type="button" class="decision-card" [attr.data-tone]="signal.tone" (click)="openSignal(signal)">
-                      <div class="decision-card__visual">
-                        @if (cityImage(signal.place); as photo) {
-                          <img [src]="photo" [alt]="cityImageAlt(signal.place)" />
-                        } @else {
-                          <div class="photo-fallback" aria-hidden="true"></div>
-                        }
-                        <span class="decision-card__photo-shade"></span>
-                        <b>{{ placeCode(signal.place) }}</b>
-                      </div>
-                      <div class="decision-card__body">
-                        <small>{{ signal.place }}</small>
-                        <strong>{{ signal.title }}</strong>
-                        <span class="decision-pill">{{ signal.kicker }}</span>
-                        <p>{{ signal.detail }}</p>
-                      </div>
-                      <span class="decision-card__arrow">→</span>
-                    </button>
-                  }
-                </div>
-              } @else {
-                <div class="all-clear"><span>✓</span><div><strong>Nothing is waiting on you.</strong><p>Your team has the current booking and preparation work in hand.</p></div></div>
-              }
-            </section>
-
-            <section class="road-section">
-              <div class="section-heading">
-                <div><span class="section-icon">●</span><h2>Your road ahead</h2></div>
-                <a href="/assignments">View all engagements →</a>
-              </div>
-
-              <div class="road-cards">
-                @for (item of upcomingAssignments(); track item.id) {
-                  <a class="road-card" [href]="assignmentHref(item.id)" [attr.aria-label]="'Open ' + item.title">
-                    <div class="road-card__visual">
-                      @if (cityImage(item.location); as photo) {
-                        <img [src]="photo" [alt]="cityImageAlt(item.location)" />
-                      } @else {
-                        <div class="photo-fallback" aria-hidden="true"></div>
-                      }
-                      <div class="road-card__date"><span>{{ month(item.startsAtUtc) }}</span><strong>{{ day(item.startsAtUtc) }}</strong></div>
-                      <small>{{ cityCode(item.location) }}</small>
-                    </div>
-                    <div class="road-card__body">
-                      <small>{{ item.location || 'Location pending' }}</small>
-                      <strong>{{ item.title }}</strong>
-                      <span>{{ item.hostOrganization }}</span>
-                    </div>
-                    <div class="road-card__ready">
-                      <div class="mini-ring" [style.background]="ring(item.readinessPercent)"><span>{{ item.readinessPercent }}%</span></div>
-                      <small>ready</small>
-                    </div>
-                  </a>
-                } @empty {
-                  <div class="empty-road">No upcoming confirmed engagements yet.</div>
+              <a
+                class="destination-photo"
+                [href]="assignmentHref(next.id)"
+                [attr.aria-label]="'Open ' + next.title"
+              >
+                @if (destinationImage(next.location); as photo) {
+                  <img [src]="photo" [alt]="destinationImageAlt(next.location)" />
+                } @else {
+                  <div class="destination-fallback" aria-hidden="true"></div>
                 }
+                <span class="destination-shade"></span>
+                <div class="destination-label">
+                  <strong>{{ cityName(next.location) }}</strong>
+                  <small>{{ locationTail(next.location) }}</small>
+                </div>
+                <p>Equipping leaders.<br>Transforming nations.</p>
+              </a>
+            } @else {
+              <div class="empty-state">
+                <strong>No confirmed engagement is currently ahead.</strong>
+                <span>Your team can continue stewarding the booking pipeline.</span>
               </div>
-            </section>
-          </div>
+            }
+          </article>
 
-          <aside class="movement-panel">
-            <div class="section-heading">
-              <div><span class="section-icon">⌁</span><h2>Ministry movement</h2></div>
-              <a href="/assignments">View all →</a>
-            </div>
+          <article class="panel month-panel">
+            <header class="panel-heading">
+              <div><span class="panel-icon">▦</span><h2>Next 30 Days</h2></div>
+              <a href="/assignments">View all <span>→</span></a>
+            </header>
 
-            <div class="movement-list">
-              @for (item of recentMovement(); track item.id; let i = $index) {
-                <a [href]="assignmentHref(item.id)" [attr.aria-label]="'Open update for ' + item.title">
-                  <div class="movement-icon">{{ movementIcon(item, i) }}</div>
-                  <div><strong>{{ movementTitle(item) }}</strong><p>{{ item.title }}</p><small>{{ item.location || item.hostOrganization }} · {{ dateTime(item.updatedAtUtc) }}</small></div>
-                  <span>→</span>
+            <div class="month-list">
+              @for (item of nextThirtyDaysPreview(); track item.id) {
+                <a [href]="assignmentHref(item.id)">
+                  <time>
+                    <span>{{ month(item.startsAtUtc) }}</span>
+                    <strong>{{ day(item.startsAtUtc) }}</strong>
+                  </time>
+                  <span class="destination-dot" [attr.data-tone]="readinessTone(item.readinessPercent)"></span>
+                  <div>
+                    <strong>{{ item.location || 'Location pending' }}</strong>
+                    <small>{{ item.title }}</small>
+                  </div>
+                  <b>{{ item.readinessPercent }}%</b>
+                  <span class="month-arrow">›</span>
                 </a>
               } @empty {
-                <div class="movement-empty"><div class="movement-icon">✓</div><div><strong>All quiet</strong><p>No recent assignment movement.</p><small>Your team updates will surface here.</small></div></div>
+                <div class="empty-list">No confirmed engagements fall within the next 30 days.</div>
               }
             </div>
+          </article>
 
-            <div class="movement-quote">
-              <span>“More people.<br>More nations.<br>More of Him.”</span>
-              <i></i>
+          <aside class="panel awareness-panel">
+            <header class="panel-heading">
+              <div><span class="panel-icon">●</span><h2>For Your Awareness</h2></div>
+            </header>
+
+            <div class="awareness-list">
+              <article>
+                <span class="awareness-icon">✈</span>
+                <div>
+                  <strong>Travel Details Pending</strong>
+                  <small>Awaiting final confirmation</small>
+                </div>
+                <b>{{ travelPending() }}</b>
+              </article>
+
+              <article>
+                <span class="awareness-icon">▤</span>
+                <div>
+                  <strong>Host Details Pending</strong>
+                  <small>Additional information coming</small>
+                </div>
+                <b>{{ hostPending() }}</b>
+              </article>
+
+              <article>
+                <span class="awareness-icon">▥</span>
+                <div>
+                  <strong>Documents Pending</strong>
+                  <small>Pre-engagement materials</small>
+                </div>
+                <b>{{ documentsPending() }}</b>
+              </article>
             </div>
+
+            <blockquote>
+              “The harvest is great, and the laborers are few.”
+              <cite>Luke 10:2</cite>
+            </blockquote>
           </aside>
         </section>
 
-        <footer class="executive-footer">
-          <span>Cynthia Thompson Global <i></i> Equip <i></i> Mobilize <i></i> Multiply</span>
-          <a href="/assignments">View confirmed engagements →</a>
-        </footer>
-      }
+        <section class="road-ahead" aria-label="Road ahead for the next 30 days">
+          <header>
+            <div><span>▦</span><strong>Road Ahead</strong><small>· Next 30 Days</small></div>
+            <a href="/assignments">View all engagements →</a>
+          </header>
 
-      @if (selectedSignal(); as signal) {
-        <div class="brief-backdrop" role="presentation" (click)="closeSignal()">
-          <section class="decision-brief" role="dialog" aria-modal="true" aria-labelledby="decision-brief-title" (click)="$event.stopPropagation()">
-            <div class="decision-brief__photo">
-              @if (cityImage(signal.place); as photo) {
-                <img [src]="photo" [alt]="cityImageAlt(signal.place)" />
-              } @else {
-                <div class="photo-fallback" aria-hidden="true"></div>
-              }
-              <div><span>{{ signal.kicker }}</span><strong>{{ signal.place }}</strong></div>
+          <div class="road-line">
+            @for (item of nextThirtyDaysPreview(); track item.id) {
+              <a [href]="assignmentHref(item.id)" class="road-stop">
+                <span class="road-dot" [attr.data-tone]="readinessTone(item.readinessPercent)"></span>
+                <strong>{{ month(item.startsAtUtc) }} {{ day(item.startsAtUtc) }}</strong>
+                <small>{{ cityName(item.location) }}</small>
+                <em>{{ locationTail(item.location) }}</em>
+              </a>
+            } @empty {
+              <p class="road-empty">No confirmed travel is scheduled in the next 30 days.</p>
+            }
+
+            <div class="road-callout" aria-hidden="true">
+              <span class="road-callout__map"></span>
+              <div><small>A global assignment.</small><strong>A higher calling.</strong><i></i></div>
             </div>
-            <div class="decision-brief__content">
-              <button type="button" class="close-button" aria-label="Close decision brief" (click)="closeSignal()">×</button>
-              <span class="eyebrow">Executive decision brief</span>
-              <h2 id="decision-brief-title">{{ signal.title }}</h2>
-              <p>{{ signal.detail }}</p>
-              <div class="brief-note"><span>What your team needs from you</span><strong>{{ executiveAsk(signal) }}</strong></div>
-              <div class="brief-actions">
-                <button type="button" (click)="closeSignal()">Back to overview</button>
-                <a href="/assignments">View confirmed engagements →</a>
-              </div>
-            </div>
-          </section>
-        </div>
+          </div>
+        </section>
       }
     </section>
   `,
   styles: [`
-    :host{display:block;min-height:calc(100vh - 72px);background:#f6f3ed;color:#171d25}*{box-sizing:border-box}.apostle-dashboard{max-width:1480px;margin:0 auto;padding:24px 28px 54px}.eyebrow{display:block;color:#9a7133;font-size:.61rem;font-weight:900;letter-spacing:.15em;text-transform:uppercase}.loading-card{padding:48px;border:1px solid #e3ded4;border-radius:18px;background:#fff;text-align:center;color:#777f88}
-    .travel-hero{position:relative;min-height:150px;overflow:hidden;margin:-24px -28px 16px;padding:31px 34px 36px;border-bottom:0;background:linear-gradient(102deg,#0d0e0c 0%,#11130f 16%,#171c11 30%,#263115 44%,#43511f 58%,#6f7c2e 72%,#a9b247 86%,#c5ca52 100%)}.travel-hero__map{position:absolute;inset:0;background:url('/ctg-world-route.svg') center/cover no-repeat;opacity:.36;mix-blend-mode:soft-light;-webkit-mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.34) 18%,#000 46%,#000 100%);mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.34) 18%,#000 46%,#000 100%)}.travel-hero::before{position:absolute;inset:0;background:radial-gradient(circle at 78% 18%,rgba(225,231,128,.16),transparent 34%),linear-gradient(90deg,rgba(0,0,0,.22) 0%,rgba(0,0,0,.12) 24%,rgba(0,0,0,.03) 55%,transparent 78%);content:'';pointer-events:none}.travel-hero::after{position:absolute;inset:0;background:linear-gradient(90deg,rgba(8,10,7,.38) 0%,rgba(8,10,7,.24) 24%,rgba(18,24,10,.12) 46%,rgba(96,108,43,.05) 72%,rgba(197,202,82,.02) 100%);content:'';pointer-events:none}.travel-hero__content,.travel-hero__mission{position:relative;z-index:2}.travel-hero__content{max-width:calc(100% - 250px)}.travel-hero .eyebrow{color:#d9df79}.travel-hero h1{margin:7px 0 6px;color:#fff;font-family:Georgia,'Times New Roman',serif;font-size:clamp(2.4rem,4.2vw,4.2rem);font-weight:500;line-height:.98;letter-spacing:-.052em;text-shadow:0 2px 18px rgba(0,0,0,.16)}.travel-hero p{margin:0;color:rgba(255,255,255,.82);font-size:.9rem}.travel-hero__mission{position:absolute;right:215px;top:28px;display:grid;gap:3px;color:rgba(255,255,255,.84);font-size:.54rem;font-weight:850;letter-spacing:.12em;text-transform:uppercase}.travel-hero__mission strong{color:#f4f6c9}.travel-hero__portrait{position:absolute;z-index:3;right:24px;bottom:0;width:clamp(145px,15vw,215px);height:auto;max-height:100%;object-fit:contain;object-position:bottom right;filter:drop-shadow(-12px 8px 22px rgba(0,0,0,.14));pointer-events:none}
-    .next-assignment{display:grid;grid-template-columns:280px minmax(0,1fr) 170px;overflow:hidden;border:1px solid #dfd9ce;border-radius:18px;background:#fff;box-shadow:0 12px 32px rgba(26,29,34,.07)}.next-assignment__photo{position:relative;min-height:208px;overflow:hidden;color:#fff;text-decoration:none;background:#1d2c3b}.next-assignment__photo img,.decision-card__visual img,.road-card__visual img,.decision-brief__photo img{width:100%;height:100%;object-fit:cover;display:block}.photo-fallback{width:100%;height:100%;min-height:100%;background:#243447 url('/ctg-world-route.svg') center/cover no-repeat}.photo-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,16,23,.04),rgba(10,16,23,.1) 42%,rgba(8,13,18,.84))}.art-copy{position:absolute;z-index:1;left:18px;right:18px;bottom:16px}.art-copy span{display:block;color:#e7c98d;font-size:.56rem;font-weight:900;letter-spacing:.15em}.art-copy strong{display:block;margin:3px 0;font-family:Georgia,serif;font-size:1.1rem;font-weight:500}.art-copy small{color:rgba(255,255,255,.78);font-size:.57rem}.next-assignment__photo:hover img{transform:scale(1.025)}.next-assignment__photo img{transition:transform .25s ease}.next-assignment__main{padding:20px 23px}.next-assignment__identity{display:grid;grid-template-columns:68px 1fr;gap:16px;align-items:center;margin-top:9px}.date-tile{display:grid;place-items:center;padding:8px 5px;border:1px solid #e3ddd2;border-radius:11px;background:#fbfaf7}.date-tile span{color:#8d6933;font-size:.55rem;font-weight:900;text-transform:uppercase}.date-tile strong{font-family:Georgia,serif;font-size:2.05rem;font-weight:500;line-height:1}.date-tile small{color:#777d84;font-size:.56rem}.pin-line{color:#86632e;font-size:.63rem;font-weight:850}.next-assignment h2{margin:4px 0 3px;font-family:Georgia,serif;font-size:1.5rem;font-weight:500}.next-assignment h2 a{color:inherit;text-decoration:none}.next-assignment h2 a:hover{color:#8e682e}.next-assignment p{margin:0;color:#747a82;font-size:.68rem}.status-row{display:grid;grid-template-columns:repeat(4,minmax(90px,1fr));gap:7px;margin-top:15px}.status-row>span{display:grid;grid-template-columns:25px 1fr;grid-template-rows:auto auto;column-gap:7px;align-items:center;padding:8px;border:1px solid #e6e2da;border-radius:10px;background:#faf9f6}.status-row b{grid-row:1/3;display:grid;width:25px;height:25px;place-items:center;border-radius:7px;background:#efece5;color:#6e7379}.status-row small{color:#7d8289;font-size:.5rem;font-weight:800}.status-row strong{font-size:.55rem}.status-row>span.ready b{background:#f4ead6;color:#987038}.next-assignment__readiness{display:grid;place-items:center;align-content:center;gap:10px;padding:18px;border-left:1px solid #e8e4dc;background:linear-gradient(180deg,#fff,#fbf7ef)}.readiness-ring{display:grid;width:106px;height:106px;place-items:center;border-radius:50%;padding:8px}.readiness-ring>div{display:grid;width:90px;height:90px;place-items:center;align-content:center;border-radius:50%;background:#fff}.readiness-ring strong{font-size:1.35rem}.readiness-ring span{font-size:.52rem;text-transform:uppercase}.gold-action{display:inline-flex;gap:7px;align-items:center;padding:10px 15px;border-radius:999px;background:linear-gradient(180deg,#c69b4c,#a97d32);color:#fff;font-size:.62rem;font-weight:900;text-decoration:none}.next-assignment__readiness>small{color:#8b8f95;font-size:.55rem}
-    .pulse-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin:12px 0}.pulse-grid>a{display:grid;grid-template-columns:46px 1fr auto;gap:12px;align-items:center;min-height:104px;padding:16px 17px;border:1px solid #e1ddd5;border-radius:16px;background:#fff;color:inherit;text-decoration:none;box-shadow:0 7px 18px rgba(25,29,35,.035);transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease}.pulse-grid>a:hover{transform:translateY(-2px);border-color:#cfb47f;box-shadow:0 11px 26px rgba(25,29,35,.07)}.pulse-grid>a>b{color:#aa8240;font-size:.9rem}.metric-icon{display:grid;width:43px;height:43px;place-items:center;border-radius:50%;background:#f6eddc;color:#9a7135;font-size:1.05rem}.pulse-grid strong{display:block;font-family:Georgia,serif;font-size:1.55rem;font-weight:500;line-height:1}.pulse-grid span{display:block;margin:3px 0;color:#242a32;font-size:.68rem;font-weight:850}.pulse-grid small{display:block;color:#8a8f96;font-size:.56rem;line-height:1.35}
-    .dashboard-grid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:12px}.dashboard-grid__main{display:grid;gap:12px}.decision-section,.road-section,.movement-panel{border:1px solid #e1ddd5;border-radius:17px;background:#fff;overflow:hidden}.section-heading{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:13px 15px;border-bottom:1px solid #ece8e1}.section-heading>div{display:flex;align-items:center;gap:8px}.section-heading h2{margin:0;font-family:Georgia,serif;font-size:1rem;font-weight:500}.section-heading small,.section-heading>a{color:#858a91;font-size:.57rem;font-weight:800}.section-heading>a{color:#8d692f;text-decoration:none}.section-icon{color:#a77b37}
-    .decision-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;padding:10px}.decision-card{display:grid;grid-template-columns:100px minmax(0,1fr) 18px;gap:10px;align-items:center;min-height:136px;padding:0 10px 0 0;border:1px solid #e4e0d9;border-radius:13px;background:#fff;color:inherit;font:inherit;text-align:left;cursor:pointer;overflow:hidden;transition:transform .15s ease,box-shadow .15s ease}.decision-card:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(23,28,35,.08)}.decision-card__visual{position:relative;align-self:stretch;min-height:136px;overflow:hidden;background:#243447}.decision-card__visual img{position:absolute;inset:0}.decision-card__photo-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,12,18,.05),rgba(8,12,18,.68))}.decision-card__visual>b{position:absolute;z-index:1;left:9px;bottom:9px;color:#fff;font-size:.55rem;letter-spacing:.1em}.decision-card__body small{display:block;color:#868b92;font-size:.53rem}.decision-card__body>strong{display:block;margin:3px 0 6px;font-size:.72rem}.decision-pill{display:inline-block;padding:4px 7px;border-radius:999px;background:#f5ead6;color:#8d662b;font-size:.5rem;font-weight:900}.decision-card[data-tone='rose'] .decision-pill{background:#fae9e6;color:#a94f45}.decision-card[data-tone='blue'] .decision-pill{background:#eaf0f6;color:#426b95}.decision-card__body p{margin:6px 0 0;color:#737981;font-size:.57rem;line-height:1.4}.decision-card__arrow{color:#a27a3a}.all-clear{display:flex;gap:10px;padding:25px}.all-clear>span{display:grid;width:32px;height:32px;place-items:center;border-radius:50%;background:#e9f4ed;color:#397156}.all-clear p{margin:4px 0;color:#7d838b;font-size:.65rem}
-    .road-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;padding:10px}.road-card{display:grid;grid-template-columns:100px minmax(0,1fr) 58px;gap:10px;align-items:center;overflow:hidden;min-height:102px;border:1px solid #e4e0d9;border-radius:13px;background:#fff;color:inherit;text-decoration:none;transition:transform .15s ease,box-shadow .15s ease}.road-card:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(23,28,35,.08)}.road-card__visual{position:relative;height:102px;overflow:hidden;background:#243447}.road-card__visual img{position:absolute;inset:0}.road-card__visual::after{position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,12,18,.08),rgba(8,12,18,.6));content:''}.road-card__date{position:absolute;z-index:1;top:8px;left:8px;display:grid;place-items:center;width:39px;padding:4px;border-radius:8px;background:rgba(255,255,255,.91)}.road-card__date span{color:#8d672f;font-size:.46rem;font-weight:900;text-transform:uppercase}.road-card__date strong{font-family:Georgia,serif;font-size:1.18rem;font-weight:500;line-height:1}.road-card__visual>small{position:absolute;z-index:1;left:9px;bottom:8px;color:#fff;font-size:.5rem;font-weight:900;letter-spacing:.1em}.road-card__body small,.road-card__body span{display:block;color:#858b92;font-size:.54rem}.road-card__body strong{display:block;margin:3px 0;font-size:.68rem}.road-card__ready{text-align:center}.mini-ring{display:grid;width:42px;height:42px;margin:auto;place-items:center;border-radius:50%;padding:4px}.mini-ring>span{display:grid;width:34px;height:34px;place-items:center;border-radius:50%;background:#fff;color:#20252c;font-size:.53rem;font-weight:900}.road-card__ready>small{color:#8d9298;font-size:.45rem;text-transform:uppercase}.empty-road{grid-column:1/-1;padding:25px;text-align:center;color:#858b92}
-    .movement-list{display:grid}.movement-list>a,.movement-empty{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:14px 15px;border-bottom:1px solid #ece8e1;color:inherit;text-decoration:none}.movement-list>a:hover{background:#fbf8f1}.movement-list>a>span{color:#a77d3b}.movement-icon{display:grid;width:32px;height:32px;place-items:center;border-radius:50%;background:#f5ecdc;color:#9a7134}.movement-list strong{font-size:.66rem}.movement-list p{margin:2px 0;color:#656d76;font-size:.58rem}.movement-list small{color:#94989e;font-size:.5rem}.movement-quote{min-height:150px;padding:23px;background:linear-gradient(135deg,rgba(19,31,45,.94),rgba(80,65,43,.88)),url('/ctg-world-route.svg') center/cover;color:#fff}.movement-quote span{font-family:Georgia,serif;font-size:1.08rem;line-height:1.35}.movement-quote i{display:block;width:35px;height:2px;margin-top:14px;background:#c79b4d}
-    .executive-footer{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:15px;padding:14px 2px;color:#747b83;font-size:.56rem}.executive-footer span{display:flex;gap:7px;align-items:center}.executive-footer i{width:3px;height:3px;border-radius:50%;background:#b58a43}.executive-footer a{color:#8c672f;font-size:.6rem;font-weight:900;text-decoration:none}
-    .brief-backdrop{position:fixed;z-index:10000;inset:0;display:grid;place-items:center;padding:24px;background:rgba(13,18,24,.48);backdrop-filter:blur(7px)}.decision-brief{display:grid;grid-template-columns:270px minmax(0,1fr);width:min(760px,95vw);overflow:hidden;border:1px solid rgba(255,255,255,.25);border-radius:20px;background:#fff;box-shadow:0 30px 90px rgba(0,0,0,.24)}.decision-brief__photo{position:relative;min-height:340px;background:#243447}.decision-brief__photo img{position:absolute;inset:0}.decision-brief__photo::after{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,15,21,.05),rgba(10,15,21,.76));content:''}.decision-brief__photo>div:last-child{position:absolute;z-index:1;left:20px;right:20px;bottom:20px;color:#fff}.decision-brief__photo span,.decision-brief__photo strong{display:block}.decision-brief__photo span{color:#e4c684;font-size:.55rem;font-weight:900;text-transform:uppercase}.decision-brief__photo strong{margin-top:4px;font-family:Georgia,serif;font-size:1.25rem;font-weight:500}.decision-brief__content{position:relative;padding:28px}.decision-brief__content h2{margin:7px 0 8px;font-family:Georgia,serif;font-size:1.8rem;font-weight:500}.decision-brief__content>p{color:#69717b;line-height:1.55}.close-button{position:absolute;top:14px;right:14px;width:34px;height:34px;border:0;border-radius:50%;background:#f0ede7;color:#555;font-size:1.2rem;cursor:pointer}.brief-note{display:grid;gap:5px;margin:22px 0;padding:15px;border-left:3px solid #b78a43;background:#faf6ee}.brief-note span{color:#8b713f;font-size:.55rem;font-weight:900;text-transform:uppercase}.brief-note strong{font-size:.76rem}.brief-actions{display:flex;gap:9px;flex-wrap:wrap}.brief-actions button,.brief-actions a{display:inline-flex;align-items:center;min-height:38px;padding:0 13px;border-radius:9px;font-size:.62rem;font-weight:900;text-decoration:none}.brief-actions button{border:1px solid #d8d3c9;background:#fff;color:#555;cursor:pointer}.brief-actions a{background:#172a46;color:#fff}
-    @media(max-width:1100px){.next-assignment{grid-template-columns:230px 1fr}.next-assignment__readiness{grid-column:1/-1;grid-template-columns:auto auto 1fr;justify-content:start;border-top:1px solid #e8e4dc;border-left:0}.readiness-ring{width:75px;height:75px}.readiness-ring>div{width:59px;height:59px}.pulse-grid{grid-template-columns:1fr 1fr}.dashboard-grid{grid-template-columns:1fr}.decision-cards,.road-cards{grid-template-columns:1fr}.movement-panel{display:grid;grid-template-columns:1fr 280px}.movement-panel>.section-heading{grid-column:1/-1}}
-    @media(max-width:720px){.apostle-dashboard{padding:18px 14px 45px}.travel-hero{margin:-18px -14px 13px;padding:25px 18px}.travel-hero__content{max-width:72%}.travel-hero__mission{display:none}.travel-hero__portrait{right:8px;width:120px;max-height:92%}.next-assignment{grid-template-columns:1fr}.next-assignment__photo{min-height:210px}.next-assignment__readiness{grid-column:auto;grid-template-columns:auto 1fr;border-left:0}.next-assignment__readiness>small{grid-column:2}.status-row{grid-template-columns:1fr 1fr}.pulse-grid{grid-template-columns:1fr}.decision-card,.road-card{grid-template-columns:92px 1fr 28px}.movement-panel{display:block}.decision-brief{grid-template-columns:1fr}.decision-brief__photo{min-height:190px}.executive-footer{align-items:flex-start;flex-direction:column}}
+    :host{display:block;min-height:calc(100vh - 68px);background:#f4f1e9;color:#161d1b}
+    *{box-sizing:border-box}
+    .executive-view{width:min(1540px,calc(100% - 34px));margin:0 auto;padding:16px 0 30px}
+    .loading-card{padding:48px;border:1px solid #dfd9cc;border-radius:12px;background:#fffdf8;color:#6f746f;text-align:center}
+    .executive-hero{position:relative;min-height:290px;overflow:hidden;border:1px solid rgba(188,166,90,.24);border-radius:10px;background:linear-gradient(90deg,rgba(5,16,10,.98) 0%,rgba(7,22,12,.86) 31%,rgba(17,38,13,.38) 62%,rgba(5,18,10,.74) 100%),url('/ctg-global-road-map.webp') center/cover no-repeat;color:#fff;box-shadow:0 12px 30px rgba(18,32,20,.12)}
+    .executive-hero::after{position:absolute;inset:0;background:linear-gradient(90deg,rgba(1,8,5,.35),transparent 45%,rgba(2,10,5,.15));content:'';pointer-events:none}
+    .executive-hero__copy{position:relative;z-index:2;width:min(720px,58%);padding:31px 34px 24px}
+    .hero-eyebrow{display:block;color:#d4cfab;font-size:.61rem;font-weight:850;letter-spacing:.34em;text-transform:uppercase}
+    .executive-hero h1{margin:13px 0 7px;font-family:Georgia,'Times New Roman',serif;font-size:clamp(2.8rem,5vw,5rem);font-weight:500;line-height:.86;letter-spacing:-.055em}
+    .executive-hero h1 em{color:#e2bd62;font-style:normal}
+    .executive-hero__copy>p{margin:12px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:1.08rem}
+    .hero-rule{width:44px;height:2px;margin:19px 0 14px;background:#d6ac49}
+    .executive-hero__copy>small{color:#c8c9b8;font-size:.54rem;font-weight:800;letter-spacing:.29em;text-transform:uppercase}
+    .executive-hero__portrait{position:absolute;z-index:3;right:9%;bottom:-2px;width:clamp(210px,22vw,350px);max-height:98%;object-fit:contain;object-position:bottom;filter:drop-shadow(-18px 12px 25px rgba(0,0,0,.2));pointer-events:none}
+    .executive-hero__scripture{position:absolute;z-index:3;right:25px;top:62px;display:grid;justify-items:center;color:#ebe7d5;text-align:center;text-transform:uppercase}
+    .executive-hero__scripture strong{font-family:Georgia,'Times New Roman',serif;font-size:.76rem;font-weight:500;letter-spacing:.16em;line-height:1.45}
+    .executive-hero__scripture span{margin-top:10px;font-size:.45rem;letter-spacing:.17em}
+    .executive-hero__scripture i{width:30px;height:1px;margin-top:14px;background:#d8b456}
+
+    .metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:10px 0}
+    .metric-card{display:flex;min-height:94px;padding:15px 17px;border:1px solid #e2ddd2;border-radius:10px;align-items:center;gap:14px;background:#fffdf8;box-shadow:0 5px 14px rgba(27,35,29,.035)}
+    .metric-card>div{min-width:0}
+    .metric-card small,.metric-card strong,.metric-card p{display:block;margin:0}
+    .metric-card small{color:#353c37;font-size:.66rem;font-weight:850;text-transform:uppercase}
+    .metric-card strong{margin-top:4px;font-size:1.26rem;letter-spacing:-.025em}
+    .metric-card p{margin-top:2px;color:#6e746f;font-size:.62rem}
+    .metric-icon{display:grid;width:49px;height:49px;flex:0 0 49px;border-radius:50%;place-items:center;color:#927426;background:#f6f0df;font-size:.86rem;font-weight:900}
+    .metric-ring{display:grid;width:55px;height:55px;flex:0 0 55px;padding:6px;border-radius:50%;place-items:center}
+    .metric-ring span{display:grid;width:43px;height:43px;border-radius:50%;place-items:center;background:#fffdf8;font-size:.63rem;font-weight:900}
+
+    .executive-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(330px,.95fr) minmax(280px,.62fr);gap:10px}
+    .panel{overflow:hidden;border:1px solid #dfd9ce;border-radius:10px;background:#fffdf8;box-shadow:0 6px 18px rgba(28,34,28,.035)}
+    .panel-heading{display:flex;min-height:49px;padding:0 14px;border-bottom:1px solid #e8e3d9;align-items:center;justify-content:space-between;gap:12px}
+    .panel-heading>div{display:flex;align-items:center;gap:8px}
+    .panel-heading h2{margin:0;font-family:Georgia,'Times New Roman',serif;font-size:.96rem;font-weight:600}
+    .panel-heading a{color:#1572a9;font-size:.6rem;font-weight:850;text-decoration:none}
+    .panel-icon{color:#8c7427;font-size:.8rem}
+
+    .next-summary{display:grid;grid-template-columns:76px minmax(0,1fr) 82px;gap:14px;align-items:center;padding:12px 14px}
+    .date-card{display:grid;min-height:92px;border-radius:8px;place-items:center;align-content:center;background:#f6f3ed}
+    .date-card span{font-size:.64rem;font-weight:900;text-transform:uppercase}
+    .date-card strong{font-family:Georgia,serif;font-size:2.15rem;font-weight:500;line-height:1}
+    .date-card small{margin-top:4px;font-size:.59rem}
+    .next-summary__copy h3{margin:0 0 9px;font-family:Georgia,serif;font-size:1.08rem}
+    .next-summary__copy p{display:flex;margin:5px 0;align-items:center;gap:8px;color:#59645d;font-size:.64rem}
+    .next-summary__copy p span{color:#355b72}
+    .readiness{display:grid;justify-items:center;gap:4px}
+    .readiness-ring{display:grid;width:62px;height:62px;padding:6px;border-radius:50%;place-items:center}
+    .readiness-ring>div{display:grid;width:50px;height:50px;border-radius:50%;place-items:center;background:#fffdf8;font-size:.8rem;font-weight:900}
+    .readiness small{color:#707770;font-size:.55rem}
+    .destination-photo{position:relative;display:block;height:168px;margin:0 10px 10px;overflow:hidden;border-radius:7px;color:#fff;text-decoration:none;background:#132218}
+    .destination-photo img,.destination-fallback{display:block;width:100%;height:100%;object-fit:cover}
+    .destination-fallback{background:url('/ctg-global-road-map.webp') center/cover no-repeat}
+    .destination-shade{position:absolute;inset:0;background:linear-gradient(180deg,transparent 30%,rgba(4,12,8,.72) 100%)}
+    .destination-label{position:absolute;z-index:2;left:14px;bottom:12px;display:grid;text-transform:uppercase}
+    .destination-label strong{font-family:Georgia,serif;font-size:1rem;letter-spacing:.12em}
+    .destination-label small{font-size:.55rem;letter-spacing:.16em}
+    .destination-photo>p{position:absolute;z-index:2;right:14px;bottom:12px;margin:0;font-family:Georgia,serif;font-size:.66rem;font-style:italic;line-height:1.25;text-align:right}
+
+    .month-list{display:grid}
+    .month-list>a{display:grid;grid-template-columns:46px 9px minmax(0,1fr) 36px 12px;gap:8px;align-items:center;min-height:53px;padding:5px 10px;border-bottom:1px solid #ebe7de;color:inherit;text-decoration:none}
+    .month-list>a:last-child{border-bottom:0}
+    .month-list>a:hover{background:#faf7ef}
+    .month-list time{display:grid;justify-items:center;padding:4px;border-radius:6px;background:#f6f3ed}
+    .month-list time span{font-size:.46rem;font-weight:900;text-transform:uppercase}
+    .month-list time strong{font-family:Georgia,serif;font-size:1rem}
+    .destination-dot,.road-dot{width:9px;height:9px;border-radius:50%;background:#5ca967}
+    .destination-dot[data-tone='gold'],.road-dot[data-tone='gold']{background:#d6ae4e}
+    .destination-dot[data-tone='blue'],.road-dot[data-tone='blue']{background:#5d83ad}
+    .month-list a>div strong,.month-list a>div small{display:block}
+    .month-list a>div strong{font-size:.66rem}
+    .month-list a>div small{margin-top:2px;color:#727870;font-size:.54rem}
+    .month-list a>b{color:#44504a;font-size:.58rem}
+    .month-arrow{color:#8e7429;font-size:1rem}
+    .empty-list{padding:32px 14px;color:#7c827c;font-size:.66rem;text-align:center}
+
+    .awareness-panel{background:linear-gradient(180deg,#fffdf8,#f8f3e9)}
+    .awareness-list{display:grid;gap:7px;padding:10px}
+    .awareness-list article{display:grid;grid-template-columns:35px 1fr auto;gap:9px;align-items:center;padding:10px;border-radius:8px;background:rgba(255,255,255,.7)}
+    .awareness-icon{display:grid;width:32px;height:32px;place-items:center;color:#75611f;font-size:.88rem}
+    .awareness-list strong,.awareness-list small{display:block}
+    .awareness-list strong{font-size:.65rem}
+    .awareness-list small{margin-top:2px;color:#737972;font-size:.54rem}
+    .awareness-list b{font-size:.9rem}
+    blockquote{margin:5px 18px 16px;color:#8b6a30;font-family:Georgia,serif;font-size:.74rem;font-style:italic;line-height:1.4;text-align:center}
+    blockquote cite{display:block;margin-top:7px;color:#50554f;font-size:.48rem;font-style:normal;letter-spacing:.16em;text-transform:uppercase}
+
+    .road-ahead{margin-top:10px;overflow:hidden;border:1px solid #243829;border-radius:10px;background:linear-gradient(135deg,#13261a,#192c1d 62%,#0e1d14);color:#fff}
+    .road-ahead>header{display:flex;min-height:38px;padding:0 14px;align-items:center;justify-content:space-between;gap:12px}
+    .road-ahead>header>div{display:flex;align-items:center;gap:7px}
+    .road-ahead>header span{color:#d9b54f}
+    .road-ahead>header strong{font-family:Georgia,serif;font-size:.75rem}
+    .road-ahead>header small{color:#c9d1ca;font-size:.62rem}
+    .road-ahead>header a{color:#72b5df;font-size:.52rem;text-decoration:none}
+    .road-line{position:relative;display:grid;grid-template-columns:repeat(5,minmax(85px,1fr)) minmax(180px,1.25fr);min-height:102px;padding:12px 12px 12px;gap:8px}
+    .road-line::before{position:absolute;top:20px;left:5%;right:27%;height:1px;background:rgba(211,219,208,.32);content:''}
+    .road-stop{position:relative;z-index:2;display:grid;justify-items:center;align-content:start;color:#fff;text-decoration:none;text-align:center}
+    .road-stop .road-dot{width:10px;height:10px;margin:3px 0 8px;box-shadow:0 0 0 3px #17291c}
+    .road-stop strong{font-size:.57rem;text-transform:uppercase}
+    .road-stop small{margin-top:3px;font-size:.55rem}
+    .road-stop em{color:#cbd2cc;font-size:.49rem;font-style:normal}
+    .road-callout{display:grid;grid-template-columns:72px 1fr;align-items:center;min-height:65px;padding:8px 10px;border:1px solid rgba(255,255,255,.12);border-radius:7px;background:#0b1710}
+    .road-callout__map{height:45px;background:url('/ctg-global-road-map.webp') center/cover no-repeat;opacity:.65}
+    .road-callout small,.road-callout strong{display:block}
+    .road-callout small{font-size:.43rem;letter-spacing:.16em;text-transform:uppercase}
+    .road-callout strong{margin-top:4px;font-family:Georgia,serif;font-size:.58rem;text-transform:uppercase}
+    .road-callout i{display:block;width:25px;height:1px;margin-top:8px;background:#d4ae4e}
+    .road-empty{grid-column:1/-2;align-self:center;margin:0;color:#cad2cb;font-size:.65rem;text-align:center}
+    .empty-state{display:grid;min-height:250px;padding:32px;place-items:center;align-content:center;color:#747a74;text-align:center;gap:7px}
+
+    @media(max-width:1180px){
+      .executive-grid{grid-template-columns:1fr 1fr}
+      .awareness-panel{grid-column:1/-1}
+      .awareness-list{grid-template-columns:repeat(3,1fr)}
+      blockquote{grid-column:1/-1}
+      .executive-hero__portrait{right:4%}
+      .executive-hero__scripture{display:none}
+    }
+    @media(max-width:900px){
+      .metric-grid{grid-template-columns:1fr 1fr}
+      .executive-hero__copy{width:68%}
+      .executive-hero__portrait{right:-10px;width:260px}
+      .road-line{grid-template-columns:repeat(5,minmax(90px,1fr));overflow-x:auto}
+      .road-callout{display:none}
+      .road-line::before{right:5%}
+    }
+    @media(max-width:720px){
+      .executive-view{width:calc(100% - 20px);padding-top:10px}
+      .executive-hero{min-height:315px}
+      .executive-hero__copy{width:100%;padding:24px 20px}
+      .executive-hero h1{font-size:clamp(2.45rem,14vw,3.5rem)}
+      .executive-hero__copy>p{font-size:.92rem}
+      .executive-hero__copy>small{max-width:58%;line-height:1.7}
+      .executive-hero__portrait{right:-42px;width:200px;opacity:.72}
+      .metric-grid{grid-template-columns:1fr}
+      .executive-grid{grid-template-columns:1fr}
+      .awareness-panel{grid-column:auto}
+      .awareness-list{grid-template-columns:1fr}
+      .next-summary{grid-template-columns:66px 1fr 66px}
+      .destination-photo{height:150px}
+      .road-ahead>header a{display:none}
+      .road-line{grid-template-columns:repeat(5,110px)}
+    }
   `],
 })
 export class CtgApostleDashboardComponent implements OnInit {
-  readonly requests = signal<readonly SpeakingRequestDetails[]>([]);
   readonly assignments = signal<readonly EngagementSummary[]>([]);
   readonly loading = signal(true);
-  readonly selectedSignal = signal<ExecutiveSignal | null>(null);
 
-  readonly activeAssignments = computed(() => this.assignments()
-    .filter(item => !['complete', 'completed', 'archived', 'cancelled'].includes(item.status.toLowerCase()))
-    .sort((a, b) => this.time(a.startsAtUtc) - this.time(b.startsAtUtc)));
-
-  readonly nextAssignment = computed(() => {
-    const cutoff = Date.now() - 86400000;
-    return this.activeAssignments().find(item => this.time(item.startsAtUtc) >= cutoff) ?? this.activeAssignments()[0] ?? null;
-  });
-
-  readonly upcomingAssignments = computed(() => this.activeAssignments().slice(0, 3));
-  readonly readyAssignments = computed(() => this.activeAssignments().filter(item => item.readinessPercent >= 80).length);
-  readonly openOpportunities = computed(() =>
-    this.requests().filter(item => !['approved', 'declined'].includes(item.status)).length + this.bookingState.active().length,
+  readonly activeAssignments = computed(() =>
+    [...this.assignments()]
+      .filter(item => !['complete', 'completed', 'archived', 'cancelled'].includes((item.status || '').toLowerCase()))
+      .sort((a, b) => this.time(a.startsAtUtc) - this.time(b.startsAtUtc)),
   );
 
-  readonly decisionSignals = computed<ExecutiveSignal[]>(() => {
-    const manual = this.bookingState.active()
-      .map(item => this.manualSignal(item))
-      .filter((item): item is ExecutiveSignal => item !== null);
-    const formal = this.requests()
-      .map(item => this.requestSignal(item))
-      .filter((item): item is ExecutiveSignal => item !== null);
-    return [...manual, ...formal].sort((a, b) => b.priority - a.priority).slice(0, 3);
+  readonly futureAssignments = computed(() => {
+    const cutoff = Date.now() - 86400000;
+    return this.activeAssignments().filter(item => this.time(item.startsAtUtc) >= cutoff);
   });
 
-  readonly recentMovement = computed(() => [...this.activeAssignments()]
-    .sort((a, b) => this.time(b.updatedAtUtc) - this.time(a.updatedAtUtc))
-    .slice(0, 4));
+  readonly nextAssignment = computed(() => this.futureAssignments()[0] ?? null);
 
-  constructor(
-    readonly bookingState: CtgBookingDeskStateService,
-    private readonly api: EngagementsApiService,
-  ) {}
+  readonly nextThirtyDays = computed(() => {
+    const now = Date.now() - 86400000;
+    const end = Date.now() + (30 * 86400000);
+    return this.futureAssignments().filter(item => {
+      const starts = this.time(item.startsAtUtc);
+      return starts >= now && starts <= end;
+    });
+  });
+
+  readonly nextThirtyDaysPreview = computed(() => this.nextThirtyDays().slice(0, 5));
+
+  readonly averageReadiness = computed(() => {
+    const items = this.nextThirtyDays();
+    if (items.length === 0) return this.nextAssignment()?.readinessPercent ?? 0;
+    return Math.round(items.reduce((total, item) => total + item.readinessPercent, 0) / items.length);
+  });
+
+  readonly destinationCities = computed(() => {
+    const cities = new Set(
+      this.nextThirtyDays()
+        .map(item => this.cityName(item.location).toLowerCase())
+        .filter(Boolean),
+    );
+    return cities.size;
+  });
+
+  readonly destinationRegions = computed(() => {
+    const regions = new Set(
+      this.nextThirtyDays()
+        .map(item => this.locationTail(item.location).toLowerCase())
+        .filter(Boolean),
+    );
+    return regions.size;
+  });
+
+  readonly travelPending = computed(() =>
+    this.nextThirtyDays().filter(item =>
+      !this.isConfirmed(item.travelStatus) ||
+      !this.isConfirmed(item.lodgingStatus) ||
+      !this.isConfirmed(item.transportationStatus),
+    ).length,
+  );
+
+  readonly hostPending = computed(() =>
+    this.nextThirtyDays().filter(item => !this.isConfirmed(item.hostStatus)).length,
+  );
+
+  readonly documentsPending = computed(() =>
+    this.nextThirtyDays().filter(item => !this.isConfirmed(item.documentsStatus)).length,
+  );
+
+  constructor(private readonly api: EngagementsApiService) {}
 
   ngOnInit(): void {
-    forkJoin({ requests: this.api.getRequests(), assignments: this.api.getAssignments() }).subscribe({
-      next: ({ requests, assignments }) => {
-        this.requests.set(requests);
+    this.api.getAssignments().subscribe({
+      next: assignments => {
         this.assignments.set(assignments);
         this.loading.set(false);
       },
@@ -342,102 +490,63 @@ export class CtgApostleDashboardComponent implements OnInit {
     });
   }
 
-  openSignal(item: ExecutiveSignal): void { this.selectedSignal.set(item); }
-  closeSignal(): void { this.selectedSignal.set(null); }
-  assignmentHref(id: string): string { return `/assignments/${encodeURIComponent(id)}`; }
+  assignmentHref(id: string): string {
+    return `/assignments/${encodeURIComponent(id)}`;
+  }
 
-  cityImage(value: string | null | undefined): string | null {
+  destinationImage(value: string | null | undefined): string | null {
     const normalized = (value ?? '').trim().toLowerCase();
     if (!normalized) return null;
-    return CITY_IMAGES.find(image => image.terms.some(term => normalized.includes(term)))?.url ?? null;
+    return DESTINATION_IMAGES.find(image =>
+      image.terms.some(term => normalized.includes(term)),
+    )?.url ?? null;
   }
 
-  cityImageAlt(value: string | null | undefined): string {
-    return value ? `${value} city view` : 'Ministry destination city view';
+  destinationImageAlt(value: string | null | undefined): string {
+    return value ? `${value} destination` : 'Upcoming ministry destination';
   }
 
-  ring(percent: number): string {
-    return `conic-gradient(#b58a45 ${Math.max(0, Math.min(100, percent))}%, #eee9df 0)`;
+  readinessRing(percent: number): string {
+    const value = Math.max(0, Math.min(100, percent));
+    const color = value >= 80 ? '#4fa65e' : value >= 65 ? '#d0a53d' : '#b86b50';
+    return `conic-gradient(${color} ${value}%, #e7e5dc 0)`;
   }
 
-  isConfirmed(value: string): boolean {
-    return ['confirmed', 'complete', 'received'].includes((value || '').toLowerCase());
+  readinessTone(percent: number): 'green' | 'gold' | 'blue' {
+    if (percent >= 80) return 'green';
+    if (percent >= 65) return 'gold';
+    return 'blue';
+  }
+
+  isConfirmed(value: string | null | undefined): boolean {
+    return ['confirmed', 'complete', 'completed', 'received', 'ready'].includes((value || '').toLowerCase());
+  }
+
+  shortDate(value: string | null): string {
+    return value
+      ? new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+      : 'TBD';
   }
 
   month(value: string | null): string {
     return value ? new Date(value).toLocaleDateString(undefined, { month: 'short' }) : 'TBD';
   }
 
-  day(value: string | null): string { return value ? new Date(value).getDate().toString() : '—'; }
-  year(value: string | null): string { return value ? new Date(value).getFullYear().toString() : ''; }
-  dateTime(value: string): string { return new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); }
-
-  daysUntil(value: string | null): number | string {
-    if (!value) return '—';
-    return Math.max(0, Math.ceil((new Date(value).getTime() - Date.now()) / 86400000));
+  day(value: string | null): string {
+    return value ? new Date(value).getDate().toString() : '—';
   }
 
-  stateLabel(value: string): string {
-    const normalized = (value || 'pending').trim().replaceAll('-', ' ');
-    return normalized.replace(/\b\w/g, character => character.toUpperCase());
+  year(value: string | null): string {
+    return value ? new Date(value).getFullYear().toString() : '';
   }
 
-  cityCode(value: string | null): string {
-    const city = (value ?? '').split(',')[0].trim();
-    return city ? city.toUpperCase() : 'GLOBAL';
+  cityName(value: string | null | undefined): string {
+    return (value ?? '').split(',')[0]?.trim() || 'Destination';
   }
 
-  placeCode(value: string): string {
-    const city = value.split(',')[0].trim();
-    return city ? city.toUpperCase() : 'GLOBAL';
-  }
-
-  movementIcon(item: EngagementSummary, index: number): string {
-    if (item.readinessPercent >= 90) return '✓';
-    if (item.travelStatus === 'confirmed') return '✈';
-    if (item.hostStatus === 'confirmed') return '●';
-    return ['↗', '✦', '◎', '•'][index % 4];
-  }
-
-  movementTitle(item: EngagementSummary): string {
-    if (item.readinessPercent >= 90) return 'Ready for ministry';
-    if (item.hostStatus === 'confirmed') return 'Host coordination confirmed';
-    if (item.travelStatus === 'confirmed' && item.lodgingStatus === 'confirmed') return 'Travel plan confirmed';
-    return 'Preparation moved forward';
-  }
-
-  executiveAsk(signal: ExecutiveSignal): string {
-    if (signal.kicker === 'Date hold') return 'Confirm whether this opportunity should continue moving toward final approval.';
-    if (signal.kicker === 'Ready for review') return 'Review the opportunity and give the team direction on whether to move forward.';
-    if (signal.kicker === 'Formal invitation') return 'Discern the invitation while your team continues handling the operational details.';
-    return 'No operational work is required from you. Give direction only if something in this opportunity needs your attention.';
-  }
-
-  private manualSignal(item: ManualBookingRecord): ExecutiveSignal | null {
-    const place = [item.city, item.country].filter(Boolean).join(', ');
-    if (item.stage === 'date-hold') {
-      return { key: `manual-${item.id}`, title: item.eventName, place, kicker: 'Date hold', detail: 'A date is being protected while the team finishes discernment and terms.', priority: 100, tone: 'gold' };
-    }
-    if (item.stage === 'under-review') {
-      return { key: `manual-${item.id}`, title: item.eventName, place, kicker: 'Ready for review', detail: 'The team has gathered enough information for leadership discernment.', priority: 90, tone: 'blue' };
-    }
-    if (item.stage === 'new' && item.source === 'apostle-cynthia') {
-      return { key: `manual-${item.id}`, title: item.eventName, place, kicker: 'You received this', detail: 'Your team captured the opportunity and is beginning follow-up.', priority: 70, tone: 'rose' };
-    }
-    return null;
-  }
-
-  private requestSignal(item: SpeakingRequestDetails): ExecutiveSignal | null {
-    if (!['awaiting-review', 'submitted'].includes(item.status)) return null;
-    return {
-      key: `request-${item.id}`,
-      title: item.eventName || 'Host invitation',
-      place: [item.city, item.country].filter(Boolean).join(', ') || item.organizationName,
-      kicker: 'Formal invitation',
-      detail: 'The host has returned the invitation and the team has it ready for review.',
-      priority: 85,
-      tone: 'blue',
-    };
+  locationTail(value: string | null | undefined): string {
+    const parts = (value ?? '').split(',').map(part => part.trim()).filter(Boolean);
+    return parts.length > 1 ? parts.slice(1).join(', ') : '';
   }
 
   private time(value: string | null): number {

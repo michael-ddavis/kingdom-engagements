@@ -1084,7 +1084,7 @@ public static class EngagementPreparationEndpoints
                 id,
                 ct);
             return thread is null ? Results.NotFound() : Results.Ok(thread);
-        });
+        }).RequireAuthorization("EngagementsDirect");
         internalGroup.MapPost("/{id:guid}/preparation/messages", async (
             Guid id,
             PostMinistryCoordinationMessageRequest request,

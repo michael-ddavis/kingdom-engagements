@@ -29,6 +29,36 @@ public static class KingdomIdentity
         ?? request.Headers["X-Kingdom-Subject"].FirstOrDefault()
         ?? "unknown";
 
+    public static bool HasEngagementsAccess(ClaimsPrincipal principal)
+    {
+        static bool Matches(string value, params string[] accepted) =>
+            accepted.Contains(value, StringComparer.OrdinalIgnoreCase);
+
+        return principal.Claims.Any(claim =>
+            claim.Type == ProductRoleClaim && Matches(
+                claim.Value,
+                "engagements:administrator",
+                "engagements:director",
+                "engagements:coordinator",
+                "engagements:executive",
+                "engagements:viewer",
+                "engagements:minister",
+                "engagements:module-administrator",
+                "engagements:module-member") ||
+            claim.Type == TenantRoleClaim && Matches(
+                claim.Value,
+                "owner",
+                "administrator",
+                "organization-administrator",
+                "super-admin") ||
+            claim.Type == ClaimTypes.Role && Matches(
+                claim.Value,
+                "organization-owner",
+                "organization-administrator",
+                "OrganizationAdministrator",
+                "Organization Administrator"));
+    }
+
     public static bool CanWriteEngagements(ClaimsPrincipal principal)
     {
         static bool Matches(string value, params string[] accepted) =>

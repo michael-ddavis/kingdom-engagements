@@ -108,7 +108,7 @@ const DESTINATION_IMAGES: readonly DestinationImage[] = [
             <div>
               <small>Cities / nations ahead</small>
               <strong>{{ destinationCities() }}</strong>
-              <p>{{ destinationRegions() }} regions · {{ destinationCities() }} cities</p>
+              <p>{{ destinationCountries() }} nations · {{ destinationCities() }} cities</p>
             </div>
           </article>
         </section>
@@ -453,13 +453,13 @@ export class CtgApostleDashboardComponent implements OnInit {
     return cities.size;
   });
 
-  readonly destinationRegions = computed(() => {
-    const regions = new Set(
+  readonly destinationCountries = computed(() => {
+    const countries = new Set(
       this.nextThirtyDays()
-        .map(item => this.locationTail(item.location).toLowerCase())
+        .map(item => this.countryName(item.location).toLowerCase())
         .filter(Boolean),
     );
-    return regions.size;
+    return countries.size;
   });
 
   readonly travelPending = computed(() =>
@@ -547,6 +547,11 @@ export class CtgApostleDashboardComponent implements OnInit {
   locationTail(value: string | null | undefined): string {
     const parts = (value ?? '').split(',').map(part => part.trim()).filter(Boolean);
     return parts.length > 1 ? parts.slice(1).join(', ') : '';
+  }
+
+  countryName(value: string | null | undefined): string {
+    const parts = (value ?? '').split(',').map(part => part.trim()).filter(Boolean);
+    return parts.length > 1 ? parts[parts.length - 1] : '';
   }
 
   private time(value: string | null): number {

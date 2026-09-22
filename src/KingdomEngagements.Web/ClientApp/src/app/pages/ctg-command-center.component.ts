@@ -160,7 +160,7 @@ interface HostActivityPreview {
         <section class="director-lower-grid">
           <article class="director-panel">
             <header>
-              <div><p class="director-eyebrow">Needs my attention</p><h2>Operational exceptions</h2></div>
+              <div><h2>Needs Attention</h2></div>
               <strong>{{ attentionItems().length }}</strong>
             </header>
             @if (attentionItems().length === 0) {
@@ -183,7 +183,7 @@ interface HostActivityPreview {
 
           <article class="director-panel">
             <header>
-              <div><p class="director-eyebrow">Host coordination</p><h2>Recent host activity</h2></div>
+              <div><h2>Host Activity</h2></div>
               <a routerLink="/organization/ctg/hosts">Open host activity →</a>
             </header>
             @if (hostActivity().length === 0) {
@@ -207,7 +207,7 @@ interface HostActivityPreview {
 
         <section class="director-panel team-accountability">
           <header>
-            <div><p class="director-eyebrow">Team accountability</p><h2>Workload by owner</h2></div>
+            <div><h2>Team Workload</h2></div>
             <a routerLink="/organization/ctg/team">Manage standing responsibilities →</a>
           </header>
           @if (teamAccountability().length === 0) {

@@ -541,12 +541,53 @@ public static class EngagementsEndpoints
     public static IEndpointRouteBuilder MapEngagementsEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/engagements").RequireAuthorization();
-        group.MapGet("/assignments", async (HttpContext context, EngagementsService service, CancellationToken ct) =>
-            Results.Ok(await service.GetAsync(KingdomIdentity.TenantId(context.User, context.Request), ct)));
-        group.MapGet("/assignments/{id:guid}", async (Guid id, HttpContext context, EngagementsService service, CancellationToken ct) =>
+        group.MapGet("/assignments", async (
+            HttpContext context,
+            EngagementsService service,
+            EngagementResponsibilityService responsibilities,
+            CancellationToken ct) =>
         {
-            var item = await service.GetAsync(KingdomIdentity.TenantId(context.User, context.Request), id, ct);
-            return item is null ? Results.NotFound() : Results.Ok(item);
+            var tenantId = KingdomIdentity.TenantId(context.User, context.Request);
+            var assignments = await service.GetAsync(tenantId, ct);
+            if (KingdomIdentity.CanViewAllEngagements(context.User))
+                return Results.Ok(assignments);
+
+            var myWork = await responsibilities.GetMyWorkAsync(
+                tenantId,
+                KingdomIdentity.Subject(context.User, context.Request),
+                ct);
+            var allowed = myWork
+                .Select(item => item.Assignment.Id)
+                .ToHashSet();
+
+            return Results.Ok(assignments.Where(item => allowed.Contains(item.Id)).ToArray());
+        });
+        group.MapGet("/assignments/{id:guid}", async (
+            Guid id,
+            HttpContext context,
+            EngagementsService service,
+            EngagementResponsibilityService responsibilities,
+            CancellationToken ct) =>
+        {
+            var tenantId = KingdomIdentity.TenantId(context.User, context.Request);
+            var item = await service.GetAsync(tenantId, id, ct);
+            if (item is null) return Results.NotFound();
+
+            if (KingdomIdentity.CanViewAllEngagements(context.User))
+            {
+                return Results.Ok(KingdomIdentity.CanViewInternalNotes(context.User)
+                    ? item
+                    : item with { Notes = null });
+            }
+
+            var ownedLanes = await responsibilities.GetOwnedLaneKeysAsync(
+                tenantId,
+                id,
+                KingdomIdentity.Subject(context.User, context.Request),
+                ct);
+            if (ownedLanes.Count == 0) return Results.Forbid();
+
+            return Results.Ok(ScopeDetailsForTeamMember(item, ownedLanes));
         });
         group.MapPost("/assignments", async (CreateEngagementRequest request, HttpContext context, EngagementsService service, CancellationToken ct) =>
         {
@@ -636,10 +677,28 @@ public static class EngagementsEndpoints
             }
             catch (ArgumentException exception) { return Results.ValidationProblem(new Dictionary<string, string[]> { ["document"] = [exception.Message] }); }
         }).RequireAuthorization("EngagementsWrite");
-        group.MapGet("/assignments/{id:guid}/documents/{documentId:guid}", async (Guid id, Guid documentId, HttpContext context, EngagementsService service, CancellationToken ct) =>
+        group.MapGet("/assignments/{id:guid}/documents/{documentId:guid}", async (
+            Guid id,
+            Guid documentId,
+            HttpContext context,
+            EngagementsService service,
+            EngagementResponsibilityService responsibilities,
+            CancellationToken ct) =>
         {
-            var item = await service.GetDocumentAsync(KingdomIdentity.TenantId(context.User, context.Request), id, documentId, ct);
+            var tenantId = KingdomIdentity.TenantId(context.User, context.Request);
+            var item = await service.GetDocumentAsync(tenantId, id, documentId, ct);
             if (item is null) return Results.NotFound();
+
+            if (!KingdomIdentity.CanViewAllEngagements(context.User))
+            {
+                var ownedLanes = await responsibilities.GetOwnedLaneKeysAsync(
+                    tenantId,
+                    id,
+                    KingdomIdentity.Subject(context.User, context.Request),
+                    ct);
+                if (!CanViewDocument(item.Category, ownedLanes))
+                    return Results.Forbid();
+            }
             var title = WebUtility.HtmlEncode(item.Name);
             var category = WebUtility.HtmlEncode(item.Category.Replace('-', ' '));
             var status = WebUtility.HtmlEncode(item.Status.Replace('-', ' '));
@@ -676,5 +735,37 @@ public static class EngagementsEndpoints
             }
         }).AllowAnonymous();
         return endpoints;
+    }
+
+    private static EngagementDetails ScopeDetailsForTeamMember(
+        EngagementDetails item,
+        IReadOnlySet<string> ownedLanes)
+    {
+        var tasks = item.Tasks
+            .Where(task => ownedLanes.Contains(EngagementResponsibilityLanes.Normalize(task.Category)))
+            .ToArray();
+        var documents = item.Documents
+            .Where(document => CanViewDocument(document.Category, ownedLanes))
+            .ToArray();
+
+        return item with
+        {
+            Notes = null,
+            Tasks = tasks,
+            Documents = documents
+        };
+    }
+
+    private static bool CanViewDocument(
+        string category,
+        IReadOnlySet<string> ownedLanes)
+    {
+        if (ownedLanes.Contains("documents")) return true;
+
+        var normalized = EngagementResponsibilityLanes.Normalize(category);
+        if (ownedLanes.Contains(normalized)) return true;
+
+        return string.Equals(category, "agreement", StringComparison.OrdinalIgnoreCase) &&
+               ownedLanes.Contains("finance");
     }
 }

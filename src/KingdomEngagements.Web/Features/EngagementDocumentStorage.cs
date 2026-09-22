@@ -29,6 +29,8 @@ public interface IEngagementDocumentStorage
     Task DeleteAsync(
         HostCoordinationDocumentRecord document,
         CancellationToken cancellationToken);
+
+    Task CheckHealthAsync(CancellationToken cancellationToken);
 }
 
 public sealed class DatabaseEngagementDocumentStorage : IEngagementDocumentStorage
@@ -60,6 +62,11 @@ public sealed class DatabaseEngagementDocumentStorage : IEngagementDocumentStora
     public Task DeleteAsync(
         HostCoordinationDocumentRecord document,
         CancellationToken cancellationToken)
+    {
+        return Task.CompletedTask;
+    }
+
+    public Task CheckHealthAsync(CancellationToken cancellationToken)
     {
         return Task.CompletedTask;
     }
@@ -133,6 +140,18 @@ public sealed class S3EngagementDocumentStorage(
         await s3.DeleteObjectAsync(
             _bucketName,
             document.StorageKey,
+            cancellationToken);
+    }
+
+    public async Task CheckHealthAsync(CancellationToken cancellationToken)
+    {
+        await s3.ListObjectsV2Async(
+            new ListObjectsV2Request
+            {
+                BucketName = _bucketName,
+                Prefix = _prefix,
+                MaxKeys = 1
+            },
             cancellationToken);
     }
 

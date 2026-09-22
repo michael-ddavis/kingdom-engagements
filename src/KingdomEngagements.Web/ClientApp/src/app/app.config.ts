@@ -17,6 +17,8 @@ import {
   EngagementDemoRoleService,
   engagementBookingGuard,
   engagementDirectorGuard,
+  engagementExecutiveGuard,
+  engagementHomeGuard,
   engagementWorkspaceGuard,
 } from './core/engagement-demo-role.service';
 import {
@@ -48,12 +50,12 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => inject(MutationToastService).mount()),
     provideAppInitializer(() => inject(HostCollaborationLinkService).mount()),
     provideRouter([
-      { path: '', component: OrganizationLandingComponent, pathMatch: 'full' },
+      { path: '', component: OrganizationLandingComponent, pathMatch: 'full', canActivate: [engagementHomeGuard] },
       { path: 'invitations', component: InvitationsComponent, canActivate: [engagementBookingGuard] },
       { path: 'assignments', loadComponent: () => import('./pages/assignment-list.component').then(m => m.AssignmentListComponent), canActivate: [engagementAssignmentListGuard] },
       { path: 'assignments/:id', loadComponent: () => import('./pages/assignment-workspace.component').then(m => m.AssignmentWorkspaceComponent), canActivate: [engagementAssignmentDetailGuard] },
-      { path: 'organization/ctg/apostle/engagements/:id', component: CtgApostleEngagementBriefComponent },
-      { path: 'organization/ctg/apostle', component: CtgApostleDashboardComponent },
+      { path: 'organization/ctg/apostle/engagements/:id', component: CtgApostleEngagementBriefComponent, canActivate: [engagementExecutiveGuard] },
+      { path: 'organization/ctg/apostle', component: CtgApostleDashboardComponent, canActivate: [engagementExecutiveGuard] },
       { path: 'organization/ctg/command-center', loadComponent: () => import('./pages/ctg-command-center.component').then(m => m.CtgCommandCenterComponent), canActivate: [engagementDirectorGuard] },
       { path: 'organization/ctg/stand-up', loadComponent: () => import('./pages/ctg-stand-up.component').then(m => m.CtgStandUpComponent), canActivate: [engagementDirectorGuard] },
       { path: 'organization/ctg/team', loadComponent: () => import('./pages/ctg-team-responsibilities.component').then(m => m.CtgTeamResponsibilitiesComponent), canActivate: [engagementDirectorGuard] },

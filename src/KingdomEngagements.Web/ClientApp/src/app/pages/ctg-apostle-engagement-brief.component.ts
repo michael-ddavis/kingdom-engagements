@@ -5,7 +5,7 @@ import { EngagementsApiService } from '../core/engagements-api.service';
 import {
   AssignmentActivityItem,
   AssignmentReadinessLane,
-  AssignmentWorkspaceEnvelope,
+  ExecutiveEngagementBrief,
   EngagementDetails,
 } from '../core/models';
 
@@ -94,8 +94,8 @@ const CITY_IMAGES: readonly CityImage[] = [
                 <div class="travel-grid">
                   <article><small>Outbound</small><strong>{{ flightLabel(envelope, 'outbound') }}</strong><span>{{ airportLabel(envelope, 'outbound') }}</span></article>
                   <article><small>Return</small><strong>{{ flightLabel(envelope, 'return') }}</strong><span>{{ airportLabel(envelope, 'return') }}</span></article>
-                  <article><small>Hotel</small><strong>{{ envelope.workspace.preparation.coordination.hotelName || 'Being finalized' }}</strong><span>{{ envelope.workspace.preparation.coordination.hotelAddress || 'Lodging details with the team' }}</span></article>
-                  <article><small>Local transportation</small><strong>{{ item.summary.transportationStatus ? statusLabel(item.summary.transportationStatus) : 'Pending' }}</strong><span>{{ envelope.workspace.preparation.coordination.transportationPlan || 'Host/team coordination in progress' }}</span></article>
+                  <article><small>Hotel</small><strong>{{ envelope.lodging.hotelName || 'Being finalized' }}</strong><span>{{ envelope.lodging.hotelAddress || 'Lodging details with the team' }}</span></article>
+                  <article><small>Local transportation</small><strong>{{ item.summary.transportationStatus ? statusLabel(item.summary.transportationStatus) : 'Pending' }}</strong><span>{{ envelope.transportation.transportationPlan || 'Host/team coordination in progress' }}</span></article>
                 </div>
               }
             </section>
@@ -116,11 +116,11 @@ const CITY_IMAGES: readonly CityImage[] = [
               @if (workspace(); as envelope) {
                 <dl>
                   <div><dt>Host</dt><dd>{{ item.summary.hostOrganization }}</dd></div>
-                  <div><dt>Terms</dt><dd>{{ statusLabel(envelope.workspace.preparation.termsStatus) }}</dd></div>
-                  <div><dt>Coordination</dt><dd>{{ statusLabel(envelope.workspace.preparation.coordinationStatus) }}</dd></div>
+                  <div><dt>Terms</dt><dd>{{ statusLabel(envelope.termsStatus) }}</dd></div>
+                  <div><dt>Coordination</dt><dd>{{ statusLabel(envelope.coordinationStatus) }}</dd></div>
                   <div><dt>Primary contact</dt><dd>{{ primaryContact(envelope) }}</dd></div>
                 </dl>
-                <div class="prayer-focus"><span>Prayer focus</span><p>{{ envelope.workspace.preparation.coordination.prayerFocus || 'No prayer focus has been added yet.' }}</p></div>
+                <div class="prayer-focus"><span>Prayer focus</span><p>{{ envelope.prayerFocus || 'No prayer focus has been added yet.' }}</p></div>
               }
             </section>
 
@@ -153,15 +153,15 @@ const CITY_IMAGES: readonly CityImage[] = [
 })
 export class CtgApostleEngagementBriefComponent implements OnInit {
   readonly assignment = signal<EngagementDetails | null>(null);
-  readonly workspace = signal<AssignmentWorkspaceEnvelope | null>(null);
+  readonly workspace = signal<ExecutiveEngagementBrief | null>(null);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
   readonly imageFailed = signal(false);
 
-  readonly overallReadiness = computed(() => this.workspace()?.workspace.readiness.overallPercent ?? this.assignment()?.summary.readinessPercent ?? 0);
-  readonly readinessLanes = computed<readonly AssignmentReadinessLane[]>(() => this.workspace()?.workspace.readiness.lanes ?? []);
-  readonly attentionItems = computed(() => (this.workspace()?.workspace.readiness.attentionItems ?? []).slice(0, 3));
-  readonly recentActivity = computed<readonly AssignmentActivityItem[]>(() => (this.workspace()?.workspace.activity ?? []).slice(0, 4));
+  readonly overallReadiness = computed(() => this.workspace()?.readiness.overallPercent ?? this.assignment()?.summary.readinessPercent ?? 0);
+  readonly readinessLanes = computed<readonly AssignmentReadinessLane[]>(() => this.workspace()?.readiness.lanes ?? []);
+  readonly attentionItems = computed(() => (this.workspace()?.readiness.attentionItems ?? []).slice(0, 3));
+  readonly recentActivity = computed<readonly AssignmentActivityItem[]>(() => (this.workspace()?.activity ?? []).slice(0, 4));
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -176,7 +176,7 @@ export class CtgApostleEngagementBriefComponent implements OnInit {
       return;
     }
 
-    forkJoin({ assignment: this.api.getAssignment(id), workspace: this.api.getWorkspace(id) }).subscribe({
+    forkJoin({ assignment: this.api.getAssignment(id), workspace: this.api.getExecutiveBrief(id) }).subscribe({
       next: ({ assignment, workspace }) => {
         this.assignment.set(assignment);
         this.workspace.set(workspace);
@@ -233,22 +233,22 @@ export class CtgApostleEngagementBriefComponent implements OnInit {
     return `${attention.length} readiness items are still moving. Your team owns the details; only the highest-level items are shown here.`;
   }
 
-  flightLabel(envelope: AssignmentWorkspaceEnvelope, direction: 'outbound' | 'return'): string {
-    const coordination = envelope.workspace.preparation.coordination;
-    const airline = direction === 'outbound' ? coordination.outboundAirline : coordination.returnAirline;
-    const number = direction === 'outbound' ? coordination.outboundFlightNumber : coordination.returnFlightNumber;
+  flightLabel(envelope: ExecutiveEngagementBrief, direction: 'outbound' | 'return'): string {
+    const travel = envelope.travel;
+    const airline = direction === 'outbound' ? travel.outboundAirline : travel.returnAirline;
+    const number = direction === 'outbound' ? travel.outboundFlightNumber : travel.returnFlightNumber;
     return [airline, number].filter(Boolean).join(' ') || 'Being finalized';
   }
 
-  airportLabel(envelope: AssignmentWorkspaceEnvelope, direction: 'outbound' | 'return'): string {
-    const coordination = envelope.workspace.preparation.coordination;
-    const from = direction === 'outbound' ? coordination.outboundDepartureAirport : coordination.returnDepartureAirport;
-    const to = direction === 'outbound' ? coordination.outboundArrivalAirport : coordination.returnArrivalAirport;
+  airportLabel(envelope: ExecutiveEngagementBrief, direction: 'outbound' | 'return'): string {
+    const travel = envelope.travel;
+    const from = direction === 'outbound' ? travel.outboundDepartureAirport : travel.returnDepartureAirport;
+    const to = direction === 'outbound' ? travel.outboundArrivalAirport : travel.returnArrivalAirport;
     return from || to ? `${from || 'TBD'} → ${to || 'TBD'}` : 'Flight details with the team';
   }
 
-  primaryContact(envelope: AssignmentWorkspaceEnvelope): string {
-    const contacts = envelope.workspace.preparation.coordination.contacts;
+  primaryContact(envelope: ExecutiveEngagementBrief): string {
+    const contacts = envelope.contacts;
     const contact = contacts.find(item => item.type === 'primary') ?? contacts[0];
     return contact?.name || this.assignment()?.hostContactName || 'Being coordinated';
   }

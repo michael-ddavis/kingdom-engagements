@@ -591,11 +591,17 @@ public static class EngagementsEndpoints
             var item = await service.GetAsync(tenantId, id, ct);
             if (item is null) return Results.NotFound();
 
+            if (KingdomIdentity.CanDirectEngagements(context.User))
+                return Results.Ok(item);
+
             if (KingdomIdentity.CanViewAllEngagements(context.User))
             {
-                return Results.Ok(KingdomIdentity.CanViewInternalNotes(context.User)
-                    ? item
-                    : item with { Notes = null });
+                return Results.Ok(item with
+                {
+                    Notes = null,
+                    Tasks = Array.Empty<EngagementTask>(),
+                    Documents = Array.Empty<EngagementDocument>()
+                });
             }
 
             var ownedLanes = await responsibilities.GetOwnedLaneKeysAsync(
@@ -739,7 +745,7 @@ public static class EngagementsEndpoints
             var item = await service.GetDocumentAsync(tenantId, id, documentId, ct);
             if (item is null) return Results.NotFound();
 
-            if (!KingdomIdentity.CanViewAllEngagements(context.User))
+            if (!KingdomIdentity.CanDirectEngagements(context.User))
             {
                 var ownedLanes = await responsibilities.GetOwnedLaneKeysAsync(
                     tenantId,

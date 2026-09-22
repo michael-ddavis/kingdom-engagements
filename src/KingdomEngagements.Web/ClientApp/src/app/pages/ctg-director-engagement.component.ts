@@ -19,6 +19,7 @@ import {
   AssignmentWorkspaceDetails,
   DocumentsLaneDetails,
   EngagementDetails,
+  EngagementCompletion,
   FinanceLaneDetails,
   HospitalityLaneDetails,
   HostCoordinationLaneDetails,
@@ -46,6 +47,7 @@ type DirectorTab =
   | 'finance'
   | 'ministry-preparation'
   | 'hospitality'
+  | 'closeout'
   | 'activity';
 
 interface ResponsibilityDraft {
@@ -422,6 +424,54 @@ interface ResponsibilityDraft {
               }
             }
 
+            @case ('closeout') {
+              @if (completion(); as record) {
+                <section class="two-column">
+                  <article class="panel">
+                    <header><div><p class="eyebrow">Closeout & Follow-up</p><h2>Finish the engagement well</h2><p>Track the administrative and relational work that remains after ministry is complete.</p></div><span>{{ record.closeout.completedAtUtc ? 'Complete' : 'Open' }}</span></header>
+                    <label class="field"><span>Event notes</span><textarea rows="6" [(ngModel)]="closeoutDraft.eventNotes"></textarea></label>
+                    <label class="field"><span>Testimony / outcome summary</span><textarea rows="6" [(ngModel)]="closeoutDraft.testimonySummary"></textarea></label>
+                    <div class="closeout-checks">
+                      <label><input type="checkbox" [(ngModel)]="closeoutDraft.hostFollowUpComplete"><span>Host follow-up complete</span></label>
+                      <label><input type="checkbox" [(ngModel)]="closeoutDraft.finalDocumentsComplete"><span>Final documents complete</span></label>
+                      <label><input type="checkbox" [(ngModel)]="closeoutDraft.paymentComplete"><span>Payment complete</span></label>
+                      <label><input type="checkbox" [(ngModel)]="closeoutDraft.administrativeFollowUpComplete"><span>Administrative follow-up complete</span></label>
+                      <label><input type="checkbox" [(ngModel)]="closeoutDraft.outcomesRecorded"><span>Outcomes recorded</span></label>
+                    </div>
+                    <label class="field"><span>Host follow-up notes</span><textarea rows="5" [(ngModel)]="closeoutDraft.hostFollowUpNotes"></textarea></label>
+                    <footer class="panel-actions split">
+                      <button class="secondary" type="button" [disabled]="saving()" (click)="saveCloseout(false)">Save progress</button>
+                      <button type="button" [disabled]="saving() || !record.canComplete" (click)="saveCloseout(true)">Complete engagement</button>
+                    </footer>
+                  </article>
+
+                  <article class="panel">
+                    <header><div><p class="eyebrow">Ministry responses</p><h2>People & follow-up</h2></div><span>{{ record.totalResponses }} recorded</span></header>
+                    <div class="closeout-summary">
+                      <div><small>Responses</small><strong>{{ record.totalResponses }}</strong></div>
+                      <div><small>Open follow-ups</small><strong>{{ record.followUpsOpen }}</strong></div>
+                      <div><small>Readiness tasks</small><strong>{{ record.closeout.allReadinessTasksResolved ? 'Resolved' : 'Open' }}</strong></div>
+                    </div>
+                    <div class="response-list">
+                      @for (response of record.responses; track response.id) {
+                        <article>
+                          <div>
+                            <strong>{{ response.typeLabel || label(response.type) }}</strong>
+                            <span>{{ response.count }} {{ response.count === 1 ? 'person' : 'people' }}</span>
+                          </div>
+                          <p>{{ response.notes || 'No notes recorded.' }}</p>
+                          <small>{{ response.requiresFollowUp ? label(response.followUpStatus) : 'No follow-up required' }}{{ response.followUpOwner ? ' · ' + response.followUpOwner : '' }}</small>
+                        </article>
+                      }
+                      @if (record.responses.length === 0) {
+                        <p class="empty-copy">No ministry responses have been recorded yet.</p>
+                      }
+                    </div>
+                  </article>
+                </section>
+              }
+            }
+
             @case ('activity') {
               <section class="panel">
                 <header><div><p class="eyebrow">Audit trail</p><h2>Engagement activity</h2></div></header>
@@ -481,6 +531,7 @@ interface ResponsibilityDraft {
     .conversation-panel{display:flex;flex-direction:column}.thread{display:flex;flex:1;flex-direction:column;gap:8px;min-height:340px;max-height:520px;overflow:auto;padding:12px 0}.thread>div{max-width:80%;padding:9px 11px;border-radius:10px;background:#f4f2ed}.thread>div.team-message{align-self:flex-end;background:#eef3f8}.thread>div.host-message{align-self:flex-start}.thread header{display:flex;justify-content:space-between;gap:12px}.thread header strong{font-size:.61rem}.thread header span{color:#8a918d;font-size:.54rem}.thread p{margin:5px 0 0;font-size:.67rem;line-height:1.45}.composer{border-top:1px solid #e4e6e4;padding-top:12px}.composer button{float:right;margin-top:7px}
     .asset-list>div,.document-list>div{display:grid;grid-template-columns:auto 1fr auto auto;gap:8px;align-items:center;padding:9px 0;border-top:1px solid #eceeec}.asset-type,.document-list>div>span{padding:3px 6px;border-radius:999px;background:#f1eee4;color:#7b6630;font-size:.54rem;font-weight:850;text-transform:uppercase}.asset-list p,.document-list p{margin:0}.asset-list strong,.document-list strong{display:block;font-size:.67rem}.asset-list small,.document-list small{display:block;margin-top:2px;color:#7d8480;font-size:.57rem}.asset-list a{color:#315faf;font-size:.59rem;font-weight:800;text-decoration:none}.asset-list button{border:0;background:transparent;color:#a84642;cursor:pointer}
     .asset-editor,.document-editor{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:14px;padding:12px;border-radius:9px;background:#f7f5f0}.asset-editor h3{grid-column:1/-1;margin:0}.asset-editor .wide{grid-column:1/-1}.document-editor{grid-template-columns:1fr 150px 1fr auto}.schedule-list{margin-top:12px}.schedule-row{display:grid;grid-template-columns:1.4fr 140px 110px 110px 1fr auto;gap:6px;margin-bottom:7px}.schedule-row button{border:0;background:transparent;color:#a84642;font-weight:900;cursor:pointer}
+    .closeout-checks{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}.closeout-checks label{display:flex;gap:8px;align-items:center;padding:10px;border:1px solid #e1e4e1;border-radius:8px;background:#f8f7f3;font-size:.66rem;font-weight:800}.closeout-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}.closeout-summary>div{padding:12px;border-radius:9px;background:#f7f5f0}.closeout-summary small,.closeout-summary strong{display:block}.closeout-summary small{font-size:.56rem;color:#818783;text-transform:uppercase}.closeout-summary strong{margin-top:3px}.response-list{display:flex;flex-direction:column}.response-list>article{padding:11px 0;border-top:1px solid #eceeec}.response-list>article>div{display:flex;justify-content:space-between;gap:10px}.response-list strong{font-size:.69rem}.response-list span,.response-list small{color:#7d8480;font-size:.58rem}.response-list p{margin:5px 0;color:#59635e;font-size:.66rem;line-height:1.45}
     .save-toast{position:fixed;right:20px;bottom:20px;z-index:100;padding:11px 14px;border-radius:9px;background:#2d6d52;color:#fff;font-size:.68rem;font-weight:800;box-shadow:0 10px 30px rgba(18,26,44,.2)}.save-toast--error{background:#a84642}
     .drawer-backdrop{position:fixed;inset:0;z-index:90;background:rgba(16,24,35,.38)}.responsibility-drawer{position:fixed;z-index:91;top:0;right:0;width:min(460px,94vw);height:100vh;box-sizing:border-box;padding:20px;overflow:auto;background:#fffdfa;box-shadow:-20px 0 50px rgba(18,26,44,.17)}.responsibility-drawer>header{display:flex;justify-content:space-between}.responsibility-drawer>header small{color:#876f33;font-size:.59rem;font-weight:850;text-transform:uppercase}.responsibility-drawer h2{font-size:1.5rem}.responsibility-drawer>header button{width:34px;height:34px;border:0;border-radius:50%;background:#f0eee8;cursor:pointer}.toggle{display:flex;gap:8px;align-items:center;margin:13px 0;padding:10px;border-radius:8px;background:#f5f3ed;font-size:.67rem;font-weight:800}.responsibility-drawer footer{display:flex;justify-content:flex-end;gap:7px;margin-top:18px;padding-top:14px;border-top:1px solid #e4e6e4}
     .state{padding:40px;border:1px solid #dfe3e0;border-radius:14px;background:#fff;text-align:center;color:#747c78}.state.error{color:#a84642}
@@ -502,6 +553,7 @@ export class CtgDirectorEngagementComponent implements OnInit {
     { key: 'finance', label: 'Finance', lane: 'finance' },
     { key: 'ministry-preparation', label: 'Ministry', lane: 'ministry-preparation' },
     { key: 'hospitality', label: 'Hospitality', lane: 'hospitality' },
+    { key: 'closeout', label: 'Closeout', lane: 'closeout' },
     { key: 'activity', label: 'Activity' },
   ];
 
@@ -519,6 +571,7 @@ export class CtgDirectorEngagementComponent implements OnInit {
   readonly finance = signal<FinanceLaneDetails | null>(null);
   readonly ministry = signal<MinistryPreparationLaneDetails | null>(null);
   readonly hospitality = signal<HospitalityLaneDetails | null>(null);
+  readonly completion = signal<EngagementCompletion | null>(null);
   readonly tab = signal<DirectorTab>('overview');
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
@@ -547,6 +600,16 @@ export class CtgDirectorEngagementComponent implements OnInit {
   ministryDraft: UpdateMinistryPreparationLaneInput = { prayerFocus: null, ministryPreparationNotes: null };
   hospitalityDraft: UpdateHospitalityLaneInput = { hospitalityNotes: null, contacts: [] };
   hostDraft: UpdateHostCoordinationLaneInput = { hostNotes: null, contacts: [] };
+  closeoutDraft = {
+    eventNotes: null as string | null,
+    testimonySummary: null as string | null,
+    hostFollowUpComplete: false,
+    hostFollowUpNotes: null as string | null,
+    finalDocumentsComplete: false,
+    paymentComplete: false,
+    administrativeFollowUpComplete: false,
+    outcomesRecorded: false,
+  };
   assetDraft: MediaAssetInput = {
     name: '',
     assetType: 'image',
@@ -592,6 +655,7 @@ export class CtgDirectorEngagementComponent implements OnInit {
       finance: this.api.getFinanceLane(this.assignmentId),
       ministry: this.api.getMinistryPreparationLane(this.assignmentId),
       hospitality: this.api.getHospitalityLane(this.assignmentId),
+      completion: this.api.getCompletion(this.assignmentId),
     }).subscribe({
       next: result => {
         this.assignment.set(result.assignment);
@@ -608,6 +672,7 @@ export class CtgDirectorEngagementComponent implements OnInit {
         this.finance.set(result.finance);
         this.ministry.set(result.ministry);
         this.hospitality.set(result.hospitality);
+        this.completion.set(result.completion);
         this.syncDrafts();
         this.loading.set(false);
       },
@@ -861,6 +926,28 @@ export class CtgDirectorEngagementComponent implements OnInit {
     this.saveLane(this.api.updateHospitalityLane(this.assignmentId, this.hospitalityDraft), value => this.hospitality.set(value), 'Hospitality saved.');
   }
 
+  saveCloseout(complete: boolean): void {
+    const current = this.completion();
+    if (!current) return;
+
+    const payload: EngagementCompletion = {
+      ...current,
+      closeout: {
+        ...current.closeout,
+        ...this.closeoutDraft,
+      },
+    };
+
+    this.saveLane(
+      this.api.updateCloseout(this.assignmentId, payload, complete),
+      value => {
+        this.completion.set(value);
+        this.syncCloseoutDraft(value);
+      },
+      complete ? 'Engagement completed.' : 'Closeout progress saved.',
+    );
+  }
+
   dateLabel(value: string | null): string {
     if (!value) return 'Date pending';
     return new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
@@ -980,6 +1067,20 @@ export class CtgDirectorEngagementComponent implements OnInit {
         contacts: record.contacts.filter(item => item.editable).map(item => ({ type: item.type, name: item.name, email: item.email, phone: item.phone })),
       };
     }
+    if (this.completion()) this.syncCloseoutDraft(this.completion()!);
+  }
+
+  private syncCloseoutDraft(record: EngagementCompletion): void {
+    this.closeoutDraft = {
+      eventNotes: record.closeout.eventNotes,
+      testimonySummary: record.closeout.testimonySummary,
+      hostFollowUpComplete: record.closeout.hostFollowUpComplete,
+      hostFollowUpNotes: record.closeout.hostFollowUpNotes,
+      finalDocumentsComplete: record.closeout.finalDocumentsComplete,
+      paymentComplete: record.closeout.paymentComplete,
+      administrativeFollowUpComplete: record.closeout.administrativeFollowUpComplete,
+      outcomesRecorded: record.closeout.outcomesRecorded,
+    };
   }
 
   private finishResponsibilitySave(): void {

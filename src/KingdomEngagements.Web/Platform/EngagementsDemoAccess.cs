@@ -316,35 +316,96 @@ public static class EngagementsDemoAccessEndpoints
         group.MapGet("/my-assignments", async (
             HttpContext context,
             EngagementsService service,
+            EngagementResponsibilityService responsibilities,
             CancellationToken cancellationToken) =>
         {
-            var all = await service.GetAsync(
-                KingdomIdentity.TenantId(context.User, context.Request),
-                cancellationToken);
-            if (!EngagementsDemoRoles.IsMinister(context.User))
+            var tenantId = KingdomIdentity.TenantId(context.User, context.Request);
+            var all = await service.GetAsync(tenantId, cancellationToken);
+
+            if (KingdomIdentity.CanViewAllEngagements(context.User))
                 return Results.Ok(all);
 
-            var assigned = EngagementsDemoRoles.AssignedEngagements(context.User);
-            return Results.Ok(all.Where(item => assigned.Contains(item.ExternalAssignmentId)).ToArray());
+            var myWork = await responsibilities.GetMyWorkAsync(
+                tenantId,
+                KingdomIdentity.Subject(context.User, context.Request),
+                cancellationToken);
+            var ownedAssignmentIds = myWork
+                .Select(item => item.Assignment.Id)
+                .ToHashSet();
+
+            // Preserve the original local demo minister while real users are driven by
+            // standing responsibility ownership.
+            if (EngagementsDemoRoles.IsMinister(context.User))
+            {
+                var legacyAssigned = EngagementsDemoRoles.AssignedEngagements(context.User);
+                return Results.Ok(all.Where(item =>
+                    ownedAssignmentIds.Contains(item.Id) ||
+                    legacyAssigned.Contains(item.ExternalAssignmentId)).ToArray());
+            }
+
+            return Results.Ok(all.Where(item => ownedAssignmentIds.Contains(item.Id)).ToArray());
         });
 
         group.MapGet("/my-assignments/{id:guid}", async (
             Guid id,
             HttpContext context,
             EngagementsService service,
+            EngagementResponsibilityService responsibilities,
             CancellationToken cancellationToken) =>
         {
-            var item = await service.GetAsync(
-                KingdomIdentity.TenantId(context.User, context.Request),
-                id,
-                cancellationToken);
+            var tenantId = KingdomIdentity.TenantId(context.User, context.Request);
+            var item = await service.GetAsync(tenantId, id, cancellationToken);
             if (item is null) return Results.NotFound();
-            if (!EngagementsDemoRoles.CanAccessAssignment(context.User, item.Summary))
-                return Results.Forbid();
 
-            return Results.Ok(EngagementsDemoRoles.IsMinister(context.User)
-                ? item with { Notes = null }
-                : item);
+            if (KingdomIdentity.CanDirectEngagements(context.User))
+                return Results.Ok(item);
+
+            if (KingdomIdentity.CanViewAllEngagements(context.User))
+            {
+                return Results.Ok(item with
+                {
+                    Notes = null,
+                    Tasks = Array.Empty<EngagementTask>(),
+                    Documents = Array.Empty<EngagementDocument>()
+                });
+            }
+
+            var ownedLanes = await responsibilities.GetOwnedLaneKeysAsync(
+                tenantId,
+                id,
+                KingdomIdentity.Subject(context.User, context.Request),
+                cancellationToken);
+
+            if (ownedLanes.Count > 0)
+            {
+                var tasks = item.Tasks
+                    .Where(task => ownedLanes.Contains(
+                        EngagementResponsibilityLanes.Normalize(task.Category)))
+                    .ToArray();
+                var documents = item.Documents
+                    .Where(document =>
+                        ownedLanes.Contains("documents") ||
+                        ownedLanes.Contains(EngagementResponsibilityLanes.Normalize(document.Category)) ||
+                        (ownedLanes.Contains("finance") &&
+                         string.Equals(document.Category, "agreement", StringComparison.OrdinalIgnoreCase)))
+                    .ToArray();
+
+                return Results.Ok(item with
+                {
+                    Notes = null,
+                    Tasks = tasks,
+                    Documents = documents
+                });
+            }
+
+            if (EngagementsDemoRoles.IsMinister(context.User) &&
+                EngagementsDemoRoles.AssignedEngagements(context.User)
+                    .Contains(item.Summary.ExternalAssignmentId))
+            {
+                return Results.Ok(item with { Notes = null });
+            }
+
+            return Results.Forbid();
         });
 
         group.MapPost("/assignments/{id:guid}/archive", async (

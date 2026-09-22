@@ -244,7 +244,13 @@ public sealed class AssignmentWorkspaceService(
             now,
             cancellationToken);
 
-        return new HostCoordinationDocumentDto(document.Id, document.FileName, document.ContentType, document.Length, document.UploadedAtUtc);
+        return new HostCoordinationDocumentDto(
+            document.Id,
+            document.FileName,
+            document.Category,
+            document.ContentType,
+            document.Length,
+            document.UploadedAtUtc);
     }
 
     public async Task<bool> DeleteDocumentAsync(

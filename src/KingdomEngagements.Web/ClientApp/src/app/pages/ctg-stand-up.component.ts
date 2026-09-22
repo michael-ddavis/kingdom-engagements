@@ -45,7 +45,7 @@ import { EngagementResponsibilitySnapshot, ResponsibilityLaneState } from '../co
 
           <nav class="standup-controls" aria-label="Stand-up navigation">
             <button type="button" [disabled]="index() === 0" (click)="previous()">← Previous</button>
-            <a [routerLink]="['/assignments', snapshot.assignment.id]">Open engagement workspace</a>
+            <a [routerLink]="['/organization/ctg/engagements', snapshot.assignment.id]">Open engagement workspace</a>
             <button type="button" [disabled]="index() === items().length - 1" (click)="next()">Next engagement →</button>
           </nav>
         }

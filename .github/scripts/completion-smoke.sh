@@ -32,6 +32,7 @@ docker run --detach --name "$app_name" --network "$network" \
   -e Database__Provider=SqlServer \
   -e "ConnectionStrings__EngagementsDatabase=Server=$sql_name;Database=KingdomEngagements;User ID=sa;Password=$password;TrustServerCertificate=True" \
   -e "KingdomOS__PlatformInternalUrl=http://$platform_name:8080" \
+  -e KingdomOS__Identity__DemoProfilesEnabled=true \
   -e KingdomOS__Entitlements__BypassInDevelopment=false \
   -e KingdomOS__Entitlements__FailOpenInDevelopment=false \
   kingdom-engagements:ci >/dev/null

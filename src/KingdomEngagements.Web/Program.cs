@@ -2,7 +2,6 @@ using System.Text.Json.Serialization;
 using KingdomEngagements.Web.Features;
 using KingdomEngagements.Web.Platform;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 
@@ -10,6 +9,34 @@ var builder = WebApplication.CreateBuilder(args);
 
 var provider = builder.Configuration["Database:Provider"] ?? "InMemory";
 var connectionString = builder.Configuration.GetConnectionString("EngagementsDatabase");
+var useSqlServer = provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase);
+var useInMemory = provider.Equals("InMemory", StringComparison.OrdinalIgnoreCase);
+var requireRelationalDatabase = builder.Configuration.GetValue("Database:RequireRelational", false);
+
+if (!useSqlServer && !useInMemory)
+{
+    throw new InvalidOperationException(
+        $"Unsupported Database:Provider '{provider}'. Use InMemory or SqlServer.");
+}
+
+if (requireRelationalDatabase && !useSqlServer)
+{
+    throw new InvalidOperationException(
+        "Database:Provider must be SqlServer when Database:RequireRelational is enabled.");
+}
+
+void ConfigureSqlServer(SqlServerDbContextOptionsBuilder sql)
+{
+    var maxRetryCount = builder.Configuration.GetValue("Database:SqlServer:MaxRetryCount", 5);
+    var maxRetryDelaySeconds = builder.Configuration.GetValue("Database:SqlServer:MaxRetryDelaySeconds", 10);
+    var commandTimeoutSeconds = builder.Configuration.GetValue("Database:SqlServer:CommandTimeoutSeconds", 30);
+
+    sql.EnableRetryOnFailure(
+        maxRetryCount: Math.Max(0, maxRetryCount),
+        maxRetryDelay: TimeSpan.FromSeconds(Math.Max(1, maxRetryDelaySeconds)),
+        errorNumbersToAdd: null);
+    sql.CommandTimeout(Math.Max(1, commandTimeoutSeconds));
+}
 builder.Services.AddDbContext<EngagementsDbContext>(options =>
 {
     options.ReplaceService<IModelCustomizer, EngagementsModelCustomizer>();
@@ -17,7 +44,7 @@ builder.Services.AddDbContext<EngagementsDbContext>(options =>
     {
         if (string.IsNullOrWhiteSpace(connectionString))
             throw new InvalidOperationException("ConnectionStrings:EngagementsDatabase is required for SQL Server.");
-        options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure());
+        options.UseSqlServer(connectionString, ConfigureSqlServer);
         return;
     }
 
@@ -31,7 +58,7 @@ builder.Services.AddDbContext<SpeakingRequestsDbContext>(options =>
     {
         if (string.IsNullOrWhiteSpace(connectionString))
             throw new InvalidOperationException("ConnectionStrings:EngagementsDatabase is required for SQL Server.");
-        options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure());
+        options.UseSqlServer(connectionString, ConfigureSqlServer);
         return;
     }
 
@@ -44,7 +71,7 @@ builder.Services.AddDbContext<GlobalBookingDbContext>(options =>
     {
         if (string.IsNullOrWhiteSpace(connectionString))
             throw new InvalidOperationException("ConnectionStrings:EngagementsDatabase is required for SQL Server.");
-        options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure());
+        options.UseSqlServer(connectionString, ConfigureSqlServer);
         return;
     }
 
@@ -57,7 +84,7 @@ builder.Services.AddDbContext<EngagementPreparationDbContext>(options =>
     {
         if (string.IsNullOrWhiteSpace(connectionString))
             throw new InvalidOperationException("ConnectionStrings:EngagementsDatabase is required for SQL Server.");
-        options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure());
+        options.UseSqlServer(connectionString, ConfigureSqlServer);
         return;
     }
 
@@ -70,7 +97,7 @@ builder.Services.AddDbContext<HostAccessDbContext>(options =>
     {
         if (string.IsNullOrWhiteSpace(connectionString))
             throw new InvalidOperationException("ConnectionStrings:EngagementsDatabase is required for SQL Server.");
-        options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure());
+        options.UseSqlServer(connectionString, ConfigureSqlServer);
         return;
     }
 
@@ -83,7 +110,7 @@ builder.Services.AddDbContext<AssignmentWorkspaceDbContext>(options =>
     {
         if (string.IsNullOrWhiteSpace(connectionString))
             throw new InvalidOperationException("ConnectionStrings:EngagementsDatabase is required for SQL Server.");
-        options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure());
+        options.UseSqlServer(connectionString, ConfigureSqlServer);
         return;
     }
 
@@ -96,7 +123,7 @@ builder.Services.AddDbContext<EngagementCompletionDbContext>(options =>
     {
         if (string.IsNullOrWhiteSpace(connectionString))
             throw new InvalidOperationException("ConnectionStrings:EngagementsDatabase is required for SQL Server.");
-        options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure());
+        options.UseSqlServer(connectionString, ConfigureSqlServer);
         return;
     }
 
@@ -108,14 +135,8 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
 });
 
-var keyPath = builder.Configuration["KingdomOS:Identity:KeyPath"];
-if (!string.IsNullOrWhiteSpace(keyPath))
-{
-    Directory.CreateDirectory(keyPath);
-    builder.Services.AddDataProtection()
-        .PersistKeysToFileSystem(new DirectoryInfo(keyPath))
-        .SetApplicationName(KingdomIdentity.Scheme);
-}
+builder.AddApostolOSDistributedRuntime();
+builder.AddEngagementDocumentStorage();
 
 builder.Services.AddAuthentication(KingdomIdentity.Scheme)
     .AddCookie(KingdomIdentity.Scheme, options =>
@@ -191,7 +212,6 @@ builder.Services.AddScoped<EngagementPreparationService>();
 builder.Services.AddScoped<HostAccessService>();
 builder.Services.AddScoped<EngagementRealtimePublisher>();
 builder.Services.AddScoped<IAuthorizationHandler, HostAccessAuthorizationHandler>();
-builder.Services.AddSignalR();
 builder.Services.AddScoped<AssignmentWorkspaceService>();
 builder.Services.AddScoped<EngagementCompletionService>();
 builder.Services.AddScoped<EngagementOperationsCoordinationPublisher>();

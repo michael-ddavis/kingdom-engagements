@@ -59,12 +59,13 @@ public static class EngagementsDemoRoles
             case Coordinator:
                 claims.AddRange(
                 [
-                    new Claim(ClaimTypes.NameIdentifier, "demo-engagements-coordinator"),
-                    new Claim(ClaimTypes.Name, "Engagement Coordinator"),
-                    new Claim(ClaimTypes.Email, "coordinator@kingdomos.local"),
+                    new Claim(ClaimTypes.NameIdentifier, "demo-prophet-courtney-beecham"),
+                    new Claim(ClaimTypes.Name, "Prophet Courtney Beecham"),
+                    new Claim(ClaimTypes.Email, "courtney@kingdomos.local"),
                     new Claim(KingdomIdentity.TenantRoleClaim, "member"),
-                    new Claim(KingdomIdentity.ProductRoleClaim, "engagements:coordinator"),
+                    new Claim(KingdomIdentity.ProductRoleClaim, "engagements:director"),
                     new Claim(KingdomIdentity.PermissionClaim, "engagements:assignments:write"),
+                    new Claim(KingdomIdentity.PermissionClaim, "engagements:responsibilities:manage"),
                     new Claim(KingdomIdentity.PermissionClaim, "engagements:bookings:manage"),
                     new Claim(KingdomIdentity.PermissionClaim, "engagements:financial:read"),
                     new Claim(KingdomIdentity.PermissionClaim, "engagements:internal-notes:read"),
@@ -302,6 +303,7 @@ public static class EngagementsDemoAccessEndpoints
                 canViewAllEngagements = EngagementsDemoRoles.CanViewAllEngagements(context.User),
                 canManageBookings = context.User.HasClaim(KingdomIdentity.PermissionClaim, "engagements:bookings:manage"),
                 canManageAssignments = KingdomIdentity.CanWriteEngagements(context.User),
+                canDirectEngagements = KingdomIdentity.CanDirectEngagements(context.User),
                 canViewFinancials = EngagementsDemoRoles.CanViewFinancials(context.User),
                 canViewInternalNotes = EngagementsDemoRoles.CanViewInternalNotes(context.User),
                 canCompleteEngagements = EngagementsDemoRoles.CanCompleteEngagements(context.User),

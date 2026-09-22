@@ -4,11 +4,14 @@ import { EngagementDemoRoleService } from './engagement-demo-role.service';
 
 export const engagementAssignmentListGuard: CanActivateFn = () => {
   const roles = inject(EngagementDemoRoleService);
-  if (!roles.isApostle()) return true;
 
-  return inject(Router).createUrlTree(['/organization/ctg/apostle'], {
-    fragment: 'road-ahead',
-  });
+  if (roles.isApostle()) {
+    return inject(Router).createUrlTree(['/organization/ctg/apostle'], {
+      fragment: 'road-ahead',
+    });
+  }
+
+  return inject(Router).createUrlTree(['/organization/ctg/engagements']);
 };
 
 export const engagementAssignmentDetailGuard: CanActivateFn = route => {

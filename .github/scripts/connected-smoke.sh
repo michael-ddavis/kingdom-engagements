@@ -179,32 +179,58 @@ docker exec "$app_name" curl --fail --silent "http://localhost:8080/api/engageme
 
 preparation_json="$(docker exec "$app_name" curl --fail --silent \
   "http://localhost:8080/api/engagements/assignments/$assignment_id/preparation")"
-terms_token="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["preparation"]["termsToken"])' <<<"$preparation_json")"
 coordination_status="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["preparation"]["coordinationStatus"])' <<<"$preparation_json")"
+terms_token="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["preparation"]["termsToken"])' <<<"$preparation_json")"
+coordination_token="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["preparation"]["coordinationToken"])' <<<"$preparation_json")"
 test "$coordination_status" = "locked"
+test -z "$terms_token"
+test -z "$coordination_token"
+
+host_invitation_json="$(docker exec "$app_name" curl --fail --silent \
+  -X POST "http://localhost:8080/api/engagements/assignments/$assignment_id/host-access/invitations" \
+  -H 'Content-Type: application/json' -d '{}')"
+host_invitation_url="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["invitationUrl"])' <<<"$host_invitation_json")"
+host_invitation_token="$(python3 -c 'import sys,urllib.parse; print(urllib.parse.urlparse(sys.stdin.read().strip()).path.rsplit("/", 1)[-1])' <<<"$host_invitation_url")"
+test -n "$host_invitation_token"
+
+redemption_page="$(docker exec "$app_name" curl --fail --silent "$host_invitation_url")"
+grep --quiet 'Continue to host coordination' <<<"$redemption_page"
 
 docker exec "$app_name" curl --fail --silent \
-  "http://localhost:8080/api/public/engagements/preparation/terms/$terms_token" \
-  | grep --quiet '"termsStatus":"pending"'
+  -c /tmp/host-cookies.txt \
+  -X POST http://localhost:8080/host/access/redeem \
+  -F "token=$host_invitation_token" \
+  -o /dev/null
 
-docker exec "$app_name" curl --fail --silent "http://localhost:8080/host/terms/$terms_token" \
+host_terms_json="$(docker exec "$app_name" curl --fail --silent \
+  -b /tmp/host-cookies.txt \
+  http://localhost:8080/api/host/engagement/terms)"
+grep --quiet '"termsStatus":"pending"' <<<"$host_terms_json"
+
+docker exec "$app_name" curl --fail --silent \
+  -b /tmp/host-cookies.txt \
+  http://localhost:8080/host/terms \
   | grep --quiet 'Accepted engagement terms'
 
 accepted_json="$(docker exec "$app_name" curl --fail --silent \
-  -X POST "http://localhost:8080/api/public/engagements/preparation/terms/$terms_token/accept" \
+  -b /tmp/host-cookies.txt \
+  -X POST http://localhost:8080/api/host/engagement/terms/accept \
   -H 'Content-Type: application/json' \
   -d '{"accepted":true,"signatoryName":"Pastor Jordan Ellis","signatoryEmail":"jordan@example.org","note":"Confirmed for CI."}')"
-coordination_token="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["terms"]["coordinationToken"])' <<<"$accepted_json")"
+grep --quiet '"coordinationUrl":"/host/coordination"' <<<"$accepted_json"
 
 docker exec "$app_name" curl --fail --silent \
   "http://localhost:8080/api/engagements/requests/$request_id" \
   | grep --quiet '"agreementStatus":"signed"'
 
-docker exec "$app_name" curl --fail --silent "http://localhost:8080/host/coordination/$coordination_token" \
+docker exec "$app_name" curl --fail --silent \
+  -b /tmp/host-cookies.txt \
+  http://localhost:8080/host/coordination \
   | grep --quiet 'Host coordination'
 
 docker exec -i "$app_name" curl --fail --silent \
-  -X PUT "http://localhost:8080/api/public/engagements/preparation/coordination/$coordination_token" \
+  -b /tmp/host-cookies.txt \
+  -X PUT http://localhost:8080/api/host/engagement/coordination \
   -H 'Content-Type: application/json' --data-binary @- >/dev/null <<'JSON'
 {
   "outboundAirline":"Delta",
@@ -240,7 +266,8 @@ JSON
 
 docker exec "$app_name" sh -c "printf 'final host schedule' > /tmp/final-schedule.txt"
 document_json="$(docker exec "$app_name" curl --fail --silent \
-  -X POST "http://localhost:8080/api/public/engagements/preparation/coordination/$coordination_token/documents" \
+  -b /tmp/host-cookies.txt \
+  -X POST http://localhost:8080/api/host/engagement/coordination/documents \
   -F 'file=@/tmp/final-schedule.txt;type=text/plain')"
 document_id="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])' <<<"$document_json")"
 

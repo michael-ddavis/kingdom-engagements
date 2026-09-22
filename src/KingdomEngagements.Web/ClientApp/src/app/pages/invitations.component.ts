@@ -337,7 +337,7 @@ export class InvitationsComponent implements OnInit {
         this.saving.set(false);
         this.setMessage('Invitation approved. The engagement moved into preparation.');
         this.reload(item.id);
-        this.router.navigate(['/assignments', result.assignmentId]);
+        this.router.navigate(['/organization/ctg/engagements', result.assignmentId]);
       },
       error: error => this.finishError(error),
     });
@@ -369,7 +369,7 @@ export class InvitationsComponent implements OnInit {
     });
   }
 
-  openAssignment(id: string): void { this.router.navigate(['/assignments', id]); }
+  openAssignment(id: string): void { this.router.navigate(['/organization/ctg/engagements', id]); }
   waitingOnHost(item: SpeakingRequestDetails): boolean { return item.status === 'host-completion-needed'; }
   reviewable(item: SpeakingRequestDetails): boolean { return !['approved', 'declined', 'host-completion-needed'].includes(item.status); }
   statusLabel(value: string): string {

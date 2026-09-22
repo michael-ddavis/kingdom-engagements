@@ -321,6 +321,11 @@ export interface StandingResponsibilityAssignment {
 export interface EngagementResponsibilitySnapshot {
   assignment: EngagementSummary;
   lanes: readonly ResponsibilityLaneState[];
+  responsibilityReadinessPercent: number;
+  completedLaneCount: number;
+  applicableLaneCount: number;
+  overdueLaneCount: number;
+  unassignedLaneCount: number;
 }
 
 export interface MyResponsibilityWorkItem {

@@ -695,6 +695,7 @@ public sealed class EngagementLaneWorkspaceService(
         Guid assignmentId,
         string laneKey,
         CreateLaneDocumentRequest request,
+        string actor,
         CancellationToken ct)
     {
         var lane = EngagementResponsibilityLanes.Get(laneKey);
@@ -713,6 +714,14 @@ public sealed class EngagementLaneWorkspaceService(
         };
         engagementsDatabase.Documents.Add(document);
         await engagementsDatabase.SaveChangesAsync(ct);
+        await AddActivityAsync(
+            tenantId,
+            assignmentId,
+            "lane-document-added",
+            $"{lane.Label} document added",
+            document.Name,
+            actor,
+            ct);
         return MapDocument(document);
     }
 
@@ -722,6 +731,7 @@ public sealed class EngagementLaneWorkspaceService(
         string laneKey,
         Guid documentId,
         UpdateLaneDocumentRequest request,
+        string actor,
         CancellationToken ct)
     {
         var lane = EngagementResponsibilityLanes.Get(laneKey);
@@ -740,6 +750,14 @@ public sealed class EngagementLaneWorkspaceService(
         document.StorageReference = Trim(request.StorageReference);
         document.UpdatedAtUtc = DateTimeOffset.UtcNow;
         await engagementsDatabase.SaveChangesAsync(ct);
+        await AddActivityAsync(
+            tenantId,
+            assignmentId,
+            "lane-document-updated",
+            $"{lane.Label} document updated",
+            document.Name,
+            actor,
+            ct);
         return MapDocument(document);
     }
 
@@ -748,6 +766,7 @@ public sealed class EngagementLaneWorkspaceService(
         Guid assignmentId,
         string laneKey,
         Guid documentId,
+        string actor,
         CancellationToken ct)
     {
         var lane = EngagementResponsibilityLanes.Get(laneKey);
@@ -762,8 +781,17 @@ public sealed class EngagementLaneWorkspaceService(
             !string.Equals(lane.Key, "documents", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("That document belongs to a different responsibility lane.");
 
+        var documentName = document.Name;
         engagementsDatabase.Documents.Remove(document);
         await engagementsDatabase.SaveChangesAsync(ct);
+        await AddActivityAsync(
+            tenantId,
+            assignmentId,
+            "lane-document-removed",
+            $"{lane.Label} document removed",
+            documentName,
+            actor,
+            ct);
         return true;
     }
 
@@ -1284,6 +1312,7 @@ public static class EngagementLaneWorkspaceEndpoints
                     id,
                     laneKey,
                     request,
+                    context.User.Identity?.Name ?? "Engagement team member",
                     ct);
                 return item is null ? Results.NotFound() : Results.Ok(item);
             }
@@ -1314,6 +1343,7 @@ public static class EngagementLaneWorkspaceEndpoints
                     laneKey,
                     documentId,
                     request,
+                    context.User.Identity?.Name ?? "Engagement team member",
                     ct);
                 return item is null ? Results.NotFound() : Results.Ok(item);
             }
@@ -1346,6 +1376,7 @@ public static class EngagementLaneWorkspaceEndpoints
                     id,
                     laneKey,
                     documentId,
+                    context.User.Identity?.Name ?? "Engagement team member",
                     ct);
                 return deleted ? Results.NoContent() : Results.NotFound();
             }

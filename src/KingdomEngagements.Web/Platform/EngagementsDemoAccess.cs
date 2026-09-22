@@ -130,6 +130,14 @@ public static class EngagementsDemoRoles
         if (!string.IsNullOrWhiteSpace(demoRole))
             return Normalize(demoRole);
 
+        if (principal.HasClaim(KingdomIdentity.TenantRoleClaim, "owner") ||
+            principal.HasClaim(KingdomIdentity.TenantRoleClaim, "administrator") ||
+            principal.IsInRole("organization-owner") ||
+            principal.IsInRole("organization-administrator"))
+        {
+            return Administrator;
+        }
+
         var productRoles = principal.FindAll(KingdomIdentity.ProductRoleClaim)
             .Select(claim => claim.Value)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -192,7 +200,8 @@ public static class EngagementsDemoRoles
 
 public sealed class EngagementsDemoAccessMiddleware(
     RequestDelegate next,
-    IWebHostEnvironment environment)
+    IWebHostEnvironment environment,
+    IConfiguration configuration)
 {
     private static readonly Regex AssignmentPath = new(
         "^/api/engagements/assignments/(?<id>[0-9a-fA-F-]{36})(?<rest>/.*)?$",
@@ -203,7 +212,9 @@ public sealed class EngagementsDemoAccessMiddleware(
         EngagementsService engagements,
         EngagementResponsibilityService responsibilities)
     {
-        if (!environment.IsDevelopment() || HttpMethods.IsOptions(context.Request.Method))
+        if (!environment.IsDevelopment() ||
+            !configuration.GetValue("KingdomOS:Identity:DemoProfilesEnabled", false) ||
+            HttpMethods.IsOptions(context.Request.Method))
         {
             await next(context);
             return;
@@ -373,6 +384,27 @@ public static class EngagementsDemoAccessEndpoints
             });
         });
 
+        group.MapGet("/session", (HttpContext context) =>
+        {
+            var role = EngagementsDemoRoles.CurrentRole(context.User);
+            return Results.Ok(new
+            {
+                role,
+                name = context.User.Identity?.Name ?? "Engagements user",
+                subject = KingdomIdentity.Subject(context.User, context.Request),
+                tenantId = KingdomIdentity.TenantId(context.User, context.Request),
+                canViewAllEngagements = EngagementsDemoRoles.CanViewAllEngagements(context.User),
+                canManageBookings = EngagementsDemoRoles.CanUseBookingDesk(context.User),
+                canManageAssignments = KingdomIdentity.CanWriteEngagements(context.User),
+                canDirectEngagements = KingdomIdentity.CanDirectEngagements(context.User),
+                canViewFinancials = EngagementsDemoRoles.CanViewFinancials(context.User),
+                canViewInternalNotes = EngagementsDemoRoles.CanViewInternalNotes(context.User),
+                canCompleteEngagements = EngagementsDemoRoles.CanCompleteEngagements(context.User)
+            });
+        });
+
+
+
         group.MapGet("/my-assignments", async (
             HttpContext context,
             EngagementsService service,
@@ -395,7 +427,8 @@ public static class EngagementsDemoAccessEndpoints
 
             // Preserve the original local demo minister while real users are driven by
             // standing responsibility ownership.
-            if (EngagementsDemoRoles.IsMinister(context.User))
+            if (context.User.HasClaim(EngagementsDemoRoles.RoleClaim, EngagementsDemoRoles.Minister) &&
+                EngagementsDemoRoles.IsMinister(context.User))
             {
                 var legacyAssigned = EngagementsDemoRoles.AssignedEngagements(context.User);
                 return Results.Ok(all.Where(item =>
@@ -458,7 +491,8 @@ public static class EngagementsDemoAccessEndpoints
                 });
             }
 
-            if (EngagementsDemoRoles.IsMinister(context.User) &&
+            if (context.User.HasClaim(EngagementsDemoRoles.RoleClaim, EngagementsDemoRoles.Minister) &&
+                EngagementsDemoRoles.IsMinister(context.User) &&
                 EngagementsDemoRoles.AssignedEngagements(context.User)
                     .Contains(item.Summary.ExternalAssignmentId))
             {

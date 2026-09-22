@@ -63,7 +63,8 @@ jobs:
           docker start "$container_id" >/dev/null
           exit_code="$(docker wait "$container_id")"
           test "$exit_code" != "0"
-          docker logs "$container_id" 2>&1 | grep --quiet 'ApostolOS production configuration is incomplete or unsafe'
+          production_logs="$(docker logs "$container_id" 2>&1)"
+          grep --quiet 'ApostolOS production configuration is incomplete or unsafe' <<<"$production_logs"
 
       - name: Verify source-controlled app settings contain no credentials
         shell: bash

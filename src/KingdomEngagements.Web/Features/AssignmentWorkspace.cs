@@ -688,7 +688,7 @@ public static class AssignmentWorkspaceEndpoints
                 ? $"{context.Request.Scheme}://{context.Request.Host}/host/coordination/{item.Preparation.CoordinationToken}"
                 : null;
             return Results.Ok(new { workspace = item, termsUrl, coordinationUrl });
-        });
+        }).RequireAuthorization("EngagementsDirect");
 
         group.MapPut("/{id:guid}/workspace/coordination", async (
             Guid id,

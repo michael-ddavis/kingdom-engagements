@@ -141,6 +141,9 @@ interface ResponsibilityDraft {
                         <small>{{ laneItem.dueAtUtc ? 'Due ' + dateLabel(laneItem.dueAtUtc) : laneItem.detail || 'No due date' }}</small>
                       </button>
                     }
+                    @if (!isDirector() && responsibilities().length === 0) {
+                      <p class="empty-copy team-empty">No responsibility lanes are assigned to you for this engagement.</p>
+                    }
                   </div>
                 </article>
 
@@ -229,24 +232,26 @@ interface ResponsibilityDraft {
                     <footer class="panel-actions"><button type="button" [disabled]="saving()" (click)="saveHost()">Save host coordination</button></footer>
                   </article>
 
-                  <article class="panel conversation-panel">
-                    <header><div><h2>Coordination thread</h2></div><span>{{ thread()?.isClosed ? 'Closed' : 'Open' }}</span></header>
-                    <div class="thread">
-                      @for (message of thread()?.messages ?? []; track message.id) {
-                        <div [class.host-message]="message.senderType === 'host'" [class.team-message]="message.senderType === 'ministry'">
-                          <header><strong>{{ message.senderName }}</strong><span>{{ relativeDate(message.createdAtUtc) }}</span></header>
-                          <p>{{ message.message }}</p>
+                  @if (isDirector()) {
+                    <article class="panel conversation-panel">
+                      <header><div><h2>Coordination thread</h2></div><span>{{ thread()?.isClosed ? 'Closed' : 'Open' }}</span></header>
+                      <div class="thread">
+                        @for (message of thread()?.messages ?? []; track message.id) {
+                          <div [class.host-message]="message.senderType === 'host'" [class.team-message]="message.senderType === 'ministry'">
+                            <header><strong>{{ message.senderName }}</strong><span>{{ relativeDate(message.createdAtUtc) }}</span></header>
+                            <p>{{ message.message }}</p>
+                          </div>
+                        }
+                        @if ((thread()?.messages?.length ?? 0) === 0) { <p class="empty-copy">No messages yet.</p> }
+                      </div>
+                      @if (!thread()?.isClosed) {
+                        <div class="composer">
+                          <textarea rows="3" [(ngModel)]="hostMessageDraft" placeholder="Message the host about missing information or next steps."></textarea>
+                          <button type="button" [disabled]="saving() || !hostMessageDraft.trim()" (click)="sendHostMessage()">Send message</button>
                         </div>
                       }
-                      @if ((thread()?.messages?.length ?? 0) === 0) { <p class="empty-copy">No messages yet.</p> }
-                    </div>
-                    @if (!thread()?.isClosed) {
-                      <div class="composer">
-                        <textarea rows="3" [(ngModel)]="hostMessageDraft" placeholder="Message the host about missing information or next steps."></textarea>
-                        <button type="button" [disabled]="saving() || !hostMessageDraft.trim()" (click)="sendHostMessage()">Send message</button>
-                      </div>
-                    }
-                  </article>
+                    </article>
+                  }
                 </section>
               }
             }
@@ -536,7 +541,7 @@ interface ResponsibilityDraft {
     .workspace-body{position:relative}.overview-grid,.two-column{display:grid;grid-template-columns:1fr 1fr;gap:12px}.overview-card,.panel{border:1px solid #dfe3e0;border-radius:14px;background:#fffdfa;box-shadow:0 8px 25px rgba(18,26,44,.035)}.overview-card{padding:17px}.overview-card--wide{grid-column:1/-1}.overview-card>header,.panel>header{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.overview-card h2,.panel h2{font-size:1.2rem}.overview-card header button,.panel header button{border:0;background:transparent;color:#315faf;font-size:.64rem;font-weight:850;cursor:pointer}
     .responsibility-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}.responsibility-grid>button{min-height:105px;padding:11px;border:1px solid #e1e4e1;border-radius:9px;background:#f8f7f3;text-align:left;color:inherit;cursor:pointer}.responsibility-grid button>span{display:flex;justify-content:space-between;gap:7px}.responsibility-grid button strong{font-size:.7rem}.responsibility-grid button span small{color:#79817d;font-size:.55rem;text-align:right}.responsibility-grid button b{display:block;margin:11px 0 4px;font-size:.67rem}.responsibility-grid button>small{color:#808783;font-size:.57rem}.responsibility-grid button.complete{background:#eef6f1}.responsibility-grid button.waiting{background:#fbf5e8}.responsibility-grid button.danger{background:#fbefed;border-color:#e8cecb}.responsibility-grid button.na{opacity:.55}
     .host-meter strong{display:block;margin:8px 0;font-size:1.8rem}.host-meter>div{height:6px;border-radius:999px;background:#e4e6e3;overflow:hidden}.host-meter i{display:block;height:100%;background:#9d7438}.host-meter span{display:block;margin-top:8px;color:#777f7a;font-size:.65rem}
-    .attention-items{margin:10px 0 0;padding-left:18px;color:#5e6863;font-size:.7rem;line-height:1.6}.empty-copy{color:#808783;font-size:.7rem}
+    .attention-items{margin:10px 0 0;padding-left:18px;color:#5e6863;font-size:.7rem;line-height:1.6}.empty-copy{color:#808783;font-size:.7rem}.team-empty{grid-column:1/-1;margin:4px 0;padding:18px;border:1px dashed #d9ddda;border-radius:9px;background:#faf9f5;text-align:center}
     .activity-list{display:flex;flex-direction:column;margin-top:10px}.activity-list>div{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:flex-start;padding:9px 0;border-top:1px solid #eceeec}.activity-list>div:first-child{border-top:0}.activity-list>div>span{width:8px;height:8px;margin-top:5px;border-radius:50%;background:#9d7438}.activity-list p{margin:0}.activity-list p strong,.activity-list p small{display:block}.activity-list p strong{font-size:.68rem}.activity-list p small{margin-top:2px;color:#79817d;font-size:.6rem}.activity-list b{color:#7d8480;font-size:.58rem;font-weight:700}.activity-list--full{padding:0 18px 14px}
     .panel{padding:18px}.panel>header{padding-bottom:14px;border-bottom:1px solid #e6e8e6}.panel>header>span{color:#747c78;font-size:.63rem;font-weight:800}.panel>header p:not(.eyebrow){margin:4px 0 0;color:#727a76;font-size:.68rem}.panel-actions{display:flex;justify-content:flex-end;margin-top:16px;padding-top:13px;border-top:1px solid #e5e7e5}.panel-actions.split{justify-content:space-between}.panel-actions button,.responsibility-drawer footer button,.asset-editor button,.document-editor button,.composer button{padding:9px 13px;border:0;border-radius:8px;background:#172a46;color:#fff;font-size:.65rem;font-weight:850;cursor:pointer}.panel-actions .secondary,.responsibility-drawer .secondary{border:1px solid #d6dbd8;background:#fff;color:#172a46}
     .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}.form-grid .full,.field.full{grid-column:1/-1}.form-grid h3{margin:5px 0 0;color:#5e6863;font-size:.72rem}.field{display:block;margin-top:12px}.field>span{display:block;margin-bottom:5px;font-size:.62rem;font-weight:850;color:#59635e}.field input,.field textarea,.field select,.asset-editor input,.asset-editor textarea,.asset-editor select,.document-editor input,.document-editor select,.composer textarea,.schedule-row input{box-sizing:border-box;width:100%;padding:9px 10px;border:1px solid #d5dad7;border-radius:8px;background:#fff;font:inherit;font-size:.72rem}.field textarea{resize:vertical}

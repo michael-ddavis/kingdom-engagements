@@ -135,6 +135,7 @@ builder.Services.AddHttpClient<EngagementsEntitlementResolver>(client =>
 builder.Services.AddScoped<EngagementsInitializer>();
 builder.Services.AddScoped<EngagementsService>();
 builder.Services.AddScoped<EngagementResponsibilityService>();
+builder.Services.AddScoped<EngagementLaneWorkspaceService>();
 builder.Services.AddScoped<SpeakingRequestsService>();
 builder.Services.AddScoped<StaffStartedInvitationsService>();
 builder.Services.AddScoped<HickmanSpeakingRequestsService>();
@@ -199,10 +200,18 @@ app.Use(async (context, next) =>
         HttpMethods.IsPut(context.Request.Method) &&
         path.StartsWith("/api/engagements/assignments/", StringComparison.OrdinalIgnoreCase) &&
         path.Contains("/tasks/", StringComparison.OrdinalIgnoreCase);
+    var laneWorkspaceMutation =
+        path.StartsWith("/api/engagements/assignments/", StringComparison.OrdinalIgnoreCase) &&
+        path.Contains("/lanes/", StringComparison.OrdinalIgnoreCase);
+    var hostConversationMutation =
+        path.StartsWith("/api/engagements/assignments/", StringComparison.OrdinalIgnoreCase) &&
+        path.EndsWith("/preparation/messages", StringComparison.OrdinalIgnoreCase);
     var assignmentMutation =
         context.Request.Path.StartsWithSegments("/api/engagements/assignments") &&
         !laneProgressMutation &&
         !responsibilityTaskMutation &&
+        !laneWorkspaceMutation &&
+        !hostConversationMutation &&
         !HttpMethods.IsGet(context.Request.Method) &&
         !HttpMethods.IsHead(context.Request.Method) &&
         !HttpMethods.IsOptions(context.Request.Method);
@@ -282,6 +291,7 @@ app.MapAssignmentWorkspaceEndpoints();
 app.MapEngagementCompletionEndpoints();
 app.MapEngagementsDemoAccessEndpoints();
 app.MapEngagementResponsibilityEndpoints();
+app.MapEngagementLaneWorkspaceEndpoints();
 app.MapEngagementsEndpoints();
 
 // Preserve legacy /app links while sending each demo persona to the right workspace.

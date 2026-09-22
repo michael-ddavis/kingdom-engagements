@@ -17,6 +17,21 @@ import {
   StandingResponsibilityAssignment,
   EngagementResponsibilitySnapshot,
   MyResponsibilityWorkItem,
+  TravelLaneDetails,
+  LodgingLaneDetails,
+  TransportationLaneDetails,
+  ProgramLaneDetails,
+  MediaLaneDetails,
+  MediaAsset,
+  DocumentsLaneDetails,
+  LaneDocument,
+  FinanceLaneDetails,
+  MinistryPreparationLaneDetails,
+  HospitalityLaneDetails,
+  HostCoordinationLaneDetails,
+  ExecutiveEngagementBrief,
+  HostContact,
+  HostScheduleItem,
 } from './models';
 import {
   ApproveSpeakingRequestResult,
@@ -91,6 +106,98 @@ export interface StartSpeakingInvitationInput {
 export interface StartedInvitationLinkResult {
   request: SpeakingRequestDetails;
   completionUrl: string;
+}
+
+
+export interface UpdateTravelLaneInput {
+  outboundAirline: string | null;
+  outboundFlightNumber: string | null;
+  outboundConfirmationNumber: string | null;
+  outboundDepartureAirport: string | null;
+  outboundArrivalAirport: string | null;
+  outboundDepartsAtUtc: string | null;
+  outboundArrivesAtUtc: string | null;
+  returnAirline: string | null;
+  returnFlightNumber: string | null;
+  returnConfirmationNumber: string | null;
+  returnDepartureAirport: string | null;
+  returnArrivalAirport: string | null;
+  returnDepartsAtUtc: string | null;
+  returnArrivesAtUtc: string | null;
+  contacts: readonly HostContact[];
+}
+
+export interface UpdateLodgingLaneInput {
+  hotelName: string | null;
+  hotelAddress: string | null;
+  hotelConfirmationNumber: string | null;
+  hotelCheckInAtUtc: string | null;
+  hotelCheckOutAtUtc: string | null;
+  contacts: readonly HostContact[];
+}
+
+export interface UpdateTransportationLaneInput {
+  transportationPlan: string | null;
+  pickupContactName: string | null;
+  pickupContactPhone: string | null;
+  contacts: readonly HostContact[];
+}
+
+export interface UpdateProgramLaneInput {
+  schedule: readonly HostScheduleItem[];
+  contacts: readonly HostContact[];
+}
+
+export interface UpdateMediaLaneInput {
+  promotionRequirements: string | null;
+  contacts: readonly HostContact[];
+}
+
+export interface MediaAssetInput {
+  name: string;
+  assetType: string;
+  purpose: string;
+  status: string;
+  source: string;
+  storageReference: string | null;
+  externalUrl: string | null;
+  notes: string | null;
+}
+
+export interface UpdateFinanceLaneInput {
+  travelCoverageStatus: string;
+  lodgingCoverageStatus: string;
+  travelBookedBy: string;
+  honorariumStatus: string;
+  honorariumAmount: number;
+  honorariumCurrency: string;
+  paymentStatus: string;
+}
+
+export interface UpdateMinistryPreparationLaneInput {
+  prayerFocus: string | null;
+  ministryPreparationNotes: string | null;
+}
+
+export interface UpdateHospitalityLaneInput {
+  hospitalityNotes: string | null;
+  contacts: readonly HostContact[];
+}
+
+export interface UpdateHostCoordinationLaneInput {
+  hostNotes: string | null;
+  contacts: readonly HostContact[];
+}
+
+export interface CreateLaneDocumentInput {
+  name: string;
+  status: string;
+  storageReference: string | null;
+}
+
+export interface UpdateLaneDocumentInput {
+  status: string;
+  storageReference: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -355,6 +462,197 @@ export class EngagementsApiService {
 
   getMyWork(): Observable<readonly MyResponsibilityWorkItem[]> {
     return this.http.get<readonly MyResponsibilityWorkItem[]>('/api/engagements/my-work');
+  }
+
+
+  getExecutiveBrief(assignmentId: string): Observable<ExecutiveEngagementBrief> {
+    return this.http.get<ExecutiveEngagementBrief>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/executive-brief`,
+    );
+  }
+
+  getTravelLane(assignmentId: string): Observable<TravelLaneDetails> {
+    return this.http.get<TravelLaneDetails>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/travel`,
+    );
+  }
+
+  updateTravelLane(assignmentId: string, input: UpdateTravelLaneInput): Observable<TravelLaneDetails> {
+    return this.http.put<TravelLaneDetails>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/travel`,
+      input,
+    );
+  }
+
+  getLodgingLane(assignmentId: string): Observable<LodgingLaneDetails> {
+    return this.http.get<LodgingLaneDetails>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/lodging`,
+    );
+  }
+
+  updateLodgingLane(assignmentId: string, input: UpdateLodgingLaneInput): Observable<LodgingLaneDetails> {
+    return this.http.put<LodgingLaneDetails>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/lodging`,
+      input,
+    );
+  }
+
+  getTransportationLane(assignmentId: string): Observable<TransportationLaneDetails> {
+    return this.http.get<TransportationLaneDetails>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/transportation`,
+    );
+  }
+
+  updateTransportationLane(
+    assignmentId: string,
+    input: UpdateTransportationLaneInput,
+  ): Observable<TransportationLaneDetails> {
+    return this.http.put<TransportationLaneDetails>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/transportation`,
+      input,
+    );
+  }
+
+  getProgramLane(assignmentId: string): Observable<ProgramLaneDetails> {
+    return this.http.get<ProgramLaneDetails>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/program`,
+    );
+  }
+
+  updateProgramLane(assignmentId: string, input: UpdateProgramLaneInput): Observable<ProgramLaneDetails> {
+    return this.http.put<ProgramLaneDetails>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/program`,
+      input,
+    );
+  }
+
+  getMediaLane(assignmentId: string): Observable<MediaLaneDetails> {
+    return this.http.get<MediaLaneDetails>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/media`,
+    );
+  }
+
+  updateMediaLane(assignmentId: string, input: UpdateMediaLaneInput): Observable<MediaLaneDetails> {
+    return this.http.put<MediaLaneDetails>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/media`,
+      input,
+    );
+  }
+
+  createMediaAsset(assignmentId: string, input: MediaAssetInput): Observable<MediaAsset> {
+    return this.http.post<MediaAsset>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/media/assets`,
+      input,
+    );
+  }
+
+  updateMediaAsset(assignmentId: string, assetId: string, input: MediaAssetInput): Observable<MediaAsset> {
+    return this.http.put<MediaAsset>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/media/assets/${encodeURIComponent(assetId)}`,
+      input,
+    );
+  }
+
+  deleteMediaAsset(assignmentId: string, assetId: string): Observable<void> {
+    return this.http.delete<void>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/media/assets/${encodeURIComponent(assetId)}`,
+    );
+  }
+
+  getDocumentsLane(assignmentId: string): Observable<DocumentsLaneDetails> {
+    return this.http.get<DocumentsLaneDetails>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/documents`,
+    );
+  }
+
+  createLaneDocument(
+    assignmentId: string,
+    laneKey: string,
+    input: CreateLaneDocumentInput,
+  ): Observable<LaneDocument> {
+    return this.http.post<LaneDocument>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/${encodeURIComponent(laneKey)}/documents`,
+      input,
+    );
+  }
+
+  updateLaneDocument(
+    assignmentId: string,
+    laneKey: string,
+    documentId: string,
+    input: UpdateLaneDocumentInput,
+  ): Observable<LaneDocument> {
+    return this.http.put<LaneDocument>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/${encodeURIComponent(laneKey)}/documents/${encodeURIComponent(documentId)}`,
+      input,
+    );
+  }
+
+  deleteLaneDocument(assignmentId: string, laneKey: string, documentId: string): Observable<void> {
+    return this.http.delete<void>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/${encodeURIComponent(laneKey)}/documents/${encodeURIComponent(documentId)}`,
+    );
+  }
+
+  getFinanceLane(assignmentId: string): Observable<FinanceLaneDetails> {
+    return this.http.get<FinanceLaneDetails>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/finance`,
+    );
+  }
+
+  updateFinanceLane(assignmentId: string, input: UpdateFinanceLaneInput): Observable<FinanceLaneDetails> {
+    return this.http.put<FinanceLaneDetails>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/finance`,
+      input,
+    );
+  }
+
+  getMinistryPreparationLane(assignmentId: string): Observable<MinistryPreparationLaneDetails> {
+    return this.http.get<MinistryPreparationLaneDetails>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/ministry-preparation`,
+    );
+  }
+
+  updateMinistryPreparationLane(
+    assignmentId: string,
+    input: UpdateMinistryPreparationLaneInput,
+  ): Observable<MinistryPreparationLaneDetails> {
+    return this.http.put<MinistryPreparationLaneDetails>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/ministry-preparation`,
+      input,
+    );
+  }
+
+  getHospitalityLane(assignmentId: string): Observable<HospitalityLaneDetails> {
+    return this.http.get<HospitalityLaneDetails>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/hospitality`,
+    );
+  }
+
+  updateHospitalityLane(
+    assignmentId: string,
+    input: UpdateHospitalityLaneInput,
+  ): Observable<HospitalityLaneDetails> {
+    return this.http.put<HospitalityLaneDetails>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/hospitality`,
+      input,
+    );
+  }
+
+  getHostCoordinationLane(assignmentId: string): Observable<HostCoordinationLaneDetails> {
+    return this.http.get<HostCoordinationLaneDetails>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/host-coordination`,
+    );
+  }
+
+  updateHostCoordinationLane(
+    assignmentId: string,
+    input: UpdateHostCoordinationLaneInput,
+  ): Observable<HostCoordinationLaneDetails> {
+    return this.http.put<HostCoordinationLaneDetails>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/host-coordination`,
+      input,
+    );
   }
 
   getCompletion(id: string): Observable<EngagementCompletion> {

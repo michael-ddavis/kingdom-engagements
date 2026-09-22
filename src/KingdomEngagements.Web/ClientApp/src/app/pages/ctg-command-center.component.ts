@@ -84,7 +84,7 @@ interface HostActivityPreview {
         @if (responsibilityDataUnavailable()) {
           <div class="director-state director-state--warning">
             <strong>Responsibility details are temporarily unavailable.</strong>
-            <span>The engagement list is still shown below. Restart the Engagements backend after pulling the latest code to load ownership, readiness lanes, and accountability details.</span>
+            <span>The engagement list is still shown below. Rebuild the Engagements Docker container after pulling the latest code.</span>
           </div>
         }
 

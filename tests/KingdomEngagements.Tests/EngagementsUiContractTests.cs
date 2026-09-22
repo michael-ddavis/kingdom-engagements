@@ -30,7 +30,7 @@ public sealed class EngagementsUiContractTests
     }
 
     [Fact]
-    public void Focused_demo_data_is_source_clean_instead_of_client_hidden()
+    public void Executive_road_ahead_demo_data_is_source_clean_instead_of_client_hidden()
     {
         var seeder = File.ReadAllText(FindRepositoryFile(
             "src",
@@ -39,10 +39,10 @@ public sealed class EngagementsUiContractTests
             "EngagementsDemoSeedWorker.cs"));
         Assert.Contains("assignment-demo-001", seeder, StringComparison.Ordinal);
         Assert.Contains("assignment-demo-002", seeder, StringComparison.Ordinal);
+        Assert.Contains("assignment-demo-003", seeder, StringComparison.Ordinal);
+        Assert.Contains("assignment-demo-004", seeder, StringComparison.Ordinal);
+        Assert.Contains("assignment-demo-005", seeder, StringComparison.Ordinal);
         Assert.Contains("assignment-demo-007", seeder, StringComparison.Ordinal);
-        Assert.DoesNotContain("Assignment(\"assignment-demo-003\"", seeder, StringComparison.Ordinal);
-        Assert.DoesNotContain("Assignment(\"assignment-demo-004\"", seeder, StringComparison.Ordinal);
-        Assert.DoesNotContain("Assignment(\"assignment-demo-005\"", seeder, StringComparison.Ordinal);
         Assert.DoesNotContain("Assignment(\"assignment-demo-006\"", seeder, StringComparison.Ordinal);
         Assert.DoesNotContain("Assignment(\"assignment-demo-008\"", seeder, StringComparison.Ordinal);
         Assert.Contains("\"CTG-DEMO-001\"", seeder, StringComparison.Ordinal);

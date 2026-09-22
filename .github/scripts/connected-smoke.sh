@@ -106,6 +106,7 @@ docker run --detach --name "$production_app_name" --network "$network" \
   -e KingdomOS__DocumentStorage__S3__BucketName=engagements-ci \
   -e KingdomOS__DocumentStorage__S3__Region=us-east-1 \
   -e "KingdomOS__DocumentStorage__S3__ServiceUrl=http://$minio_name:9000" \
+  -e KingdomOS__DocumentStorage__S3__AllowInsecureEndpoint=true \
   -e KingdomOS__DocumentStorage__S3__ForcePathStyle=true \
   -e AWS_ACCESS_KEY_ID=minioadmin \
   -e AWS_SECRET_ACCESS_KEY=minioadmin \

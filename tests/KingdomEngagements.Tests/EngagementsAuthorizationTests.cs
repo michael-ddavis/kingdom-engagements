@@ -54,6 +54,27 @@ public sealed class EngagementsAuthorizationTests
     }
 
     [Theory]
+    [InlineData(KingdomIdentity.ProductRoleClaim, "engagements:administrator")]
+    [InlineData(KingdomIdentity.ProductRoleClaim, "engagements:director")]
+    [InlineData(KingdomIdentity.ProductRoleClaim, "engagements:executive")]
+    [InlineData(KingdomIdentity.TenantRoleClaim, "owner")]
+    public void Leadership_roles_can_view_all_engagements(string claimType, string value)
+    {
+        var principal = Principal(new Claim(claimType, value));
+        Assert.True(KingdomIdentity.CanViewAllEngagements(principal));
+    }
+
+    [Fact]
+    public void Team_member_does_not_receive_engagement_wide_read_access()
+    {
+        var principal = Principal(
+            new Claim(KingdomIdentity.ProductRoleClaim, "engagements:team-member"));
+
+        Assert.False(KingdomIdentity.CanViewAllEngagements(principal));
+        Assert.False(KingdomIdentity.CanViewInternalNotes(principal));
+    }
+
+    [Theory]
     [InlineData(null, "a1ab45e2-1746-4d91-9de0-9cf70ae75d3a")]
     [InlineData("ctg", "a1ab45e2-1746-4d91-9de0-9cf70ae75d3a")]
     [InlineData("divine-world-changers", "d1c00000-0000-4000-8000-000000000001")]

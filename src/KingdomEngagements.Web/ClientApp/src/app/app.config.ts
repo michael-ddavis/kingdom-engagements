@@ -2,8 +2,6 @@ import { ApplicationConfig, inject, provideAppInitializer } from '@angular/core'
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { InvitationsComponent } from './pages/invitations.component';
-import { AssignmentListComponent } from './pages/assignment-list.component';
-import { AssignmentWorkspaceComponent } from './pages/assignment-workspace.component';
 import { CtgApostleDashboardComponent } from './pages/ctg-apostle-dashboard.component';
 import { CtgApostleEngagementBriefComponent } from './pages/ctg-apostle-engagement-brief.component';
 import { CtgEngagementsHomeComponent } from './pages/ctg-engagements-home.component';
@@ -54,8 +52,8 @@ export const appConfig: ApplicationConfig = {
     provideRouter([
       { path: '', component: OrganizationLandingComponent, pathMatch: 'full' },
       { path: 'invitations', component: InvitationsComponent, canActivate: [engagementBookingGuard] },
-      { path: 'assignments', component: AssignmentListComponent, canActivate: [engagementAssignmentListGuard] },
-      { path: 'assignments/:id', component: AssignmentWorkspaceComponent, canActivate: [engagementAssignmentDetailGuard] },
+      { path: 'assignments', loadComponent: () => import('./pages/assignment-list.component').then(m => m.AssignmentListComponent), canActivate: [engagementAssignmentListGuard] },
+      { path: 'assignments/:id', loadComponent: () => import('./pages/assignment-workspace.component').then(m => m.AssignmentWorkspaceComponent), canActivate: [engagementAssignmentDetailGuard] },
       { path: 'organization/ctg/apostle/engagements/:id', component: CtgApostleEngagementBriefComponent },
       { path: 'organization/ctg/apostle', component: CtgApostleDashboardComponent },
       { path: 'organization/ctg/command-center', loadComponent: () => import('./pages/ctg-command-center.component').then(m => m.CtgCommandCenterComponent), canActivate: [engagementDirectorGuard] },

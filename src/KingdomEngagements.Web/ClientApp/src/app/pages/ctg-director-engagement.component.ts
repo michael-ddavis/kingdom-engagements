@@ -90,6 +90,14 @@ interface ResponsibilityDraft {
           </div>
         </header>
 
+        @if (unavailableSections().length > 0) {
+          <div class="partial-load-warning">
+            <strong>Some operational sections are unavailable.</strong>
+            <span>{{ unavailableSections().join(', ') }}</span>
+            <small>If you just pulled the latest code, restart the .NET Engagements backend so it loads the new lane endpoints.</small>
+          </div>
+        }
+
         <section class="engagement-alerts">
           <article><small>Overdue</small><strong>{{ overdueCount() }}</strong></article>
           <article><small>Unassigned</small><strong>{{ unassignedCount() }}</strong></article>
@@ -534,7 +542,7 @@ interface ResponsibilityDraft {
     .closeout-checks{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}.closeout-checks label{display:flex;gap:8px;align-items:center;padding:10px;border:1px solid #e1e4e1;border-radius:8px;background:#f8f7f3;font-size:.66rem;font-weight:800}.closeout-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}.closeout-summary>div{padding:12px;border-radius:9px;background:#f7f5f0}.closeout-summary small,.closeout-summary strong{display:block}.closeout-summary small{font-size:.56rem;color:#818783;text-transform:uppercase}.closeout-summary strong{margin-top:3px}.response-list{display:flex;flex-direction:column}.response-list>article{padding:11px 0;border-top:1px solid #eceeec}.response-list>article>div{display:flex;justify-content:space-between;gap:10px}.response-list strong{font-size:.69rem}.response-list span,.response-list small{color:#7d8480;font-size:.58rem}.response-list p{margin:5px 0;color:#59635e;font-size:.66rem;line-height:1.45}
     .save-toast{position:fixed;right:20px;bottom:20px;z-index:100;padding:11px 14px;border-radius:9px;background:#2d6d52;color:#fff;font-size:.68rem;font-weight:800;box-shadow:0 10px 30px rgba(18,26,44,.2)}.save-toast--error{background:#a84642}
     .drawer-backdrop{position:fixed;inset:0;z-index:90;background:rgba(16,24,35,.38)}.responsibility-drawer{position:fixed;z-index:91;top:0;right:0;width:min(460px,94vw);height:100vh;box-sizing:border-box;padding:20px;overflow:auto;background:#fffdfa;box-shadow:-20px 0 50px rgba(18,26,44,.17)}.responsibility-drawer>header{display:flex;justify-content:space-between}.responsibility-drawer>header small{color:#876f33;font-size:.59rem;font-weight:850;text-transform:uppercase}.responsibility-drawer h2{font-size:1.5rem}.responsibility-drawer>header button{width:34px;height:34px;border:0;border-radius:50%;background:#f0eee8;cursor:pointer}.toggle{display:flex;gap:8px;align-items:center;margin:13px 0;padding:10px;border-radius:8px;background:#f5f3ed;font-size:.67rem;font-weight:800}.responsibility-drawer footer{display:flex;justify-content:flex-end;gap:7px;margin-top:18px;padding-top:14px;border-top:1px solid #e4e6e4}
-    .state{padding:40px;border:1px solid #dfe3e0;border-radius:14px;background:#fff;text-align:center;color:#747c78}.state.error{color:#a84642}
+    .state{padding:40px;border:1px solid #dfe3e0;border-radius:14px;background:#fff;text-align:center;color:#747c78}.state.error{color:#a84642}.partial-load-warning{display:grid;gap:3px;margin:10px 0;padding:12px 14px;border:1px solid #ead9ab;border-radius:9px;background:#fff8e8;color:#725b24}.partial-load-warning strong{font-size:.7rem}.partial-load-warning span,.partial-load-warning small{font-size:.61rem}
     @media(max-width:1000px){.responsibility-grid{grid-template-columns:repeat(3,1fr)}.responsibility-list article{grid-template-columns:1fr 1fr}.responsibility-list article>button{justify-self:start}.schedule-row{grid-template-columns:1fr 1fr 1fr}.document-editor{grid-template-columns:1fr 1fr}.document-editor button{grid-column:1/-1}}
     @media(max-width:760px){.director-engagement{width:min(100% - 24px,1320px)}.engagement-heading{flex-direction:column}.engagement-alerts{grid-template-columns:1fr 1fr}.overview-grid,.two-column{grid-template-columns:1fr}.overview-card--wide{grid-column:auto}.responsibility-grid{grid-template-columns:1fr 1fr}.form-grid{grid-template-columns:1fr}.form-grid .full{grid-column:auto}.schedule-row{grid-template-columns:1fr 1fr}.asset-editor{grid-template-columns:1fr}.asset-editor .wide{grid-column:auto}}
   `],
@@ -578,6 +586,7 @@ export class CtgDirectorEngagementComponent implements OnInit {
   readonly saving = signal(false);
   readonly saveMessage = signal<string | null>(null);
   readonly saveError = signal<string | null>(null);
+  readonly unavailableSections = signal<readonly string[]>([]);
   readonly responsibilityDraft = signal<ResponsibilityDraft | null>(null);
 
   assignmentId = '';
@@ -640,26 +649,34 @@ export class CtgDirectorEngagementComponent implements OnInit {
 
     forkJoin({
       assignment: this.api.getAssignment(this.assignmentId),
-      workspace: this.api.getWorkspace(this.assignmentId),
-      responsibilities: this.api.getAssignmentResponsibilities(this.assignmentId),
-      host: this.api.getHostCoordinationLane(this.assignmentId),
-      thread: this.api.getHostCoordinationMessages(this.assignmentId).pipe(
-        catchError(() => of({ isClosed: false, messages: [] as const })),
+      workspace: this.optionalLoad('Overview', this.api.getWorkspace(this.assignmentId)),
+      responsibilities: this.api.getAssignmentResponsibilities(this.assignmentId).pipe(
+        catchError(() => {
+          this.markUnavailable('Responsibilities');
+          return of([] as readonly ResponsibilityLaneState[]);
+        }),
       ),
-      travel: this.api.getTravelLane(this.assignmentId),
-      lodging: this.api.getLodgingLane(this.assignmentId),
-      transportation: this.api.getTransportationLane(this.assignmentId),
-      media: this.api.getMediaLane(this.assignmentId),
-      program: this.api.getProgramLane(this.assignmentId),
-      documents: this.api.getDocumentsLane(this.assignmentId),
-      finance: this.api.getFinanceLane(this.assignmentId),
-      ministry: this.api.getMinistryPreparationLane(this.assignmentId),
-      hospitality: this.api.getHospitalityLane(this.assignmentId),
-      completion: this.api.getCompletion(this.assignmentId),
+      host: this.optionalLoad('Host Coordination', this.api.getHostCoordinationLane(this.assignmentId)),
+      thread: this.api.getHostCoordinationMessages(this.assignmentId).pipe(
+        catchError(() => {
+          this.markUnavailable('Host Messages');
+          return of({ isClosed: false, messages: [] as const });
+        }),
+      ),
+      travel: this.optionalLoad('Travel', this.api.getTravelLane(this.assignmentId)),
+      lodging: this.optionalLoad('Lodging', this.api.getLodgingLane(this.assignmentId)),
+      transportation: this.optionalLoad('Transportation', this.api.getTransportationLane(this.assignmentId)),
+      media: this.optionalLoad('Media', this.api.getMediaLane(this.assignmentId)),
+      program: this.optionalLoad('Program', this.api.getProgramLane(this.assignmentId)),
+      documents: this.optionalLoad('Documents', this.api.getDocumentsLane(this.assignmentId)),
+      finance: this.optionalLoad('Finance', this.api.getFinanceLane(this.assignmentId)),
+      ministry: this.optionalLoad('Ministry Preparation', this.api.getMinistryPreparationLane(this.assignmentId)),
+      hospitality: this.optionalLoad('Hospitality', this.api.getHospitalityLane(this.assignmentId)),
+      completion: this.optionalLoad('Closeout', this.api.getCompletion(this.assignmentId)),
     }).subscribe({
       next: result => {
         this.assignment.set(result.assignment);
-        this.workspace.set(result.workspace.workspace);
+        this.workspace.set(result.workspace?.workspace ?? null);
         this.responsibilities.set(result.responsibilities);
         this.host.set(result.host);
         this.thread.set(result.thread);
@@ -677,7 +694,7 @@ export class CtgDirectorEngagementComponent implements OnInit {
         this.loading.set(false);
       },
       error: () => {
-        this.error.set('The director engagement workspace could not be loaded.');
+        this.error.set('The engagement itself could not be loaded.');
         this.loading.set(false);
       },
     });
@@ -978,6 +995,21 @@ export class CtgDirectorEngagementComponent implements OnInit {
 
   laneLabel(key: string): string {
     return this.lane(key)?.label ?? this.label(key);
+  }
+
+  private optionalLoad<T>(label: string, source: Observable<T>): Observable<T | null> {
+    return source.pipe(
+      catchError(() => {
+        this.markUnavailable(label);
+        return of(null);
+      }),
+    );
+  }
+
+  private markUnavailable(label: string): void {
+    this.unavailableSections.update(items =>
+      items.includes(label) ? items : [...items, label],
+    );
   }
 
   private syncDrafts(): void {

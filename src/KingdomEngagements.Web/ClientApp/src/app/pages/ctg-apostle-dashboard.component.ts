@@ -551,7 +551,20 @@ export class CtgApostleDashboardComponent implements OnInit {
 
   countryName(value: string | null | undefined): string {
     const parts = (value ?? '').split(',').map(part => part.trim()).filter(Boolean);
-    return parts.length > 1 ? parts[parts.length - 1] : '';
+    if (parts.length < 2) return '';
+
+    const last = parts[parts.length - 1].toLowerCase();
+    const unitedStatesRegions = new Set([
+      'alabama','alaska','arizona','arkansas','california','colorado','connecticut','delaware','florida',
+      'georgia','hawaii','idaho','illinois','indiana','iowa','kansas','kentucky','louisiana','maine',
+      'maryland','massachusetts','michigan','minnesota','mississippi','missouri','montana','nebraska',
+      'nevada','new hampshire','new jersey','new mexico','new york','north carolina','north dakota',
+      'ohio','oklahoma','oregon','pennsylvania','rhode island','south carolina','south dakota',
+      'tennessee','texas','utah','vermont','virginia','washington','west virginia','wisconsin','wyoming',
+      'dc','d.c.','ga','nc','md','va'
+    ]);
+
+    return unitedStatesRegions.has(last) ? 'United States' : parts[parts.length - 1];
   }
 
   private time(value: string | null): number {

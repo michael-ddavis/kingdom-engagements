@@ -97,8 +97,12 @@ export class EngagementDemoRoleService {
         window.location.assign('/assignments');
         return;
       }
+      if (role === 'administrator' || role === 'coordinator') {
+        window.location.assign('/organization/ctg/command-center');
+        return;
+      }
       if (window.location.pathname === '/organization/ctg/apostle') {
-        window.location.assign('/organization/ctg/bookings');
+        window.location.assign('/organization/ctg/command-center');
         return;
       }
     }
@@ -346,6 +350,19 @@ export class EngagementDemoRoleService {
       .replaceAll('>', '&gt;');
   }
 }
+
+export const engagementDirectorGuard: CanActivateFn = () => {
+  const roles = inject(EngagementDemoRoleService);
+  if (roles.canManageAssignments()) return true;
+
+  if (roles.isApostle()) {
+    return inject(Router).createUrlTree(['/organization/ctg/apostle']);
+  }
+
+  return inject(Router).createUrlTree(['/assignments'], {
+    queryParams: { demoAccess: 'assigned-only' },
+  });
+};
 
 export const engagementBookingGuard: CanActivateFn = () => {
   const roles = inject(EngagementDemoRoleService);

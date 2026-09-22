@@ -23,7 +23,6 @@ import {
   engagementAssignmentDetailGuard,
   engagementAssignmentListGuard,
 } from './core/engagement-apostle-route.guards';
-import { engagementDemoRoleInterceptor } from './core/engagement-demo-role.interceptor';
 import { EngagementWorkspaceNavigationService } from './core/engagement-workspace-navigation.service';
 import { CtgApostleShellService } from './core/ctg-apostle-shell.service';
 import { CtgHostResponseEnhancementService } from './core/ctg-host-response-enhancement.service';
@@ -38,10 +37,9 @@ import {
 export const appConfig: ApplicationConfig = {
   providers: [
     provideHttpClient(withInterceptors([
-      engagementDemoRoleInterceptor,
       mutationToastInterceptor,
     ])),
-    provideAppInitializer(() => inject(EngagementDemoRoleService).mountSwitcher()),
+    provideAppInitializer(() => inject(EngagementDemoRoleService).initialize()),
     provideAppInitializer(() => inject(CtgApostleShellService).mount()),
     provideAppInitializer(() => inject(EngagementWorkspaceNavigationService).mount()),
     provideAppInitializer(() => inject(CtgHostResponseEnhancementService).mount()),

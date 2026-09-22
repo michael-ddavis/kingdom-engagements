@@ -137,10 +137,15 @@ public static class EngagementsDemoRoles
         if (productRoles.Contains("engagements:administrator"))
             return Administrator;
         if (productRoles.Contains("engagements:director") ||
-            productRoles.Contains("engagements:coordinator"))
+            productRoles.Contains("engagements:coordinator") ||
+            productRoles.Contains("engagements:module-administrator"))
             return Coordinator;
-        if (productRoles.Contains("engagements:executive"))
+        if (productRoles.Contains("engagements:executive") ||
+            productRoles.Contains("engagements:viewer"))
             return Apostle;
+        if (productRoles.Contains("engagements:minister") ||
+            productRoles.Contains("engagements:module-member"))
+            return Minister;
 
         return Minister;
     }
@@ -164,12 +169,15 @@ public static class EngagementsDemoRoles
     }
 
     public static bool CanViewFinancials(ClaimsPrincipal principal) =>
+        KingdomIdentity.CanDirectEngagements(principal) ||
         principal.HasClaim(KingdomIdentity.PermissionClaim, "engagements:financial:read");
 
     public static bool CanViewInternalNotes(ClaimsPrincipal principal) =>
+        KingdomIdentity.CanDirectEngagements(principal) ||
         principal.HasClaim(KingdomIdentity.PermissionClaim, "engagements:internal-notes:read");
 
     public static bool CanCompleteEngagements(ClaimsPrincipal principal) =>
+        KingdomIdentity.CanDirectEngagements(principal) ||
         principal.HasClaim(KingdomIdentity.PermissionClaim, "engagements:closeout:complete");
 
     public static IReadOnlySet<string> AssignedEngagements(ClaimsPrincipal principal) =>

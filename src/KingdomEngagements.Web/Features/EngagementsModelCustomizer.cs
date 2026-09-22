@@ -23,5 +23,14 @@ public sealed class EngagementsModelCustomizer(
         modelBuilder.Entity<EngagementIntegrationReceipt>()
             .Property(entity => entity.EventId)
             .ValueGeneratedNever();
+        modelBuilder.Entity<StandingResponsibilityAssignment>()
+            .Property(entity => entity.Id)
+            .ValueGeneratedNever();
+        modelBuilder.Entity<EngagementResponsibilityOverride>()
+            .Property(entity => entity.Id)
+            .ValueGeneratedNever();
+        modelBuilder.Entity<EngagementLaneProgress>()
+            .Property(entity => entity.Id)
+            .ValueGeneratedNever();
     }
 }

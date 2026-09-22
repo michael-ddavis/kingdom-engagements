@@ -162,6 +162,24 @@ public sealed class EngagementsDbContextModelSnapshot : ModelSnapshot
             entity.ToTable("EngagementLaneProgress");
         });
 
+        modelBuilder.Entity<EngagementMediaAsset>(entity =>
+        {
+            entity.Property(x => x.Id).ValueGeneratedNever().HasColumnType("uniqueidentifier");
+            entity.Property(x => x.TenantId).HasColumnType("uniqueidentifier");
+            entity.Property(x => x.AssignmentId).HasColumnType("uniqueidentifier");
+            entity.Property(x => x.Name).HasMaxLength(260).IsRequired();
+            entity.Property(x => x.AssetType).HasMaxLength(40).IsRequired();
+            entity.Property(x => x.Status).HasMaxLength(40).IsRequired();
+            entity.Property(x => x.StorageReference).HasMaxLength(2000);
+            entity.Property(x => x.Notes).HasMaxLength(4000);
+            entity.Property(x => x.UpdatedBySubject).HasMaxLength(180).IsRequired();
+            entity.Property(x => x.UpdatedByName).HasMaxLength(180).IsRequired();
+            entity.Property(x => x.UpdatedAtUtc);
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => new { x.AssignmentId, x.Name, x.AssetType });
+            entity.ToTable("EngagementMediaAssets");
+        });
+
         modelBuilder.Entity<EngagementDocument>()
             .HasOne(x => x.Assignment)
             .WithMany(x => x.Documents)
@@ -191,6 +209,13 @@ public sealed class EngagementsDbContextModelSnapshot : ModelSnapshot
             .IsRequired();
 
         modelBuilder.Entity<EngagementLaneProgress>()
+            .HasOne(x => x.Assignment)
+            .WithMany()
+            .HasForeignKey(x => x.AssignmentId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .IsRequired();
+
+        modelBuilder.Entity<EngagementMediaAsset>()
             .HasOne(x => x.Assignment)
             .WithMany()
             .HasForeignKey(x => x.AssignmentId)

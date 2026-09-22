@@ -28,12 +28,8 @@ export const engagementAssignmentDetailGuard: CanActivateFn = route => {
     ]);
   }
 
-  if (roles.canManageAssignments() && route.queryParamMap.get('legacy') !== '1') {
-    return inject(Router).createUrlTree([
-      '/organization/ctg/engagements',
-      id,
-    ]);
-  }
-
-  return true;
+  return inject(Router).createUrlTree([
+    '/organization/ctg/engagements',
+    id,
+  ]);
 };

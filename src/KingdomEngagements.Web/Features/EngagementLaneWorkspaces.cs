@@ -303,6 +303,25 @@ public sealed class EngagementLaneWorkspaceService(
     private static readonly HashSet<string> DocumentStatuses =
         Set("requested", "waiting-on-host", "received", "in-review", "approved", "complete", "waived");
 
+    private static readonly HashSet<string> ExecutiveActivityKinds =
+        Set(
+            "terms-accepted",
+            "coordination-submitted",
+            "document-received",
+            "readiness-task",
+            "travel-updated",
+            "lodging-updated",
+            "transportation-updated",
+            "program-updated",
+            "media-updated",
+            "media-asset-added",
+            "media-asset-updated",
+            "ministry-preparation-updated",
+            "hospitality-updated",
+            "host-coordination-updated");
+
+
+
     public async Task<ExecutiveEngagementBrief?> GetExecutiveBriefAsync(
         Guid tenantId,
         Guid assignmentId,
@@ -312,6 +331,15 @@ public sealed class EngagementLaneWorkspaceService(
         if (workspace is null) return null;
 
         var coordination = workspace.Preparation.Coordination;
+        var executiveContacts = coordination.Contacts
+            .Where(contact =>
+                Normalize(contact.Type) is "primary" or "host" or "venue")
+            .ToArray();
+        var executiveActivity = workspace.Activity
+            .Where(item => ExecutiveActivityKinds.Contains(item.Kind))
+            .Take(20)
+            .ToArray();
+
         return new ExecutiveEngagementBrief(
             assignmentId,
             workspace.Preparation.TermsStatus,
@@ -338,10 +366,10 @@ public sealed class EngagementLaneWorkspaceService(
                 coordination.PickupContactName,
                 coordination.PickupContactPhone),
             coordination.Schedule,
-            coordination.Contacts,
+            executiveContacts,
             coordination.PrayerFocus,
             workspace.Readiness,
-            workspace.Activity);
+            executiveActivity);
     }
 
     public async Task<TravelLaneDetails?> GetTravelAsync(Guid tenantId, Guid assignmentId, CancellationToken ct)

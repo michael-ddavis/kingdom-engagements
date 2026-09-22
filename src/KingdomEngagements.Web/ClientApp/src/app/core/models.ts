@@ -375,6 +375,7 @@ export interface TravelLaneDetails {
   returnDepartsAtUtc: string | null;
   returnArrivesAtUtc: string | null;
   contacts: readonly LaneContactView[];
+  documents: readonly LaneDocument[];
 }
 
 export interface LodgingLaneDetails {
@@ -386,6 +387,7 @@ export interface LodgingLaneDetails {
   hotelCheckInAtUtc: string | null;
   hotelCheckOutAtUtc: string | null;
   contacts: readonly LaneContactView[];
+  documents: readonly LaneDocument[];
 }
 
 export interface TransportationLaneDetails {
@@ -395,6 +397,7 @@ export interface TransportationLaneDetails {
   pickupContactName: string | null;
   pickupContactPhone: string | null;
   contacts: readonly LaneContactView[];
+  documents: readonly LaneDocument[];
 }
 
 export interface ProgramLaneDetails {
@@ -402,6 +405,7 @@ export interface ProgramLaneDetails {
   lane: ResponsibilityLaneState;
   schedule: readonly HostScheduleItem[];
   contacts: readonly LaneContactView[];
+  documents: readonly LaneDocument[];
 }
 
 export interface MediaAsset {
@@ -468,6 +472,7 @@ export interface HospitalityLaneDetails {
   lane: ResponsibilityLaneState;
   hospitalityNotes: string | null;
   contacts: readonly LaneContactView[];
+  documents: readonly LaneDocument[];
 }
 
 export interface HostCoordinationLaneDetails {
@@ -477,6 +482,7 @@ export interface HostCoordinationLaneDetails {
   submittedAtUtc: string | null;
   hostNotes: string | null;
   contacts: readonly LaneContactView[];
+  documents: readonly LaneDocument[];
 }
 
 export interface ExecutiveEngagementBrief {

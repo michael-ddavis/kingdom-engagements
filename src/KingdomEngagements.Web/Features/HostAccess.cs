@@ -716,6 +716,7 @@ public static class HostAccessEndpoints
             HttpContext context,
             HostAccessService hostAccess,
             EngagementPreparationService preparationService,
+            EngagementRealtimePublisher realtime,
             CancellationToken ct) =>
         {
             try

@@ -70,6 +70,8 @@ public sealed class EngagementPreparationDbContext(DbContextOptions<EngagementPr
         document.Property(x => x.FileName).HasMaxLength(260).IsRequired();
         document.Property(x => x.Category).HasMaxLength(80).IsRequired();
         document.Property(x => x.ContentType).HasMaxLength(180).IsRequired();
+        document.Property(x => x.StorageProvider).HasMaxLength(40).IsRequired();
+        document.Property(x => x.StorageKey).HasMaxLength(900);
         document.Property(x => x.Content).IsRequired();
 
         var message = modelBuilder.Entity<HostCoordinationMessageRecord>();
@@ -176,6 +178,8 @@ BEGIN
         [Category] nvarchar(80) NOT NULL,
         [ContentType] nvarchar(180) NOT NULL,
         [Length] bigint NOT NULL,
+        [StorageProvider] nvarchar(40) NOT NULL CONSTRAINT [DF_EngagementHostCoordinationDocuments_StorageProvider] DEFAULT N'database',
+        [StorageKey] nvarchar(900) NULL,
         [Content] varbinary(max) NOT NULL,
         [UploadedAtUtc] datetimeoffset NOT NULL,
         CONSTRAINT [PK_EngagementHostCoordinationDocuments] PRIMARY KEY ([Id]),
@@ -203,6 +207,17 @@ BEGIN
         CONSTRAINT [DF_EngagementHostCoordinationDocuments_Category]
         DEFAULT N'host-coordination' WITH VALUES;
 END;
+
+IF COL_LENGTH(N'dbo.EngagementHostCoordinationDocuments', N'StorageProvider') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[EngagementHostCoordinationDocuments]
+        ADD [StorageProvider] nvarchar(40) NOT NULL
+        CONSTRAINT [DF_EngagementHostCoordinationDocuments_StorageProvider]
+        DEFAULT N'database' WITH VALUES;
+END;
+
+IF COL_LENGTH(N'dbo.EngagementHostCoordinationDocuments', N'StorageKey') IS NULL
+    ALTER TABLE [dbo].[EngagementHostCoordinationDocuments] ADD [StorageKey] nvarchar(900) NULL;
 """;
         await Database.ExecuteSqlRawAsync(laneColumnsSql, cancellationToken);
 
@@ -300,6 +315,8 @@ public sealed class HostCoordinationDocumentRecord
     public string Category { get; set; } = "host-coordination";
     public string ContentType { get; set; } = "application/octet-stream";
     public long Length { get; set; }
+    public string StorageProvider { get; set; } = "database";
+    public string? StorageKey { get; set; }
     public byte[] Content { get; set; } = [];
     public DateTimeOffset UploadedAtUtc { get; set; }
 }
@@ -446,8 +463,12 @@ public sealed record EngagementPreparationDetails(
 public sealed class EngagementPreparationService(
     EngagementPreparationDbContext database,
     SpeakingRequestsDbContext requestsDatabase,
-    EngagementsDbContext engagementsDatabase)
+    EngagementsDbContext engagementsDatabase,
+    IEngagementDocumentStorage? documentStorage = null)
 {
+    private readonly IEngagementDocumentStorage _documentStorage =
+        documentStorage ?? DatabaseEngagementDocumentStorage.Instance;
+
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private const int MaxDocumentBytes = 10 * 1024 * 1024;
 
@@ -765,20 +786,47 @@ public sealed class EngagementPreparationService(
 
         var normalizedCategory = NormalizeDocumentCategory(category);
         var now = DateTimeOffset.UtcNow;
+        var documentId = Guid.NewGuid();
+        var normalizedContentType =
+            string.IsNullOrWhiteSpace(contentType)
+                ? "application/octet-stream"
+                : contentType.Trim();
+
+        var stored = await _documentStorage.StoreAsync(
+            new EngagementDocumentStorageRequest(
+                preparation!.TenantId,
+                preparation.AssignmentId,
+                documentId,
+                normalizedContentType,
+                content),
+            cancellationToken);
+
         var document = new HostCoordinationDocumentRecord
         {
-            Id = Guid.NewGuid(),
-            PreparationId = preparation!.Id,
+            Id = documentId,
+            PreparationId = preparation.Id,
             FileName = Path.GetFileName(Required(fileName, nameof(fileName))),
             Category = normalizedCategory,
-            ContentType = string.IsNullOrWhiteSpace(contentType) ? "application/octet-stream" : contentType.Trim(),
+            ContentType = normalizedContentType,
             Length = content.LongLength,
-            Content = content,
+            StorageProvider = stored.Provider,
+            StorageKey = stored.StorageKey,
+            Content = stored.InlineContent,
             UploadedAtUtc = now
         };
+
         database.Documents.Add(document);
         preparation.UpdatedAtUtc = now;
-        await database.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            await database.SaveChangesAsync(cancellationToken);
+        }
+        catch
+        {
+            await _documentStorage.DeleteAsync(document, CancellationToken.None);
+            throw;
+        }
 
         var assignment = await engagementsDatabase.Assignments.Include(x => x.Documents)
             .SingleOrDefaultAsync(x => x.TenantId == preparation.TenantId && x.Id == preparation.AssignmentId, cancellationToken);
@@ -807,8 +855,12 @@ public sealed class EngagementPreparationService(
         var preparation = await database.Preparations.AsNoTracking()
             .SingleOrDefaultAsync(x => x.CoordinationToken == token, cancellationToken);
         if (!CoordinationLinkValid(preparation)) return null;
-        return await database.Documents.AsNoTracking()
+        var document = await database.Documents.AsNoTracking()
             .SingleOrDefaultAsync(x => x.PreparationId == preparation!.Id && x.Id == documentId, cancellationToken);
+        if (document is null) return null;
+
+        document.Content = await _documentStorage.ReadAsync(document, cancellationToken);
+        return document;
     }
 
     public async Task<HostCoordinationDocumentRecord?> GetDocumentForAssignmentAsync(Guid tenantId, Guid assignmentId, Guid documentId, CancellationToken cancellationToken)
@@ -818,8 +870,13 @@ public sealed class EngagementPreparationService(
             .Where(x => x.TenantId == tenantId && x.AssignmentId == assignmentId)
             .Select(x => (Guid?)x.Id).SingleOrDefaultAsync(cancellationToken);
         if (preparationId is null) return null;
-        return await database.Documents.AsNoTracking()
+
+        var document = await database.Documents.AsNoTracking()
             .SingleOrDefaultAsync(x => x.PreparationId == preparationId.Value && x.Id == documentId, cancellationToken);
+        if (document is null) return null;
+
+        document.Content = await _documentStorage.ReadAsync(document, cancellationToken);
+        return document;
     }
 
     private async Task SyncAssignmentAsync(EngagementPreparationRecord preparation, bool submitted, CancellationToken cancellationToken)

@@ -297,9 +297,11 @@ app.MapEngagementsEndpoints();
 // Preserve legacy /app links while sending each demo persona to the right workspace.
 app.MapGet("/app", (HttpContext context) =>
 {
-    var target = EngagementsDemoRoles.IsMinister(context.User)
-        ? "/assignments"
-        : "/organization/ctg/bookings";
+    var target = EngagementsDemoRoles.IsApostle(context.User)
+        ? "/organization/ctg/apostle"
+        : EngagementsDemoRoles.IsMinister(context.User)
+            ? "/assignments"
+            : "/organization/ctg/bookings";
     return Results.Redirect($"{target}{context.Request.QueryString}");
 });
 app.MapGet("/app/{*path}", (string? path, HttpRequest request) =>

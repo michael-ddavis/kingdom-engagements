@@ -580,6 +580,7 @@ public static class HostAccessEndpoints
             HttpContext context,
             HostAccessService hostAccess,
             EngagementPreparationService preparationService,
+            EngagementRealtimePublisher realtime,
             CancellationToken ct) =>
         {
             try
@@ -626,6 +627,7 @@ public static class HostAccessEndpoints
             HttpContext context,
             HostAccessService hostAccess,
             EngagementPreparationService preparationService,
+            EngagementRealtimePublisher realtime,
             CancellationToken ct) =>
         {
             var access = await hostAccess.ResolvePreparationAsync(context.User, ct);
@@ -636,9 +638,17 @@ public static class HostAccessEndpoints
                 request,
                 ct);
 
-            return coordination is null
-                ? Results.NotFound(new { message = "Host coordination is not available." })
-                : Results.Ok(coordination);
+            if (coordination is null)
+                return Results.NotFound(new { message = "Host coordination is not available." });
+
+            await realtime.CoordinationUpdatedAsync(
+                access.TenantId,
+                access.AssignmentId,
+                "host",
+                coordination.CoordinationStatus,
+                ct);
+
+            return Results.Ok(coordination);
         });
 
         host.MapGet("/coordination/messages", async (
@@ -662,6 +672,7 @@ public static class HostAccessEndpoints
             HttpContext context,
             HostAccessService hostAccess,
             EngagementPreparationService preparationService,
+            EngagementRealtimePublisher realtime,
             CancellationToken ct) =>
         {
             try
@@ -676,7 +687,19 @@ public static class HostAccessEndpoints
                         request.Message),
                     ct);
 
-                return thread is null ? Results.NotFound() : Results.Ok(thread);
+                if (thread is null) return Results.NotFound();
+
+                var createdMessage = thread.Messages.LastOrDefault();
+                if (createdMessage is not null)
+                {
+                    await realtime.MessageCreatedAsync(
+                        access.TenantId,
+                        access.AssignmentId,
+                        createdMessage,
+                        ct);
+                }
+
+                return Results.Ok(thread);
             }
             catch (ArgumentException exception)
             {
@@ -719,7 +742,16 @@ public static class HostAccessEndpoints
                     form["category"].FirstOrDefault(),
                     ct);
 
-                return document is null ? Results.NotFound() : Results.Ok(document);
+                if (document is null) return Results.NotFound();
+
+                await realtime.DocumentAddedAsync(
+                    access.TenantId,
+                    access.AssignmentId,
+                    "host",
+                    document,
+                    ct);
+
+                return Results.Ok(document);
             }
             catch (ArgumentException exception)
             {

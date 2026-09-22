@@ -67,6 +67,28 @@ public sealed class EngagementsDbContextModelSnapshot : ModelSnapshot
             entity.ToTable("EngagementIntegrationReceipts");
         });
 
+        modelBuilder.Entity<EngagementMediaAsset>(entity =>
+        {
+            entity.Property(x => x.Id).ValueGeneratedNever().HasColumnType("uniqueidentifier");
+            entity.Property(x => x.TenantId).HasColumnType("uniqueidentifier");
+            entity.Property(x => x.AssignmentId).HasColumnType("uniqueidentifier");
+            entity.Property(x => x.Name).HasMaxLength(260).IsRequired();
+            entity.Property(x => x.AssetType).HasMaxLength(40).IsRequired();
+            entity.Property(x => x.Purpose).HasMaxLength(180).IsRequired();
+            entity.Property(x => x.Status).HasMaxLength(40).IsRequired();
+            entity.Property(x => x.Source).HasMaxLength(40).IsRequired();
+            entity.Property(x => x.StorageReference).HasMaxLength(1000);
+            entity.Property(x => x.ExternalUrl).HasMaxLength(2000);
+            entity.Property(x => x.Notes).HasMaxLength(4000);
+            entity.Property(x => x.UpdatedBySubject).HasMaxLength(180).IsRequired();
+            entity.Property(x => x.UpdatedByName).HasMaxLength(180).IsRequired();
+            entity.Property(x => x.UpdatedAtUtc);
+            entity.Property(x => x.CreatedAtUtc);
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => new { x.AssignmentId, x.Status });
+            entity.ToTable("EngagementMediaAssets");
+        });
+
         modelBuilder.Entity<EngagementTask>(entity =>
         {
             entity.Property(x => x.Id).ValueGeneratedNever().HasColumnType("uniqueidentifier");
@@ -150,6 +172,13 @@ public sealed class EngagementsDbContextModelSnapshot : ModelSnapshot
         modelBuilder.Entity<EngagementTask>()
             .HasOne(x => x.Assignment)
             .WithMany(x => x.Tasks)
+            .HasForeignKey(x => x.AssignmentId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .IsRequired();
+
+        modelBuilder.Entity<EngagementMediaAsset>()
+            .HasOne(x => x.Assignment)
+            .WithMany()
             .HasForeignKey(x => x.AssignmentId)
             .OnDelete(DeleteBehavior.Cascade)
             .IsRequired();

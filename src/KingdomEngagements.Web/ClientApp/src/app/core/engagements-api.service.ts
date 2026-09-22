@@ -10,6 +10,7 @@ import {
   EngagementTask,
   HostCoordinationDetails,
   HostCoordinationDocument,
+  HostCoordinationThread,
   ProductInfo,
   ResponsibilityLaneDefinition,
   ResponsibilityLaneState,
@@ -235,6 +236,22 @@ export class EngagementsApiService {
         hostNotes: coordination.hostNotes,
         submit,
       },
+    );
+  }
+
+  getHostCoordinationMessages(assignmentId: string): Observable<HostCoordinationThread> {
+    return this.http.get<HostCoordinationThread>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/preparation/messages`,
+    );
+  }
+
+  sendHostCoordinationMessage(
+    assignmentId: string,
+    message: string,
+  ): Observable<HostCoordinationThread> {
+    return this.http.post<HostCoordinationThread>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/preparation/messages`,
+      { message },
     );
   }
 

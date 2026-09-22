@@ -126,6 +126,35 @@ export class EngagementDemoRoleService {
   }
 }
 
+export const engagementHomeGuard: CanActivateFn = () => {
+  const roles = inject(EngagementDemoRoleService);
+  const router = inject(Router);
+
+  if (roles.isApostle()) {
+    return router.createUrlTree(['/organization/ctg/apostle']);
+  }
+
+  if (roles.canManageAssignments()) {
+    return router.createUrlTree(['/organization/ctg/command-center']);
+  }
+
+  return router.createUrlTree(['/organization/ctg/engagements']);
+};
+
+export const engagementExecutiveGuard: CanActivateFn = () => {
+  const roles = inject(EngagementDemoRoleService);
+
+  if (roles.isApostle() || roles.isAdministrator()) {
+    return true;
+  }
+
+  if (roles.canManageAssignments()) {
+    return inject(Router).createUrlTree(['/organization/ctg/command-center']);
+  }
+
+  return inject(Router).createUrlTree(['/organization/ctg/engagements']);
+};
+
 export const engagementWorkspaceGuard: CanActivateFn = () => {
   const roles = inject(EngagementDemoRoleService);
 

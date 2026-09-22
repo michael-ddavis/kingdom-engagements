@@ -15,6 +15,7 @@ public sealed class EngagementsDbContext(DbContextOptions<EngagementsDbContext> 
     public DbSet<StandingResponsibilityAssignment> StandingResponsibilityAssignments => Set<StandingResponsibilityAssignment>();
     public DbSet<EngagementResponsibilityOverride> EngagementResponsibilityOverrides => Set<EngagementResponsibilityOverride>();
     public DbSet<EngagementLaneProgress> EngagementLaneProgress => Set<EngagementLaneProgress>();
+    public DbSet<EngagementMediaAsset> MediaAssets => Set<EngagementMediaAsset>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -97,6 +98,23 @@ public sealed class EngagementsDbContext(DbContextOptions<EngagementsDbContext> 
         laneProgress.Property(x => x.CompletedByName).HasMaxLength(180);
         laneProgress.HasIndex(x => new { x.AssignmentId, x.LaneKey }).IsUnique();
         laneProgress.HasOne(x => x.Assignment).WithMany()
+            .HasForeignKey(x => x.AssignmentId).OnDelete(DeleteBehavior.Cascade);
+
+        var mediaAsset = modelBuilder.Entity<EngagementMediaAsset>();
+        mediaAsset.ToTable("EngagementMediaAssets");
+        mediaAsset.HasKey(x => x.Id);
+        mediaAsset.Property(x => x.Name).HasMaxLength(260).IsRequired();
+        mediaAsset.Property(x => x.AssetType).HasMaxLength(40).IsRequired();
+        mediaAsset.Property(x => x.Purpose).HasMaxLength(180).IsRequired();
+        mediaAsset.Property(x => x.Status).HasMaxLength(40).IsRequired();
+        mediaAsset.Property(x => x.Source).HasMaxLength(40).IsRequired();
+        mediaAsset.Property(x => x.StorageReference).HasMaxLength(1000);
+        mediaAsset.Property(x => x.ExternalUrl).HasMaxLength(2000);
+        mediaAsset.Property(x => x.Notes).HasMaxLength(4000);
+        mediaAsset.Property(x => x.UpdatedBySubject).HasMaxLength(180).IsRequired();
+        mediaAsset.Property(x => x.UpdatedByName).HasMaxLength(180).IsRequired();
+        mediaAsset.HasIndex(x => new { x.AssignmentId, x.Status });
+        mediaAsset.HasOne(x => x.Assignment).WithMany()
             .HasForeignKey(x => x.AssignmentId).OnDelete(DeleteBehavior.Cascade);
 
         var receipt = modelBuilder.Entity<EngagementIntegrationReceipt>();

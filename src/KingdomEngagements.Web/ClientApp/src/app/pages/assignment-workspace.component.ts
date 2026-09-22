@@ -40,7 +40,7 @@ type WorkspaceTab =
   ],
   template: `
     <section class="eng-page legacy-workspace-page">
-      <a class="legacy-back-link" routerLink="/"><span aria-hidden="true">←</span> Back to assignments</a>
+      <a class="legacy-back-link" routerLink="/assignments"><span aria-hidden="true">←</span> Engagements</a>
 
       @if (loading()) {
         <div class="legacy-workspace-state">Loading assignment workspace…</div>
@@ -50,7 +50,6 @@ type WorkspaceTab =
         <header class="legacy-workspace-heading">
           <div class="legacy-workspace-title">
             <div class="legacy-heading-meta">
-              <p class="eng-eyebrow">Ministry assignment</p>
               <span
                 class="legacy-heading-status"
                 [class.legacy-heading-status--completed]="item.summary.status === 'complete'"
@@ -81,7 +80,7 @@ type WorkspaceTab =
             <span class="legacy-assignment-tab-group-label">Assignment</span>
             <div class="legacy-assignment-tab-group-items">
               <button class="legacy-assignment-tab" type="button" [class.is-active]="tab() === 'overview'" (click)="tab.set('overview')">
-                <strong>Overview</strong><small>Executive assignment summary</small>
+                <strong>Overview</strong>
               </button>
             </div>
           </section>
@@ -90,19 +89,19 @@ type WorkspaceTab =
             <span class="legacy-assignment-tab-group-label">Preparation</span>
             <div class="legacy-assignment-tab-group-items">
               <button class="legacy-assignment-tab" type="button" [class.is-active]="tab() === 'checklist'" (click)="tab.set('checklist')">
-                <strong>Checklist</strong><small>Preparation responsibilities</small>
+                <strong>Checklist</strong>
               </button>
               <button class="legacy-assignment-tab" type="button" [class.is-active]="tab() === 'travel'" (click)="tab.set('travel')">
-                <strong>Travel</strong><small>Flights, lodging and transportation</small>
+                <strong>Travel</strong>
               </button>
               <button class="legacy-assignment-tab" type="button" [class.is-active]="tab() === 'contacts'" (click)="tab.set('contacts')">
-                <strong>Contacts</strong><small>Host and assignment contacts</small>
+                <strong>Contacts</strong>
               </button>
               <button class="legacy-assignment-tab legacy-assignment-tab--care" type="button" [class.is-active]="tab() === 'care'" (click)="tab.set('care')">
-                <strong>Care Network</strong><small>Consented responses and handoff</small>
+                <strong>Care Network</strong>
               </button>
               <button class="legacy-assignment-tab" type="button" [class.is-active]="tab() === 'documents'" (click)="tab.set('documents')">
-                <strong>Documents</strong><small>Files, schedules and resources</small>
+                <strong>Documents</strong>
               </button>
             </div>
           </section>
@@ -111,13 +110,13 @@ type WorkspaceTab =
             <span class="legacy-assignment-tab-group-label">Record</span>
             <div class="legacy-assignment-tab-group-items">
               <button class="legacy-assignment-tab" type="button" [class.is-active]="tab() === 'responses'" (click)="tab.set('responses')">
-                <strong>Responses</strong><small>Ministry outcomes</small>
+                <strong>Responses</strong>
               </button>
               <button class="legacy-assignment-tab" type="button" [class.is-active]="tab() === 'closeout'" (click)="tab.set('closeout')">
-                <strong>Closeout</strong><small>Reconciliation and archive</small>
+                <strong>Closeout</strong>
               </button>
               <button class="legacy-assignment-tab" type="button" [class.is-active]="tab() === 'activity'" (click)="tab.set('activity')">
-                <strong>Ministry Log</strong><small>Updates and decisions</small>
+                <strong>Ministry Log</strong>
               </button>
             </div>
           </section>
@@ -132,7 +131,7 @@ type WorkspaceTab =
                     <div class="legacy-overview-grid">
                       <article class="legacy-overview-card legacy-overview-card--next">
                         <header>
-                          <div><p class="eng-eyebrow">Next action</p><h4>What needs to move now</h4></div>
+                          <div><h4>What needs to move now</h4></div>
                           <span class="legacy-action-mark" aria-hidden="true">→</span>
                         </header>
                         <strong class="legacy-next-action-title">{{ nextAction(workspaceRecord) }}</strong>
@@ -152,7 +151,7 @@ type WorkspaceTab =
 
                       <article class="legacy-overview-card">
                         <header>
-                          <div><p class="eng-eyebrow">Host coordination</p><h4>{{ statusLabel(workspaceRecord.preparation.coordinationStatus) }}</h4></div>
+                          <div><h4>{{ statusLabel(workspaceRecord.preparation.coordinationStatus) }}</h4></div>
                           <span class="legacy-coordinator-avatar" aria-hidden="true">HC</span>
                         </header>
                         <strong class="legacy-next-action-title">{{ workspaceRecord.preparation.coordination.eventName || item.summary.title }}</strong>
@@ -198,7 +197,7 @@ type WorkspaceTab =
 
                     <section class="legacy-readiness-panel">
                       <header>
-                        <div><p class="eng-eyebrow">Readiness radar</p><h4>Assignment preparation</h4></div>
+                        <div><h4>Assignment preparation</h4></div>
                         <div class="legacy-overall-readiness"><strong>{{ workspaceRecord.readiness.overallPercent }}%</strong><span>{{ statusLabel(workspaceRecord.readiness.status) }}</span></div>
                       </header>
                       <div class="legacy-readiness-list">
@@ -251,7 +250,7 @@ type WorkspaceTab =
               @if (completion(); as completionRecord) {
                 <section class="legacy-record-page">
                   <header class="legacy-record-heading">
-                    <div><p class="eng-eyebrow">Ministry responses</p><h2>Record what happened</h2><p>Keep aggregate outcomes here. Add personal information only when individual follow-up is needed.</p></div>
+                    <div><h2>Record what happened</h2><p>Keep aggregate outcomes here. Add personal information only when individual follow-up is needed.</p></div>
                     <strong>{{ completionRecord.totalResponses }} responses</strong>
                   </header>
 
@@ -308,7 +307,7 @@ type WorkspaceTab =
             @case ('activity') {
               @if (workspace(); as workspaceRecord) {
                 <section class="legacy-record-page">
-                  <header class="legacy-record-heading"><div><p class="eng-eyebrow">Ministry log</p><h2>Assignment history</h2><p>Invitation exchange, terms, host preparation, coordinator edits, files, and readiness updates in one timeline.</p></div><strong>{{ workspaceRecord.activity.length }} events</strong></header>
+                  <header class="legacy-record-heading"><div><h2>Assignment history</h2><p>Invitation exchange, terms, host preparation, coordinator edits, files, and readiness updates in one timeline.</p></div><strong>{{ workspaceRecord.activity.length }} events</strong></header>
                   @if (workspaceRecord.activity.length === 0) {
                     <p class="legacy-record-empty">No assignment activity has been recorded yet.</p>
                   } @else {

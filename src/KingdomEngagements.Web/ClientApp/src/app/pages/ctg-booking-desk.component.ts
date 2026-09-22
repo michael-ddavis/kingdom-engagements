@@ -376,7 +376,7 @@ export class CtgBookingDeskComponent implements OnInit {
     today.setHours(0, 0, 0, 0);
     return this.assignments()
       .filter(item => !!item.startsAtUtc && new Date(item.startsAtUtc).getTime() >= today.getTime() && !['completed', 'cancelled', 'canceled', 'declined'].includes(item.status.toLowerCase()))
-      .map(item => ({ id: item.id, flag: '', location: item.location || 'Location pending', title: item.title, date: this.compactDate(item.startsAtUtc || ''), sortDate: item.startsAtUtc || '', status: this.labelize(item.status), href: `/assignments/${item.id}` }))
+      .map(item => ({ id: item.id, flag: '', location: item.location || 'Location pending', title: item.title, date: this.compactDate(item.startsAtUtc || ''), sortDate: item.startsAtUtc || '', status: this.labelize(item.status), href: `/organization/ctg/engagements/${item.id}` }))
       .sort((a, b) => a.sortDate.localeCompare(b.sortDate));
   });
   readonly visibleUpcoming = computed(() => this.showAllUpcoming() ? this.timeline() : this.timeline().slice(0, 3));
@@ -419,7 +419,7 @@ export class CtgBookingDeskComponent implements OnInit {
 
   openBooking(item: BookingDeskItem, dialog: HTMLDialogElement): void {
     if (item.kind === 'website') {
-      window.location.assign(item.assignmentId ? `/assignments/${item.assignmentId}` : `/invitations?request=${item.id}`);
+      window.location.assign(item.assignmentId ? `/organization/ctg/engagements/${item.assignmentId}` : `/invitations?request=${item.id}`);
       return;
     }
     this.selected.set(item); this.editing.set(false); this.editDraft.set(null); this.conversionError.set(''); dialog.showModal();
@@ -541,7 +541,7 @@ export class CtgBookingDeskComponent implements OnInit {
 
   private finishConversion(bookingId: string, assignmentId: string): void {
     this.state.setStage(bookingId, 'converted'); this.converting.set(false); this.conversionError.set('');
-    window.location.assign(`/assignments/${assignmentId}`);
+    window.location.assign(`/organization/ctg/engagements/${assignmentId}`);
   }
 
   private refreshAssignments(): void { this.api.getAssignments().subscribe({ next: items => this.assignments.set(items), error: () => this.assignments.set([]) }); }

@@ -713,11 +713,19 @@ public static class AssignmentWorkspaceEndpoints
         {
             var item = await service.GetAsync(KingdomIdentity.TenantId(context.User, context.Request), id, ct);
             if (item is null) return Results.NotFound(new { message = "This assignment does not have an approved invitation preparation record." });
-            var termsUrl = $"{context.Request.Scheme}://{context.Request.Host}/host/terms/{item.Preparation.TermsToken}";
-            var coordinationUrl = item.Preparation.TermsStatus == "accepted"
-                ? $"{context.Request.Scheme}://{context.Request.Host}/host/coordination/{item.Preparation.CoordinationToken}"
-                : null;
-            return Results.Ok(new { workspace = item, termsUrl, coordinationUrl });
+            var safePreparation = item.Preparation with
+            {
+                TermsToken = string.Empty,
+                CoordinationToken = string.Empty
+            };
+            var safeWorkspace = item with { Preparation = safePreparation };
+
+            return Results.Ok(new
+            {
+                workspace = safeWorkspace,
+                termsUrl = (string?)null,
+                coordinationUrl = (string?)null
+            });
         }).RequireAuthorization("EngagementsDirect");
 
         group.MapPut("/{id:guid}/workspace/coordination", async (

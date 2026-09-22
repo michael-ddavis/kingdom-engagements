@@ -1,9 +1,16 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
-import { filter } from 'rxjs';
+import { filter, firstValueFrom } from 'rxjs';
 import { AssignmentWorkspaceEnvelope } from './models';
 import { MutationToastService } from './mutation-toast.service';
+
+interface HostAccessInvitationResponse {
+  invitationUrl: string;
+  expiresAtUtc: string;
+  hostName: string;
+  hostEmail?: string | null;
+}
 
 @Injectable({ providedIn: 'root' })
 export class HostCollaborationLinkService {
@@ -76,10 +83,6 @@ export class HostCollaborationLinkService {
 
     const preparation = envelope.workspace.preparation;
     const collaborationLive = preparation.termsStatus === 'accepted';
-    const hostUrl = collaborationLive && envelope.coordinationUrl
-      ? envelope.coordinationUrl
-      : envelope.termsUrl;
-    if (!hostUrl) return;
 
     const card = document.createElement('section');
     card.id = this.cardId;
@@ -107,13 +110,13 @@ export class HostCollaborationLinkService {
 
     const detail = document.createElement('p');
     detail.textContent = collaborationLive
-      ? 'The host can update travel, lodging, schedule, local contacts, prayer focus, notes, and documents while CTG sees those changes on this engagement.'
-      : 'This secure link starts with engagement terms, then opens the host coordination workspace without creating a second record.';
+      ? 'Create a one-time secure host invitation for this engagement. Creating a new link revokes any previous host link or active host session.'
+      : 'Create a one-time secure host invitation. The host accepts the terms first, then continues into coordination on this same engagement.';
 
     const linkLine = document.createElement('code');
     linkLine.className = 'apostolos-host-collaboration__url';
-    linkLine.textContent = hostUrl;
-    linkLine.title = hostUrl;
+    linkLine.textContent = 'Secure host links are generated on demand and are never stored in readable form.';
+    linkLine.title = 'Create a secure link when you are ready to send it to the host.';
 
     copy.append(eyebrow, titleRow, detail, linkLine);
 
@@ -122,13 +125,23 @@ export class HostCollaborationLinkService {
 
     const copyButton = document.createElement('button');
     copyButton.type = 'button';
-    copyButton.textContent = 'Copy link';
+    copyButton.textContent = 'Create & copy link';
+    copyButton.title = 'Creating a new link revokes any previous host link or active host session.';
     copyButton.addEventListener('click', async () => {
+      const originalText = copyButton.textContent;
+      copyButton.disabled = true;
+      copyButton.textContent = 'Creating…';
+
       try {
-        await navigator.clipboard.writeText(hostUrl);
-        this.toasts.success('Host collaboration link copied.');
+        const invitation = await this.issueHostInvitation(assignmentId);
+        await navigator.clipboard.writeText(invitation.invitationUrl);
+        linkLine.textContent = `Secure link created · expires ${new Date(invitation.expiresAtUtc).toLocaleString()}`;
+        this.toasts.success('New secure host invitation copied. Previous host access was revoked.');
       } catch {
-        this.toasts.error('The browser blocked copying the host link.');
+        this.toasts.error('The secure host invitation could not be created or copied.');
+      } finally {
+        copyButton.disabled = false;
+        copyButton.textContent = originalText;
       }
     });
 
@@ -138,15 +151,47 @@ export class HostCollaborationLinkService {
     refreshButton.title = 'Reload the latest host collaboration changes';
     refreshButton.addEventListener('click', () => window.location.reload());
 
-    const openLink = document.createElement('a');
-    openLink.href = hostUrl;
-    openLink.target = '_blank';
-    openLink.rel = 'noopener';
-    openLink.textContent = collaborationLive ? 'Open host collaboration ↗' : 'Open host view ↗';
+    const revokeButton = document.createElement('button');
+    revokeButton.type = 'button';
+    revokeButton.textContent = 'Revoke access';
+    revokeButton.title = 'Immediately invalidates the current host link and host session.';
+    revokeButton.addEventListener('click', async () => {
+      revokeButton.disabled = true;
 
-    actions.append(copyButton, refreshButton, openLink);
+      try {
+        const result = await this.revokeHostAccess(assignmentId);
+        linkLine.textContent = result.revoked
+          ? 'Host access revoked. Create a new secure link when access is needed again.'
+          : 'No active host access was found.';
+        this.toasts.success(result.revoked ? 'Host access revoked.' : 'There was no active host access to revoke.');
+      } catch {
+        this.toasts.error('Host access could not be revoked.');
+      } finally {
+        revokeButton.disabled = false;
+      }
+    });
+
+    actions.append(copyButton, refreshButton, revokeButton);
     card.append(copy, actions);
     heading.insertAdjacentElement('afterend', card);
+  }
+
+  private issueHostInvitation(assignmentId: string): Promise<HostAccessInvitationResponse> {
+    return firstValueFrom(
+      this.http.post<HostAccessInvitationResponse>(
+        `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/host-access/invitations`,
+        {},
+      ),
+    );
+  }
+
+  private revokeHostAccess(assignmentId: string): Promise<{ revoked: boolean }> {
+    return firstValueFrom(
+      this.http.post<{ revoked: boolean }>(
+        `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/host-access/revoke`,
+        {},
+      ),
+    );
   }
 
   private handleCollaborationSync(event: StorageEvent): void {
@@ -190,7 +235,7 @@ export class HostCollaborationLinkService {
     style.id = this.styleId;
     style.textContent = `
       .apostolos-host-collaboration{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:.72rem 0 1rem;padding:14px 16px;border:1px solid rgba(49,91,135,.18);border-left:4px solid var(--action-primary,#315b87);border-radius:12px;background:linear-gradient(105deg,rgba(248,250,253,.98),rgba(255,255,255,.98));box-shadow:0 8px 24px rgba(15,23,42,.06)}
-      .apostolos-host-collaboration__copy{display:grid;min-width:0;gap:4px}.apostolos-host-collaboration__eyebrow{color:#667085;font-size:.61rem;font-weight:900;letter-spacing:.11em}.apostolos-host-collaboration__title-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.apostolos-host-collaboration__title-row>strong{color:#17263a;font-size:.9rem;letter-spacing:-.01em}.apostolos-host-collaboration__badge{display:inline-flex;align-items:center;padding:3px 7px;border-radius:999px;background:#fff4d8;color:#85621c;font-size:.59rem;font-weight:850}.apostolos-host-collaboration__badge.is-live{background:#e9f7ef;color:#236b48}.apostolos-host-collaboration p{margin:0;color:#5f6b7a;font-size:.7rem;line-height:1.45}.apostolos-host-collaboration__url{display:block;max-width:min(680px,58vw);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#536273;font-size:.62rem;background:transparent}.apostolos-host-collaboration__actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}.apostolos-host-collaboration__actions button,.apostolos-host-collaboration__actions a{display:inline-flex;min-height:38px;align-items:center;justify-content:center;padding:0 12px;border-radius:9px;font-size:.68rem;font-weight:850;text-decoration:none;cursor:pointer}.apostolos-host-collaboration__actions button{border:1px solid #d6dce5;background:#fff;color:#334155}.apostolos-host-collaboration__actions a{border:1px solid var(--action-primary,#315b87);background:var(--action-primary,#315b87);color:#fff}.apostolos-host-collaboration__actions button:hover{background:#f7f8fa}.apostolos-host-collaboration__actions a:hover{filter:brightness(.94)}.apostolos-host-collaboration__actions button:focus-visible,.apostolos-host-collaboration__actions a:focus-visible{outline:2px solid var(--action-primary,#315b87);outline-offset:2px}
+      .apostolos-host-collaboration__copy{display:grid;min-width:0;gap:4px}.apostolos-host-collaboration__eyebrow{color:#667085;font-size:.61rem;font-weight:900;letter-spacing:.11em}.apostolos-host-collaboration__title-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.apostolos-host-collaboration__title-row>strong{color:#17263a;font-size:.9rem;letter-spacing:-.01em}.apostolos-host-collaboration__badge{display:inline-flex;align-items:center;padding:3px 7px;border-radius:999px;background:#fff4d8;color:#85621c;font-size:.59rem;font-weight:850}.apostolos-host-collaboration__badge.is-live{background:#e9f7ef;color:#236b48}.apostolos-host-collaboration p{margin:0;color:#5f6b7a;font-size:.7rem;line-height:1.45}.apostolos-host-collaboration__url{display:block;max-width:min(680px,58vw);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#536273;font-size:.62rem;background:transparent}.apostolos-host-collaboration__actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}.apostolos-host-collaboration__actions button,.apostolos-host-collaboration__actions a{display:inline-flex;min-height:38px;align-items:center;justify-content:center;padding:0 12px;border-radius:9px;font-size:.68rem;font-weight:850;text-decoration:none;cursor:pointer}.apostolos-host-collaboration__actions button{border:1px solid #d6dce5;background:#fff;color:#334155}.apostolos-host-collaboration__actions button:hover{background:#f7f8fa}.apostolos-host-collaboration__actions button:focus-visible,.apostolos-host-collaboration__actions a:focus-visible{outline:2px solid var(--action-primary,#315b87);outline-offset:2px}
       @media(max-width:860px){.apostolos-host-collaboration{align-items:stretch;flex-direction:column}.apostolos-host-collaboration__url{max-width:calc(100vw - 72px)}.apostolos-host-collaboration__actions{justify-content:flex-start;flex-wrap:wrap}}
       @media(max-width:520px){.apostolos-host-collaboration__actions{display:grid;grid-template-columns:1fr 1fr}.apostolos-host-collaboration__actions a{grid-column:1/-1}.apostolos-host-collaboration__actions button,.apostolos-host-collaboration__actions a{width:100%}.apostolos-host-collaboration__url{max-width:calc(100vw - 60px)}}
     `;

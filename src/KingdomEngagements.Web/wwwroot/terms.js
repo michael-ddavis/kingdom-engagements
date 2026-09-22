@@ -3,7 +3,14 @@ const termsView = document.querySelector('#terms-view');
 const form = document.querySelector('#terms-form');
 const acceptedView = document.querySelector('#accepted-view');
 const coordinationLink = document.querySelector('#coordination-link');
-const token = window.location.pathname.split('/').filter(Boolean).pop();
+const legacyTokenMatch = window.location.pathname.match(/^\/host\/terms\/([^/]+)$/i);
+const legacyToken = legacyTokenMatch ? decodeURIComponent(legacyTokenMatch[1]) : null;
+const termsApiUrl = legacyToken
+  ? `/api/public/engagements/preparation/terms/${encodeURIComponent(legacyToken)}`
+  : '/api/host/engagement/terms';
+const acceptTermsApiUrl = legacyToken
+  ? `${termsApiUrl}/accept`
+  : '/api/host/engagement/terms/accept';
 const collaborationSyncKey = 'apostolos.engagement-collaboration-sync';
 let terms = null;
 
@@ -70,13 +77,15 @@ function render() {
   acceptedView.hidden = !accepted;
   if (accepted) {
     document.querySelector('#accepted-copy').textContent = `Accepted${terms.termsAcceptedByName ? ` by ${terms.termsAcceptedByName}` : ''}${terms.termsAcceptedAtUtc ? ` on ${new Date(terms.termsAcceptedAtUtc).toLocaleString()}` : ''}. Host coordination is now unlocked.`;
-    if (terms.coordinationToken) coordinationLink.href = `/host/coordination/${encodeURIComponent(terms.coordinationToken)}`;
+    coordinationLink.href = legacyToken && terms.coordinationToken
+      ? `/host/coordination/${encodeURIComponent(terms.coordinationToken)}`
+      : '/host/coordination';
   }
 }
 async function load() {
   try {
     showState('Loading approved engagement terms…');
-    terms = await api(`/api/public/engagements/preparation/terms/${encodeURIComponent(token)}`);
+    terms = await api(termsApiUrl);
     showState('');
     render();
   } catch (error) {
@@ -91,7 +100,7 @@ form.addEventListener('submit', async event => {
   if (!data.get('accepted')) { showState('Confirm the engagement terms before continuing.', 'error'); return; }
   try {
     showState('Recording host acceptance…');
-    const result = await api(`/api/public/engagements/preparation/terms/${encodeURIComponent(token)}/accept`, {
+    const result = await api(acceptTermsApiUrl, {
       method:'POST',
       body:JSON.stringify({ accepted:true, signatoryName:data.get('signatoryName'), signatoryEmail:data.get('signatoryEmail'), note:data.get('note') || null })
     });

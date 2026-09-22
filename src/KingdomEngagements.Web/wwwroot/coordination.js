@@ -1,7 +1,11 @@
 const stateBox = document.querySelector('#state');
 const view = document.querySelector('#coordination-view');
 const form = document.querySelector('#coordination-form');
-const token = window.location.pathname.split('/').filter(Boolean).pop();
+const legacyTokenMatch = window.location.pathname.match(/^\/host\/coordination\/([^/]+)$/i);
+const legacyToken = legacyTokenMatch ? decodeURIComponent(legacyTokenMatch[1]) : null;
+const coordinationApiUrl = legacyToken
+  ? `/api/public/engagements/preparation/coordination/${encodeURIComponent(legacyToken)}`
+  : '/api/host/engagement/coordination';
 const scheduleList = document.querySelector('#schedule-list');
 const contactList = document.querySelector('#contact-list');
 const documentList = document.querySelector('#document-list');
@@ -132,7 +136,7 @@ function payload(submit) {
 }
 function renderDocuments() {
   const docs = coordination.documents || [];
-  documentList.innerHTML = docs.length ? docs.map(doc => `<article class="document-row"><div><a href="/api/public/engagements/preparation/coordination/${encodeURIComponent(token)}/documents/${doc.id}" target="_blank" rel="noopener">${escapeHtml(doc.fileName)}</a><small>${Math.max(1, Math.round(doc.length / 1024))} KB · ${new Date(doc.uploadedAtUtc).toLocaleString()}</small></div><strong>Received</strong></article>`).join('') : '<p>No host documents uploaded yet.</p>';
+  documentList.innerHTML = docs.length ? docs.map(doc => `<article class="document-row"><div><a href="${coordinationApiUrl}/documents/${doc.id}" target="_blank" rel="noopener">${escapeHtml(doc.fileName)}</a><small>${Math.max(1, Math.round(doc.length / 1024))} KB · ${new Date(doc.uploadedAtUtc).toLocaleString()}</small></div><strong>Received</strong></article>`).join('') : '<p>No host documents uploaded yet.</p>';
 }
 function render() {
   document.querySelector('#reference').textContent = coordination.referenceNumber;
@@ -161,7 +165,7 @@ function render() {
 async function load(syncMessage = '') {
   try {
     showState('Loading secure host coordination…');
-    coordination = await api(`/api/public/engagements/preparation/coordination/${encodeURIComponent(token)}`);
+    coordination = await api(coordinationApiUrl);
     showState('');
     render();
     if (syncMessage) showConfirmation(syncMessage, 'info');
@@ -180,7 +184,7 @@ async function save(submit) {
   }
   try {
     if (submit) showState('Submitting host coordination…');
-    coordination = await api(`/api/public/engagements/preparation/coordination/${encodeURIComponent(token)}`, { method:'PUT', body:JSON.stringify(payload(submit)) });
+    coordination = await api(coordinationApiUrl, { method:'PUT', body:JSON.stringify(payload(submit)) });
     formDirty = false;
     broadcastCollaborationUpdate('host');
     if (submit) {
@@ -221,7 +225,7 @@ document.querySelector('#upload-document').addEventListener('click', async () =>
   try {
     showConfirmation(`Uploading ${file.name}…`, 'info');
     const body = new FormData(); body.append('file', file);
-    const response = await fetch(`/api/public/engagements/preparation/coordination/${encodeURIComponent(token)}/documents`, { method:'POST', body });
+    const response = await fetch(`${coordinationApiUrl}/documents`, { method:'POST', body });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) {
       const validation = result?.errors ? Object.values(result.errors).flat().join(' ') : '';

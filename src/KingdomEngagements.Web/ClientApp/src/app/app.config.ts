@@ -9,6 +9,7 @@ import { CtgApostleEngagementBriefComponent } from './pages/ctg-apostle-engageme
 import { CtgBookingDeskComponent } from './pages/ctg-booking-desk.component';
 import { CtgCommandCenterComponent } from './pages/ctg-command-center.component';
 import { CtgDirectorEngagementComponent } from './pages/ctg-director-engagement.component';
+import { CtgDirectorEngagementsComponent } from './pages/ctg-director-engagements.component';
 import { CtgEngagementsHomeComponent } from './pages/ctg-engagements-home.component';
 import { CtgHostActivityComponent } from './pages/ctg-host-activity.component';
 import { CtgStandUpComponent } from './pages/ctg-stand-up.component';
@@ -69,6 +70,7 @@ export const appConfig: ApplicationConfig = {
       { path: 'organization/ctg/stand-up', component: CtgStandUpComponent, canActivate: [engagementDirectorGuard] },
       { path: 'organization/ctg/team', component: CtgTeamResponsibilitiesComponent, canActivate: [engagementDirectorGuard] },
       { path: 'organization/ctg/hosts', component: CtgHostActivityComponent, canActivate: [engagementDirectorGuard] },
+      { path: 'organization/ctg/engagements', component: CtgDirectorEngagementsComponent, canActivate: [engagementDirectorGuard] },
       { path: 'organization/ctg/engagements/:id', component: CtgDirectorEngagementComponent, canActivate: [engagementDirectorGuard] },
       { path: 'organization/ctg', component: CtgCommandCenterComponent, canActivate: [engagementDirectorGuard] },
       { path: 'organization/ctg/bookings', component: CtgBookingDeskComponent, canActivate: [engagementBookingGuard] },

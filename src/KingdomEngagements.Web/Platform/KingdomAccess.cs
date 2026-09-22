@@ -36,9 +36,21 @@ public static class KingdomIdentity
 
         return principal.Claims.Any(claim =>
             claim.Type == PermissionClaim && Matches(claim.Value, "engagements:assignments:write") ||
-            claim.Type == ProductRoleClaim && Matches(claim.Value, "engagements:administrator", "engagements:coordinator") ||
+            claim.Type == ProductRoleClaim && Matches(claim.Value, "engagements:administrator", "engagements:director", "engagements:coordinator") ||
             claim.Type == TenantRoleClaim && Matches(claim.Value, "owner", "administrator", "organization-administrator", "super-admin") ||
             claim.Type == ClaimTypes.Role && Matches(claim.Value, "Administrator", "Coordinator", "OrganizationAdministrator", "Organization Administrator", "SuperAdmin", "Super Administrator"));
+    }
+
+    public static bool CanDirectEngagements(ClaimsPrincipal principal)
+    {
+        static bool Matches(string value, params string[] accepted) =>
+            accepted.Contains(value, StringComparer.OrdinalIgnoreCase);
+
+        return principal.Claims.Any(claim =>
+            claim.Type == PermissionClaim && Matches(claim.Value, "engagements:responsibilities:manage") ||
+            claim.Type == ProductRoleClaim && Matches(claim.Value, "engagements:administrator", "engagements:director", "engagements:coordinator") ||
+            claim.Type == TenantRoleClaim && Matches(claim.Value, "owner", "administrator", "organization-administrator", "super-admin") ||
+            claim.Type == ClaimTypes.Role && Matches(claim.Value, "Administrator", "EngagementDirector", "Coordinator", "OrganizationAdministrator", "Organization Administrator", "SuperAdmin", "Super Administrator"));
     }
 
     public static ClaimsPrincipal CreateDevelopmentPrincipal(string? organizationKey = null)
@@ -55,6 +67,7 @@ public static class KingdomIdentity
             new(TenantRoleClaim, "owner"),
             new(DemoOrganizationClaim, key),
             new(PermissionClaim, "engagements:assignments:write"),
+            new(PermissionClaim, "engagements:responsibilities:manage"),
             new(ProductRoleClaim, "engagements:administrator"),
             new(ClaimTypes.Role, "Administrator"),
             new(ClaimTypes.Role, "Coordinator"),

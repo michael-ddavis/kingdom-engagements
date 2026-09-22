@@ -137,7 +137,7 @@ public sealed class EngagementsDemoSeedWorker(
             Assignment("assignment-demo-007", "Daughters Arise Conference", "Cynthia Thompson", "Living Waters Assembly", "Nicole Carter", "nicole@livingwaters.example", "Baltimore, Maryland", -18, -16, "complete", "complete", "complete", "complete", "complete", "received", "complete", "Completed assignment with responses and closeout finished for demo history.",
                 Task("closeout", "Send host thank-you", "Engagement Coordinator", "complete", -14, "Thank-you and final follow-up sent."),
                 Task("closeout", "Archive final documents", "Engagement Coordinator", "complete", -13, "Final records reviewed and retained."))
-        };       };
+        };
 
         foreach (var seed in seeds)
         {

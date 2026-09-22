@@ -658,7 +658,9 @@ export class CtgDirectorEngagementComponent implements OnInit {
     const director = this.roles.canManageAssignments();
 
     forkJoin({
-      assignment: this.api.getAssignment(this.assignmentId),
+      assignment: director
+        ? this.api.getAssignment(this.assignmentId)
+        : this.api.getMyAssignment(this.assignmentId),
       myWork: director
         ? of([] as readonly MyResponsibilityWorkItem[])
         : this.api.getMyWork().pipe(catchError(() => of([] as readonly MyResponsibilityWorkItem[]))),

@@ -62,7 +62,7 @@ export const appConfig: ApplicationConfig = {
       { path: 'organization/ctg/stand-up', loadComponent: () => import('./pages/ctg-stand-up.component').then(m => m.CtgStandUpComponent), canActivate: [engagementDirectorGuard] },
       { path: 'organization/ctg/team', loadComponent: () => import('./pages/ctg-team-responsibilities.component').then(m => m.CtgTeamResponsibilitiesComponent), canActivate: [engagementDirectorGuard] },
       { path: 'organization/ctg/hosts', loadComponent: () => import('./pages/ctg-host-activity.component').then(m => m.CtgHostActivityComponent), canActivate: [engagementDirectorGuard] },
-      { path: 'organization/ctg/engagements', loadComponent: () => import('./pages/ctg-director-engagements.component').then(m => m.CtgDirectorEngagementsComponent), canActivate: [engagementDirectorGuard] },
+      { path: 'organization/ctg/engagements', loadComponent: () => import('./pages/ctg-director-engagements.component').then(m => m.CtgDirectorEngagementsComponent), canActivate: [engagementWorkspaceGuard] },
       { path: 'organization/ctg/engagements/:id', loadComponent: () => import('./pages/ctg-director-engagement.component').then(m => m.CtgDirectorEngagementComponent), canActivate: [engagementWorkspaceGuard] },
       { path: 'organization/ctg', loadComponent: () => import('./pages/ctg-command-center.component').then(m => m.CtgCommandCenterComponent), canActivate: [engagementDirectorGuard] },
       { path: 'organization/ctg/bookings', loadComponent: () => import('./pages/ctg-booking-desk.component').then(m => m.CtgBookingDeskComponent), canActivate: [engagementBookingGuard] },

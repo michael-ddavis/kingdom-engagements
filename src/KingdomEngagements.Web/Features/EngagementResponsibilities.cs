@@ -25,7 +25,7 @@ public static class EngagementResponsibilityLanes
         new("finance", "Finance & Honorarium", "Administration", true, "Honorarium, reimbursement, agreed expenses, and payment status."),
         new("ministry-preparation", "Ministry Preparation", "Preparation", true, "Ministry request, audience, prayer focus, theme, and ministry notes."),
         new("hospitality", "Hospitality", "Logistics", true, "Meals, green room, dietary needs, local host care, and accommodations."),
-        new("closeout", "Closeout & Follow-up", "Follow-up", true, "Final payment, host follow-up, outcomes, testimony, documents, and closeout."),
+        new("closeout", "Closeout & Follow-up", "Follow-up", false, "Final payment, host follow-up, outcomes, testimony, documents, and closeout."),
         new("production", "Production / AV", "Optional", false, "Livestream, microphones, screens, recording, stage, and technical requirements."),
         new("security-protocol", "Security / Protocol", "Optional", false, "Security, escorts, access, VIP movement, and arrival protocol."),
         new("resources-merchandise", "Resources / Merchandise", "Optional", false, "Books, product tables, shipping, inventory, and event resources.")

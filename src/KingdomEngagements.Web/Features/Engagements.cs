@@ -572,15 +572,61 @@ public static class EngagementsEndpoints
             }
             catch (ArgumentException exception) { return Results.ValidationProblem(new Dictionary<string, string[]> { ["task"] = [exception.Message] }); }
         }).RequireAuthorization("EngagementsWrite");
-        group.MapPut("/assignments/{id:guid}/tasks/{taskId:guid}", async (Guid id, Guid taskId, UpdateEngagementTaskRequest request, HttpContext context, EngagementsService service, CancellationToken ct) =>
+        group.MapPut("/assignments/{id:guid}/tasks/{taskId:guid}", async (
+            Guid id,
+            Guid taskId,
+            UpdateEngagementTaskRequest request,
+            HttpContext context,
+            EngagementsService service,
+            EngagementResponsibilityService responsibilities,
+            CancellationToken ct) =>
         {
             try
             {
-                var item = await service.UpdateTaskAsync(KingdomIdentity.TenantId(context.User, context.Request), id, taskId, request, ct);
+                var tenantId = KingdomIdentity.TenantId(context.User, context.Request);
+                var assignment = await service.GetAsync(tenantId, id, ct);
+                if (assignment is null) return Results.NotFound();
+
+                var existingTask = assignment.Tasks.SingleOrDefault(task => task.Id == taskId);
+                if (existingTask is null) return Results.NotFound();
+
+                var isDirector = KingdomIdentity.CanDirectEngagements(context.User);
+                if (!isDirector)
+                {
+                    var subject = KingdomIdentity.Subject(context.User, context.Request);
+                    bool ownsLane;
+                    try
+                    {
+                        ownsLane = await responsibilities.IsEffectiveOwnerAsync(
+                            tenantId,
+                            id,
+                            existingTask.Category,
+                            subject,
+                            ct);
+                    }
+                    catch (ArgumentException)
+                    {
+                        ownsLane = false;
+                    }
+
+                    if (!ownsLane) return Results.Forbid();
+
+                    request = new UpdateEngagementTaskRequest(
+                        request.Status,
+                        existingTask.Owner,
+                        request.Detail,
+                        existingTask.DueAtUtc,
+                        existingTask.OwnerSubject);
+                }
+
+                var item = await service.UpdateTaskAsync(tenantId, id, taskId, request, ct);
                 return item is null ? Results.NotFound() : Results.Ok(item);
             }
-            catch (ArgumentException exception) { return Results.ValidationProblem(new Dictionary<string, string[]> { ["task"] = [exception.Message] }); }
-        }).RequireAuthorization("EngagementsWrite");
+            catch (ArgumentException exception)
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["task"] = [exception.Message] });
+            }
+        });
         group.MapPost("/assignments/{id:guid}/documents", async (Guid id, CreateEngagementDocumentRequest request, HttpContext context, EngagementsService service, CancellationToken ct) =>
         {
             try

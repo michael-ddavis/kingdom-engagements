@@ -98,6 +98,14 @@ interface ResponsibilityDraft {
           </div>
         }
 
+        <div class="workspace-status-legend" aria-label="Status color legend">
+          <span><i class="complete"></i>Complete</span>
+          <span><i class="progress"></i>In Progress</span>
+          <span><i class="waiting"></i>Waiting on Host</span>
+          <span><i class="danger"></i>Blocked / Overdue</span>
+          <span><i class="neutral"></i>Not Started</span>
+        </div>
+
         <section class="engagement-alerts">
           <article><small>Overdue</small><strong>{{ overdueCount() }}</strong></article>
           <article><small>Unassigned</small><strong>{{ unassignedCount() }}</strong></article>
@@ -554,6 +562,15 @@ interface ResponsibilityDraft {
       --status-neutral-text:#69716d;
     }.director-engagement{width:min(1320px,calc(100% - 40px));margin:0 auto;padding:20px 0 60px;color:#17202b}.back-link{display:inline-block;margin:0 0 12px;color:#52647f;font-size:.7rem;font-weight:800;text-decoration:none}
     .engagement-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:26px;padding:22px 24px;border:1px solid #dfe3e0;border-radius:16px;background:#fffdfa}.engagement-heading h1,.panel h2,.overview-card h2,.responsibility-drawer h2{margin:4px 0 6px;font:500 clamp(1.8rem,3vw,2.7rem)/1.08 Georgia,'Times New Roman',serif;color:#17243a}.engagement-heading p{margin:0;color:#68716d}.engagement-heading>div>span{display:block;margin-top:6px;color:#858b87;font-size:.66rem}.eyebrow{margin:0!important;color:#876f33!important;font:850 .64rem/1.2 system-ui,sans-serif!important;letter-spacing:.1em;text-transform:uppercase}.heading-actions{display:flex;align-items:center;gap:12px}.heading-actions>a{padding:9px 12px;border:1px solid #d9ddda;border-radius:8px;color:#172a46;font-size:.65rem;font-weight:850;text-decoration:none}.readiness{text-align:right}.readiness strong{display:block;font-size:2rem}.readiness span{font-size:.62rem;color:#7b827e}
+    .workspace-status-legend{display:flex;align-items:center;justify-content:flex-end;gap:9px 13px;flex-wrap:wrap;margin:0 2px 9px;color:#6f7773;font-size:.55rem;font-weight:750}
+    .workspace-status-legend>span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+    .workspace-status-legend i{display:inline-block;width:9px;height:9px;border:1px solid var(--status-neutral-border);border-radius:3px;background:var(--status-neutral-bg)}
+    .workspace-status-legend i.complete{border-color:var(--status-complete-border);background:var(--status-complete-bg)}
+    .workspace-status-legend i.progress{border-color:var(--status-progress-border);background:var(--status-progress-bg)}
+    .workspace-status-legend i.waiting{border-color:var(--status-waiting-border);background:var(--status-waiting-bg)}
+    .workspace-status-legend i.danger{border-color:var(--status-danger-border);background:var(--status-danger-bg)}
+    .workspace-status-legend i.neutral{border-color:var(--status-neutral-border);background:var(--status-neutral-bg)}
+
     .engagement-alerts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:10px 0}.engagement-alerts article{padding:11px 14px;border:1px solid #e1e4e1;border-radius:10px;background:#fff}.engagement-alerts small{display:block;color:#808783;font-size:.56rem;font-weight:850;text-transform:uppercase}.engagement-alerts strong{display:block;margin-top:3px;font-size:1.05rem}
     .workspace-tabs{display:flex;gap:3px;margin:16px 0 12px;overflow:auto;padding:4px;border:1px solid #dfe3e0;border-radius:11px;background:#f7f5f0;scrollbar-width:thin}.workspace-tabs button{display:flex;align-items:center;gap:6px;min-height:36px;padding:0 10px;border:0;border-radius:7px;background:transparent;color:#66706a;font-size:.65rem;font-weight:850;white-space:nowrap;cursor:pointer}.workspace-tabs button.active{background:#172a46;color:#fff}.workspace-tabs button span{padding:2px 5px;border-radius:999px;background:rgba(255,255,255,.18);font-size:.52rem}.workspace-tabs button:not(.active) span.alert{background:#f8e8e5;color:#a84642}
     .workspace-body{position:relative}.overview-grid,.two-column{display:grid;grid-template-columns:1fr 1fr;gap:12px}.overview-card,.panel{border:1px solid #dfe3e0;border-radius:14px;background:#fffdfa;box-shadow:0 8px 25px rgba(18,26,44,.035)}.overview-card{padding:17px}.overview-card--wide{grid-column:1/-1}.overview-card>header,.panel>header{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.overview-card h2,.panel h2{font-size:1.2rem}.overview-card header button,.panel header button{border:0;background:transparent;color:#315faf;font-size:.64rem;font-weight:850;cursor:pointer}

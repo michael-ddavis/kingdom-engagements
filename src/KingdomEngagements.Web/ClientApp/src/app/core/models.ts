@@ -336,6 +336,7 @@ export interface EngagementResponsibilitySnapshot {
   assignment: EngagementSummary;
   lanes: readonly ResponsibilityLaneState[];
   responsibilityReadinessPercent: number;
+  hostCoordinationPercent: number;
   completedLaneCount: number;
   applicableLaneCount: number;
   overdueLaneCount: number;

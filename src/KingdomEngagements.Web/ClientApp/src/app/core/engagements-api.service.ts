@@ -11,6 +11,11 @@ import {
   HostCoordinationDetails,
   HostCoordinationDocument,
   ProductInfo,
+  ResponsibilityLaneDefinition,
+  ResponsibilityLaneState,
+  StandingResponsibilityAssignment,
+  EngagementResponsibilitySnapshot,
+  MyResponsibilityWorkItem,
 } from './models';
 import {
   ApproveSpeakingRequestResult,
@@ -247,6 +252,90 @@ export class EngagementsApiService {
     return this.http.delete<void>(
       `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/workspace/documents/${encodeURIComponent(documentId)}`,
     );
+  }
+
+
+  getResponsibilityLanes(): Observable<readonly ResponsibilityLaneDefinition[]> {
+    return this.http.get<readonly ResponsibilityLaneDefinition[]>('/api/engagements/responsibility-lanes');
+  }
+
+  getStandingResponsibilities(): Observable<readonly StandingResponsibilityAssignment[]> {
+    return this.http.get<readonly StandingResponsibilityAssignment[]>('/api/engagements/responsibilities/standing');
+  }
+
+  setStandingResponsibility(
+    laneKey: string,
+    userSubject: string,
+    displayName: string,
+    email: string | null,
+  ): Observable<StandingResponsibilityAssignment> {
+    return this.http.put<StandingResponsibilityAssignment>(
+      `/api/engagements/responsibilities/standing/${encodeURIComponent(laneKey)}`,
+      { userSubject, displayName, email },
+    );
+  }
+
+  clearStandingResponsibility(laneKey: string): Observable<void> {
+    return this.http.delete<void>(
+      `/api/engagements/responsibilities/standing/${encodeURIComponent(laneKey)}`,
+    );
+  }
+
+  getAssignmentResponsibilities(assignmentId: string): Observable<readonly ResponsibilityLaneState[]> {
+    return this.http.get<readonly ResponsibilityLaneState[]>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/responsibilities`,
+    );
+  }
+
+  setEngagementResponsibilityOwner(
+    assignmentId: string,
+    laneKey: string,
+    userSubject: string,
+    displayName: string,
+    email: string | null,
+  ): Observable<unknown> {
+    return this.http.put(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/responsibilities/${encodeURIComponent(laneKey)}/owner`,
+      { userSubject, displayName, email },
+    );
+  }
+
+  clearEngagementResponsibilityOwner(assignmentId: string, laneKey: string): Observable<void> {
+    return this.http.delete<void>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/responsibilities/${encodeURIComponent(laneKey)}/owner`,
+    );
+  }
+
+  configureEngagementLane(
+    assignmentId: string,
+    laneKey: string,
+    isApplicable: boolean,
+    dueAtUtc: string | null,
+  ): Observable<ResponsibilityLaneState> {
+    return this.http.put<ResponsibilityLaneState>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/responsibilities/${encodeURIComponent(laneKey)}/configuration`,
+      { isApplicable, dueAtUtc },
+    );
+  }
+
+  updateEngagementLaneProgress(
+    assignmentId: string,
+    laneKey: string,
+    status: string,
+    detail: string | null,
+  ): Observable<ResponsibilityLaneState> {
+    return this.http.put<ResponsibilityLaneState>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/responsibilities/${encodeURIComponent(laneKey)}/progress`,
+      { status, detail },
+    );
+  }
+
+  getCommandCenter(): Observable<readonly EngagementResponsibilitySnapshot[]> {
+    return this.http.get<readonly EngagementResponsibilitySnapshot[]>('/api/engagements/command-center');
+  }
+
+  getMyWork(): Observable<readonly MyResponsibilityWorkItem[]> {
+    return this.http.get<readonly MyResponsibilityWorkItem[]>('/api/engagements/my-work');
   }
 
   getCompletion(id: string): Observable<EngagementCompletion> {

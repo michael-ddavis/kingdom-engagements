@@ -512,19 +512,19 @@ public sealed class EngagementLaneWorkspaceService(
         if (preparation is null) return null;
         var lane = await RequiredLaneAsync(tenantId, assignmentId, "media", ct);
 
-        var assets = await engagementsDatabase.MediaAssets.AsNoTracking()
+        var assetRecords = await engagementsDatabase.MediaAssets.AsNoTracking()
             .Where(x => x.TenantId == tenantId && x.AssignmentId == assignmentId)
             .OrderBy(x => x.Purpose)
             .ThenBy(x => x.Name)
-            .Select(x => MapMediaAsset(x))
             .ToListAsync(ct);
+        var assets = assetRecords.Select(MapMediaAsset).ToArray();
 
-        var documents = await engagementsDatabase.Documents.AsNoTracking()
+        var documentRecords = await engagementsDatabase.Documents.AsNoTracking()
             .Where(x => x.AssignmentId == assignmentId && x.Assignment != null && x.Assignment.TenantId == tenantId)
             .Where(x => x.Category == "media")
             .OrderBy(x => x.Name)
-            .Select(x => MapDocument(x))
             .ToListAsync(ct);
+        var documents = documentRecords.Select(MapDocument).ToArray();
 
         return new MediaLaneDetails(
             assignmentId,
@@ -644,13 +644,12 @@ public sealed class EngagementLaneWorkspaceService(
     {
         if (!await AssignmentExistsAsync(tenantId, assignmentId, ct)) return null;
         var lane = await RequiredLaneAsync(tenantId, assignmentId, "documents", ct);
-        var documents = await engagementsDatabase.Documents.AsNoTracking()
+        var documentRecords = await engagementsDatabase.Documents.AsNoTracking()
             .Where(x => x.AssignmentId == assignmentId && x.Assignment != null && x.Assignment.TenantId == tenantId)
             .OrderBy(x => x.Category)
             .ThenBy(x => x.Name)
-            .Select(x => MapDocument(x))
             .ToListAsync(ct);
-        return new DocumentsLaneDetails(assignmentId, lane, documents);
+        return new DocumentsLaneDetails(assignmentId, lane, documentRecords.Select(MapDocument).ToArray());
     }
 
     public async Task<LaneDocumentDto?> CreateLaneDocumentAsync(
@@ -1139,55 +1138,55 @@ public static class EngagementLaneWorkspaceEndpoints
             return item is null ? Results.NotFound() : Results.Ok(item);
         });
 
-        MapLane(
+        MapLane<TravelLaneDetails, UpdateTravelLaneRequest>(
             group,
             "travel",
             (service, tenantId, id, ct) => service.GetTravelAsync(tenantId, id, ct),
             (service, tenantId, id, request, actor, ct) => service.UpdateTravelAsync(tenantId, id, request, actor, ct));
 
-        MapLane(
+        MapLane<LodgingLaneDetails, UpdateLodgingLaneRequest>(
             group,
             "lodging",
             (service, tenantId, id, ct) => service.GetLodgingAsync(tenantId, id, ct),
             (service, tenantId, id, request, actor, ct) => service.UpdateLodgingAsync(tenantId, id, request, actor, ct));
 
-        MapLane(
+        MapLane<TransportationLaneDetails, UpdateTransportationLaneRequest>(
             group,
             "transportation",
             (service, tenantId, id, ct) => service.GetTransportationAsync(tenantId, id, ct),
             (service, tenantId, id, request, actor, ct) => service.UpdateTransportationAsync(tenantId, id, request, actor, ct));
 
-        MapLane(
+        MapLane<ProgramLaneDetails, UpdateProgramLaneRequest>(
             group,
             "program",
             (service, tenantId, id, ct) => service.GetProgramAsync(tenantId, id, ct),
             (service, tenantId, id, request, actor, ct) => service.UpdateProgramAsync(tenantId, id, request, actor, ct));
 
-        MapLane(
+        MapLane<MediaLaneDetails, UpdateMediaLaneRequest>(
             group,
             "media",
             (service, tenantId, id, ct) => service.GetMediaAsync(tenantId, id, ct),
             (service, tenantId, id, request, actor, ct) => service.UpdateMediaAsync(tenantId, id, request, actor, ct));
 
-        MapLane(
+        MapLane<FinanceLaneDetails, UpdateFinanceLaneRequest>(
             group,
             "finance",
             (service, tenantId, id, ct) => service.GetFinanceAsync(tenantId, id, ct),
             (service, tenantId, id, request, actor, ct) => service.UpdateFinanceAsync(tenantId, id, request, actor, ct));
 
-        MapLane(
+        MapLane<MinistryPreparationLaneDetails, UpdateMinistryPreparationLaneRequest>(
             group,
             "ministry-preparation",
             (service, tenantId, id, ct) => service.GetMinistryPreparationAsync(tenantId, id, ct),
             (service, tenantId, id, request, actor, ct) => service.UpdateMinistryPreparationAsync(tenantId, id, request, actor, ct));
 
-        MapLane(
+        MapLane<HospitalityLaneDetails, UpdateHospitalityLaneRequest>(
             group,
             "hospitality",
             (service, tenantId, id, ct) => service.GetHospitalityAsync(tenantId, id, ct),
             (service, tenantId, id, request, actor, ct) => service.UpdateHospitalityAsync(tenantId, id, request, actor, ct));
 
-        MapLane(
+        MapLane<HostCoordinationLaneDetails, UpdateHostCoordinationLaneRequest>(
             group,
             "host-coordination",
             (service, tenantId, id, ct) => service.GetHostCoordinationAsync(tenantId, id, ct),

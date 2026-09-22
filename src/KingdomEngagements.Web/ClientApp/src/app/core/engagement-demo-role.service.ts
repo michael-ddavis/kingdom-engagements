@@ -79,7 +79,7 @@ export class EngagementDemoRoleService {
   readonly canManageAssignments = computed(() => this.isAdministrator() || this.isCoordinator());
   readonly canViewFinancials = computed(() => this.isAdministrator() || this.isCoordinator());
   readonly canViewInternalNotes = computed(() => this.isAdministrator() || this.isCoordinator());
-  readonly canCompleteEngagements = computed(() => this.isAdministrator());
+  readonly canCompleteEngagements = computed(() => this.isAdministrator() || this.isCoordinator());
 
   switchRole(value: string): void {
     const role = this.normalize(value);

@@ -13,15 +13,27 @@ export const engagementAssignmentListGuard: CanActivateFn = () => {
 
 export const engagementAssignmentDetailGuard: CanActivateFn = route => {
   const roles = inject(EngagementDemoRoleService);
-  if (!roles.isApostle()) return true;
-
   const id = route.paramMap.get('id');
+
   if (!id) {
-    return inject(Router).createUrlTree(['/organization/ctg/apostle']);
+    return roles.isApostle()
+      ? inject(Router).createUrlTree(['/organization/ctg/apostle'])
+      : inject(Router).createUrlTree(['/assignments']);
   }
 
-  return inject(Router).createUrlTree([
-    '/organization/ctg/apostle/engagements',
-    id,
-  ]);
+  if (roles.isApostle()) {
+    return inject(Router).createUrlTree([
+      '/organization/ctg/apostle/engagements',
+      id,
+    ]);
+  }
+
+  if (roles.canManageAssignments() && route.queryParamMap.get('legacy') !== '1') {
+    return inject(Router).createUrlTree([
+      '/organization/ctg/engagements',
+      id,
+    ]);
+  }
+
+  return true;
 };

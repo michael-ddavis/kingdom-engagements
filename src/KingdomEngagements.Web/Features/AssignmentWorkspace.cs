@@ -30,22 +30,46 @@ public sealed class AssignmentWorkspaceDbContext(DbContextOptions<AssignmentWork
         }
 
         const string sql = """
-IF OBJECT_ID(N'[dbo].[EngagementAssignmentActivities]', N'U') IS NULL
-BEGIN
-    CREATE TABLE [dbo].[EngagementAssignmentActivities] (
-        [Id] uniqueidentifier NOT NULL,
-        [TenantId] uniqueidentifier NOT NULL,
-        [AssignmentId] uniqueidentifier NOT NULL,
-        [Kind] nvarchar(60) NOT NULL,
-        [Title] nvarchar(240) NOT NULL,
-        [Detail] nvarchar(3000) NOT NULL,
-        [Actor] nvarchar(180) NOT NULL,
-        [OccurredAtUtc] datetimeoffset NOT NULL,
-        CONSTRAINT [PK_EngagementAssignmentActivities] PRIMARY KEY ([Id])
-    );
-    CREATE INDEX [IX_EngagementAssignmentActivities_TenantId_AssignmentId_OccurredAtUtc]
-        ON [dbo].[EngagementAssignmentActivities] ([TenantId], [AssignmentId], [OccurredAtUtc]);
-END;
+DECLARE @lockResult int;
+
+EXEC @lockResult = sys.sp_getapplock
+    @Resource = N'KingdomEngagements:EngagementAssignmentActivities:Schema',
+    @LockMode = N'Exclusive',
+    @LockOwner = N'Session',
+    @LockTimeout = 10000;
+
+IF @lockResult < 0
+    THROW 51000, 'Could not acquire the EngagementAssignmentActivities schema lock.', 1;
+
+BEGIN TRY
+    IF OBJECT_ID(N'[dbo].[EngagementAssignmentActivities]', N'U') IS NULL
+    BEGIN
+        CREATE TABLE [dbo].[EngagementAssignmentActivities] (
+            [Id] uniqueidentifier NOT NULL,
+            [TenantId] uniqueidentifier NOT NULL,
+            [AssignmentId] uniqueidentifier NOT NULL,
+            [Kind] nvarchar(60) NOT NULL,
+            [Title] nvarchar(240) NOT NULL,
+            [Detail] nvarchar(3000) NOT NULL,
+            [Actor] nvarchar(180) NOT NULL,
+            [OccurredAtUtc] datetimeoffset NOT NULL,
+            CONSTRAINT [PK_EngagementAssignmentActivities] PRIMARY KEY ([Id])
+        );
+
+        CREATE INDEX [IX_EngagementAssignmentActivities_TenantId_AssignmentId_OccurredAtUtc]
+            ON [dbo].[EngagementAssignmentActivities] ([TenantId], [AssignmentId], [OccurredAtUtc]);
+    END;
+
+    EXEC sys.sp_releaseapplock
+        @Resource = N'KingdomEngagements:EngagementAssignmentActivities:Schema',
+        @LockOwner = N'Session';
+END TRY
+BEGIN CATCH
+    EXEC sys.sp_releaseapplock
+        @Resource = N'KingdomEngagements:EngagementAssignmentActivities:Schema',
+        @LockOwner = N'Session';
+    THROW;
+END CATCH;
 """;
 
         await Database.ExecuteSqlRawAsync(sql, cancellationToken);
@@ -244,7 +268,13 @@ public sealed class AssignmentWorkspaceService(
             now,
             cancellationToken);
 
-        return new HostCoordinationDocumentDto(document.Id, document.FileName, document.ContentType, document.Length, document.UploadedAtUtc);
+        return new HostCoordinationDocumentDto(
+            document.Id,
+            document.FileName,
+            document.Category,
+            document.ContentType,
+            document.Length,
+            document.UploadedAtUtc);
     }
 
     public async Task<bool> DeleteDocumentAsync(
@@ -688,7 +718,7 @@ public static class AssignmentWorkspaceEndpoints
                 ? $"{context.Request.Scheme}://{context.Request.Host}/host/coordination/{item.Preparation.CoordinationToken}"
                 : null;
             return Results.Ok(new { workspace = item, termsUrl, coordinationUrl });
-        });
+        }).RequireAuthorization("EngagementsDirect");
 
         group.MapPut("/{id:guid}/workspace/coordination", async (
             Guid id,
@@ -715,7 +745,7 @@ public static class AssignmentWorkspaceEndpoints
             {
                 return Results.Conflict(new { message = exception.Message });
             }
-        }).RequireAuthorization("EngagementsWrite");
+        }).RequireAuthorization("EngagementsDirect");
 
         group.MapPost("/{id:guid}/workspace/documents", async (
             Guid id,
@@ -746,7 +776,7 @@ public static class AssignmentWorkspaceEndpoints
             {
                 return Results.ValidationProblem(new Dictionary<string, string[]> { ["document"] = [exception.Message] });
             }
-        }).DisableAntiforgery().RequireAuthorization("EngagementsWrite");
+        }).DisableAntiforgery().RequireAuthorization("EngagementsDirect");
 
         group.MapDelete("/{id:guid}/workspace/documents/{documentId:guid}", async (
             Guid id,
@@ -762,7 +792,7 @@ public static class AssignmentWorkspaceEndpoints
                 context.User.Identity?.Name ?? "Ministry team",
                 ct);
             return deleted ? Results.NoContent() : Results.NotFound();
-        }).RequireAuthorization("EngagementsWrite");
+        }).RequireAuthorization("EngagementsDirect");
 
         return endpoints;
     }

@@ -15,6 +15,7 @@ public sealed class EngagementsDemoRoleTests
 
         Assert.Equal(EngagementsDemoRoles.Administrator, EngagementsDemoRoles.CurrentRole(principal));
         Assert.True(KingdomIdentity.CanWriteEngagements(principal));
+        Assert.True(KingdomIdentity.CanDirectEngagements(principal));
         Assert.True(EngagementsDemoRoles.CanUseBookingDesk(principal));
         Assert.True(EngagementsDemoRoles.CanViewAllEngagements(principal));
         Assert.True(EngagementsDemoRoles.CanViewFinancials(principal));
@@ -23,7 +24,7 @@ public sealed class EngagementsDemoRoleTests
     }
 
     [Fact]
-    public void Coordinator_can_manage_booking_and_assignments_but_cannot_complete_or_archive()
+    public void Courtney_director_has_full_engagement_control()
     {
         var principal = EngagementsDemoRoles.CreateDevelopmentPrincipal(
             "ctg",
@@ -32,10 +33,28 @@ public sealed class EngagementsDemoRoleTests
 
         Assert.Equal(EngagementsDemoRoles.Coordinator, EngagementsDemoRoles.CurrentRole(principal));
         Assert.True(KingdomIdentity.CanWriteEngagements(principal));
+        Assert.True(KingdomIdentity.CanDirectEngagements(principal));
         Assert.True(EngagementsDemoRoles.CanUseBookingDesk(principal));
         Assert.True(EngagementsDemoRoles.CanViewAllEngagements(principal));
         Assert.True(EngagementsDemoRoles.CanViewFinancials(principal));
         Assert.True(EngagementsDemoRoles.CanViewInternalNotes(principal));
+        Assert.True(EngagementsDemoRoles.CanCompleteEngagements(principal));
+    }
+
+    [Fact]
+    public void Apostle_Cynthia_is_read_only_and_cannot_use_the_booking_desk()
+    {
+        var principal = EngagementsDemoRoles.CreateDevelopmentPrincipal(
+            "ctg",
+            KingdomIdentity.DemoTenantId,
+            EngagementsDemoRoles.Apostle);
+
+        Assert.False(KingdomIdentity.CanWriteEngagements(principal));
+        Assert.False(KingdomIdentity.CanDirectEngagements(principal));
+        Assert.False(EngagementsDemoRoles.CanUseBookingDesk(principal));
+        Assert.True(EngagementsDemoRoles.CanViewAllEngagements(principal));
+        Assert.False(EngagementsDemoRoles.CanViewFinancials(principal));
+        Assert.False(EngagementsDemoRoles.CanViewInternalNotes(principal));
         Assert.False(EngagementsDemoRoles.CanCompleteEngagements(principal));
     }
 
@@ -71,6 +90,23 @@ public sealed class EngagementsDemoRoleTests
         Assert.True(EngagementsDemoRoles.CanAccessAssignment(principal, Summary("assignment-demo-001")));
         Assert.True(EngagementsDemoRoles.CanAccessAssignment(principal, Summary("assignment-demo-007")));
         Assert.False(EngagementsDemoRoles.CanAccessAssignment(principal, Summary("assignment-unrelated-999")));
+    }
+
+    [Fact]
+    public void Missing_demo_role_does_not_default_a_real_user_to_administrator()
+    {
+        var principal = new System.Security.Claims.ClaimsPrincipal(
+            new System.Security.Claims.ClaimsIdentity(
+            [
+                new System.Security.Claims.Claim(
+                    KingdomIdentity.ProductRoleClaim,
+                    "engagements:team-member")
+            ],
+            KingdomIdentity.Scheme));
+
+        Assert.Equal(EngagementsDemoRoles.Minister, EngagementsDemoRoles.CurrentRole(principal));
+        Assert.False(EngagementsDemoRoles.CanUseBookingDesk(principal));
+        Assert.False(EngagementsDemoRoles.CanViewAllEngagements(principal));
     }
 
     [Theory]

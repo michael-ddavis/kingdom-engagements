@@ -629,12 +629,13 @@ public static class SpeakingRequestEndpoints
 
         var reviewGroup = endpoints.MapGroup("/api/engagements/requests").RequireAuthorization();
         reviewGroup.MapGet("", async (HttpContext context, SpeakingRequestsService service, CancellationToken ct) =>
-            Results.Ok(await service.GetAsync(KingdomIdentity.TenantId(context.User, context.Request), ct)));
+            Results.Ok(await service.GetAsync(KingdomIdentity.TenantId(context.User, context.Request), ct)))
+            .RequireAuthorization("EngagementsDirect");
         reviewGroup.MapGet("/{id:guid}", async (Guid id, HttpContext context, SpeakingRequestsService service, CancellationToken ct) =>
         {
             var item = await service.GetAsync(KingdomIdentity.TenantId(context.User, context.Request), id, ct);
             return item is null ? Results.NotFound() : Results.Ok(item);
-        });
+        }).RequireAuthorization("EngagementsDirect");
         reviewGroup.MapPost("/{id:guid}/request-information", async (Guid id, ReviewMessageRequest request, HttpContext context, SpeakingRequestsService service, CancellationToken ct) =>
         {
             try

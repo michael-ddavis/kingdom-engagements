@@ -122,16 +122,26 @@ builder.Services.AddAuthentication(KingdomIdentity.Scheme)
     });
 builder.Services.AddAuthorization(options =>
 {
+    options.AddPolicy("EngagementsAccess", policy => policy.RequireAssertion(context =>
+        KingdomIdentity.HasEngagementsAccess(context.User)));
     options.AddPolicy("EngagementsWrite", policy => policy.RequireAssertion(context =>
         KingdomIdentity.CanWriteEngagements(context.User)));
+    options.AddPolicy("EngagementsDirect", policy => policy.RequireAssertion(context =>
+        KingdomIdentity.CanDirectEngagements(context.User)));
 });
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient<EngagementsEntitlementResolver>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(3);
 });
+builder.Services.AddHttpClient<EngagementTeamService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(3);
+});
 builder.Services.AddScoped<EngagementsInitializer>();
 builder.Services.AddScoped<EngagementsService>();
+builder.Services.AddScoped<EngagementResponsibilityService>();
+builder.Services.AddScoped<EngagementLaneWorkspaceService>();
 builder.Services.AddScoped<SpeakingRequestsService>();
 builder.Services.AddScoped<StaffStartedInvitationsService>();
 builder.Services.AddScoped<HickmanSpeakingRequestsService>();
@@ -154,7 +164,11 @@ app.UseStaticFiles();
 app.UseAuthentication();
 app.Use(async (context, next) =>
 {
-    if (app.Environment.IsDevelopment())
+    var demoProfilesEnabled =
+        app.Environment.IsDevelopment() &&
+        app.Configuration.GetValue("KingdomOS:Identity:DemoProfilesEnabled", false);
+
+    if (demoProfilesEnabled && context.User.Identity?.IsAuthenticated != true)
     {
         var organizationKey =
             context.Request.Headers[KingdomIdentity.DemoOrganizationHeader].FirstOrDefault()
@@ -179,6 +193,7 @@ app.Use(async (context, next) =>
             resolvedTenantId,
             demoRole);
     }
+
     await next();
 });
 app.UseMiddleware<EngagementsReadinessMiddleware>();
@@ -187,8 +202,27 @@ app.UseAuthorization();
 app.UseMiddleware<EngagementsDemoAccessMiddleware>();
 app.Use(async (context, next) =>
 {
+    var path = context.Request.Path.Value ?? string.Empty;
+    var laneProgressMutation =
+        path.StartsWith("/api/engagements/assignments/", StringComparison.OrdinalIgnoreCase) &&
+        path.Contains("/responsibilities/", StringComparison.OrdinalIgnoreCase) &&
+        path.EndsWith("/progress", StringComparison.OrdinalIgnoreCase);
+    var responsibilityTaskMutation =
+        HttpMethods.IsPut(context.Request.Method) &&
+        path.StartsWith("/api/engagements/assignments/", StringComparison.OrdinalIgnoreCase) &&
+        path.Contains("/tasks/", StringComparison.OrdinalIgnoreCase);
+    var laneWorkspaceMutation =
+        path.StartsWith("/api/engagements/assignments/", StringComparison.OrdinalIgnoreCase) &&
+        path.Contains("/lanes/", StringComparison.OrdinalIgnoreCase);
+    var hostConversationMutation =
+        path.StartsWith("/api/engagements/assignments/", StringComparison.OrdinalIgnoreCase) &&
+        path.EndsWith("/preparation/messages", StringComparison.OrdinalIgnoreCase);
     var assignmentMutation =
         context.Request.Path.StartsWithSegments("/api/engagements/assignments") &&
+        !laneProgressMutation &&
+        !responsibilityTaskMutation &&
+        !laneWorkspaceMutation &&
+        !hostConversationMutation &&
         !HttpMethods.IsGet(context.Request.Method) &&
         !HttpMethods.IsHead(context.Request.Method) &&
         !HttpMethods.IsOptions(context.Request.Method);
@@ -267,14 +301,19 @@ app.MapEngagementPreparationEndpoints();
 app.MapAssignmentWorkspaceEndpoints();
 app.MapEngagementCompletionEndpoints();
 app.MapEngagementsDemoAccessEndpoints();
+app.MapEngagementResponsibilityEndpoints();
+app.MapEngagementTeamEndpoints();
+app.MapEngagementLaneWorkspaceEndpoints();
 app.MapEngagementsEndpoints();
 
 // Preserve legacy /app links while sending each demo persona to the right workspace.
 app.MapGet("/app", (HttpContext context) =>
 {
-    var target = EngagementsDemoRoles.IsMinister(context.User)
-        ? "/assignments"
-        : "/organization/ctg/bookings";
+    var target = EngagementsDemoRoles.IsApostle(context.User)
+        ? "/organization/ctg/apostle"
+        : EngagementsDemoRoles.IsMinister(context.User)
+            ? "/assignments"
+            : "/organization/ctg/bookings";
     return Results.Redirect($"{target}{context.Request.QueryString}");
 });
 app.MapGet("/app/{*path}", (string? path, HttpRequest request) =>

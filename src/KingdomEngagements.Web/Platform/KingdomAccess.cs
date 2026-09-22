@@ -29,6 +29,36 @@ public static class KingdomIdentity
         ?? request.Headers["X-Kingdom-Subject"].FirstOrDefault()
         ?? "unknown";
 
+    public static bool HasEngagementsAccess(ClaimsPrincipal principal)
+    {
+        static bool Matches(string value, params string[] accepted) =>
+            accepted.Contains(value, StringComparer.OrdinalIgnoreCase);
+
+        return principal.Claims.Any(claim =>
+            claim.Type == ProductRoleClaim && Matches(
+                claim.Value,
+                "engagements:administrator",
+                "engagements:director",
+                "engagements:coordinator",
+                "engagements:executive",
+                "engagements:viewer",
+                "engagements:minister",
+                "engagements:module-administrator",
+                "engagements:module-member") ||
+            claim.Type == TenantRoleClaim && Matches(
+                claim.Value,
+                "owner",
+                "administrator",
+                "organization-administrator",
+                "super-admin") ||
+            claim.Type == ClaimTypes.Role && Matches(
+                claim.Value,
+                "organization-owner",
+                "organization-administrator",
+                "OrganizationAdministrator",
+                "Organization Administrator"));
+    }
+
     public static bool CanWriteEngagements(ClaimsPrincipal principal)
     {
         static bool Matches(string value, params string[] accepted) =>
@@ -36,9 +66,37 @@ public static class KingdomIdentity
 
         return principal.Claims.Any(claim =>
             claim.Type == PermissionClaim && Matches(claim.Value, "engagements:assignments:write") ||
-            claim.Type == ProductRoleClaim && Matches(claim.Value, "engagements:administrator", "engagements:coordinator") ||
+            claim.Type == ProductRoleClaim && Matches(claim.Value, "engagements:administrator", "engagements:director", "engagements:coordinator", "engagements:module-administrator") ||
             claim.Type == TenantRoleClaim && Matches(claim.Value, "owner", "administrator", "organization-administrator", "super-admin") ||
             claim.Type == ClaimTypes.Role && Matches(claim.Value, "Administrator", "Coordinator", "OrganizationAdministrator", "Organization Administrator", "SuperAdmin", "Super Administrator"));
+    }
+
+    public static bool CanViewAllEngagements(ClaimsPrincipal principal)
+    {
+        static bool Matches(string value, params string[] accepted) =>
+            accepted.Contains(value, StringComparer.OrdinalIgnoreCase);
+
+        return principal.Claims.Any(claim =>
+            claim.Type == PermissionClaim && Matches(claim.Value, "engagements:assignments:read-all") ||
+            claim.Type == ProductRoleClaim && Matches(claim.Value, "engagements:administrator", "engagements:director", "engagements:coordinator", "engagements:executive", "engagements:module-administrator", "engagements:viewer") ||
+            claim.Type == TenantRoleClaim && Matches(claim.Value, "owner", "administrator", "organization-administrator", "super-admin") ||
+            claim.Type == ClaimTypes.Role && Matches(claim.Value, "Administrator", "EngagementDirector", "Coordinator", "Executive", "OrganizationAdministrator", "Organization Administrator", "SuperAdmin", "Super Administrator"));
+    }
+
+    public static bool CanViewInternalNotes(ClaimsPrincipal principal) =>
+        CanDirectEngagements(principal) ||
+        principal.HasClaim(PermissionClaim, "engagements:internal-notes:read");
+
+    public static bool CanDirectEngagements(ClaimsPrincipal principal)
+    {
+        static bool Matches(string value, params string[] accepted) =>
+            accepted.Contains(value, StringComparer.OrdinalIgnoreCase);
+
+        return principal.Claims.Any(claim =>
+            claim.Type == PermissionClaim && Matches(claim.Value, "engagements:responsibilities:manage") ||
+            claim.Type == ProductRoleClaim && Matches(claim.Value, "engagements:administrator", "engagements:director", "engagements:coordinator", "engagements:module-administrator") ||
+            claim.Type == TenantRoleClaim && Matches(claim.Value, "owner", "administrator", "organization-administrator", "super-admin") ||
+            claim.Type == ClaimTypes.Role && Matches(claim.Value, "Administrator", "EngagementDirector", "Coordinator", "OrganizationAdministrator", "Organization Administrator", "SuperAdmin", "Super Administrator"));
     }
 
     public static ClaimsPrincipal CreateDevelopmentPrincipal(string? organizationKey = null)
@@ -55,6 +113,7 @@ public static class KingdomIdentity
             new(TenantRoleClaim, "owner"),
             new(DemoOrganizationClaim, key),
             new(PermissionClaim, "engagements:assignments:write"),
+            new(PermissionClaim, "engagements:responsibilities:manage"),
             new(ProductRoleClaim, "engagements:administrator"),
             new(ClaimTypes.Role, "Administrator"),
             new(ClaimTypes.Role, "Coordinator"),

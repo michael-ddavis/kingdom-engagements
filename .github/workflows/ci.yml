@@ -58,7 +58,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          container_id="$(docker run --detach -e ASPNETCORE_ENVIRONMENT=Development kingdom-engagements:ci)"
+          container_id="$(docker run --detach             -e ASPNETCORE_ENVIRONMENT=Development             -e KingdomOS__Identity__DemoProfilesEnabled=true             kingdom-engagements:ci)"
           trap 'docker logs "$container_id" || true; docker rm --force "$container_id" >/dev/null 2>&1 || true' EXIT
           for attempt in {1..30}; do
             if health_payload="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/health 2>/dev/null)"; then

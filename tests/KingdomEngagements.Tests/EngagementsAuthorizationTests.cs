@@ -8,7 +8,9 @@ public sealed class EngagementsAuthorizationTests
     [Theory]
     [InlineData(KingdomIdentity.PermissionClaim, "engagements:assignments:write")]
     [InlineData(KingdomIdentity.ProductRoleClaim, "engagements:administrator")]
+    [InlineData(KingdomIdentity.ProductRoleClaim, "engagements:director")]
     [InlineData(KingdomIdentity.ProductRoleClaim, "engagements:coordinator")]
+    [InlineData(KingdomIdentity.ProductRoleClaim, "engagements:module-administrator")]
     [InlineData(KingdomIdentity.TenantRoleClaim, "owner")]
     [InlineData(KingdomIdentity.TenantRoleClaim, "organization-administrator")]
     [InlineData(ClaimTypes.Role, "OrganizationAdministrator")]
@@ -27,6 +29,67 @@ public sealed class EngagementsAuthorizationTests
     {
         var principal = Principal(new Claim(claimType, value));
         Assert.False(KingdomIdentity.CanWriteEngagements(principal));
+    }
+
+    [Theory]
+    [InlineData(KingdomIdentity.PermissionClaim, "engagements:responsibilities:manage")]
+    [InlineData(KingdomIdentity.ProductRoleClaim, "engagements:administrator")]
+    [InlineData(KingdomIdentity.ProductRoleClaim, "engagements:director")]
+    [InlineData(KingdomIdentity.ProductRoleClaim, "engagements:coordinator")]
+    [InlineData(KingdomIdentity.ProductRoleClaim, "engagements:module-administrator")]
+    [InlineData(KingdomIdentity.TenantRoleClaim, "owner")]
+    [InlineData(ClaimTypes.Role, "EngagementDirector")]
+    public void Director_roles_can_manage_engagement_responsibilities(string claimType, string value)
+    {
+        var principal = Principal(new Claim(claimType, value));
+        Assert.True(KingdomIdentity.CanDirectEngagements(principal));
+    }
+
+    [Fact]
+    public void Executive_viewer_cannot_manage_engagement_responsibilities()
+    {
+        var principal = Principal(
+            new Claim(KingdomIdentity.ProductRoleClaim, "engagements:executive"),
+            new Claim(KingdomIdentity.PermissionClaim, "engagements:assignments:read"));
+
+        Assert.False(KingdomIdentity.CanDirectEngagements(principal));
+    }
+
+    [Theory]
+    [InlineData(KingdomIdentity.ProductRoleClaim, "engagements:administrator")]
+    [InlineData(KingdomIdentity.ProductRoleClaim, "engagements:director")]
+    [InlineData(KingdomIdentity.ProductRoleClaim, "engagements:executive")]
+    [InlineData(KingdomIdentity.ProductRoleClaim, "engagements:module-administrator")]
+    [InlineData(KingdomIdentity.ProductRoleClaim, "engagements:viewer")]
+    [InlineData(KingdomIdentity.TenantRoleClaim, "owner")]
+    public void Leadership_roles_can_view_all_engagements(string claimType, string value)
+    {
+        var principal = Principal(new Claim(claimType, value));
+        Assert.True(KingdomIdentity.CanViewAllEngagements(principal));
+    }
+
+    [Fact]
+    public void Team_member_does_not_receive_engagement_wide_read_access()
+    {
+        var principal = Principal(
+            new Claim(KingdomIdentity.ProductRoleClaim, "engagements:module-member"));
+
+        Assert.False(KingdomIdentity.CanViewAllEngagements(principal));
+        Assert.False(KingdomIdentity.CanViewInternalNotes(principal));
+    }
+
+    [Theory]
+    [InlineData("engagements:module-administrator", EngagementsDemoRoles.Coordinator)]
+    [InlineData("engagements:viewer", EngagementsDemoRoles.Apostle)]
+    [InlineData("engagements:module-member", EngagementsDemoRoles.Minister)]
+    public void Platform_module_roles_map_to_the_correct_engagement_workspace(
+        string productRole,
+        string expectedRole)
+    {
+        var principal = Principal(
+            new Claim(KingdomIdentity.ProductRoleClaim, productRole));
+
+        Assert.Equal(expectedRole, EngagementsDemoRoles.CurrentRole(principal));
     }
 
     [Theory]

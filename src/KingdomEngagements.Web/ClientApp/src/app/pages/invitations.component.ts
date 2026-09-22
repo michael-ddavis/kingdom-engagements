@@ -9,16 +9,12 @@ import { SpeakingRequestDetails } from '../core/speaking-request.models';
   imports: [RouterLink],
   template: `
     <section class="eng-page invitations-page">
-      <a class="back-link" routerLink="/organization/ctg/bookings">← Global Booking Desk</a>
+      <a class="back-link" routerLink="/organization/ctg/bookings">← Booking Desk</a>
       <header class="page-heading">
-        <div>
-          <p class="eng-eyebrow">Cynthia Thompson Global</p>
-          <h1>Invitation review</h1>
-          <p>Review host details, request missing information, and approve or decline. Approved invitations move directly into engagement preparation.</p>
-        </div>
+        <h1>Invitation Review</h1>
         <div class="heading-actions">
           <span>{{ reviewCount() }} need review</span>
-          <a routerLink="/organization/ctg/start-invitation">+ Start invitation for host</a>
+          <a routerLink="/organization/ctg/start-invitation">+ Start invitation</a>
         </div>
       </header>
 
@@ -337,7 +333,7 @@ export class InvitationsComponent implements OnInit {
         this.saving.set(false);
         this.setMessage('Invitation approved. The engagement moved into preparation.');
         this.reload(item.id);
-        this.router.navigate(['/assignments', result.assignmentId]);
+        this.router.navigate(['/organization/ctg/engagements', result.assignmentId]);
       },
       error: error => this.finishError(error),
     });
@@ -369,7 +365,7 @@ export class InvitationsComponent implements OnInit {
     });
   }
 
-  openAssignment(id: string): void { this.router.navigate(['/assignments', id]); }
+  openAssignment(id: string): void { this.router.navigate(['/organization/ctg/engagements', id]); }
   waitingOnHost(item: SpeakingRequestDetails): boolean { return item.status === 'host-completion-needed'; }
   reviewable(item: SpeakingRequestDetails): boolean { return !['approved', 'declined', 'host-completion-needed'].includes(item.status); }
   statusLabel(value: string): string {

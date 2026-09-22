@@ -85,8 +85,14 @@ public sealed class EngagementPreparationLifecycleTests
         fixture.Engagements.ChangeTracker.Clear();
 
         var document = await fixture.PreparationService.AddDocumentAsync(
-            accepted.CoordinationToken!, "final-schedule.pdf", "application/pdf", [1, 2, 3, 4], CancellationToken.None);
+            accepted.CoordinationToken!,
+            "final-schedule.pdf",
+            "application/pdf",
+            [1, 2, 3, 4],
+            "program",
+            CancellationToken.None);
         Assert.NotNull(document);
+        Assert.Equal("program", document.Category);
         fixture.Engagements.ChangeTracker.Clear();
 
         var assignment = await fixture.Engagements.Assignments.Include(x => x.Tasks).Include(x => x.Documents).SingleAsync(x => x.Id == assignmentId);
@@ -98,7 +104,94 @@ public sealed class EngagementPreparationLifecycleTests
         Assert.Equal("Pastor Jordan Ellis", assignment.HostContactName);
         Assert.Contains(assignment.Tasks, x => x.Title == "Complete host coordination" && x.Status == "complete");
         Assert.Contains(assignment.Tasks, x => x.Title == "Confirm travel and lodging plan" && x.Status == "complete");
-        Assert.Contains(assignment.Documents, x => x.Name == "final-schedule.pdf" && x.Status == "received");
+        Assert.Contains(
+            assignment.Documents,
+            x => x.Name == "final-schedule.pdf" &&
+                 x.Category == "program" &&
+                 x.Status == "received");
+    }
+
+    [Fact]
+    public async Task Host_coordination_conversation_is_shared_and_closes_with_coordination()
+    {
+        await using var fixture = CreateFixture();
+        var tenantId = Guid.NewGuid();
+        var request = await fixture.RequestService.CreateAsync(tenantId, ValidRequest(), CancellationToken.None);
+        fixture.Requests.ChangeTracker.Clear();
+
+        var approval = await fixture.RequestService.ApproveAsync(tenantId, request.Id, CancellationToken.None);
+        Assert.NotNull(approval);
+        var assignmentId = approval.Value.AssignmentId;
+
+        fixture.Requests.ChangeTracker.Clear();
+        fixture.Engagements.ChangeTracker.Clear();
+
+        var preparation = await fixture.PreparationService.EnsureAsync(
+            tenantId,
+            assignmentId,
+            CancellationToken.None);
+        Assert.NotNull(preparation);
+
+        var accepted = await fixture.PreparationService.AcceptTermsAsync(
+            preparation.TermsToken,
+            new AcceptEngagementTermsRequest(
+                true,
+                "Pastor Jordan Ellis",
+                "jordan@example.org",
+                null),
+            CancellationToken.None);
+        Assert.NotNull(accepted);
+        Assert.NotNull(accepted.CoordinationToken);
+
+        fixture.Preparations.ChangeTracker.Clear();
+
+        var hostThread = await fixture.PreparationService.AddHostMessageAsync(
+            accepted.CoordinationToken!,
+            new PostHostCoordinationMessageRequest(
+                "Pastor Jordan Ellis",
+                "We have the hotel confirmed and are waiting on the driver."),
+            CancellationToken.None);
+
+        Assert.NotNull(hostThread);
+        Assert.Single(hostThread.Messages);
+        Assert.Equal("host", hostThread.Messages[0].SenderType);
+
+        fixture.Preparations.ChangeTracker.Clear();
+
+        var ministryThread = await fixture.PreparationService.AddMinistryMessageAsync(
+            tenantId,
+            assignmentId,
+            "Prophet Courtney Beecham",
+            new PostMinistryCoordinationMessageRequest(
+                "Thank you. Please send the pickup contact when it is available."),
+            CancellationToken.None);
+
+        Assert.NotNull(ministryThread);
+        Assert.Equal(2, ministryThread.Messages.Count);
+        Assert.Equal("ministry", ministryThread.Messages[1].SenderType);
+
+        var preparationRecord = await fixture.Preparations.Preparations
+            .SingleAsync(x => x.AssignmentId == assignmentId);
+        preparationRecord.CoordinationStatus = "submitted";
+        preparationRecord.UpdatedAtUtc = DateTimeOffset.UtcNow;
+        await fixture.Preparations.SaveChangesAsync();
+        fixture.Preparations.ChangeTracker.Clear();
+
+        var closedThread = await fixture.PreparationService.GetMessagesForHostAsync(
+            accepted.CoordinationToken!,
+            CancellationToken.None);
+
+        Assert.NotNull(closedThread);
+        Assert.True(closedThread.IsClosed);
+        Assert.Equal(2, closedThread.Messages.Count);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            fixture.PreparationService.AddHostMessageAsync(
+                accepted.CoordinationToken!,
+                new PostHostCoordinationMessageRequest(
+                    "Pastor Jordan Ellis",
+                    "One more update."),
+                CancellationToken.None));
     }
 
     private static SpeakingRequestInput ValidRequest() => new(

@@ -8,6 +8,7 @@ public sealed class EngagementPreparationDbContext(DbContextOptions<EngagementPr
 {
     public DbSet<EngagementPreparationRecord> Preparations => Set<EngagementPreparationRecord>();
     public DbSet<HostCoordinationDocumentRecord> Documents => Set<HostCoordinationDocumentRecord>();
+    public DbSet<HostCoordinationMessageRecord> Messages => Set<HostCoordinationMessageRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -57,6 +58,8 @@ public sealed class EngagementPreparationDbContext(DbContextOptions<EngagementPr
         preparation.Property(x => x.ContactsJson).HasMaxLength(12000).IsRequired();
         preparation.Property(x => x.PromotionRequirements).HasMaxLength(4000);
         preparation.Property(x => x.PrayerFocus).HasMaxLength(4000);
+        preparation.Property(x => x.MinistryPreparationNotes).HasColumnType("nvarchar(max)");
+        preparation.Property(x => x.HospitalityNotes).HasColumnType("nvarchar(max)");
         preparation.Property(x => x.HostNotes).HasMaxLength(4000);
 
         var document = modelBuilder.Entity<HostCoordinationDocumentRecord>();
@@ -65,8 +68,20 @@ public sealed class EngagementPreparationDbContext(DbContextOptions<EngagementPr
         document.Property(x => x.Id).ValueGeneratedNever();
         document.HasIndex(x => x.PreparationId);
         document.Property(x => x.FileName).HasMaxLength(260).IsRequired();
+        document.Property(x => x.Category).HasMaxLength(80).IsRequired();
         document.Property(x => x.ContentType).HasMaxLength(180).IsRequired();
         document.Property(x => x.Content).IsRequired();
+
+        var message = modelBuilder.Entity<HostCoordinationMessageRecord>();
+        message.ToTable("EngagementHostCoordinationMessages");
+        message.HasKey(x => x.Id);
+        message.Property(x => x.Id).ValueGeneratedNever();
+        message.HasIndex(x => new { x.PreparationId, x.CreatedAtUtc });
+        message.Property(x => x.SenderType).HasMaxLength(32).IsRequired();
+        message.Property(x => x.SenderName).HasMaxLength(180).IsRequired();
+        message.Property(x => x.Message).HasMaxLength(4000).IsRequired();
+        message.HasOne(x => x.Preparation).WithMany()
+            .HasForeignKey(x => x.PreparationId).OnDelete(DeleteBehavior.Cascade);
     }
 
     public async Task EnsureSchemaAsync(CancellationToken cancellationToken)
@@ -134,6 +149,8 @@ BEGIN
         [ContactsJson] nvarchar(max) NOT NULL,
         [PromotionRequirements] nvarchar(4000) NULL,
         [PrayerFocus] nvarchar(4000) NULL,
+        [MinistryPreparationNotes] nvarchar(max) NULL,
+        [HospitalityNotes] nvarchar(max) NULL,
         [HostNotes] nvarchar(4000) NULL,
         [SubmittedAtUtc] datetimeoffset NULL,
         [CreatedAtUtc] datetimeoffset NOT NULL,
@@ -156,6 +173,7 @@ BEGIN
         [Id] uniqueidentifier NOT NULL,
         [PreparationId] uniqueidentifier NOT NULL,
         [FileName] nvarchar(260) NOT NULL,
+        [Category] nvarchar(80) NOT NULL,
         [ContentType] nvarchar(180) NOT NULL,
         [Length] bigint NOT NULL,
         [Content] varbinary(max) NOT NULL,
@@ -170,6 +188,44 @@ END;
 """;
 
         await Database.ExecuteSqlRawAsync(sql, cancellationToken);
+
+        const string laneColumnsSql = """
+IF COL_LENGTH(N'dbo.EngagementPreparations', N'MinistryPreparationNotes') IS NULL
+    ALTER TABLE [dbo].[EngagementPreparations] ADD [MinistryPreparationNotes] nvarchar(max) NULL;
+
+IF COL_LENGTH(N'dbo.EngagementPreparations', N'HospitalityNotes') IS NULL
+    ALTER TABLE [dbo].[EngagementPreparations] ADD [HospitalityNotes] nvarchar(max) NULL;
+
+IF COL_LENGTH(N'dbo.EngagementHostCoordinationDocuments', N'Category') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[EngagementHostCoordinationDocuments]
+        ADD [Category] nvarchar(80) NOT NULL
+        CONSTRAINT [DF_EngagementHostCoordinationDocuments_Category]
+        DEFAULT N'host-coordination' WITH VALUES;
+END;
+""";
+        await Database.ExecuteSqlRawAsync(laneColumnsSql, cancellationToken);
+
+        const string messageSql = """
+IF OBJECT_ID(N'[dbo].[EngagementHostCoordinationMessages]', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[EngagementHostCoordinationMessages] (
+        [Id] uniqueidentifier NOT NULL,
+        [PreparationId] uniqueidentifier NOT NULL,
+        [SenderType] nvarchar(32) NOT NULL,
+        [SenderName] nvarchar(180) NOT NULL,
+        [Message] nvarchar(4000) NOT NULL,
+        [CreatedAtUtc] datetimeoffset NOT NULL,
+        CONSTRAINT [PK_EngagementHostCoordinationMessages] PRIMARY KEY ([Id]),
+        CONSTRAINT [FK_EngagementHostCoordinationMessages_EngagementPreparations_PreparationId]
+            FOREIGN KEY ([PreparationId]) REFERENCES [dbo].[EngagementPreparations] ([Id]) ON DELETE CASCADE
+    );
+    CREATE INDEX [IX_EngagementHostCoordinationMessages_PreparationId_CreatedAtUtc]
+        ON [dbo].[EngagementHostCoordinationMessages] ([PreparationId], [CreatedAtUtc]);
+END;
+""";
+
+        await Database.ExecuteSqlRawAsync(messageSql, cancellationToken);
     }
 }
 
@@ -228,6 +284,8 @@ public sealed class EngagementPreparationRecord
     public string ContactsJson { get; set; } = "[]";
     public string? PromotionRequirements { get; set; }
     public string? PrayerFocus { get; set; }
+    public string? MinistryPreparationNotes { get; set; }
+    public string? HospitalityNotes { get; set; }
     public string? HostNotes { get; set; }
     public DateTimeOffset? SubmittedAtUtc { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
@@ -239,11 +297,37 @@ public sealed class HostCoordinationDocumentRecord
     public Guid Id { get; set; }
     public Guid PreparationId { get; set; }
     public string FileName { get; set; } = string.Empty;
+    public string Category { get; set; } = "host-coordination";
     public string ContentType { get; set; } = "application/octet-stream";
     public long Length { get; set; }
     public byte[] Content { get; set; } = [];
     public DateTimeOffset UploadedAtUtc { get; set; }
 }
+
+public sealed class HostCoordinationMessageRecord
+{
+    public Guid Id { get; set; }
+    public Guid PreparationId { get; set; }
+    public string SenderType { get; set; } = string.Empty;
+    public string SenderName { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
+    public DateTimeOffset CreatedAtUtc { get; set; }
+    public EngagementPreparationRecord? Preparation { get; set; }
+}
+
+public sealed record HostCoordinationMessageDto(
+    Guid Id,
+    string SenderType,
+    string SenderName,
+    string Message,
+    DateTimeOffset CreatedAtUtc);
+
+public sealed record HostCoordinationThread(
+    bool IsClosed,
+    IReadOnlyList<HostCoordinationMessageDto> Messages);
+
+public sealed record PostHostCoordinationMessageRequest(string SenderName, string Message);
+public sealed record PostMinistryCoordinationMessageRequest(string Message);
 
 public sealed record AcceptEngagementTermsRequest(bool Accepted, string SignatoryName, string SignatoryEmail, string? Note);
 public sealed record HostScheduleItemInput(string Title, DateOnly Date, string? StartsAt, string? EndsAt, string? Location, string? Notes);
@@ -278,7 +362,13 @@ public sealed record HostCoordinationUpdate(
     string? HostNotes,
     bool Submit);
 
-public sealed record HostCoordinationDocumentDto(Guid Id, string FileName, string ContentType, long Length, DateTimeOffset UploadedAtUtc);
+public sealed record HostCoordinationDocumentDto(
+    Guid Id,
+    string FileName,
+    string Category,
+    string ContentType,
+    long Length,
+    DateTimeOffset UploadedAtUtc);
 
 public sealed record EngagementTermsDetails(
     Guid AssignmentId,
@@ -576,7 +666,96 @@ public sealed class EngagementPreparationService(
         return await MapCoordinationAsync(preparation, cancellationToken);
     }
 
-    public async Task<HostCoordinationDocumentDto?> AddDocumentAsync(string token, string fileName, string contentType, byte[] content, CancellationToken cancellationToken)
+    public async Task<HostCoordinationThread?> GetMessagesForHostAsync(
+        string token,
+        CancellationToken cancellationToken)
+    {
+        await database.EnsureSchemaAsync(cancellationToken);
+        var preparation = await database.Preparations.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.CoordinationToken == token, cancellationToken);
+        if (!CoordinationLinkValid(preparation)) return null;
+
+        return await MapMessageThreadAsync(preparation!, cancellationToken);
+    }
+
+    public async Task<HostCoordinationThread?> AddHostMessageAsync(
+        string token,
+        PostHostCoordinationMessageRequest request,
+        CancellationToken cancellationToken)
+    {
+        await database.EnsureSchemaAsync(cancellationToken);
+        var preparation = await database.Preparations
+            .SingleOrDefaultAsync(x => x.CoordinationToken == token, cancellationToken);
+        if (!CoordinationLinkValid(preparation)) return null;
+        if (string.Equals(preparation!.CoordinationStatus, "submitted", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Host coordination is complete and this conversation is closed.");
+
+        AddMessage(
+            preparation,
+            "host",
+            Required(request.SenderName, nameof(request.SenderName)),
+            RequiredMessage(request.Message));
+
+        await database.SaveChangesAsync(cancellationToken);
+        return await MapMessageThreadAsync(preparation, cancellationToken);
+    }
+
+    public async Task<HostCoordinationThread?> GetMessagesForAssignmentAsync(
+        Guid tenantId,
+        Guid assignmentId,
+        CancellationToken cancellationToken)
+    {
+        await database.EnsureSchemaAsync(cancellationToken);
+        var preparation = await database.Preparations.AsNoTracking()
+            .SingleOrDefaultAsync(
+                x => x.TenantId == tenantId && x.AssignmentId == assignmentId,
+                cancellationToken);
+        return preparation is null
+            ? null
+            : await MapMessageThreadAsync(preparation, cancellationToken);
+    }
+
+    public async Task<HostCoordinationThread?> AddMinistryMessageAsync(
+        Guid tenantId,
+        Guid assignmentId,
+        string senderName,
+        PostMinistryCoordinationMessageRequest request,
+        CancellationToken cancellationToken)
+    {
+        await database.EnsureSchemaAsync(cancellationToken);
+        var preparation = await database.Preparations
+            .SingleOrDefaultAsync(
+                x => x.TenantId == tenantId && x.AssignmentId == assignmentId,
+                cancellationToken);
+        if (preparation is null) return null;
+        if (string.Equals(preparation.CoordinationStatus, "submitted", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Host coordination is complete and this conversation is closed.");
+
+        AddMessage(
+            preparation,
+            "ministry",
+            Required(senderName, nameof(senderName)),
+            RequiredMessage(request.Message));
+
+        await database.SaveChangesAsync(cancellationToken);
+        return await MapMessageThreadAsync(preparation, cancellationToken);
+    }
+
+    public Task<HostCoordinationDocumentDto?> AddDocumentAsync(
+        string token,
+        string fileName,
+        string contentType,
+        byte[] content,
+        CancellationToken cancellationToken) =>
+        AddDocumentAsync(token, fileName, contentType, content, "host-coordination", cancellationToken);
+
+    public async Task<HostCoordinationDocumentDto?> AddDocumentAsync(
+        string token,
+        string fileName,
+        string contentType,
+        byte[] content,
+        string? category,
+        CancellationToken cancellationToken)
     {
         await database.EnsureSchemaAsync(cancellationToken);
         var preparation = await database.Preparations.SingleOrDefaultAsync(x => x.CoordinationToken == token, cancellationToken);
@@ -584,12 +763,14 @@ public sealed class EngagementPreparationService(
         if (content.Length == 0) throw new ArgumentException("Choose a file to upload.");
         if (content.Length > MaxDocumentBytes) throw new ArgumentException("Host coordination documents must be 10 MB or smaller.");
 
+        var normalizedCategory = NormalizeDocumentCategory(category);
         var now = DateTimeOffset.UtcNow;
         var document = new HostCoordinationDocumentRecord
         {
             Id = Guid.NewGuid(),
             PreparationId = preparation!.Id,
             FileName = Path.GetFileName(Required(fileName, nameof(fileName))),
+            Category = normalizedCategory,
             ContentType = string.IsNullOrWhiteSpace(contentType) ? "application/octet-stream" : contentType.Trim(),
             Length = content.LongLength,
             Content = content,
@@ -609,7 +790,7 @@ public sealed class EngagementPreparationService(
             {
                 Id = Guid.NewGuid(),
                 Name = document.FileName,
-                Category = "host-coordination",
+                Category = document.Category,
                 Status = "received",
                 StorageReference = $"coordination-document:{document.Id}",
                 UpdatedAtUtc = now
@@ -714,7 +895,13 @@ public sealed class EngagementPreparationService(
             preparation.HonorariumStatus, preparation.HonorariumAmount, preparation.HonorariumCurrency, preparation.PaymentStatus,
             preparation.CoordinationStatus, includeCoordinationToken ? preparation.CoordinationToken : null);
     private static HostCoordinationDocumentDto MapDocument(HostCoordinationDocumentRecord document) =>
-        new(document.Id, document.FileName, document.ContentType, document.Length, document.UploadedAtUtc);
+        new(
+            document.Id,
+            document.FileName,
+            document.Category,
+            document.ContentType,
+            document.Length,
+            document.UploadedAtUtc);
 
     private static void ApplyCoordination(EngagementPreparationRecord preparation, HostCoordinationUpdate input)
     {
@@ -745,6 +932,53 @@ public sealed class EngagementPreparationService(
         preparation.PromotionRequirements = Trim(input.PromotionRequirements);
         preparation.PrayerFocus = Trim(input.PrayerFocus);
         preparation.HostNotes = Trim(input.HostNotes);
+    }
+
+    private async Task<HostCoordinationThread> MapMessageThreadAsync(
+        EngagementPreparationRecord preparation,
+        CancellationToken cancellationToken)
+    {
+        var messages = await database.Messages.AsNoTracking()
+            .Where(x => x.PreparationId == preparation.Id)
+            .OrderBy(x => x.CreatedAtUtc)
+            .Select(x => new HostCoordinationMessageDto(
+                x.Id,
+                x.SenderType,
+                x.SenderName,
+                x.Message,
+                x.CreatedAtUtc))
+            .ToListAsync(cancellationToken);
+
+        return new HostCoordinationThread(
+            string.Equals(preparation.CoordinationStatus, "submitted", StringComparison.OrdinalIgnoreCase),
+            messages);
+    }
+
+    private void AddMessage(
+        EngagementPreparationRecord preparation,
+        string senderType,
+        string senderName,
+        string message)
+    {
+        var now = DateTimeOffset.UtcNow;
+        database.Messages.Add(new HostCoordinationMessageRecord
+        {
+            Id = Guid.NewGuid(),
+            PreparationId = preparation.Id,
+            SenderType = senderType,
+            SenderName = senderName,
+            Message = message,
+            CreatedAtUtc = now
+        });
+        preparation.UpdatedAtUtc = now;
+    }
+
+    private static string RequiredMessage(string? value)
+    {
+        var message = Required(value, "message");
+        return message.Length <= 4000
+            ? message
+            : throw new ArgumentException("Messages must be 4,000 characters or fewer.");
     }
 
     private static bool CoordinationLinkValid(EngagementPreparationRecord? preparation) =>
@@ -781,6 +1015,26 @@ public sealed class EngagementPreparationService(
 
     private static IReadOnlyList<HostContactInput> DeserializeContacts(string json) =>
         JsonSerializer.Deserialize<HostContactInput[]>(json, JsonOptions) ?? [];
+
+    private static string NormalizeDocumentCategory(string? value)
+    {
+        var category = string.IsNullOrWhiteSpace(value)
+            ? "host-coordination"
+            : EngagementResponsibilityLanes.Normalize(value);
+
+        return category switch
+        {
+            "host-coordination" or
+            "travel" or
+            "lodging" or
+            "transportation" or
+            "media" or
+            "program" or
+            "documents" or
+            "hospitality" => category,
+            _ => throw new ArgumentException("The host document category is not supported.")
+        };
+    }
 
     private static string Required(string? value, string field) =>
         string.IsNullOrWhiteSpace(value) ? throw new ArgumentException($"{field} is required.") : value.Trim();
@@ -822,6 +1076,39 @@ public static class EngagementPreparationEndpoints
             var item = await service.SaveCoordinationAsync(token, request, ct);
             return item is null ? Results.NotFound(new { message = "This host coordination link is locked, invalid, or expired." }) : Results.Ok(item);
         });
+        publicGroup.MapGet("/coordination/{token}/messages", async (
+            string token,
+            EngagementPreparationService service,
+            CancellationToken ct) =>
+        {
+            var thread = await service.GetMessagesForHostAsync(token, ct);
+            return thread is null
+                ? Results.NotFound(new { message = "This host coordination link is locked, invalid, or expired." })
+                : Results.Ok(thread);
+        });
+        publicGroup.MapPost("/coordination/{token}/messages", async (
+            string token,
+            PostHostCoordinationMessageRequest request,
+            EngagementPreparationService service,
+            CancellationToken ct) =>
+        {
+            try
+            {
+                var thread = await service.AddHostMessageAsync(token, request, ct);
+                return thread is null
+                    ? Results.NotFound(new { message = "This host coordination link is locked, invalid, or expired." })
+                    : Results.Ok(thread);
+            }
+            catch (ArgumentException exception)
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["message"] = [exception.Message] });
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Results.Conflict(new { message = exception.Message });
+            }
+        });
+
         publicGroup.MapPost("/coordination/{token}/documents", async (string token, HttpRequest request, EngagementPreparationService service, CancellationToken ct) =>
         {
             try
@@ -832,7 +1119,14 @@ public static class EngagementPreparationEndpoints
                 if (file is null) return Results.BadRequest(new { message = "Choose a file to upload." });
                 await using var stream = new MemoryStream();
                 await file.CopyToAsync(stream, ct);
-                var item = await service.AddDocumentAsync(token, file.FileName, file.ContentType, stream.ToArray(), ct);
+                var category = form["category"].FirstOrDefault();
+                var item = await service.AddDocumentAsync(
+                    token,
+                    file.FileName,
+                    file.ContentType,
+                    stream.ToArray(),
+                    category,
+                    ct);
                 return item is null ? Results.NotFound(new { message = "This host coordination link is locked, invalid, or expired." }) : Results.Ok(item);
             }
             catch (ArgumentException exception)
@@ -859,7 +1153,67 @@ public static class EngagementPreparationEndpoints
                 ? $"{context.Request.Scheme}://{context.Request.Host}/host/coordination/{item.CoordinationToken}"
                 : null;
             return Results.Ok(new { preparation = item, termsUrl, coordinationUrl });
+        }).RequireAuthorization("EngagementsDirect");
+        internalGroup.MapGet("/{id:guid}/preparation/messages", async (
+            Guid id,
+            HttpContext context,
+            EngagementPreparationService service,
+            EngagementResponsibilityService responsibilities,
+            CancellationToken ct) =>
+        {
+            var tenantId = KingdomIdentity.TenantId(context.User, context.Request);
+            var subject = KingdomIdentity.Subject(context.User, context.Request);
+            var allowed = KingdomIdentity.CanDirectEngagements(context.User) ||
+                          await responsibilities.IsEffectiveOwnerAsync(
+                              tenantId,
+                              id,
+                              "host-coordination",
+                              subject,
+                              ct);
+            if (!allowed) return Results.Forbid();
+
+            var thread = await service.GetMessagesForAssignmentAsync(tenantId, id, ct);
+            return thread is null ? Results.NotFound() : Results.Ok(thread);
         });
+        internalGroup.MapPost("/{id:guid}/preparation/messages", async (
+            Guid id,
+            PostMinistryCoordinationMessageRequest request,
+            HttpContext context,
+            EngagementPreparationService service,
+            EngagementResponsibilityService responsibilities,
+            CancellationToken ct) =>
+        {
+            try
+            {
+                var tenantId = KingdomIdentity.TenantId(context.User, context.Request);
+                var subject = KingdomIdentity.Subject(context.User, context.Request);
+                var allowed = KingdomIdentity.CanDirectEngagements(context.User) ||
+                              await responsibilities.IsEffectiveOwnerAsync(
+                                  tenantId,
+                                  id,
+                                  "host-coordination",
+                                  subject,
+                                  ct);
+                if (!allowed) return Results.Forbid();
+
+                var thread = await service.AddMinistryMessageAsync(
+                    tenantId,
+                    id,
+                    context.User.Identity?.Name ?? "Engagement team member",
+                    request,
+                    ct);
+                return thread is null ? Results.NotFound() : Results.Ok(thread);
+            }
+            catch (ArgumentException exception)
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["message"] = [exception.Message] });
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Results.Conflict(new { message = exception.Message });
+            }
+        });
+
         internalGroup.MapGet("/{id:guid}/preparation/documents/{documentId:guid}", async (Guid id, Guid documentId, bool? download, HttpContext context, EngagementPreparationService service, CancellationToken ct) =>
         {
             var document = await service.GetDocumentForAssignmentAsync(KingdomIdentity.TenantId(context.User, context.Request), id, documentId, ct);
@@ -867,7 +1221,7 @@ public static class EngagementPreparationEndpoints
             return download is true
                 ? Results.File(document.Content, document.ContentType, document.FileName, enableRangeProcessing: true)
                 : Results.File(document.Content, document.ContentType, enableRangeProcessing: true);
-        });
+        }).RequireAuthorization("EngagementsDirect");
         return endpoints;
     }
 }

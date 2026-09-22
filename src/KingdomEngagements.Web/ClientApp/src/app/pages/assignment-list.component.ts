@@ -14,14 +14,7 @@ type EngagementView = 'upcoming' | 'review' | 'attention' | 'completed';
   template: `
     <section class="eng-page legacy-assignment-index">
       <header class="legacy-assignment-hero">
-        <div>
-          <p class="eng-eyebrow">Itinerant ministry</p>
-          <h1>Engagements</h1>
-          <p>
-            Invitations, host preparation, ministry travel, responses, Care Network handoff,
-            and closeout in one assignment record.
-          </p>
-        </div>
+        <h1>Engagements</h1>
         <div class="invitation-actions">
           <a href="/invite/apostle-cynthia" target="_blank" rel="noopener">Open fresh invitation ↗</a>
           <button type="button" (click)="copyInvitationLink()">{{ invitationCopied() ? 'Link copied' : 'Copy invitation link' }}</button>
@@ -52,7 +45,7 @@ type EngagementView = 'upcoming' | 'review' | 'attention' | 'completed';
           <span aria-hidden="true">!</span>
           <div>
             <strong>{{ attentionAssignments().length }} assignment{{ attentionAssignments().length === 1 ? '' : 's' }} need movement.</strong>
-            <p>Open the assignment record to resolve preparation, travel, contacts, Care, or closeout responsibilities.</p>
+            
           </div>
         </section>
       }
@@ -192,6 +185,9 @@ export class AssignmentListComponent implements OnInit {
   private readonly curatedDemoAssignments = new Set([
     'assignment-demo-001',
     'assignment-demo-002',
+    'assignment-demo-003',
+    'assignment-demo-004',
+    'assignment-demo-005',
     'assignment-demo-007',
   ]);
   private readonly curatedDemoRequests = new Set(['CTG-DEMO-001']);

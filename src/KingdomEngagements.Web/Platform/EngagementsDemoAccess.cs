@@ -59,16 +59,19 @@ public static class EngagementsDemoRoles
             case Coordinator:
                 claims.AddRange(
                 [
-                    new Claim(ClaimTypes.NameIdentifier, "demo-engagements-coordinator"),
-                    new Claim(ClaimTypes.Name, "Engagement Coordinator"),
-                    new Claim(ClaimTypes.Email, "coordinator@kingdomos.local"),
+                    new Claim(ClaimTypes.NameIdentifier, "demo-prophet-courtney-beecham"),
+                    new Claim(ClaimTypes.Name, "Prophet Courtney Beecham"),
+                    new Claim(ClaimTypes.Email, "courtney@kingdomos.local"),
                     new Claim(KingdomIdentity.TenantRoleClaim, "member"),
-                    new Claim(KingdomIdentity.ProductRoleClaim, "engagements:coordinator"),
+                    new Claim(KingdomIdentity.ProductRoleClaim, "engagements:director"),
                     new Claim(KingdomIdentity.PermissionClaim, "engagements:assignments:write"),
+                    new Claim(KingdomIdentity.PermissionClaim, "engagements:responsibilities:manage"),
                     new Claim(KingdomIdentity.PermissionClaim, "engagements:bookings:manage"),
                     new Claim(KingdomIdentity.PermissionClaim, "engagements:financial:read"),
                     new Claim(KingdomIdentity.PermissionClaim, "engagements:internal-notes:read"),
+                    new Claim(KingdomIdentity.PermissionClaim, "engagements:closeout:complete"),
                     new Claim(ClaimTypes.Role, "Coordinator"),
+                    new Claim(ClaimTypes.Role, "EngagementDirector"),
                 ]);
                 break;
 
@@ -121,8 +124,39 @@ public static class EngagementsDemoRoles
         return new ClaimsPrincipal(new ClaimsIdentity(claims, KingdomIdentity.Scheme));
     }
 
-    public static string CurrentRole(ClaimsPrincipal principal) =>
-        Normalize(principal.FindFirstValue(RoleClaim));
+    public static string CurrentRole(ClaimsPrincipal principal)
+    {
+        var demoRole = principal.FindFirstValue(RoleClaim);
+        if (!string.IsNullOrWhiteSpace(demoRole))
+            return Normalize(demoRole);
+
+        if (principal.HasClaim(KingdomIdentity.TenantRoleClaim, "owner") ||
+            principal.HasClaim(KingdomIdentity.TenantRoleClaim, "administrator") ||
+            principal.IsInRole("organization-owner") ||
+            principal.IsInRole("organization-administrator"))
+        {
+            return Administrator;
+        }
+
+        var productRoles = principal.FindAll(KingdomIdentity.ProductRoleClaim)
+            .Select(claim => claim.Value)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        if (productRoles.Contains("engagements:administrator"))
+            return Administrator;
+        if (productRoles.Contains("engagements:director") ||
+            productRoles.Contains("engagements:coordinator") ||
+            productRoles.Contains("engagements:module-administrator"))
+            return Coordinator;
+        if (productRoles.Contains("engagements:executive") ||
+            productRoles.Contains("engagements:viewer"))
+            return Apostle;
+        if (productRoles.Contains("engagements:minister") ||
+            productRoles.Contains("engagements:module-member"))
+            return Minister;
+
+        return Minister;
+    }
 
     public static bool IsMinister(ClaimsPrincipal principal) =>
         string.Equals(CurrentRole(principal), Minister, StringComparison.OrdinalIgnoreCase);
@@ -133,7 +167,7 @@ public static class EngagementsDemoRoles
     public static bool CanUseBookingDesk(ClaimsPrincipal principal)
     {
         var role = CurrentRole(principal);
-        return role == Administrator || role == Coordinator || role == Apostle;
+        return role == Administrator || role == Coordinator;
     }
 
     public static bool CanViewAllEngagements(ClaimsPrincipal principal)
@@ -143,12 +177,15 @@ public static class EngagementsDemoRoles
     }
 
     public static bool CanViewFinancials(ClaimsPrincipal principal) =>
+        KingdomIdentity.CanDirectEngagements(principal) ||
         principal.HasClaim(KingdomIdentity.PermissionClaim, "engagements:financial:read");
 
     public static bool CanViewInternalNotes(ClaimsPrincipal principal) =>
+        KingdomIdentity.CanDirectEngagements(principal) ||
         principal.HasClaim(KingdomIdentity.PermissionClaim, "engagements:internal-notes:read");
 
     public static bool CanCompleteEngagements(ClaimsPrincipal principal) =>
+        KingdomIdentity.CanDirectEngagements(principal) ||
         principal.HasClaim(KingdomIdentity.PermissionClaim, "engagements:closeout:complete");
 
     public static IReadOnlySet<string> AssignedEngagements(ClaimsPrincipal principal) =>
@@ -163,7 +200,8 @@ public static class EngagementsDemoRoles
 
 public sealed class EngagementsDemoAccessMiddleware(
     RequestDelegate next,
-    IWebHostEnvironment environment)
+    IWebHostEnvironment environment,
+    IConfiguration configuration)
 {
     private static readonly Regex AssignmentPath = new(
         "^/api/engagements/assignments/(?<id>[0-9a-fA-F-]{36})(?<rest>/.*)?$",
@@ -171,9 +209,12 @@ public sealed class EngagementsDemoAccessMiddleware(
 
     public async Task InvokeAsync(
         HttpContext context,
-        EngagementsService engagements)
+        EngagementsService engagements,
+        EngagementResponsibilityService responsibilities)
     {
-        if (!environment.IsDevelopment() || HttpMethods.IsOptions(context.Request.Method))
+        if (!environment.IsDevelopment() ||
+            !configuration.GetValue("KingdomOS:Identity:DemoProfilesEnabled", false) ||
+            HttpMethods.IsOptions(context.Request.Method))
         {
             await next(context);
             return;
@@ -181,8 +222,8 @@ public sealed class EngagementsDemoAccessMiddleware(
 
         var path = context.Request.Path.Value ?? string.Empty;
 
-        // Coordinators can maintain the closeout record, but only the executive/admin
-        // persona may perform the irreversible demo completion action.
+        // Engagement completion is reserved for users with the explicit closeout permission.
+        // Courtney's engagement-director persona carries that permission.
         if (!EngagementsDemoRoles.CanCompleteEngagements(context.User) &&
             HttpMethods.IsPut(context.Request.Method) &&
             path.EndsWith("/closeout", StringComparison.OrdinalIgnoreCase) &&
@@ -251,11 +292,44 @@ public sealed class EngagementsDemoAccessMiddleware(
 
         if (!EngagementsDemoRoles.CanAccessAssignment(context.User, assignment.Summary))
         {
-            await ForbidAsync(context, "That engagement is not assigned to the current minister persona.");
-            return;
+            var laneKey = LaneKey(rest);
+            var ownsLane = laneKey is not null &&
+                await responsibilities.IsEffectiveOwnerAsync(
+                    KingdomIdentity.TenantId(context.User, context.Request),
+                    assignmentId,
+                    laneKey,
+                    KingdomIdentity.Subject(context.User, context.Request),
+                    context.RequestAborted);
+
+            if (!ownsLane)
+            {
+                await ForbidAsync(context, "That engagement responsibility is not assigned to the current team member.");
+                return;
+            }
         }
 
         await next(context);
+    }
+
+    private static string? LaneKey(string rest)
+    {
+        if (string.IsNullOrWhiteSpace(rest)) return null;
+
+        const string lanePrefix = "/lanes/";
+        if (rest.StartsWith(lanePrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            var value = rest[lanePrefix.Length..].Split('/', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+            return string.IsNullOrWhiteSpace(value) ? null : EngagementResponsibilityLanes.Normalize(value);
+        }
+
+        const string responsibilityPrefix = "/responsibilities/";
+        if (rest.StartsWith(responsibilityPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            var value = rest[responsibilityPrefix.Length..].Split('/', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+            return string.IsNullOrWhiteSpace(value) ? null : EngagementResponsibilityLanes.Normalize(value);
+        }
+
+        return null;
     }
 
     private static async Task<bool> RequestsCompletionAsync(HttpRequest request, CancellationToken cancellationToken)
@@ -290,7 +364,7 @@ public static class EngagementsDemoAccessEndpoints
 {
     public static IEndpointRouteBuilder MapEngagementsDemoAccessEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        var group = endpoints.MapGroup("/api/engagements").RequireAuthorization();
+        var group = endpoints.MapGroup("/api/engagements").RequireAuthorization("EngagementsAccess");
 
         group.MapGet("/demo-persona", (HttpContext context) =>
         {
@@ -302,6 +376,7 @@ public static class EngagementsDemoAccessEndpoints
                 canViewAllEngagements = EngagementsDemoRoles.CanViewAllEngagements(context.User),
                 canManageBookings = context.User.HasClaim(KingdomIdentity.PermissionClaim, "engagements:bookings:manage"),
                 canManageAssignments = KingdomIdentity.CanWriteEngagements(context.User),
+                canDirectEngagements = KingdomIdentity.CanDirectEngagements(context.User),
                 canViewFinancials = EngagementsDemoRoles.CanViewFinancials(context.User),
                 canViewInternalNotes = EngagementsDemoRoles.CanViewInternalNotes(context.User),
                 canCompleteEngagements = EngagementsDemoRoles.CanCompleteEngagements(context.User),
@@ -309,38 +384,125 @@ public static class EngagementsDemoAccessEndpoints
             });
         });
 
+        group.MapGet("/session", (HttpContext context) =>
+        {
+            if (!KingdomIdentity.HasEngagementsAccess(context.User))
+                return Results.Forbid();
+
+            var role = EngagementsDemoRoles.CurrentRole(context.User);
+            return Results.Ok(new
+            {
+                role,
+                name = context.User.Identity?.Name ?? "Engagements user",
+                subject = KingdomIdentity.Subject(context.User, context.Request),
+                tenantId = KingdomIdentity.TenantId(context.User, context.Request),
+                canViewAllEngagements = EngagementsDemoRoles.CanViewAllEngagements(context.User),
+                canManageBookings = EngagementsDemoRoles.CanUseBookingDesk(context.User),
+                canManageAssignments = KingdomIdentity.CanWriteEngagements(context.User),
+                canDirectEngagements = KingdomIdentity.CanDirectEngagements(context.User),
+                canViewFinancials = EngagementsDemoRoles.CanViewFinancials(context.User),
+                canViewInternalNotes = EngagementsDemoRoles.CanViewInternalNotes(context.User),
+                canCompleteEngagements = EngagementsDemoRoles.CanCompleteEngagements(context.User)
+            });
+        });
+
+
+
         group.MapGet("/my-assignments", async (
             HttpContext context,
             EngagementsService service,
+            EngagementResponsibilityService responsibilities,
             CancellationToken cancellationToken) =>
         {
-            var all = await service.GetAsync(
-                KingdomIdentity.TenantId(context.User, context.Request),
-                cancellationToken);
-            if (!EngagementsDemoRoles.IsMinister(context.User))
+            var tenantId = KingdomIdentity.TenantId(context.User, context.Request);
+            var all = await service.GetAsync(tenantId, cancellationToken);
+
+            if (KingdomIdentity.CanViewAllEngagements(context.User))
                 return Results.Ok(all);
 
-            var assigned = EngagementsDemoRoles.AssignedEngagements(context.User);
-            return Results.Ok(all.Where(item => assigned.Contains(item.ExternalAssignmentId)).ToArray());
+            var myWork = await responsibilities.GetMyWorkAsync(
+                tenantId,
+                KingdomIdentity.Subject(context.User, context.Request),
+                cancellationToken);
+            var ownedAssignmentIds = myWork
+                .Select(item => item.Assignment.Id)
+                .ToHashSet();
+
+            // Preserve the original local demo minister while real users are driven by
+            // standing responsibility ownership.
+            if (context.User.HasClaim(EngagementsDemoRoles.RoleClaim, EngagementsDemoRoles.Minister) &&
+                EngagementsDemoRoles.IsMinister(context.User))
+            {
+                var legacyAssigned = EngagementsDemoRoles.AssignedEngagements(context.User);
+                return Results.Ok(all.Where(item =>
+                    ownedAssignmentIds.Contains(item.Id) ||
+                    legacyAssigned.Contains(item.ExternalAssignmentId)).ToArray());
+            }
+
+            return Results.Ok(all.Where(item => ownedAssignmentIds.Contains(item.Id)).ToArray());
         });
 
         group.MapGet("/my-assignments/{id:guid}", async (
             Guid id,
             HttpContext context,
             EngagementsService service,
+            EngagementResponsibilityService responsibilities,
             CancellationToken cancellationToken) =>
         {
-            var item = await service.GetAsync(
-                KingdomIdentity.TenantId(context.User, context.Request),
-                id,
-                cancellationToken);
+            var tenantId = KingdomIdentity.TenantId(context.User, context.Request);
+            var item = await service.GetAsync(tenantId, id, cancellationToken);
             if (item is null) return Results.NotFound();
-            if (!EngagementsDemoRoles.CanAccessAssignment(context.User, item.Summary))
-                return Results.Forbid();
 
-            return Results.Ok(EngagementsDemoRoles.IsMinister(context.User)
-                ? item with { Notes = null }
-                : item);
+            if (KingdomIdentity.CanDirectEngagements(context.User))
+                return Results.Ok(item);
+
+            if (KingdomIdentity.CanViewAllEngagements(context.User))
+            {
+                return Results.Ok(item with
+                {
+                    Notes = null,
+                    Tasks = Array.Empty<EngagementTask>(),
+                    Documents = Array.Empty<EngagementDocument>()
+                });
+            }
+
+            var ownedLanes = await responsibilities.GetOwnedLaneKeysAsync(
+                tenantId,
+                id,
+                KingdomIdentity.Subject(context.User, context.Request),
+                cancellationToken);
+
+            if (ownedLanes.Count > 0)
+            {
+                var tasks = item.Tasks
+                    .Where(task => ownedLanes.Contains(
+                        EngagementResponsibilityLanes.Normalize(task.Category)))
+                    .ToArray();
+                var documents = item.Documents
+                    .Where(document =>
+                        ownedLanes.Contains("documents") ||
+                        ownedLanes.Contains(EngagementResponsibilityLanes.Normalize(document.Category)) ||
+                        (ownedLanes.Contains("finance") &&
+                         string.Equals(document.Category, "agreement", StringComparison.OrdinalIgnoreCase)))
+                    .ToArray();
+
+                return Results.Ok(item with
+                {
+                    Notes = null,
+                    Tasks = tasks,
+                    Documents = documents
+                });
+            }
+
+            if (context.User.HasClaim(EngagementsDemoRoles.RoleClaim, EngagementsDemoRoles.Minister) &&
+                EngagementsDemoRoles.IsMinister(context.User) &&
+                EngagementsDemoRoles.AssignedEngagements(context.User)
+                    .Contains(item.Summary.ExternalAssignmentId))
+            {
+                return Results.Ok(item with { Notes = null });
+            }
+
+            return Results.Forbid();
         });
 
         group.MapPost("/assignments/{id:guid}/archive", async (

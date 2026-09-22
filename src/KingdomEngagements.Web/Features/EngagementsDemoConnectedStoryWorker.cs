@@ -15,6 +15,9 @@ public sealed class EngagementsDemoConnectedStoryWorker(
     [
         "assignment-demo-001",
         "assignment-demo-002",
+        "assignment-demo-003",
+        "assignment-demo-004",
+        "assignment-demo-005",
         "assignment-demo-007"
     ];
 

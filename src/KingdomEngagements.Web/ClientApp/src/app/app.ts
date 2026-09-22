@@ -1,6 +1,7 @@
 import { AfterViewInit, Component, OnDestroy, OnInit, signal, ViewEncapsulation } from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
 import { EngagementsApiService } from './core/engagements-api.service';
+import { EngagementDemoRoleService } from './core/engagement-demo-role.service';
 import { DwcFormationStateService } from './core/dwc-formation-state.service';
 import { ProductInfo } from './core/models';
 import { HickmanItinerantPanelComponent } from './shared/hickman-itinerant-panel.component';
@@ -53,17 +54,23 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
                   <a class="eng-nav-link" [class.current]="isCurrent('/organization/dwc/my-group')" [href]="groupHref('/organization/dwc/my-group')">Member Preview</a>
                 }
               } @else if (isCtg()) {
-                <a class="eng-nav-link" [class.current]="isCurrent('/organization/ctg')" href="/organization/ctg">Overview</a>
-                <a class="eng-nav-link" [class.current]="isBookingDeskCurrent()" href="/organization/ctg/bookings">Booking Desk</a>
-                <a class="eng-nav-link" [class.current]="isCurrentPrefix('/assignments')" href="/assignments">Engagements</a>
-                <a class="eng-nav-link" [class.current]="isCurrent('/organization/ctg/programs')" href="/organization/ctg/programs">Events & Programs</a>
+                @if (roles.canManageAssignments()) {
+                  <a class="eng-nav-link" [class.current]="isCurrent('/organization/ctg/command-center')" href="/organization/ctg/command-center">Command Center</a>
+                  <a class="eng-nav-link" [class.current]="isBookingDeskCurrent()" href="/organization/ctg/bookings">Booking Desk</a>
+                  <a class="eng-nav-link" [class.current]="isCurrentPrefix('/organization/ctg/engagements')" href="/organization/ctg/engagements">Engagements</a>
+                  <a class="eng-nav-link" [class.current]="isCurrent('/organization/ctg/team')" href="/organization/ctg/team">Team</a>
+                  <a class="eng-nav-link" [class.current]="isCurrent('/organization/ctg/hosts')" href="/organization/ctg/hosts">Hosts</a>
+                  <a class="eng-nav-link" [class.current]="isCurrent('/organization/ctg/programs')" href="/organization/ctg/programs">Programs</a>
+                } @else {
+                  <a class="eng-nav-link" [class.current]="isCurrentPrefix('/organization/ctg/engagements')" href="/organization/ctg/engagements">Engagements</a>
+                }
               } @else {
                 <a class="eng-nav-link current" href="/organization/hey-king">Overview</a>
               }
             </nav>
 
             <div class="eng-modulebar__utilities">
-              @if (isCtg()) {
+              @if (isCtg() && roles.canManageBookings()) {
                 <a class="eng-start-action" [class.current]="isCurrent('/organization/ctg/start-invitation')" href="/organization/ctg/start-invitation">
                   <span aria-hidden="true">＋</span>
                   <span>Start Invitation</span>
@@ -72,7 +79,13 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
               @if (!isDwcMemberView()) {
                 <a class="eng-settings-link" [href]="(product()?.platformUrl || 'http://localhost:5100') + '/appearance'">Settings</a>
               }
-              <span class="eng-avatar" aria-label="Signed in as Michael Davis">MD</span>
+              <a
+                class="eng-avatar"
+                [href]="product()?.platformUrl || 'http://localhost:5100'"
+                [attr.aria-label]="'Account for ' + roles.persona().person"
+                title="Account">
+                {{ personaInitials() }}
+              </a>
             </div>
           </div>
         </header>
@@ -242,7 +255,7 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
       white-space:nowrap;
     }
 
-    .eng-avatar{margin-left:1px}
+    .eng-avatar{text-decoration:none;margin-left:1px}
 
     @media(max-width:1180px){
       .eng-modulebar{align-items:flex-start;flex-wrap:wrap;padding-top:10px;padding-bottom:9px}
@@ -279,6 +292,7 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
     private readonly api: EngagementsApiService,
     private readonly router: Router,
     readonly formationState: DwcFormationStateService,
+    readonly roles: EngagementDemoRoleService,
   ) {}
 
   ngOnInit(): void {
@@ -316,6 +330,15 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
       'eng-org-dwc',
       'eng-org-heyy',
     );
+  }
+
+  personaInitials(): string {
+    return this.roles.persona().person
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map(part => part[0]?.toUpperCase())
+      .join('') || 'CT';
   }
 
   isDwc(): boolean {

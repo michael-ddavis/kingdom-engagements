@@ -17,7 +17,10 @@ public sealed class EngagementsServiceTests
 
         using var database = new EngagementsDbContext(options);
 
-        Assert.Contains("20260805000000_InitialEngagementsSchema", database.Database.GetMigrations());
+        var migrations = database.Database.GetMigrations().ToArray();
+        Assert.Contains("20260805000000_InitialEngagementsSchema", migrations);
+        Assert.Contains("20260922090000_AddEngagementResponsibilities", migrations);
+        Assert.Contains("20260922094500_AddEngagementMediaAssets", migrations);
     }
 
     [Fact]

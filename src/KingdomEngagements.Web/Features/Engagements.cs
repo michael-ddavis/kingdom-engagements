@@ -12,6 +12,11 @@ public sealed class EngagementsDbContext(DbContextOptions<EngagementsDbContext> 
     public DbSet<EngagementTask> Tasks => Set<EngagementTask>();
     public DbSet<EngagementDocument> Documents => Set<EngagementDocument>();
     public DbSet<EngagementIntegrationReceipt> IntegrationReceipts => Set<EngagementIntegrationReceipt>();
+    public DbSet<StandingResponsibilityAssignment> StandingResponsibilityAssignments => Set<StandingResponsibilityAssignment>();
+    public DbSet<EngagementResponsibilityOverride> EngagementResponsibilityOverrides => Set<EngagementResponsibilityOverride>();
+    public DbSet<EngagementLaneProgress> EngagementLaneProgress => Set<EngagementLaneProgress>();
+    public DbSet<EngagementMediaAsset> MediaAssets => Set<EngagementMediaAsset>();
+    public DbSet<EngagementTeamMember> TeamMembers => Set<EngagementTeamMember>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -45,6 +50,7 @@ public sealed class EngagementsDbContext(DbContextOptions<EngagementsDbContext> 
         task.Property(x => x.Category).HasMaxLength(40).IsRequired();
         task.Property(x => x.Title).HasMaxLength(240).IsRequired();
         task.Property(x => x.Owner).HasMaxLength(180).IsRequired();
+        task.Property(x => x.OwnerSubject).HasMaxLength(180);
         task.Property(x => x.Status).HasMaxLength(40).IsRequired();
         task.Property(x => x.Detail).HasMaxLength(3000);
         task.HasIndex(x => new { x.AssignmentId, x.Category, x.Title }).IsUnique();
@@ -56,6 +62,69 @@ public sealed class EngagementsDbContext(DbContextOptions<EngagementsDbContext> 
         document.Property(x => x.Category).HasMaxLength(60).IsRequired();
         document.Property(x => x.Status).HasMaxLength(40).IsRequired();
         document.Property(x => x.StorageReference).HasMaxLength(1000);
+
+        var standingResponsibility = modelBuilder.Entity<StandingResponsibilityAssignment>();
+        standingResponsibility.ToTable("StandingResponsibilityAssignments");
+        standingResponsibility.HasKey(x => x.Id);
+        standingResponsibility.Property(x => x.LaneKey).HasMaxLength(80).IsRequired();
+        standingResponsibility.Property(x => x.UserSubject).HasMaxLength(180).IsRequired();
+        standingResponsibility.Property(x => x.DisplayName).HasMaxLength(180).IsRequired();
+        standingResponsibility.Property(x => x.Email).HasMaxLength(320);
+        standingResponsibility.Property(x => x.UpdatedBySubject).HasMaxLength(180).IsRequired();
+        standingResponsibility.Property(x => x.UpdatedByName).HasMaxLength(180).IsRequired();
+        standingResponsibility.HasIndex(x => new { x.TenantId, x.LaneKey }).IsUnique();
+
+        var responsibilityOverride = modelBuilder.Entity<EngagementResponsibilityOverride>();
+        responsibilityOverride.ToTable("EngagementResponsibilityOverrides");
+        responsibilityOverride.HasKey(x => x.Id);
+        responsibilityOverride.Property(x => x.LaneKey).HasMaxLength(80).IsRequired();
+        responsibilityOverride.Property(x => x.UserSubject).HasMaxLength(180).IsRequired();
+        responsibilityOverride.Property(x => x.DisplayName).HasMaxLength(180).IsRequired();
+        responsibilityOverride.Property(x => x.Email).HasMaxLength(320);
+        responsibilityOverride.Property(x => x.UpdatedBySubject).HasMaxLength(180).IsRequired();
+        responsibilityOverride.Property(x => x.UpdatedByName).HasMaxLength(180).IsRequired();
+        responsibilityOverride.HasIndex(x => new { x.AssignmentId, x.LaneKey }).IsUnique();
+        responsibilityOverride.HasOne(x => x.Assignment).WithMany()
+            .HasForeignKey(x => x.AssignmentId).OnDelete(DeleteBehavior.Cascade);
+
+        var laneProgress = modelBuilder.Entity<EngagementLaneProgress>();
+        laneProgress.ToTable("EngagementLaneProgress");
+        laneProgress.HasKey(x => x.Id);
+        laneProgress.Property(x => x.LaneKey).HasMaxLength(80).IsRequired();
+        laneProgress.Property(x => x.Status).HasMaxLength(40).IsRequired();
+        laneProgress.Property(x => x.Detail).HasMaxLength(3000);
+        laneProgress.Property(x => x.UpdatedBySubject).HasMaxLength(180).IsRequired();
+        laneProgress.Property(x => x.UpdatedByName).HasMaxLength(180).IsRequired();
+        laneProgress.Property(x => x.CompletedBySubject).HasMaxLength(180);
+        laneProgress.Property(x => x.CompletedByName).HasMaxLength(180);
+        laneProgress.HasIndex(x => new { x.AssignmentId, x.LaneKey }).IsUnique();
+        laneProgress.HasOne(x => x.Assignment).WithMany()
+            .HasForeignKey(x => x.AssignmentId).OnDelete(DeleteBehavior.Cascade);
+
+        var teamMember = modelBuilder.Entity<EngagementTeamMember>();
+        teamMember.ToTable("EngagementTeamMembers");
+        teamMember.HasKey(x => x.Id);
+        teamMember.Property(x => x.DisplayName).HasMaxLength(180).IsRequired();
+        teamMember.Property(x => x.AddedBySubject).HasMaxLength(180).IsRequired();
+        teamMember.Property(x => x.AddedByName).HasMaxLength(180).IsRequired();
+        teamMember.HasIndex(x => new { x.TenantId, x.AccountId }).IsUnique();
+
+        var mediaAsset = modelBuilder.Entity<EngagementMediaAsset>();
+        mediaAsset.ToTable("EngagementMediaAssets");
+        mediaAsset.HasKey(x => x.Id);
+        mediaAsset.Property(x => x.Name).HasMaxLength(260).IsRequired();
+        mediaAsset.Property(x => x.AssetType).HasMaxLength(40).IsRequired();
+        mediaAsset.Property(x => x.Purpose).HasMaxLength(180).IsRequired();
+        mediaAsset.Property(x => x.Status).HasMaxLength(40).IsRequired();
+        mediaAsset.Property(x => x.Source).HasMaxLength(40).IsRequired();
+        mediaAsset.Property(x => x.StorageReference).HasMaxLength(1000);
+        mediaAsset.Property(x => x.ExternalUrl).HasMaxLength(2000);
+        mediaAsset.Property(x => x.Notes).HasMaxLength(4000);
+        mediaAsset.Property(x => x.UpdatedBySubject).HasMaxLength(180).IsRequired();
+        mediaAsset.Property(x => x.UpdatedByName).HasMaxLength(180).IsRequired();
+        mediaAsset.HasIndex(x => new { x.AssignmentId, x.Status });
+        mediaAsset.HasOne(x => x.Assignment).WithMany()
+            .HasForeignKey(x => x.AssignmentId).OnDelete(DeleteBehavior.Cascade);
 
         var receipt = modelBuilder.Entity<EngagementIntegrationReceipt>();
         receipt.ToTable("EngagementIntegrationReceipts");
@@ -99,6 +168,7 @@ public sealed class EngagementTask
     public string Category { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
     public string Owner { get; set; } = string.Empty;
+    public string? OwnerSubject { get; set; }
     public string Status { get; set; } = "open";
     public string? Detail { get; set; }
     public DateTimeOffset? DueAtUtc { get; set; }
@@ -158,8 +228,14 @@ public sealed record CreateEngagementTaskRequest(
     string Title,
     string Owner,
     string? Detail,
-    DateTimeOffset? DueAtUtc);
-public sealed record UpdateEngagementTaskRequest(string Status, string? Owner, string? Detail, DateTimeOffset? DueAtUtc);
+    DateTimeOffset? DueAtUtc,
+    string? OwnerSubject = null);
+public sealed record UpdateEngagementTaskRequest(
+    string Status,
+    string? Owner,
+    string? Detail,
+    DateTimeOffset? DueAtUtc,
+    string? OwnerSubject = null);
 public sealed record CreateEngagementDocumentRequest(string Name, string Category, string Status, string? StorageReference);
 
 public sealed record IntegrationEventEnvelope(
@@ -344,6 +420,7 @@ public sealed class EngagementsService(EngagementsDbContext database)
         {
             Id = Guid.NewGuid(), Category = Required(request.Category, nameof(request.Category)).ToLowerInvariant(),
             Title = Required(request.Title, nameof(request.Title)), Owner = Required(request.Owner, nameof(request.Owner)),
+            OwnerSubject = string.IsNullOrWhiteSpace(request.OwnerSubject) ? null : request.OwnerSubject.Trim(),
             Detail = request.Detail?.Trim(), DueAtUtc = request.DueAtUtc, Status = "open", UpdatedAtUtc = DateTimeOffset.UtcNow
         });
         assignment.UpdatedAtUtc = DateTimeOffset.UtcNow;
@@ -359,6 +436,8 @@ public sealed class EngagementsService(EngagementsDbContext database)
         if (assignment is null || task is null) return null;
         task.Status = ValidateWorkflow(request.Status, nameof(request.Status));
         if (!string.IsNullOrWhiteSpace(request.Owner)) task.Owner = request.Owner.Trim();
+        if (request.OwnerSubject is not null)
+            task.OwnerSubject = string.IsNullOrWhiteSpace(request.OwnerSubject) ? null : request.OwnerSubject.Trim();
         task.Detail = request.Detail?.Trim();
         task.DueAtUtc = request.DueAtUtc;
         task.UpdatedAtUtc = DateTimeOffset.UtcNow;
@@ -489,12 +568,59 @@ public static class EngagementsEndpoints
     public static IEndpointRouteBuilder MapEngagementsEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/engagements").RequireAuthorization();
-        group.MapGet("/assignments", async (HttpContext context, EngagementsService service, CancellationToken ct) =>
-            Results.Ok(await service.GetAsync(KingdomIdentity.TenantId(context.User, context.Request), ct)));
-        group.MapGet("/assignments/{id:guid}", async (Guid id, HttpContext context, EngagementsService service, CancellationToken ct) =>
+        group.MapGet("/assignments", async (
+            HttpContext context,
+            EngagementsService service,
+            EngagementResponsibilityService responsibilities,
+            CancellationToken ct) =>
         {
-            var item = await service.GetAsync(KingdomIdentity.TenantId(context.User, context.Request), id, ct);
-            return item is null ? Results.NotFound() : Results.Ok(item);
+            var tenantId = KingdomIdentity.TenantId(context.User, context.Request);
+            var assignments = await service.GetAsync(tenantId, ct);
+            if (KingdomIdentity.CanViewAllEngagements(context.User))
+                return Results.Ok(assignments);
+
+            var myWork = await responsibilities.GetMyWorkAsync(
+                tenantId,
+                KingdomIdentity.Subject(context.User, context.Request),
+                ct);
+            var allowed = myWork
+                .Select(item => item.Assignment.Id)
+                .ToHashSet();
+
+            return Results.Ok(assignments.Where(item => allowed.Contains(item.Id)).ToArray());
+        });
+        group.MapGet("/assignments/{id:guid}", async (
+            Guid id,
+            HttpContext context,
+            EngagementsService service,
+            EngagementResponsibilityService responsibilities,
+            CancellationToken ct) =>
+        {
+            var tenantId = KingdomIdentity.TenantId(context.User, context.Request);
+            var item = await service.GetAsync(tenantId, id, ct);
+            if (item is null) return Results.NotFound();
+
+            if (KingdomIdentity.CanDirectEngagements(context.User))
+                return Results.Ok(item);
+
+            if (KingdomIdentity.CanViewAllEngagements(context.User))
+            {
+                return Results.Ok(item with
+                {
+                    Notes = null,
+                    Tasks = Array.Empty<EngagementTask>(),
+                    Documents = Array.Empty<EngagementDocument>()
+                });
+            }
+
+            var ownedLanes = await responsibilities.GetOwnedLaneKeysAsync(
+                tenantId,
+                id,
+                KingdomIdentity.Subject(context.User, context.Request),
+                ct);
+            if (ownedLanes.Count == 0) return Results.Forbid();
+
+            return Results.Ok(ScopeDetailsForTeamMember(item, ownedLanes));
         });
         group.MapPost("/assignments", async (CreateEngagementRequest request, HttpContext context, EngagementsService service, CancellationToken ct) =>
         {
@@ -511,24 +637,102 @@ public static class EngagementsEndpoints
             }
             catch (ArgumentException exception) { return Results.ValidationProblem(new Dictionary<string, string[]> { ["assignment"] = [exception.Message] }); }
         }).RequireAuthorization("EngagementsWrite");
-        group.MapPost("/assignments/{id:guid}/tasks", async (Guid id, CreateEngagementTaskRequest request, HttpContext context, EngagementsService service, CancellationToken ct) =>
+        group.MapPost("/assignments/{id:guid}/tasks", async (
+            Guid id,
+            CreateEngagementTaskRequest request,
+            HttpContext context,
+            EngagementsService service,
+            EngagementResponsibilityService responsibilities,
+            CancellationToken ct) =>
         {
             try
             {
-                var item = await service.AddTaskAsync(KingdomIdentity.TenantId(context.User, context.Request), id, request, ct);
+                var tenantId = KingdomIdentity.TenantId(context.User, context.Request);
+
+                try
+                {
+                    var lane = await responsibilities.GetLaneAsync(
+                        tenantId,
+                        id,
+                        request.Category,
+                        ct);
+                    if (lane?.Owner is not null)
+                    {
+                        request = request with
+                        {
+                            Owner = lane.Owner.DisplayName,
+                            OwnerSubject = lane.Owner.UserSubject
+                        };
+                    }
+                }
+                catch (ArgumentException)
+                {
+                    // Legacy task categories can continue using the explicitly supplied owner.
+                }
+
+                var item = await service.AddTaskAsync(tenantId, id, request, ct);
                 return item is null ? Results.NotFound() : Results.Ok(item);
             }
-            catch (ArgumentException exception) { return Results.ValidationProblem(new Dictionary<string, string[]> { ["task"] = [exception.Message] }); }
+            catch (ArgumentException exception)
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["task"] = [exception.Message] });
+            }
         }).RequireAuthorization("EngagementsWrite");
-        group.MapPut("/assignments/{id:guid}/tasks/{taskId:guid}", async (Guid id, Guid taskId, UpdateEngagementTaskRequest request, HttpContext context, EngagementsService service, CancellationToken ct) =>
+        group.MapPut("/assignments/{id:guid}/tasks/{taskId:guid}", async (
+            Guid id,
+            Guid taskId,
+            UpdateEngagementTaskRequest request,
+            HttpContext context,
+            EngagementsService service,
+            EngagementResponsibilityService responsibilities,
+            CancellationToken ct) =>
         {
             try
             {
-                var item = await service.UpdateTaskAsync(KingdomIdentity.TenantId(context.User, context.Request), id, taskId, request, ct);
+                var tenantId = KingdomIdentity.TenantId(context.User, context.Request);
+                var assignment = await service.GetAsync(tenantId, id, ct);
+                if (assignment is null) return Results.NotFound();
+
+                var existingTask = assignment.Tasks.SingleOrDefault(task => task.Id == taskId);
+                if (existingTask is null) return Results.NotFound();
+
+                var isDirector = KingdomIdentity.CanDirectEngagements(context.User);
+                if (!isDirector)
+                {
+                    var subject = KingdomIdentity.Subject(context.User, context.Request);
+                    bool ownsLane;
+                    try
+                    {
+                        ownsLane = await responsibilities.IsEffectiveOwnerAsync(
+                            tenantId,
+                            id,
+                            existingTask.Category,
+                            subject,
+                            ct);
+                    }
+                    catch (ArgumentException)
+                    {
+                        ownsLane = false;
+                    }
+
+                    if (!ownsLane) return Results.Forbid();
+
+                    request = new UpdateEngagementTaskRequest(
+                        request.Status,
+                        existingTask.Owner,
+                        request.Detail,
+                        existingTask.DueAtUtc,
+                        existingTask.OwnerSubject);
+                }
+
+                var item = await service.UpdateTaskAsync(tenantId, id, taskId, request, ct);
                 return item is null ? Results.NotFound() : Results.Ok(item);
             }
-            catch (ArgumentException exception) { return Results.ValidationProblem(new Dictionary<string, string[]> { ["task"] = [exception.Message] }); }
-        }).RequireAuthorization("EngagementsWrite");
+            catch (ArgumentException exception)
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["task"] = [exception.Message] });
+            }
+        });
         group.MapPost("/assignments/{id:guid}/documents", async (Guid id, CreateEngagementDocumentRequest request, HttpContext context, EngagementsService service, CancellationToken ct) =>
         {
             try
@@ -538,10 +742,28 @@ public static class EngagementsEndpoints
             }
             catch (ArgumentException exception) { return Results.ValidationProblem(new Dictionary<string, string[]> { ["document"] = [exception.Message] }); }
         }).RequireAuthorization("EngagementsWrite");
-        group.MapGet("/assignments/{id:guid}/documents/{documentId:guid}", async (Guid id, Guid documentId, HttpContext context, EngagementsService service, CancellationToken ct) =>
+        group.MapGet("/assignments/{id:guid}/documents/{documentId:guid}", async (
+            Guid id,
+            Guid documentId,
+            HttpContext context,
+            EngagementsService service,
+            EngagementResponsibilityService responsibilities,
+            CancellationToken ct) =>
         {
-            var item = await service.GetDocumentAsync(KingdomIdentity.TenantId(context.User, context.Request), id, documentId, ct);
+            var tenantId = KingdomIdentity.TenantId(context.User, context.Request);
+            var item = await service.GetDocumentAsync(tenantId, id, documentId, ct);
             if (item is null) return Results.NotFound();
+
+            if (!KingdomIdentity.CanDirectEngagements(context.User))
+            {
+                var ownedLanes = await responsibilities.GetOwnedLaneKeysAsync(
+                    tenantId,
+                    id,
+                    KingdomIdentity.Subject(context.User, context.Request),
+                    ct);
+                if (!CanViewDocument(item.Category, ownedLanes))
+                    return Results.Forbid();
+            }
             var title = WebUtility.HtmlEncode(item.Name);
             var category = WebUtility.HtmlEncode(item.Category.Replace('-', ' '));
             var status = WebUtility.HtmlEncode(item.Status.Replace('-', ' '));
@@ -578,5 +800,37 @@ public static class EngagementsEndpoints
             }
         }).AllowAnonymous();
         return endpoints;
+    }
+
+    private static EngagementDetails ScopeDetailsForTeamMember(
+        EngagementDetails item,
+        IReadOnlySet<string> ownedLanes)
+    {
+        var tasks = item.Tasks
+            .Where(task => ownedLanes.Contains(EngagementResponsibilityLanes.Normalize(task.Category)))
+            .ToArray();
+        var documents = item.Documents
+            .Where(document => CanViewDocument(document.Category, ownedLanes))
+            .ToArray();
+
+        return item with
+        {
+            Notes = null,
+            Tasks = tasks,
+            Documents = documents
+        };
+    }
+
+    private static bool CanViewDocument(
+        string category,
+        IReadOnlySet<string> ownedLanes)
+    {
+        if (ownedLanes.Contains("documents")) return true;
+
+        var normalized = EngagementResponsibilityLanes.Normalize(category);
+        if (ownedLanes.Contains(normalized)) return true;
+
+        return string.Equals(category, "agreement", StringComparison.OrdinalIgnoreCase) &&
+               ownedLanes.Contains("finance");
     }
 }

@@ -35,6 +35,7 @@ export interface EngagementTask {
   category: string;
   title: string;
   owner: string;
+  ownerSubject?: string | null;
   status: string;
   detail: string | null;
   dueAtUtc: string | null;
@@ -80,10 +81,25 @@ export interface HostContact {
 export interface HostCoordinationDocument {
   id: string;
   fileName: string;
+  category: string;
   contentType: string;
   length: number;
   uploadedAtUtc: string;
 }
+
+export interface HostCoordinationMessage {
+  id: string;
+  senderType: 'host' | 'ministry' | string;
+  senderName: string;
+  message: string;
+  createdAtUtc: string;
+}
+
+export interface HostCoordinationThread {
+  isClosed: boolean;
+  messages: readonly HostCoordinationMessage[];
+}
+
 
 export interface HostCoordinationDetails {
   assignmentId: string;
@@ -269,4 +285,254 @@ export interface CareNetworkState {
   selectedPartnerByResponse: Record<string, number>;
   partners: readonly CarePartner[];
   referrals: readonly CareReferral[];
+}
+
+
+export interface EngagementDirectoryPerson {
+  accountId: string;
+  displayName: string;
+}
+
+export interface EngagementTeamMember {
+  id: string;
+  tenantId: string;
+  accountId: string;
+  displayName: string;
+  isActive: boolean;
+  addedBySubject: string;
+  addedByName: string;
+  addedAtUtc: string;
+}
+
+export interface ResponsibilityLaneDefinition {
+  key: string;
+  label: string;
+  group: string;
+  defaultApplicable: boolean;
+  description: string;
+}
+
+export interface ResponsibilityOwner {
+  userSubject: string;
+  displayName: string;
+  email: string | null;
+  source: 'standing' | 'engagement' | string;
+}
+
+export interface ResponsibilityLaneState {
+  key: string;
+  label: string;
+  group: string;
+  description: string;
+  isApplicable: boolean;
+  status: string;
+  detail: string | null;
+  dueAtUtc: string | null;
+  isOverdue: boolean;
+  owner: ResponsibilityOwner | null;
+  updatedByName: string | null;
+  updatedAtUtc: string | null;
+  completedByName: string | null;
+  completedAtUtc: string | null;
+}
+
+export interface StandingResponsibilityAssignment {
+  id: string;
+  tenantId: string;
+  laneKey: string;
+  userSubject: string;
+  displayName: string;
+  email: string | null;
+  isActive: boolean;
+  updatedBySubject: string;
+  updatedByName: string;
+  updatedAtUtc: string;
+}
+
+export interface EngagementResponsibilitySnapshot {
+  assignment: EngagementSummary;
+  lanes: readonly ResponsibilityLaneState[];
+  responsibilityReadinessPercent: number;
+  hostCoordinationPercent: number;
+  completedLaneCount: number;
+  applicableLaneCount: number;
+  overdueLaneCount: number;
+  unassignedLaneCount: number;
+}
+
+export interface MyResponsibilityWorkItem {
+  assignment: EngagementSummary;
+  lane: ResponsibilityLaneState;
+}
+
+
+export interface LaneContactView {
+  type: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  editable: boolean;
+}
+
+export interface TravelLaneDetails {
+  assignmentId: string;
+  lane: ResponsibilityLaneState;
+  outboundAirline: string | null;
+  outboundFlightNumber: string | null;
+  outboundConfirmationNumber: string | null;
+  outboundDepartureAirport: string | null;
+  outboundArrivalAirport: string | null;
+  outboundDepartsAtUtc: string | null;
+  outboundArrivesAtUtc: string | null;
+  returnAirline: string | null;
+  returnFlightNumber: string | null;
+  returnConfirmationNumber: string | null;
+  returnDepartureAirport: string | null;
+  returnArrivalAirport: string | null;
+  returnDepartsAtUtc: string | null;
+  returnArrivesAtUtc: string | null;
+  contacts: readonly LaneContactView[];
+  documents: readonly LaneDocument[];
+}
+
+export interface LodgingLaneDetails {
+  assignmentId: string;
+  lane: ResponsibilityLaneState;
+  hotelName: string | null;
+  hotelAddress: string | null;
+  hotelConfirmationNumber: string | null;
+  hotelCheckInAtUtc: string | null;
+  hotelCheckOutAtUtc: string | null;
+  contacts: readonly LaneContactView[];
+  documents: readonly LaneDocument[];
+}
+
+export interface TransportationLaneDetails {
+  assignmentId: string;
+  lane: ResponsibilityLaneState;
+  transportationPlan: string | null;
+  pickupContactName: string | null;
+  pickupContactPhone: string | null;
+  contacts: readonly LaneContactView[];
+  documents: readonly LaneDocument[];
+}
+
+export interface ProgramLaneDetails {
+  assignmentId: string;
+  lane: ResponsibilityLaneState;
+  schedule: readonly HostScheduleItem[];
+  contacts: readonly LaneContactView[];
+  documents: readonly LaneDocument[];
+}
+
+export interface MediaAsset {
+  id: string;
+  assignmentId: string;
+  name: string;
+  assetType: string;
+  purpose: string;
+  status: string;
+  source: string;
+  storageReference: string | null;
+  externalUrl: string | null;
+  notes: string | null;
+  updatedByName: string;
+  updatedAtUtc: string;
+  createdAtUtc: string;
+}
+
+export interface LaneDocument {
+  id: string;
+  name: string;
+  category: string;
+  status: string;
+  storageReference: string | null;
+  updatedAtUtc: string;
+}
+
+export interface MediaLaneDetails {
+  assignmentId: string;
+  lane: ResponsibilityLaneState;
+  promotionRequirements: string | null;
+  contacts: readonly LaneContactView[];
+  assets: readonly MediaAsset[];
+  documents: readonly LaneDocument[];
+}
+
+export interface DocumentsLaneDetails {
+  assignmentId: string;
+  lane: ResponsibilityLaneState;
+  documents: readonly LaneDocument[];
+}
+
+export interface FinanceLaneDetails {
+  assignmentId: string;
+  lane: ResponsibilityLaneState;
+  travelCoverageStatus: string;
+  lodgingCoverageStatus: string;
+  travelBookedBy: string;
+  honorariumStatus: string;
+  honorariumAmount: number;
+  honorariumCurrency: string;
+  paymentStatus: string;
+}
+
+export interface MinistryPreparationLaneDetails {
+  assignmentId: string;
+  lane: ResponsibilityLaneState;
+  prayerFocus: string | null;
+  ministryPreparationNotes: string | null;
+}
+
+export interface HospitalityLaneDetails {
+  assignmentId: string;
+  lane: ResponsibilityLaneState;
+  hospitalityNotes: string | null;
+  contacts: readonly LaneContactView[];
+  documents: readonly LaneDocument[];
+}
+
+export interface HostCoordinationLaneDetails {
+  assignmentId: string;
+  lane: ResponsibilityLaneState;
+  coordinationStatus: string;
+  submittedAtUtc: string | null;
+  hostNotes: string | null;
+  contacts: readonly LaneContactView[];
+  documents: readonly LaneDocument[];
+}
+
+export interface ExecutiveEngagementBrief {
+  assignmentId: string;
+  termsStatus: string;
+  coordinationStatus: string;
+  coordinationSubmittedAtUtc: string | null;
+  travel: {
+    outboundAirline: string | null;
+    outboundFlightNumber: string | null;
+    outboundDepartureAirport: string | null;
+    outboundArrivalAirport: string | null;
+    outboundDepartsAtUtc: string | null;
+    returnAirline: string | null;
+    returnFlightNumber: string | null;
+    returnDepartureAirport: string | null;
+    returnArrivalAirport: string | null;
+    returnDepartsAtUtc: string | null;
+  };
+  lodging: {
+    hotelName: string | null;
+    hotelAddress: string | null;
+    hotelCheckInAtUtc: string | null;
+    hotelCheckOutAtUtc: string | null;
+  };
+  transportation: {
+    transportationPlan: string | null;
+    pickupContactName: string | null;
+    pickupContactPhone: string | null;
+  };
+  schedule: readonly HostScheduleItem[];
+  contacts: readonly HostContact[];
+  prayerFocus: string | null;
+  readiness: AssignmentReadinessRadar;
+  activity: readonly AssignmentActivityItem[];
 }

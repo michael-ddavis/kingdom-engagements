@@ -295,6 +295,9 @@ public sealed class EngagementsDemoDepthWorker(
         {
             var value when value.Contains("Atlanta", StringComparison.OrdinalIgnoreCase) => new("ATL", "DL2174", "DL2175", "KLG7A2", "Hyatt Regency Atlanta", "265 Peachtree St NE, Atlanta, GA"),
             var value when value.Contains("Charlotte", StringComparison.OrdinalIgnoreCase) => new("CLT", "DL2310", "DL2309", "WPS8C4", "JW Marriott Charlotte", "600 S College St, Charlotte, NC"),
+            var value when value.Contains("London", StringComparison.OrdinalIgnoreCase) => new("LHR", "VS022", "VS021", "GCS4L8", "The Langham London", "1C Portland Pl, London"),
+            var value when value.Contains("Nairobi", StringComparison.OrdinalIgnoreCase) => new("NBO", "KQ003", "KQ002", "RBC7N2", "Villa Rosa Kempinski", "Chiromo Rd, Nairobi"),
+            var value when value.Contains("Accra", StringComparison.OrdinalIgnoreCase) => new("ACC", "DL156", "DL157", "KIG5A1", "Kempinski Hotel Gold Coast City", "Ministries, Gamel Abdul Nasser Ave, Accra"),
             var value when value.Contains("Dallas", StringComparison.OrdinalIgnoreCase) => new("DFW", "DL0821", "DL0828", "ALI9D5", "Omni Dallas Hotel", "555 S Lamar St, Dallas, TX"),
             var value when value.Contains("Richmond", StringComparison.OrdinalIgnoreCase) => new("RIC", "GROUND", "GROUND", "RPG2V6", "The Jefferson Hotel", "101 W Franklin St, Richmond, VA"),
             var value when value.Contains("Orlando", StringComparison.OrdinalIgnoreCase) => new("MCO", "DL1284", "DL1291", "GIC4F7", "Hyatt Regency Orlando", "9801 International Dr, Orlando, FL"),

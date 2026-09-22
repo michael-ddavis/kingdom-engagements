@@ -322,7 +322,8 @@ public static class EngagementCompletionEndpoints
 {
     public static IEndpointRouteBuilder MapEngagementCompletionEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        var group = endpoints.MapGroup("/api/engagements/assignments").RequireAuthorization();
+        var group = endpoints.MapGroup("/api/engagements/assignments")
+            .RequireAuthorization("EngagementsDirect");
         group.MapGet("/{id:guid}/completion", async (Guid id, HttpContext context, EngagementCompletionService service, CancellationToken ct) =>
         {
             var item = await service.GetAsync(KingdomIdentity.TenantId(context.User, context.Request), id, ct);

@@ -15,6 +15,7 @@ public sealed class EngagementsDemoRoleTests
 
         Assert.Equal(EngagementsDemoRoles.Administrator, EngagementsDemoRoles.CurrentRole(principal));
         Assert.True(KingdomIdentity.CanWriteEngagements(principal));
+        Assert.True(KingdomIdentity.CanDirectEngagements(principal));
         Assert.True(EngagementsDemoRoles.CanUseBookingDesk(principal));
         Assert.True(EngagementsDemoRoles.CanViewAllEngagements(principal));
         Assert.True(EngagementsDemoRoles.CanViewFinancials(principal));
@@ -32,6 +33,7 @@ public sealed class EngagementsDemoRoleTests
 
         Assert.Equal(EngagementsDemoRoles.Coordinator, EngagementsDemoRoles.CurrentRole(principal));
         Assert.True(KingdomIdentity.CanWriteEngagements(principal));
+        Assert.True(KingdomIdentity.CanDirectEngagements(principal));
         Assert.True(EngagementsDemoRoles.CanUseBookingDesk(principal));
         Assert.True(EngagementsDemoRoles.CanViewAllEngagements(principal));
         Assert.True(EngagementsDemoRoles.CanViewFinancials(principal));

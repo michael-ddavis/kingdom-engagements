@@ -85,8 +85,14 @@ public sealed class EngagementPreparationLifecycleTests
         fixture.Engagements.ChangeTracker.Clear();
 
         var document = await fixture.PreparationService.AddDocumentAsync(
-            accepted.CoordinationToken!, "final-schedule.pdf", "application/pdf", [1, 2, 3, 4], CancellationToken.None);
+            accepted.CoordinationToken!,
+            "final-schedule.pdf",
+            "application/pdf",
+            [1, 2, 3, 4],
+            "program",
+            CancellationToken.None);
         Assert.NotNull(document);
+        Assert.Equal("program", document.Category);
         fixture.Engagements.ChangeTracker.Clear();
 
         var assignment = await fixture.Engagements.Assignments.Include(x => x.Tasks).Include(x => x.Documents).SingleAsync(x => x.Id == assignmentId);
@@ -98,7 +104,11 @@ public sealed class EngagementPreparationLifecycleTests
         Assert.Equal("Pastor Jordan Ellis", assignment.HostContactName);
         Assert.Contains(assignment.Tasks, x => x.Title == "Complete host coordination" && x.Status == "complete");
         Assert.Contains(assignment.Tasks, x => x.Title == "Confirm travel and lodging plan" && x.Status == "complete");
-        Assert.Contains(assignment.Documents, x => x.Name == "final-schedule.pdf" && x.Status == "received");
+        Assert.Contains(
+            assignment.Documents,
+            x => x.Name == "final-schedule.pdf" &&
+                 x.Category == "program" &&
+                 x.Status == "received");
     }
 
     [Fact]

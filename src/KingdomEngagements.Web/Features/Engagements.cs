@@ -16,6 +16,7 @@ public sealed class EngagementsDbContext(DbContextOptions<EngagementsDbContext> 
     public DbSet<EngagementResponsibilityOverride> EngagementResponsibilityOverrides => Set<EngagementResponsibilityOverride>();
     public DbSet<EngagementLaneProgress> EngagementLaneProgress => Set<EngagementLaneProgress>();
     public DbSet<EngagementMediaAsset> MediaAssets => Set<EngagementMediaAsset>();
+    public DbSet<EngagementTeamMember> TeamMembers => Set<EngagementTeamMember>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -99,6 +100,14 @@ public sealed class EngagementsDbContext(DbContextOptions<EngagementsDbContext> 
         laneProgress.HasIndex(x => new { x.AssignmentId, x.LaneKey }).IsUnique();
         laneProgress.HasOne(x => x.Assignment).WithMany()
             .HasForeignKey(x => x.AssignmentId).OnDelete(DeleteBehavior.Cascade);
+
+        var teamMember = modelBuilder.Entity<EngagementTeamMember>();
+        teamMember.ToTable("EngagementTeamMembers");
+        teamMember.HasKey(x => x.Id);
+        teamMember.Property(x => x.DisplayName).HasMaxLength(180).IsRequired();
+        teamMember.Property(x => x.AddedBySubject).HasMaxLength(180).IsRequired();
+        teamMember.Property(x => x.AddedByName).HasMaxLength(180).IsRequired();
+        teamMember.HasIndex(x => new { x.TenantId, x.AccountId }).IsUnique();
 
         var mediaAsset = modelBuilder.Entity<EngagementMediaAsset>();
         mediaAsset.ToTable("EngagementMediaAssets");

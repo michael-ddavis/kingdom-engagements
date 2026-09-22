@@ -111,7 +111,7 @@ interface HostActivityPreview {
                   @for (snapshot of boardSnapshots(); track snapshot.assignment.id) {
                     <tr>
                       <td class="engagement-cell">
-                        <a [routerLink]="['/assignments', snapshot.assignment.id]">
+                        <a [routerLink]="['/organization/ctg/engagements', snapshot.assignment.id]">
                           <strong>{{ snapshot.assignment.title }}</strong>
                           <span>{{ snapshot.assignment.hostOrganization }}</span>
                           <small>{{ dateLabel(snapshot.assignment.startsAtUtc) }} · {{ snapshot.assignment.location || 'Location pending' }}</small>
@@ -125,7 +125,7 @@ interface HostActivityPreview {
                               [class.lane-cell--danger]="laneItem.isOverdue || laneItem.status === 'blocked'"
                               [class.lane-cell--waiting]="laneItem.status === 'waiting-on-host'"
                               [class.lane-cell--complete]="laneItem.status === 'complete'"
-                              [routerLink]="['/assignments', snapshot.assignment.id]"
+                              [routerLink]="['/organization/ctg/engagements', snapshot.assignment.id]"
                               [queryParams]="{ lane: column.key }">
                               <strong>{{ laneStatusLabel(laneItem) }}</strong>
                               <span>{{ laneItem.owner?.displayName || 'Unassigned' }}</span>
@@ -137,7 +137,7 @@ interface HostActivityPreview {
                         }
                       }
                       <td>
-                        <a class="overall-cell" [routerLink]="['/assignments', snapshot.assignment.id]">
+                        <a class="overall-cell" [routerLink]="['/organization/ctg/engagements', snapshot.assignment.id]">
                           <strong>{{ snapshot.responsibilityReadinessPercent }}%</strong>
                           <span>{{ snapshot.completedLaneCount }}/{{ snapshot.applicableLaneCount }} complete</span>
                           @if (snapshot.overdueLaneCount > 0) {
@@ -168,7 +168,7 @@ interface HostActivityPreview {
             } @else {
               <div class="attention-list">
                 @for (item of attentionItems().slice(0, 10); track item.assignmentId + item.lane.key) {
-                  <a [routerLink]="['/assignments', item.assignmentId]" [queryParams]="{ lane: item.lane.key }">
+                  <a [routerLink]="['/organization/ctg/engagements', item.assignmentId]" [queryParams]="{ lane: item.lane.key }">
                     <span class="attention-status" [class.danger]="item.lane.isOverdue || item.lane.status === 'blocked'">!</span>
                     <span>
                       <strong>{{ item.assignmentTitle }} · {{ item.lane.label }}</strong>
@@ -191,7 +191,7 @@ interface HostActivityPreview {
             } @else {
               <div class="host-preview-list">
                 @for (item of hostActivity().slice(0, 6); track item.message.id) {
-                  <a [routerLink]="['/assignments', item.assignmentId]" [queryParams]="{ lane: 'host-coordination' }">
+                  <a [routerLink]="['/organization/ctg/engagements', item.assignmentId]" [queryParams]="{ lane: 'host-coordination' }">
                     <div>
                       <strong>{{ item.hostOrganization }}</strong>
                       <small>{{ item.assignmentTitle }} · {{ relativeDate(item.message.createdAtUtc) }}</small>

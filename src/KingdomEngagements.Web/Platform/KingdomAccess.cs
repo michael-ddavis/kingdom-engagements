@@ -36,7 +36,7 @@ public static class KingdomIdentity
 
         return principal.Claims.Any(claim =>
             claim.Type == PermissionClaim && Matches(claim.Value, "engagements:assignments:write") ||
-            claim.Type == ProductRoleClaim && Matches(claim.Value, "engagements:administrator", "engagements:director", "engagements:coordinator") ||
+            claim.Type == ProductRoleClaim && Matches(claim.Value, "engagements:administrator", "engagements:director", "engagements:coordinator", "engagements:module-administrator") ||
             claim.Type == TenantRoleClaim && Matches(claim.Value, "owner", "administrator", "organization-administrator", "super-admin") ||
             claim.Type == ClaimTypes.Role && Matches(claim.Value, "Administrator", "Coordinator", "OrganizationAdministrator", "Organization Administrator", "SuperAdmin", "Super Administrator"));
     }
@@ -48,7 +48,7 @@ public static class KingdomIdentity
 
         return principal.Claims.Any(claim =>
             claim.Type == PermissionClaim && Matches(claim.Value, "engagements:assignments:read-all") ||
-            claim.Type == ProductRoleClaim && Matches(claim.Value, "engagements:administrator", "engagements:director", "engagements:coordinator", "engagements:executive") ||
+            claim.Type == ProductRoleClaim && Matches(claim.Value, "engagements:administrator", "engagements:director", "engagements:coordinator", "engagements:executive", "engagements:module-administrator", "engagements:viewer") ||
             claim.Type == TenantRoleClaim && Matches(claim.Value, "owner", "administrator", "organization-administrator", "super-admin") ||
             claim.Type == ClaimTypes.Role && Matches(claim.Value, "Administrator", "EngagementDirector", "Coordinator", "Executive", "OrganizationAdministrator", "Organization Administrator", "SuperAdmin", "Super Administrator"));
     }
@@ -64,7 +64,7 @@ public static class KingdomIdentity
 
         return principal.Claims.Any(claim =>
             claim.Type == PermissionClaim && Matches(claim.Value, "engagements:responsibilities:manage") ||
-            claim.Type == ProductRoleClaim && Matches(claim.Value, "engagements:administrator", "engagements:director", "engagements:coordinator") ||
+            claim.Type == ProductRoleClaim && Matches(claim.Value, "engagements:administrator", "engagements:director", "engagements:coordinator", "engagements:module-administrator") ||
             claim.Type == TenantRoleClaim && Matches(claim.Value, "owner", "administrator", "organization-administrator", "super-admin") ||
             claim.Type == ClaimTypes.Role && Matches(claim.Value, "Administrator", "EngagementDirector", "Coordinator", "OrganizationAdministrator", "Organization Administrator", "SuperAdmin", "Super Administrator"));
     }

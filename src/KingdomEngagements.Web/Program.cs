@@ -170,11 +170,6 @@ builder.Services.AddAuthorization(options =>
         policy.RequireAuthenticatedUser();
         policy.AddRequirements(new HostAccessRequirement());
     });
-    options.AddPolicy(EngagementRealtimeHub.PolicyName, policy =>
-    {
-        policy.AddAuthenticationSchemes(KingdomIdentity.Scheme, HostAccessIdentity.Scheme);
-        policy.RequireAuthenticatedUser();
-    });
 });
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient<EngagementsEntitlementResolver>(client =>
@@ -371,9 +366,14 @@ app.MapHickmanSpeakingRequestEndpoints();
 app.MapHostAccessEndpoints();
 app.MapEngagementPreparationEndpoints();
 app.MapHub<EngagementRealtimeHub>(
-        EngagementRealtimeHub.Route,
+        EngagementRealtimeHub.InternalRoute,
         options => options.CloseOnAuthenticationExpiration = true)
-    .RequireAuthorization(EngagementRealtimeHub.PolicyName);
+    .RequireAuthorization();
+
+app.MapHub<EngagementRealtimeHub>(
+        EngagementRealtimeHub.HostRoute,
+        options => options.CloseOnAuthenticationExpiration = true)
+    .RequireAuthorization(HostAccessIdentity.Policy);
 app.MapAssignmentWorkspaceEndpoints();
 app.MapEngagementCompletionEndpoints();
 app.MapEngagementsDemoAccessEndpoints();

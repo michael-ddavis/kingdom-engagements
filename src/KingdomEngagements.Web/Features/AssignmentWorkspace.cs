@@ -733,17 +733,29 @@ public static class AssignmentWorkspaceEndpoints
             HostCoordinationUpdate request,
             HttpContext context,
             AssignmentWorkspaceService service,
+            EngagementRealtimeNotifier realtime,
             CancellationToken ct) =>
         {
             try
             {
+                var tenantId = KingdomIdentity.TenantId(context.User, context.Request);
                 var item = await service.SaveCoordinationAsync(
-                    KingdomIdentity.TenantId(context.User, context.Request),
+                    tenantId,
                     id,
                     request,
                     context.User.Identity?.Name ?? "Ministry team",
                     ct);
-                return item is null ? Results.NotFound() : Results.Ok(item);
+                if (item is null)
+                    return Results.NotFound();
+
+                await realtime.CoordinationUpdatedAsync(
+                    tenantId,
+                    id,
+                    "internal",
+                    item.Preparation.Coordination,
+                    ct);
+
+                return Results.Ok(item);
             }
             catch (ArgumentException exception)
             {
@@ -760,10 +772,12 @@ public static class AssignmentWorkspaceEndpoints
             HttpRequest request,
             HttpContext context,
             AssignmentWorkspaceService service,
+            EngagementRealtimeNotifier realtime,
             CancellationToken ct) =>
         {
             try
             {
+                var tenantId = KingdomIdentity.TenantId(context.User, context.Request);
                 if (!request.HasFormContentType) return Results.BadRequest(new { message = "Upload a document using multipart form data." });
                 var form = await request.ReadFormAsync(ct);
                 var file = form.Files.GetFile("file");
@@ -771,14 +785,24 @@ public static class AssignmentWorkspaceEndpoints
                 await using var stream = new MemoryStream();
                 await file.CopyToAsync(stream, ct);
                 var item = await service.AddDocumentAsync(
-                    KingdomIdentity.TenantId(context.User, context.Request),
+                    tenantId,
                     id,
                     file.FileName,
                     file.ContentType,
                     stream.ToArray(),
                     context.User.Identity?.Name ?? "Ministry team",
                     ct);
-                return item is null ? Results.NotFound() : Results.Ok(item);
+                if (item is null)
+                    return Results.NotFound();
+
+                await realtime.DocumentAddedAsync(
+                    tenantId,
+                    id,
+                    "internal",
+                    item,
+                    ct);
+
+                return Results.Ok(item);
             }
             catch (ArgumentException exception)
             {

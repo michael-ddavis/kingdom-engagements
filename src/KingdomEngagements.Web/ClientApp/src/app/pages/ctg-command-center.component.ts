@@ -97,62 +97,99 @@ interface HostActivityPreview {
           @if (boardSnapshots().length === 0) {
             <div class="director-empty">Nothing in this view needs attention.</div>
           } @else {
-            <div class="board-scroll">
-              <div class="board-list">
-                @for (snapshot of boardSnapshots(); track snapshot.assignment.id) {
-                  <article class="board-row">
-                    <a class="board-engagement" [routerLink]="['/organization/ctg/engagements', snapshot.assignment.id]">
-                      <strong>{{ snapshot.assignment.title }}</strong>
-                      <span>{{ snapshot.assignment.hostOrganization }}</span>
-                      <small>{{ dateLabel(snapshot.assignment.startsAtUtc) }} · {{ snapshot.assignment.location || 'Location pending' }}</small>
-                    </a>
+            <div class="brief-list">
+              @for (snapshot of boardSnapshots(); track snapshot.assignment.id) {
+                <article class="brief-row">
+                  <a class="brief-identity" [routerLink]="['/organization/ctg/engagements', snapshot.assignment.id]">
+                    <strong>{{ snapshot.assignment.title }}</strong>
+                    <span>{{ snapshot.assignment.hostOrganization }}</span>
+                    <small>{{ dateLabel(snapshot.assignment.startsAtUtc) }} · {{ snapshot.assignment.location || 'Location pending' }}</small>
+                  </a>
 
-                    <div class="board-lanes">
+                  <div class="brief-readiness">
+                    <div class="brief-readiness-copy">
+                      <strong>{{ snapshot.responsibilityReadinessPercent }}%</strong>
+                      <span>{{ snapshot.completedLaneCount }}/{{ snapshot.applicableLaneCount }} complete</span>
+                    </div>
+                    <div class="brief-progress" aria-hidden="true">
+                      <i [style.width.%]="snapshot.responsibilityReadinessPercent"></i>
+                    </div>
+                    <div class="lane-strip" aria-label="Responsibility lane status">
                       @for (column of laneColumns; track column.key) {
                         @if (lane(snapshot, column.key); as laneItem) {
                           <a
-                            class="board-lane"
+                            [routerLink]="['/organization/ctg/engagements', snapshot.assignment.id]"
+                            [queryParams]="{ lane: column.key }"
                             [class.complete]="laneItem.status === 'complete'"
                             [class.waiting]="laneItem.status === 'waiting-on-host'"
                             [class.danger]="laneItem.isOverdue || laneItem.status === 'blocked'"
                             [class.unassigned]="!laneItem.owner"
-                            [routerLink]="['/organization/ctg/engagements', snapshot.assignment.id]"
-                            [queryParams]="{ lane: column.key }"
-                            [title]="column.shortLabel + ' · ' + laneStatusLabel(laneItem)">
-                            <span class="board-lane-label">{{ column.shortLabel }}</span>
-                            <strong>{{ laneStatusLabel(laneItem) }}</strong>
-                            @if (laneItem.owner) {
-                              <small>{{ laneItem.owner.displayName }}</small>
-                            } @else {
-                              <small class="needs-owner">Needs owner</small>
-                            }
-                            @if (laneItem.dueAtUtc) {
-                              <em>{{ dateLabel(laneItem.dueAtUtc) }}</em>
-                            }
+                            [title]="column.shortLabel + ': ' + laneStatusLabel(laneItem)">
+                            <span>{{ column.shortLabel }}</span>
                           </a>
                         } @else {
-                          <span class="board-lane board-lane--na">
-                            <span class="board-lane-label">{{ column.shortLabel }}</span>
-                            <strong>—</strong>
-                          </span>
+                          <span class="na" [title]="column.shortLabel + ': not applicable'">{{ column.shortLabel }}</span>
                         }
                       }
                     </div>
+                  </div>
 
-                    <a class="board-overall" [routerLink]="['/organization/ctg/engagements', snapshot.assignment.id]">
-                      <strong>{{ snapshot.responsibilityReadinessPercent }}%</strong>
-                      <span>ready</span>
-                      @if (snapshot.overdueLaneCount > 0) {
-                        <small class="danger-text">{{ snapshot.overdueLaneCount }} overdue</small>
-                      } @else if (snapshot.unassignedLaneCount > 0) {
-                        <small class="warning-text">{{ snapshot.unassignedLaneCount }} unassigned</small>
-                      } @else {
-                        <small>On track</small>
-                      }
-                    </a>
-                  </article>
-                }
-              </div>
+                  <div class="brief-attention">
+                    @if (snapshot.overdueLaneCount > 0) {
+                      <a
+                        class="attention-chip danger"
+                        [routerLink]="['/organization/ctg/engagements', snapshot.assignment.id]"
+                        [queryParams]="{ lane: firstLaneKey(snapshot, 'overdue') }">
+                        {{ snapshot.overdueLaneCount }} overdue
+                      </a>
+                    }
+                    @if (blockedCount(snapshot) > 0) {
+                      <a
+                        class="attention-chip danger"
+                        [routerLink]="['/organization/ctg/engagements', snapshot.assignment.id]"
+                        [queryParams]="{ lane: firstLaneKey(snapshot, 'blocked') }">
+                        {{ blockedCount(snapshot) }} blocked
+                      </a>
+                    }
+                    @if (waitingCount(snapshot) > 0) {
+                      <a
+                        class="attention-chip waiting"
+                        [routerLink]="['/organization/ctg/engagements', snapshot.assignment.id]"
+                        [queryParams]="{ lane: firstLaneKey(snapshot, 'waiting-on-host') }">
+                        {{ waitingCount(snapshot) }} waiting on host
+                      </a>
+                    }
+                    @if (snapshot.unassignedLaneCount > 0) {
+                      <a
+                        class="attention-chip warning"
+                        [routerLink]="['/organization/ctg/engagements', snapshot.assignment.id]"
+                        [queryParams]="{ lane: firstUnassignedLaneKey(snapshot) }">
+                        {{ snapshot.unassignedLaneCount }} unassigned
+                      </a>
+                    }
+                    @if (
+                      snapshot.overdueLaneCount === 0 &&
+                      blockedCount(snapshot) === 0 &&
+                      waitingCount(snapshot) === 0 &&
+                      snapshot.unassignedLaneCount === 0
+                    ) {
+                      <span class="attention-chip good">On track</span>
+                    }
+
+                    @if (topAttention(snapshot); as item) {
+                      <small>
+                        <strong>{{ item.label }}</strong>
+                        {{ topAttentionDetail(item) }}
+                      </small>
+                    }
+                  </div>
+
+                  <a class="brief-open" [routerLink]="['/organization/ctg/engagements', snapshot.assignment.id]" aria-label="Open engagement">
+                    <span>Open</span>
+                    <b aria-hidden="true">→</b>
+                  </a>
+                </article>
+              }
             </div>
           }
         </section>
@@ -254,11 +291,16 @@ interface HostActivityPreview {
     .command-board,.director-panel{border:1px solid #dde1df;border-radius:14px;background:#fffdfa;box-shadow:0 8px 24px rgba(18,26,44,.03)}
     .command-board>header,.director-panel>header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:15px 18px;border-bottom:1px solid #e4e6e4}
     .command-board h2,.director-panel h2{font-size:1.12rem}.command-board>header>span{display:grid;min-width:28px;height:28px;place-items:center;border-radius:999px;background:#f0f2f0;color:#5f6763;font-size:.68rem;font-weight:900}.director-panel header>a{color:#315faf;font-size:.7rem;font-weight:800;text-decoration:none}
-    .board-scroll{overflow:auto}.board-list{min-width:1180px}.board-row{display:grid;grid-template-columns:250px minmax(760px,1fr) 82px;gap:12px;align-items:center;padding:12px 14px;border-bottom:1px solid #eceeeb}.board-row:last-child{border-bottom:0}
-    .board-engagement{display:flex;min-width:0;flex-direction:column;gap:2px;color:inherit;text-decoration:none}.board-engagement strong{overflow:hidden;text-overflow:ellipsis;font-size:.79rem;white-space:nowrap}.board-engagement span,.board-engagement small{overflow:hidden;text-overflow:ellipsis;color:#747c78;font-size:.62rem;white-space:nowrap}
-    .board-lanes{display:grid;grid-template-columns:repeat(8,minmax(84px,1fr));gap:5px}.board-lane{position:relative;display:flex;min-height:58px;flex-direction:column;gap:2px;padding:7px 8px;border:1px solid #e5e7e5;border-radius:8px;background:#f8f7f3;color:#555e59;text-decoration:none;overflow:hidden}.board-lane::before{content:'';position:absolute;inset:0 auto 0 0;width:3px;background:#d5d9d5}.board-lane.complete{background:#eef6f1;border-color:#dcebe1}.board-lane.complete::before{background:#4d8a69}.board-lane.waiting{background:#fbf5e8;border-color:#eee3c8}.board-lane.waiting::before{background:#b58a35}.board-lane.danger{background:#fbefed;border-color:#ecd6d3}.board-lane.danger::before{background:#b95b54}.board-lane.unassigned:not(.danger)::before{background:#c99a48}.board-lane--na{opacity:.48}
-    .board-lane-label{color:#7d847f;font-size:.52rem;font-weight:900;letter-spacing:.05em;text-transform:uppercase}.board-lane strong{overflow:hidden;text-overflow:ellipsis;font-size:.62rem;white-space:nowrap}.board-lane small{overflow:hidden;text-overflow:ellipsis;color:#6d7571;font-size:.56rem;white-space:nowrap}.board-lane .needs-owner{color:#986e27;font-weight:800}.board-lane em{color:#8b918d;font-size:.53rem;font-style:normal}
-    .board-overall{display:flex;flex-direction:column;align-items:flex-end;gap:1px;color:inherit;text-decoration:none}.board-overall strong{font-size:1.08rem;color:#17243a}.board-overall span,.board-overall small{font-size:.56rem;color:#737b78}
+    .brief-list{display:flex;flex-direction:column}
+    .brief-row{display:grid;grid-template-columns:minmax(245px,1.1fr) minmax(360px,1.55fr) minmax(220px,.9fr) 62px;gap:22px;align-items:center;padding:16px 18px;border-bottom:1px solid #eceeeb}
+    .brief-row:last-child{border-bottom:0}.brief-row:hover{background:#fdfcf8}
+    .brief-identity{display:flex;min-width:0;flex-direction:column;gap:3px;color:inherit;text-decoration:none}
+    .brief-identity strong{overflow:hidden;text-overflow:ellipsis;color:#17243a;font-size:.82rem;white-space:nowrap}.brief-identity span,.brief-identity small{overflow:hidden;text-overflow:ellipsis;color:#747c78;font-size:.64rem;white-space:nowrap}
+    .brief-readiness{display:grid;grid-template-columns:auto 1fr;gap:7px 12px;align-items:center;min-width:0}.brief-readiness-copy{display:flex;min-width:86px;flex-direction:column}.brief-readiness-copy strong{font-size:1.28rem;color:#17243a}.brief-readiness-copy span{color:#7a817d;font-size:.59rem}
+    .brief-progress{height:6px;border-radius:999px;background:#e8ebe8;overflow:hidden}.brief-progress i{display:block;height:100%;border-radius:inherit;background:#597c68}
+    .lane-strip{grid-column:1/-1;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px}.lane-strip>a,.lane-strip>span{display:grid;min-height:27px;place-items:center;border:1px solid #e1e4e1;border-radius:6px;background:#f6f5f1;color:#747b77;font-size:.49rem;font-weight:900;letter-spacing:.04em;text-decoration:none;text-transform:uppercase}.lane-strip>a.complete{border-color:#d4e5da;background:#edf6f0;color:#2d6d52}.lane-strip>a.waiting{border-color:#eadfbe;background:#fbf5e8;color:#8a641e}.lane-strip>a.danger{border-color:#ead1ce;background:#fbefed;color:#9a433f}.lane-strip>a.unassigned:not(.danger){border-color:#eadfbe;background:#fffaf0;color:#996e25}.lane-strip>span.na{opacity:.4}
+    .brief-attention{display:flex;align-items:flex-start;align-content:flex-start;gap:5px;flex-wrap:wrap}.attention-chip{display:inline-flex;min-height:25px;align-items:center;padding:0 8px;border-radius:999px;background:#f1f3f1;color:#616965;font-size:.58rem;font-weight:850;text-decoration:none;white-space:nowrap}.attention-chip.danger{background:#fbefed;color:#9a433f}.attention-chip.waiting{background:#fbf5e8;color:#8a641e}.attention-chip.warning{background:#fff8e8;color:#956d25}.attention-chip.good{background:#eef6f1;color:#2d6d52}.brief-attention>small{display:block;flex-basis:100%;margin-top:3px;color:#7b827e;font-size:.58rem;line-height:1.4}.brief-attention>small strong{color:#59625e}
+    .brief-open{display:flex;align-items:center;justify-content:flex-end;gap:5px;color:#315faf;font-size:.64rem;font-weight:850;text-decoration:none;white-space:nowrap}.brief-open b{font-size:.9rem}
     .director-lower-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:14px;margin-top:14px}.director-panel{overflow:hidden}.director-panel>header strong{font-size:1.2rem}
     .attention-list,.host-preview-list{display:flex;flex-direction:column}.attention-list>a,.host-preview-list>a{display:grid;gap:10px;padding:13px 18px;border-bottom:1px solid #eceeeb;color:inherit;text-decoration:none}.attention-list>a{grid-template-columns:auto 1fr auto;align-items:center}
     .attention-list>a:last-child,.host-preview-list>a:last-child{border-bottom:0}.attention-status{display:grid;width:25px;height:25px;place-items:center;border-radius:50%;background:#fbf5e8;color:#8a641e;font-weight:900}.attention-status.danger{background:#fbefed;color:#9a433f}
@@ -266,8 +308,8 @@ interface HostActivityPreview {
     .host-preview-list>a{grid-template-columns:1fr auto}.host-preview-list p{grid-column:1/-1;margin:0;color:#535e58;font-size:.73rem;line-height:1.45}.host-preview-list>a>span{font-size:.65rem;color:#7c827f}
     .team-accountability{margin-top:14px}.team-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:14px}.team-grid article{padding:15px;border:1px solid #e2e5e2;border-radius:11px;background:#f9f8f4}.team-grid article>strong{display:block}.team-grid article>span{display:block;margin:3px 0 12px;color:#757c78;font-size:.65rem}.team-grid dl{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin:0}.team-grid dl div{padding:7px;border-radius:7px;background:#fff}.team-grid dt{font-size:.57rem;color:#858b87;text-transform:uppercase}.team-grid dd{margin:2px 0 0;font-weight:850}
     .panel-empty,.director-empty,.director-state{padding:28px;color:#747c78;text-align:center}.director-state{margin:40px auto;border:1px solid #dde1df;border-radius:14px;background:#fff}.director-state--error{color:#9a433f}.danger-text{color:#a84642!important}.warning-text{color:#956d25!important}
-    @media(max-width:1050px){.director-summary{grid-template-columns:repeat(3,1fr)}.director-lower-grid{grid-template-columns:1fr}.team-grid{grid-template-columns:repeat(2,1fr)}.board-list{min-width:1060px}.board-row{grid-template-columns:220px minmax(700px,1fr) 72px}}
-    @media(max-width:720px){.director-page{width:min(100% - 24px,1500px)}.director-heading{flex-direction:column}.director-summary{grid-template-columns:1fr 1fr}.team-grid{grid-template-columns:1fr}.director-toolbar{align-items:flex-start;flex-direction:column}}
+    @media(max-width:1050px){.director-summary{grid-template-columns:repeat(3,1fr)}.director-lower-grid{grid-template-columns:1fr}.team-grid{grid-template-columns:repeat(2,1fr)}.brief-row{grid-template-columns:minmax(220px,1fr) minmax(330px,1.35fr) minmax(200px,.9fr) 54px;gap:14px}}
+    @media(max-width:720px){.director-page{width:min(100% - 24px,1500px)}.director-heading{flex-direction:column;align-items:flex-start}.director-summary{grid-template-columns:1fr 1fr}.team-grid{grid-template-columns:1fr}.director-toolbar{align-items:flex-start;flex-direction:column}.brief-row{grid-template-columns:1fr}.brief-readiness{grid-template-columns:auto 1fr}.brief-open{justify-content:flex-start}.brief-attention{margin-top:-4px}}
   `],
 })
 export class CtgCommandCenterComponent implements OnInit {
@@ -418,6 +460,53 @@ export class CtgCommandCenterComponent implements OnInit {
     if (lane.dueAtUtc) return `Due ${this.dateLabel(lane.dueAtUtc)}`;
     if (lane.updatedAtUtc) return `Updated ${this.relativeDate(lane.updatedAtUtc)}`;
     return lane.detail || 'No due date';
+  }
+
+  blockedCount(snapshot: EngagementResponsibilitySnapshot): number {
+    return snapshot.lanes.filter(lane =>
+      lane.isApplicable && lane.status === 'blocked',
+    ).length;
+  }
+
+  waitingCount(snapshot: EngagementResponsibilitySnapshot): number {
+    return snapshot.lanes.filter(lane =>
+      lane.isApplicable && lane.status === 'waiting-on-host',
+    ).length;
+  }
+
+  firstUnassignedLaneKey(snapshot: EngagementResponsibilitySnapshot): string {
+    return snapshot.lanes.find(lane => lane.isApplicable && !lane.owner)?.key ?? 'responsibilities';
+  }
+
+  firstLaneKey(snapshot: EngagementResponsibilitySnapshot, status: string): string {
+    if (status === 'overdue') {
+      return snapshot.lanes.find(lane =>
+        lane.isApplicable && (lane.isOverdue || lane.status === 'overdue'),
+      )?.key ?? 'responsibilities';
+    }
+
+    return snapshot.lanes.find(lane =>
+      lane.isApplicable && lane.status === status,
+    )?.key ?? 'responsibilities';
+  }
+
+  topAttention(snapshot: EngagementResponsibilitySnapshot): ResponsibilityLaneState | null {
+    const applicable = snapshot.lanes.filter(lane => lane.isApplicable);
+
+    return applicable.find(lane => lane.isOverdue || lane.status === 'overdue') ??
+      applicable.find(lane => lane.status === 'blocked') ??
+      applicable.find(lane => lane.status === 'waiting-on-host') ??
+      applicable.find(lane => !lane.owner) ??
+      applicable.find(lane => lane.status !== 'complete') ??
+      null;
+  }
+
+  topAttentionDetail(lane: ResponsibilityLaneState): string {
+    if (lane.isOverdue || lane.status === 'overdue') return 'is overdue';
+    if (lane.status === 'blocked') return 'is blocked';
+    if (lane.status === 'waiting-on-host') return 'is waiting on the host';
+    if (!lane.owner) return 'needs an owner';
+    return this.statusLabel(lane.status).toLowerCase();
   }
 
   attentionReason(lane: ResponsibilityLaneState): string {

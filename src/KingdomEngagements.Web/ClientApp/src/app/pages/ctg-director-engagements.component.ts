@@ -1,6 +1,6 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { catchError, forkJoin, of } from 'rxjs';
 import { EngagementsApiService } from '../core/engagements-api.service';
 import {
   EngagementResponsibilitySnapshot,
@@ -47,6 +47,10 @@ type EngagementFilter = 'active' | 'attention' | 'upcoming' | 'completed';
             <small>Completed</small><strong>{{ completedCount() }}</strong><span>Past engagement records</span>
           </button>
         </section>
+
+        @if (responsibilityDataUnavailable()) {
+          <div class="state warning">Engagements are available, but responsibility/readiness details are temporarily unavailable. Restart the Engagements backend after pulling the latest branch to load the director data.</div>
+        }
 
         <section class="engagement-list">
           <header>
@@ -134,7 +138,7 @@ type EngagementFilter = 'active' | 'attention' | 'upcoming' | 'completed';
     .identity{display:flex;gap:12px;align-items:center}.date-block{display:grid;flex:0 0 50px;min-height:54px;place-items:center;border:1px solid #dfe2df;border-radius:9px;background:#f7f6f2}.date-block b{margin-top:5px;color:#8c7335;font-size:.55rem;text-transform:uppercase}.date-block strong{margin-top:-4px;font-size:1.12rem}.identity small{color:#7d847f;font-size:.6rem;font-weight:750}.identity h3{margin:2px 0;font-size:1rem}.identity p{margin:0;color:#7b827e;font-size:.65rem}
     .readiness{text-align:center}.readiness-ring{display:grid;width:58px;height:58px;margin:0 auto 4px;place-items:center;border:6px solid #e5e9e5;border-top-color:#5d7553;border-radius:50%;font-weight:900}.readiness span{font-size:.57rem;color:#828985}
     .lane-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}.lane-strip>span{padding:7px;border-radius:7px;background:#f5f4f0}.lane-strip b,.lane-strip small{display:block}.lane-strip b{font-size:.56rem;text-transform:uppercase}.lane-strip small{margin-top:2px;color:#7e8581;font-size:.54rem}.lane-strip .complete{background:#eef6f1;color:#2d6d52}.lane-strip .waiting{background:#fbf5e8;color:#8a641e}.lane-strip .danger{background:#fbefed;color:#9a433f}
-    .exceptions{display:flex;flex-direction:column;gap:3px}.exceptions span{font-size:.62rem;color:#707873}.exceptions .danger{color:#a84642;font-weight:850}.exceptions .warning{color:#956d25;font-weight:850}.exceptions .good{color:#2d6d52;font-weight:850}.open{white-space:nowrap;color:#315faf;font-size:.69rem;font-weight:850;text-decoration:none}.empty,.state{padding:34px;text-align:center;color:#747c78}.state{border:1px solid #dde1df;border-radius:14px;background:#fff}.state.error{color:#a84642}
+    .exceptions{display:flex;flex-direction:column;gap:3px}.exceptions span{font-size:.62rem;color:#707873}.exceptions .danger{color:#a84642;font-weight:850}.exceptions .warning{color:#956d25;font-weight:850}.exceptions .good{color:#2d6d52;font-weight:850}.open{white-space:nowrap;color:#315faf;font-size:.69rem;font-weight:850;text-decoration:none}.empty,.state{padding:34px;text-align:center;color:#747c78}.state{border:1px solid #dde1df;border-radius:14px;background:#fff}.state.error{color:#a84642}.state.warning{margin-bottom:12px;padding:14px 18px;color:#7b6227;background:#fff8e8;border-color:#ead9ab;text-align:left}
     @media(max-width:1150px){.rows article{grid-template-columns:minmax(280px,1fr) 100px 1fr auto}.exceptions{display:none}.lane-strip{grid-template-columns:repeat(3,1fr)}}@media(max-width:820px){.page-heading{flex-direction:column}.summary{grid-template-columns:1fr 1fr}.rows article{grid-template-columns:1fr auto}.lane-strip{grid-column:1/-1}.readiness{grid-row:1;grid-column:2}.open{grid-column:1/-1}}@media(max-width:560px){.director-engagements{width:min(100% - 24px,1380px)}.summary{grid-template-columns:1fr}.lane-strip{grid-template-columns:1fr 1fr}}
   `],
 })
@@ -144,6 +148,7 @@ export class CtgDirectorEngagementsComponent implements OnInit {
   readonly filter = signal<EngagementFilter>('active');
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
+  readonly responsibilityDataUnavailable = signal(false);
   readonly importantLaneKeys = ['host-coordination','travel','lodging','transportation','media','program','documents','finance'];
 
   readonly rows = computed(() => {
@@ -178,7 +183,12 @@ export class CtgDirectorEngagementsComponent implements OnInit {
   ngOnInit():void{
     forkJoin({
       assignments:this.api.getAssignments(),
-      snapshots:this.api.getCommandCenter(),
+      snapshots:this.api.getCommandCenter().pipe(
+        catchError(() => {
+          this.responsibilityDataUnavailable.set(true);
+          return of([] as readonly EngagementResponsibilitySnapshot[]);
+        }),
+      ),
     }).subscribe({
       next:result=>{
         this.assignments.set(result.assignments);

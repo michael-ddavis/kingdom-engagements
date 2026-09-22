@@ -15,6 +15,7 @@ import {
   UpdateTransportationLaneInput,
   UpdateTravelLaneInput,
 } from '../core/engagements-api.service';
+import { EngagementDemoRoleService } from '../core/engagement-demo-role.service';
 import {
   AssignmentWorkspaceDetails,
   DocumentsLaneDetails,
@@ -28,6 +29,7 @@ import {
   LodgingLaneDetails,
   MediaLaneDetails,
   MinistryPreparationLaneDetails,
+  MyResponsibilityWorkItem,
   ProgramLaneDetails,
   ResponsibilityLaneState,
   TransportationLaneDetails,
@@ -67,7 +69,7 @@ interface ResponsibilityDraft {
   imports: [FormsModule, RouterLink],
   template: `
     <section class="director-engagement">
-      <a class="back-link" routerLink="/organization/ctg/engagements">← Engagements</a>
+      <a class="back-link" [routerLink]="backRoute()">← Engagements</a>
 
       @if (loading()) {
         <div class="state">Loading engagement operation…</div>
@@ -100,11 +102,13 @@ interface ResponsibilityDraft {
           <article><small>Overdue</small><strong>{{ overdueCount() }}</strong></article>
           <article><small>Unassigned</small><strong>{{ unassignedCount() }}</strong></article>
           <article><small>Waiting on host</small><strong>{{ waitingHostCount() }}</strong></article>
-          <article><small>Host preparation</small><strong>{{ workspace()?.readiness?.overallPercent ?? 0 }}%</strong></article>
+          @if (isDirector()) {
+            <article><small>Host preparation</small><strong>{{ workspace()?.readiness?.overallPercent ?? 0 }}%</strong></article>
+          }
         </section>
 
         <nav class="workspace-tabs" aria-label="Engagement director sections">
-          @for (tabItem of tabs; track tabItem.key) {
+          @for (tabItem of visibleTabs(); track tabItem.key) {
             <button
               type="button"
               [class.active]="tab() === tabItem.key"
@@ -140,14 +144,16 @@ interface ResponsibilityDraft {
                   </div>
                 </article>
 
-                <article class="overview-card">
-                  <header><div><h2>{{ host()?.coordinationStatus ? label(host()!.coordinationStatus) : 'Not started' }}</h2></div><button type="button" (click)="tab.set('host-coordination')">Open →</button></header>
-                  <div class="host-meter">
-                    <strong>{{ workspace()?.readiness?.overallPercent ?? 0 }}%</strong>
-                    <div><i [style.width.%]="workspace()?.readiness?.overallPercent ?? 0"></i></div>
-                    <span>{{ thread()?.isClosed ? 'Conversation closed after coordination completion.' : 'Host conversation is active.' }}</span>
-                  </div>
-                </article>
+                @if (isDirector()) {
+                  <article class="overview-card">
+                    <header><div><h2>Host Coordination</h2></div><button type="button" (click)="tab.set('host-coordination')">Open →</button></header>
+                    <div class="host-meter">
+                      <strong>{{ workspace()?.readiness?.overallPercent ?? 0 }}%</strong>
+                      <div><i [style.width.%]="workspace()?.readiness?.overallPercent ?? 0"></i></div>
+                      <span>{{ thread()?.isClosed ? 'Conversation closed' : 'Conversation active' }}</span>
+                    </div>
+                  </article>
+                }
 
                 <article class="overview-card">
                   <header><div><h2>Attention items</h2></div></header>
@@ -163,14 +169,16 @@ interface ResponsibilityDraft {
                   }
                 </article>
 
-                <article class="overview-card overview-card--wide">
-                  <header><div><h2>Recent Activity</h2></div><button type="button" (click)="tab.set('activity')">Full activity →</button></header>
-                  <div class="activity-list">
-                    @for (activity of (workspace()?.activity ?? []).slice(0, 6); track activity.occurredAtUtc + activity.title) {
-                      <div><span></span><p><strong>{{ activity.title }}</strong><small>{{ activity.detail }}</small></p><b>{{ activity.actor }} · {{ relativeDate(activity.occurredAtUtc) }}</b></div>
-                    }
-                  </div>
-                </article>
+                @if (isDirector()) {
+                  <article class="overview-card overview-card--wide">
+                    <header><div><h2>Recent Activity</h2></div><button type="button" (click)="tab.set('activity')">Full activity →</button></header>
+                    <div class="activity-list">
+                      @for (activity of (workspace()?.activity ?? []).slice(0, 6); track activity.occurredAtUtc + activity.title) {
+                        <div><span></span><p><strong>{{ activity.title }}</strong><small>{{ activity.detail }}</small></p><b>{{ activity.actor }} · {{ relativeDate(activity.occurredAtUtc) }}</b></div>
+                      }
+                    </div>
+                  </article>
+                }
               </section>
             }
 
@@ -523,7 +531,7 @@ interface ResponsibilityDraft {
   styles: [`
     :host{display:block}.director-engagement{width:min(1320px,calc(100% - 40px));margin:0 auto;padding:20px 0 60px;color:#17202b}.back-link{display:inline-block;margin:0 0 12px;color:#52647f;font-size:.7rem;font-weight:800;text-decoration:none}
     .engagement-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:26px;padding:22px 24px;border:1px solid #dfe3e0;border-radius:16px;background:#fffdfa}.engagement-heading h1,.panel h2,.overview-card h2,.responsibility-drawer h2{margin:4px 0 6px;font:500 clamp(1.8rem,3vw,2.7rem)/1.08 Georgia,'Times New Roman',serif;color:#17243a}.engagement-heading p{margin:0;color:#68716d}.engagement-heading>div>span{display:block;margin-top:6px;color:#858b87;font-size:.66rem}.eyebrow{margin:0!important;color:#876f33!important;font:850 .64rem/1.2 system-ui,sans-serif!important;letter-spacing:.1em;text-transform:uppercase}.heading-actions{display:flex;align-items:center;gap:12px}.heading-actions>a{padding:9px 12px;border:1px solid #d9ddda;border-radius:8px;color:#172a46;font-size:.65rem;font-weight:850;text-decoration:none}.readiness{text-align:right}.readiness strong{display:block;font-size:2rem}.readiness span{font-size:.62rem;color:#7b827e}
-    .engagement-alerts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}.engagement-alerts article{padding:11px 14px;border:1px solid #e1e4e1;border-radius:10px;background:#fff}.engagement-alerts small{display:block;color:#808783;font-size:.56rem;font-weight:850;text-transform:uppercase}.engagement-alerts strong{display:block;margin-top:3px;font-size:1.05rem}
+    .engagement-alerts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:10px 0}.engagement-alerts article{padding:11px 14px;border:1px solid #e1e4e1;border-radius:10px;background:#fff}.engagement-alerts small{display:block;color:#808783;font-size:.56rem;font-weight:850;text-transform:uppercase}.engagement-alerts strong{display:block;margin-top:3px;font-size:1.05rem}
     .workspace-tabs{display:flex;gap:3px;margin:16px 0 12px;overflow:auto;padding:4px;border:1px solid #dfe3e0;border-radius:11px;background:#f7f5f0;scrollbar-width:thin}.workspace-tabs button{display:flex;align-items:center;gap:6px;min-height:36px;padding:0 10px;border:0;border-radius:7px;background:transparent;color:#66706a;font-size:.65rem;font-weight:850;white-space:nowrap;cursor:pointer}.workspace-tabs button.active{background:#172a46;color:#fff}.workspace-tabs button span{padding:2px 5px;border-radius:999px;background:rgba(255,255,255,.18);font-size:.52rem}.workspace-tabs button:not(.active) span.alert{background:#f8e8e5;color:#a84642}
     .workspace-body{position:relative}.overview-grid,.two-column{display:grid;grid-template-columns:1fr 1fr;gap:12px}.overview-card,.panel{border:1px solid #dfe3e0;border-radius:14px;background:#fffdfa;box-shadow:0 8px 25px rgba(18,26,44,.035)}.overview-card{padding:17px}.overview-card--wide{grid-column:1/-1}.overview-card>header,.panel>header{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.overview-card h2,.panel h2{font-size:1.2rem}.overview-card header button,.panel header button{border:0;background:transparent;color:#315faf;font-size:.64rem;font-weight:850;cursor:pointer}
     .responsibility-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}.responsibility-grid>button{min-height:105px;padding:11px;border:1px solid #e1e4e1;border-radius:9px;background:#f8f7f3;text-align:left;color:inherit;cursor:pointer}.responsibility-grid button>span{display:flex;justify-content:space-between;gap:7px}.responsibility-grid button strong{font-size:.7rem}.responsibility-grid button span small{color:#79817d;font-size:.55rem;text-align:right}.responsibility-grid button b{display:block;margin:11px 0 4px;font-size:.67rem}.responsibility-grid button>small{color:#808783;font-size:.57rem}.responsibility-grid button.complete{background:#eef6f1}.responsibility-grid button.waiting{background:#fbf5e8}.responsibility-grid button.danger{background:#fbefed;border-color:#e8cecb}.responsibility-grid button.na{opacity:.55}
@@ -586,6 +594,7 @@ export class CtgDirectorEngagementComponent implements OnInit {
   readonly saveError = signal<string | null>(null);
   readonly unavailableSections = signal<readonly string[]>([]);
   readonly responsibilityDraft = signal<ResponsibilityDraft | null>(null);
+  readonly teamLaneKeys = signal<readonly string[]>([]);
 
   assignmentId = '';
   hostMessageDraft = '';
@@ -632,6 +641,7 @@ export class CtgDirectorEngagementComponent implements OnInit {
   constructor(
     private readonly route: ActivatedRoute,
     private readonly api: EngagementsApiService,
+    private readonly roles: EngagementDemoRoleService,
   ) {}
 
   ngOnInit(): void {
@@ -645,22 +655,31 @@ export class CtgDirectorEngagementComponent implements OnInit {
     const requestedLane = this.route.snapshot.queryParamMap.get('lane');
     if (requestedLane && this.isTab(requestedLane)) this.tab.set(requestedLane as DirectorTab);
 
+    const director = this.roles.canManageAssignments();
+
     forkJoin({
       assignment: this.api.getAssignment(this.assignmentId),
-      workspace: this.optionalLoad('Overview', this.api.getWorkspace(this.assignmentId)),
-      responsibilities: this.api.getAssignmentResponsibilities(this.assignmentId).pipe(
-        catchError(() => {
-          this.markUnavailable('Responsibilities');
-          return of([] as readonly ResponsibilityLaneState[]);
-        }),
-      ),
+      myWork: director
+        ? of([] as readonly MyResponsibilityWorkItem[])
+        : this.api.getMyWork().pipe(catchError(() => of([] as readonly MyResponsibilityWorkItem[]))),
+      workspace: director ? this.optionalLoad('Overview', this.api.getWorkspace(this.assignmentId)) : of(null),
+      responsibilities: director
+        ? this.api.getAssignmentResponsibilities(this.assignmentId).pipe(
+            catchError(() => {
+              this.markUnavailable('Responsibilities');
+              return of([] as readonly ResponsibilityLaneState[]);
+            }),
+          )
+        : of([] as readonly ResponsibilityLaneState[]),
       host: this.optionalLoad('Host Coordination', this.api.getHostCoordinationLane(this.assignmentId)),
-      thread: this.api.getHostCoordinationMessages(this.assignmentId).pipe(
-        catchError(() => {
-          this.markUnavailable('Host Messages');
-          return of({ isClosed: false, messages: [] as const });
-        }),
-      ),
+      thread: director
+        ? this.api.getHostCoordinationMessages(this.assignmentId).pipe(
+            catchError(() => {
+              this.markUnavailable('Host Messages');
+              return of(null);
+            }),
+          )
+        : of(null),
       travel: this.optionalLoad('Travel', this.api.getTravelLane(this.assignmentId)),
       lodging: this.optionalLoad('Lodging', this.api.getLodgingLane(this.assignmentId)),
       transportation: this.optionalLoad('Transportation', this.api.getTransportationLane(this.assignmentId)),
@@ -670,12 +689,17 @@ export class CtgDirectorEngagementComponent implements OnInit {
       finance: this.optionalLoad('Finance', this.api.getFinanceLane(this.assignmentId)),
       ministry: this.optionalLoad('Ministry Preparation', this.api.getMinistryPreparationLane(this.assignmentId)),
       hospitality: this.optionalLoad('Hospitality', this.api.getHospitalityLane(this.assignmentId)),
-      completion: this.optionalLoad('Closeout', this.api.getCompletion(this.assignmentId)),
+      completion: director ? this.optionalLoad('Closeout', this.api.getCompletion(this.assignmentId)) : of(null),
     }).subscribe({
       next: result => {
         this.assignment.set(result.assignment);
         this.workspace.set(result.workspace?.workspace ?? null);
-        this.responsibilities.set(result.responsibilities);
+
+        const teamLanes = result.myWork
+          .filter(item => item.assignment.id === this.assignmentId)
+          .map(item => item.lane);
+        this.teamLaneKeys.set(teamLanes.map(item => item.key));
+        this.responsibilities.set(director ? result.responsibilities : teamLanes);
         this.host.set(result.host);
         this.thread.set(result.thread);
         this.travel.set(result.travel);
@@ -689,6 +713,11 @@ export class CtgDirectorEngagementComponent implements OnInit {
         this.hospitality.set(result.hospitality);
         this.completion.set(result.completion);
         this.syncDrafts();
+
+        if (!this.visibleTabs().some(item => item.key === this.tab())) {
+          this.tab.set('overview');
+        }
+
         this.loading.set(false);
       },
       error: () => {
@@ -696,6 +725,24 @@ export class CtgDirectorEngagementComponent implements OnInit {
         this.loading.set(false);
       },
     });
+  }
+
+  isDirector(): boolean {
+    return this.roles.canManageAssignments();
+  }
+
+  backRoute(): string {
+    return this.isDirector() ? '/organization/ctg/engagements' : '/assignments';
+  }
+
+  visibleTabs(): readonly { key: DirectorTab; label: string; lane?: string }[] {
+    if (this.isDirector()) return this.tabs;
+
+    const owned = new Set(this.teamLaneKeys());
+    return this.tabs.filter(item =>
+      item.key === 'overview' ||
+      (!!item.lane && owned.has(item.lane)),
+    );
   }
 
   lane(key: string): ResponsibilityLaneState | null {
@@ -998,7 +1045,7 @@ export class CtgDirectorEngagementComponent implements OnInit {
   private optionalLoad<T>(label: string, source: Observable<T>): Observable<T | null> {
     return source.pipe(
       catchError(() => {
-        this.markUnavailable(label);
+        if (this.isDirector()) this.markUnavailable(label);
         return of(null);
       }),
     );

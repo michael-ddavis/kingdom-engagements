@@ -570,14 +570,15 @@ public sealed class EngagementResponsibilityService(EngagementsDbContext databas
             query = query.Where(task => task.AssignmentId == id);
 
         var tasks = await query.ToListAsync(cancellationToken);
-        HashSet<Guid> overriddenAssignments = [];
+        var overriddenAssignments = new HashSet<Guid>();
 
         if (skipEngagementOverrides)
         {
-            overriddenAssignments = await database.EngagementResponsibilityOverrides.AsNoTracking()
+            var overriddenIds = await database.EngagementResponsibilityOverrides.AsNoTracking()
                 .Where(item => item.TenantId == tenantId && item.LaneKey == laneKey && item.IsActive)
                 .Select(item => item.AssignmentId)
-                .ToHashSetAsync(cancellationToken);
+                .ToListAsync(cancellationToken);
+            overriddenAssignments = overriddenIds.ToHashSet();
         }
 
         foreach (var task in tasks)

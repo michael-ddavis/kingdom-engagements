@@ -386,6 +386,9 @@ public static class EngagementsDemoAccessEndpoints
 
         group.MapGet("/session", (HttpContext context) =>
         {
+            if (!KingdomIdentity.HasEngagementsAccess(context.User))
+                return Results.Forbid();
+
             var role = EngagementsDemoRoles.CurrentRole(context.User);
             return Results.Ok(new
             {

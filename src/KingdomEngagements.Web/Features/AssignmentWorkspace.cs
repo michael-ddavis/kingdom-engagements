@@ -118,8 +118,15 @@ public sealed class AssignmentWorkspaceService(
     EngagementPreparationDbContext preparationDatabase,
     SpeakingRequestsDbContext requestsDatabase,
     EngagementsDbContext engagementsDatabase,
-    EngagementPreparationService preparationService)
+    EngagementPreparationService preparationService,
+    IEngagementDocumentStorage? documentStorage = null,
+    ILogger<AssignmentWorkspaceService>? logger = null)
 {
+    private readonly IEngagementDocumentStorage _documentStorage =
+        documentStorage ?? DatabaseEngagementDocumentStorage.Instance;
+
+    private readonly ILogger<AssignmentWorkspaceService>? _logger = logger;
+
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private const int MaxDocumentBytes = 10 * 1024 * 1024;
 
@@ -223,19 +230,46 @@ public sealed class AssignmentWorkspaceService(
 
         var now = DateTimeOffset.UtcNow;
         var safeFileName = Path.GetFileName(Required(fileName, nameof(fileName)));
+        var documentId = Guid.NewGuid();
+        var normalizedContentType =
+            string.IsNullOrWhiteSpace(contentType)
+                ? "application/octet-stream"
+                : contentType.Trim();
+
+        var stored = await _documentStorage.StoreAsync(
+            new EngagementDocumentStorageRequest(
+                tenantId,
+                assignmentId,
+                documentId,
+                normalizedContentType,
+                content),
+            cancellationToken);
+
         var document = new HostCoordinationDocumentRecord
         {
-            Id = Guid.NewGuid(),
+            Id = documentId,
             PreparationId = preparation.Id,
             FileName = safeFileName,
-            ContentType = string.IsNullOrWhiteSpace(contentType) ? "application/octet-stream" : contentType.Trim(),
+            ContentType = normalizedContentType,
             Length = content.LongLength,
-            Content = content,
+            StorageProvider = stored.Provider,
+            StorageKey = stored.StorageKey,
+            Content = stored.InlineContent,
             UploadedAtUtc = now
         };
+
         preparationDatabase.Documents.Add(document);
         preparation.UpdatedAtUtc = now;
-        await preparationDatabase.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            await preparationDatabase.SaveChangesAsync(cancellationToken);
+        }
+        catch
+        {
+            await _documentStorage.DeleteAsync(document, CancellationToken.None);
+            throw;
+        }
 
         var assignment = await engagementsDatabase.Assignments.Include(x => x.Documents)
             .SingleOrDefaultAsync(x => x.TenantId == tenantId && x.Id == assignmentId, cancellationToken);
@@ -298,6 +332,21 @@ public sealed class AssignmentWorkspaceService(
         preparationDatabase.Documents.Remove(document);
         preparation.UpdatedAtUtc = DateTimeOffset.UtcNow;
         await preparationDatabase.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            await _documentStorage.DeleteAsync(document, cancellationToken);
+        }
+        catch (Exception exception)
+        {
+            // The database is authoritative for document visibility. If object cleanup fails,
+            // keep the user-facing delete successful and surface the orphan for operations.
+            _logger?.LogWarning(
+                exception,
+                "Could not delete document object {DocumentId} from {StorageProvider}.",
+                document.Id,
+                document.StorageProvider);
+        }
 
         var assignment = await engagementsDatabase.Assignments.Include(x => x.Documents)
             .SingleOrDefaultAsync(x => x.TenantId == tenantId && x.Id == assignmentId, cancellationToken);

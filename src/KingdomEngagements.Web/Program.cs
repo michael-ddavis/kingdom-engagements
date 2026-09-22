@@ -166,7 +166,7 @@ app.Use(async (context, next) =>
         app.Environment.IsDevelopment() &&
         app.Configuration.GetValue("KingdomOS:Identity:DemoProfilesEnabled", false);
 
-    if (demoProfilesEnabled)
+    if (demoProfilesEnabled && context.User.Identity?.IsAuthenticated != true)
     {
         var organizationKey =
             context.Request.Headers[KingdomIdentity.DemoOrganizationHeader].FirstOrDefault()

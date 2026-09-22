@@ -35,8 +35,5 @@ public sealed class EngagementsModelCustomizer(
         modelBuilder.Entity<EngagementMediaAsset>()
             .Property(entity => entity.Id)
             .ValueGeneratedNever();
-        modelBuilder.Entity<EngagementMediaAsset>()
-            .Property(entity => entity.Id)
-            .ValueGeneratedNever();
     }
 }

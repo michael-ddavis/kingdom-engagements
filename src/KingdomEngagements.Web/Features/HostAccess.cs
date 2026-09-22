@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Encodings.Web;
 using KingdomEngagements.Web.Platform;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -500,13 +501,28 @@ public static class HostAccessEndpoints
             return Results.Ok(new { revoked });
         });
 
-        endpoints.MapGet("/host/access/{token}", async (
+        endpoints.MapGet("/host/access/{token}", (
             string token,
+            HttpContext context) =>
+        {
+            context.Response.Headers.CacheControl = "no-store";
+            return Results.Content(
+                BuildRedemptionPage(token),
+                "text/html; charset=utf-8");
+        }).AllowAnonymous();
+
+        endpoints.MapPost("/host/access/redeem", async (
             HttpContext context,
             HostAccessService hostAccess,
             CancellationToken ct) =>
         {
-            var session = await hostAccess.RedeemAsync(token, ct);
+            if (!context.Request.HasFormContentType)
+                return Results.BadRequest(new { message = "A host invitation token is required." });
+
+            var form = await context.Request.ReadFormAsync(ct);
+            var token = form["token"].FirstOrDefault();
+            var session = await hostAccess.RedeemAsync(token ?? string.Empty, ct);
+
             if (session is null)
             {
                 return Results.NotFound(new
@@ -527,7 +543,7 @@ public static class HostAccessEndpoints
             context.Response.Headers.CacheControl = "no-store";
 
             return Results.Redirect(session.TermsAccepted ? "/host/coordination" : "/host/terms");
-        }).AllowAnonymous();
+        }).AllowAnonymous().DisableAntiforgery();
 
         endpoints.MapGet("/host/terms", (IWebHostEnvironment environment) =>
             Results.File(
@@ -749,5 +765,39 @@ public static class HostAccessEndpoints
         }).RequireAuthorization(HostAccessIdentity.Policy);
 
         return endpoints;
+    }
+
+    private static string BuildRedemptionPage(string token)
+    {
+        var encodedToken = HtmlEncoder.Default.Encode(token);
+
+        return $"""
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow,noarchive" />
+  <title>ApostolOS Host Access</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; background: #f7f5ef; color: #182337; }
+    main { max-width: 540px; margin: 10vh auto; padding: 32px; background: white; border: 1px solid #ded9cf; border-radius: 16px; }
+    h1 { margin-top: 0; font-size: 1.5rem; }
+    p { line-height: 1.6; color: #596579; }
+    button { min-height: 44px; padding: 0 18px; border: 0; border-radius: 9px; background: #17365d; color: white; font-weight: 700; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Continue to host coordination</h1>
+    <p>This private invitation opens only the engagement shared with you. Continue when you are ready to review the engagement details.</p>
+    <form method="post" action="/host/access/redeem">
+      <input type="hidden" name="token" value="{{encodedToken}}" />
+      <button type="submit">Continue to engagement</button>
+    </form>
+  </main>
+</body>
+</html>
+""";
     }
 }

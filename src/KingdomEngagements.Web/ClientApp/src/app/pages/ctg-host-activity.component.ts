@@ -73,7 +73,7 @@ interface HostThreadView {
                 <div class="coordination-status">
                   <strong>{{ item.snapshot.hostCoordinationPercent }}%</strong>
                   <span>{{ item.thread.isClosed ? 'Coordination complete' : 'Coordination open' }}</span>
-                  <a [routerLink]="['/assignments', item.snapshot.assignment.id]" [queryParams]="{ lane: 'host-coordination' }">Open engagement →</a>
+                  <a [routerLink]="['/organization/ctg/engagements', item.snapshot.assignment.id]" [queryParams]="{ lane: 'host-coordination' }">Open engagement →</a>
                 </div>
               </header>
 

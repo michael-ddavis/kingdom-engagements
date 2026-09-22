@@ -46,10 +46,10 @@ const PERSONAS: Record<EngagementDemoRole, EngagementDemoPersona> = {
   },
   coordinator: {
     role: 'coordinator',
-    label: 'Booking / Engagement Coordinator',
-    shortLabel: 'Coordinator',
-    person: 'Engagement Coordinator',
-    description: 'Invitation intake, booking workflow, scheduling, communication, and assignment preparation.',
+    label: 'Prophet Courtney / Engagement Director',
+    shortLabel: 'Engagement Director',
+    person: 'Prophet Courtney Beecham',
+    description: 'Full engagement direction: booking, assignments, responsibility ownership, readiness, accountability, financials, communication, and closeout.',
   },
   apostle: {
     role: 'apostle',

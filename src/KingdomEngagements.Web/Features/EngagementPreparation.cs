@@ -68,6 +68,7 @@ public sealed class EngagementPreparationDbContext(DbContextOptions<EngagementPr
         document.Property(x => x.Id).ValueGeneratedNever();
         document.HasIndex(x => x.PreparationId);
         document.Property(x => x.FileName).HasMaxLength(260).IsRequired();
+        document.Property(x => x.Category).HasMaxLength(80).IsRequired();
         document.Property(x => x.ContentType).HasMaxLength(180).IsRequired();
         document.Property(x => x.Content).IsRequired();
 
@@ -172,6 +173,7 @@ BEGIN
         [Id] uniqueidentifier NOT NULL,
         [PreparationId] uniqueidentifier NOT NULL,
         [FileName] nvarchar(260) NOT NULL,
+        [Category] nvarchar(80) NOT NULL,
         [ContentType] nvarchar(180) NOT NULL,
         [Length] bigint NOT NULL,
         [Content] varbinary(max) NOT NULL,
@@ -193,6 +195,14 @@ IF COL_LENGTH(N'dbo.EngagementPreparations', N'MinistryPreparationNotes') IS NUL
 
 IF COL_LENGTH(N'dbo.EngagementPreparations', N'HospitalityNotes') IS NULL
     ALTER TABLE [dbo].[EngagementPreparations] ADD [HospitalityNotes] nvarchar(max) NULL;
+
+IF COL_LENGTH(N'dbo.EngagementHostCoordinationDocuments', N'Category') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[EngagementHostCoordinationDocuments]
+        ADD [Category] nvarchar(80) NOT NULL
+        CONSTRAINT [DF_EngagementHostCoordinationDocuments_Category]
+        DEFAULT N'host-coordination' WITH VALUES;
+END;
 """;
         await Database.ExecuteSqlRawAsync(laneColumnsSql, cancellationToken);
 
@@ -287,6 +297,7 @@ public sealed class HostCoordinationDocumentRecord
     public Guid Id { get; set; }
     public Guid PreparationId { get; set; }
     public string FileName { get; set; } = string.Empty;
+    public string Category { get; set; } = "host-coordination";
     public string ContentType { get; set; } = "application/octet-stream";
     public long Length { get; set; }
     public byte[] Content { get; set; } = [];
@@ -351,7 +362,13 @@ public sealed record HostCoordinationUpdate(
     string? HostNotes,
     bool Submit);
 
-public sealed record HostCoordinationDocumentDto(Guid Id, string FileName, string ContentType, long Length, DateTimeOffset UploadedAtUtc);
+public sealed record HostCoordinationDocumentDto(
+    Guid Id,
+    string FileName,
+    string Category,
+    string ContentType,
+    long Length,
+    DateTimeOffset UploadedAtUtc);
 
 public sealed record EngagementTermsDetails(
     Guid AssignmentId,
@@ -724,7 +741,21 @@ public sealed class EngagementPreparationService(
         return await MapMessageThreadAsync(preparation, cancellationToken);
     }
 
-    public async Task<HostCoordinationDocumentDto?> AddDocumentAsync(string token, string fileName, string contentType, byte[] content, CancellationToken cancellationToken)
+    public Task<HostCoordinationDocumentDto?> AddDocumentAsync(
+        string token,
+        string fileName,
+        string contentType,
+        byte[] content,
+        CancellationToken cancellationToken) =>
+        AddDocumentAsync(token, fileName, contentType, content, "host-coordination", cancellationToken);
+
+    public async Task<HostCoordinationDocumentDto?> AddDocumentAsync(
+        string token,
+        string fileName,
+        string contentType,
+        byte[] content,
+        string? category,
+        CancellationToken cancellationToken)
     {
         await database.EnsureSchemaAsync(cancellationToken);
         var preparation = await database.Preparations.SingleOrDefaultAsync(x => x.CoordinationToken == token, cancellationToken);
@@ -732,12 +763,14 @@ public sealed class EngagementPreparationService(
         if (content.Length == 0) throw new ArgumentException("Choose a file to upload.");
         if (content.Length > MaxDocumentBytes) throw new ArgumentException("Host coordination documents must be 10 MB or smaller.");
 
+        var normalizedCategory = NormalizeDocumentCategory(category);
         var now = DateTimeOffset.UtcNow;
         var document = new HostCoordinationDocumentRecord
         {
             Id = Guid.NewGuid(),
             PreparationId = preparation!.Id,
             FileName = Path.GetFileName(Required(fileName, nameof(fileName))),
+            Category = normalizedCategory,
             ContentType = string.IsNullOrWhiteSpace(contentType) ? "application/octet-stream" : contentType.Trim(),
             Length = content.LongLength,
             Content = content,
@@ -757,7 +790,7 @@ public sealed class EngagementPreparationService(
             {
                 Id = Guid.NewGuid(),
                 Name = document.FileName,
-                Category = "host-coordination",
+                Category = document.Category,
                 Status = "received",
                 StorageReference = $"coordination-document:{document.Id}",
                 UpdatedAtUtc = now
@@ -862,7 +895,13 @@ public sealed class EngagementPreparationService(
             preparation.HonorariumStatus, preparation.HonorariumAmount, preparation.HonorariumCurrency, preparation.PaymentStatus,
             preparation.CoordinationStatus, includeCoordinationToken ? preparation.CoordinationToken : null);
     private static HostCoordinationDocumentDto MapDocument(HostCoordinationDocumentRecord document) =>
-        new(document.Id, document.FileName, document.ContentType, document.Length, document.UploadedAtUtc);
+        new(
+            document.Id,
+            document.FileName,
+            document.Category,
+            document.ContentType,
+            document.Length,
+            document.UploadedAtUtc);
 
     private static void ApplyCoordination(EngagementPreparationRecord preparation, HostCoordinationUpdate input)
     {
@@ -977,6 +1016,26 @@ public sealed class EngagementPreparationService(
     private static IReadOnlyList<HostContactInput> DeserializeContacts(string json) =>
         JsonSerializer.Deserialize<HostContactInput[]>(json, JsonOptions) ?? [];
 
+    private static string NormalizeDocumentCategory(string? value)
+    {
+        var category = string.IsNullOrWhiteSpace(value)
+            ? "host-coordination"
+            : EngagementResponsibilityLanes.Normalize(value);
+
+        return category switch
+        {
+            "host-coordination" or
+            "travel" or
+            "lodging" or
+            "transportation" or
+            "media" or
+            "program" or
+            "documents" or
+            "hospitality" => category,
+            _ => throw new ArgumentException("The host document category is not supported.")
+        };
+    }
+
     private static string Required(string? value, string field) =>
         string.IsNullOrWhiteSpace(value) ? throw new ArgumentException($"{field} is required.") : value.Trim();
 
@@ -1060,7 +1119,14 @@ public static class EngagementPreparationEndpoints
                 if (file is null) return Results.BadRequest(new { message = "Choose a file to upload." });
                 await using var stream = new MemoryStream();
                 await file.CopyToAsync(stream, ct);
-                var item = await service.AddDocumentAsync(token, file.FileName, file.ContentType, stream.ToArray(), ct);
+                var category = form["category"].FirstOrDefault();
+                var item = await service.AddDocumentAsync(
+                    token,
+                    file.FileName,
+                    file.ContentType,
+                    stream.ToArray(),
+                    category,
+                    ct);
                 return item is null ? Results.NotFound(new { message = "This host coordination link is locked, invalid, or expired." }) : Results.Ok(item);
             }
             catch (ArgumentException exception)

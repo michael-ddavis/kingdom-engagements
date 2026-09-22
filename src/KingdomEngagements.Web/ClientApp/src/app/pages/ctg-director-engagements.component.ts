@@ -48,7 +48,7 @@ type EngagementFilter = 'active' | 'attention' | 'upcoming' | 'completed';
         </section>
 
         @if (responsibilityDataUnavailable()) {
-          <div class="state warning">Engagements are available, but responsibility/readiness details are temporarily unavailable. Restart the Engagements backend after pulling the latest branch to load the director data.</div>
+          <div class="state warning">Engagements are available, but responsibility/readiness details are temporarily unavailable. Rebuild the Engagements Docker container after pulling the latest branch.</div>
         }
 
         <section class="engagement-list">

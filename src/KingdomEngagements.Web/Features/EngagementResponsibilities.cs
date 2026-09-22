@@ -449,6 +449,7 @@ public sealed class EngagementResponsibilityService(EngagementsDbContext databas
         CancellationToken cancellationToken)
     {
         var assignments = await database.Assignments.AsNoTracking()
+            .Include(x => x.Tasks)
             .Where(x => x.TenantId == tenantId &&
                         x.Status != "complete" &&
                         x.Status != "completed" &&

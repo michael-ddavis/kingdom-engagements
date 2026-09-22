@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -94,16 +94,43 @@ export class EngagementDemoRoleService {
       );
       this.sessionState.set(session);
       this.initialized.set(true);
-    } catch {
+    } catch (error) {
       this.initialized.set(true);
+
+      if (error instanceof HttpErrorResponse && error.status === 403) {
+        await this.redirectToPlatform();
+        return;
+      }
+
       await this.redirectToPlatformLogin();
     }
+  }
+
+  defaultRoute(): string {
+    if (this.isApostle()) return '/organization/ctg/apostle';
+    if (this.canManageAssignments()) return '/organization/ctg/command-center';
+    return '/organization/ctg/engagements';
   }
 
   private isPublicRoute(): boolean {
     const path = globalThis.location?.pathname ?? '';
     return path.startsWith('/register/') ||
       path === '/join-the-12';
+  }
+
+  private async redirectToPlatform(): Promise<void> {
+    let platformUrl = 'http://localhost:5100';
+
+    try {
+      const product = await firstValueFrom(
+        this.http.get<{ platformUrl?: string }>('/api/product'),
+      );
+      platformUrl = product.platformUrl || platformUrl;
+    } catch {
+      // Use the local Platform URL as the development fallback.
+    }
+
+    globalThis.location.assign(platformUrl.replace(/\/$/, ''));
   }
 
   private async redirectToPlatformLogin(): Promise<void> {

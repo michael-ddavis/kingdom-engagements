@@ -359,6 +359,11 @@ public sealed class EngagementPreparationLifecycleTests
 
             return Task.CompletedTask;
         }
+
+        public Task CheckHealthAsync(CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class TestFixture(

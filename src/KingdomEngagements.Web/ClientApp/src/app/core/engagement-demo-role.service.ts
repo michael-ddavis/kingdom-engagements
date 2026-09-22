@@ -94,7 +94,7 @@ export class EngagementDemoRoleService {
         return;
       }
       if (role === 'minister') {
-        window.location.assign('/assignments');
+        window.location.assign('/organization/ctg/engagements');
         return;
       }
       if (role === 'administrator' || role === 'coordinator') {

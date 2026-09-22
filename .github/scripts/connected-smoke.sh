@@ -137,7 +137,8 @@ docker exec "$production_app_name" sh -c \
   "curl --fail --silent -D /tmp/health-headers.txt -o /tmp/health-body.json -H 'X-Correlation-ID: ci-production-correlation' http://localhost:8080/health/ready"
 docker exec "$production_app_name" grep --ignore-case --quiet \
   '^X-Correlation-ID: ci-production-correlation' /tmp/health-headers.txt
-docker logs "$production_app_name" 2>&1 | grep --quiet 'ci-production-correlation'
+production_logs="$(docker logs "$production_app_name" 2>&1)"
+grep --quiet 'ci-production-correlation' <<<"$production_logs"
 
 run_engagements_app() {
   local container_name="$1"

@@ -109,7 +109,10 @@ public sealed class EngagementsStartupWorker(
 
 public sealed class EngagementsReadinessMiddleware(RequestDelegate next)
 {
-    public async Task InvokeAsync(HttpContext context, EngagementsStartupState startup)
+    public async Task InvokeAsync(
+        HttpContext context,
+        EngagementsStartupState startup,
+        IWebHostEnvironment environment)
     {
         if (!RequiresReadyProduct(context.Request.Path) || startup.Ready)
         {
@@ -124,8 +127,8 @@ public sealed class EngagementsReadinessMiddleware(RequestDelegate next)
             module = "engagements",
             status = "Starting",
             phase = snapshot.Phase,
-            problem = snapshot.Problem,
-            message = "Kingdom Engagements is still preparing its local database. It will retry automatically."
+            problem = environment.IsDevelopment() ? snapshot.Problem : null,
+            message = "Kingdom Engagements is still preparing its runtime dependencies. It will retry automatically."
         });
     }
 
@@ -145,80 +148,59 @@ public static class EngagementsHealthEndpoints
             module = "engagements"
         })).AllowAnonymous();
 
-        endpoints.MapGet("/health", async (
-            EngagementsStartupState startup,
-            IServiceScopeFactory scopeFactory,
-            EngagementsEntitlementResolver entitlements,
-            CancellationToken cancellationToken) =>
-        {
-            var snapshot = startup.Snapshot();
-            if (!snapshot.Ready)
-            {
-                return Results.Json(new
-                {
-                    status = "Starting",
-                    service = "KingdomEngagements",
-                    module = "engagements",
-                    phase = snapshot.Phase,
-                    problem = snapshot.Problem,
-                    updatedAtUtc = snapshot.UpdatedAtUtc
-                }, statusCode: StatusCodes.Status503ServiceUnavailable);
-            }
-
-            try
-            {
-                await using var scope = scopeFactory.CreateAsyncScope();
-                var database = scope.ServiceProvider.GetRequiredService<EngagementsDbContext>();
-                if (database.Database.IsRelational() && !await database.Database.CanConnectAsync(cancellationToken))
-                {
-                    return Results.Json(new
-                    {
-                        status = "Unhealthy",
-                        service = "KingdomEngagements",
-                        module = "engagements",
-                        dependency = "database",
-                        problem = "Kingdom Engagements cannot connect to its SQL database."
-                    }, statusCode: StatusCodes.Status503ServiceUnavailable);
-                }
-            }
-            catch (Exception exception)
-            {
-                return Results.Json(new
-                {
-                    status = "Unhealthy",
-                    service = "KingdomEngagements",
-                    module = "engagements",
-                    dependency = "database",
-                    problem = exception.GetBaseException().Message
-                }, statusCode: StatusCodes.Status503ServiceUnavailable);
-            }
-
-            var entitlement = await entitlements.GetStateAsync(KingdomIdentity.DemoTenantId, cancellationToken);
-            if (entitlement != ModuleEntitlementState.Enabled)
-            {
-                return Results.Json(new
-                {
-                    status = "Unhealthy",
-                    service = "KingdomEngagements",
-                    module = "engagements",
-                    dependency = "platform-entitlement",
-                    entitlement = entitlement.ToString(),
-                    problem = entitlement == ModuleEntitlementState.Disabled
-                        ? "Kingdom Platform reports that Engagements is disabled for this organization."
-                        : "Kingdom Platform could not verify the Engagements entitlement."
-                }, statusCode: StatusCodes.Status503ServiceUnavailable);
-            }
-
-            return Results.Ok(new
-            {
-                status = "Healthy",
-                service = "KingdomEngagements",
-                module = "engagements",
-                database = "ready",
-                platformEntitlement = "enabled"
-            });
-        }).AllowAnonymous();
+        endpoints.MapGet("/health", ReadyAsync).AllowAnonymous();
+        endpoints.MapGet("/health/ready", ReadyAsync).AllowAnonymous();
 
         return endpoints;
+    }
+
+    private static async Task<IResult> ReadyAsync(
+        EngagementsStartupState startup,
+        EngagementsDependencyHealth dependencies,
+        IWebHostEnvironment environment,
+        CancellationToken cancellationToken)
+    {
+        var snapshot = startup.Snapshot();
+        if (!snapshot.Ready)
+        {
+            return Results.Json(new
+            {
+                status = "Starting",
+                service = "KingdomEngagements",
+                module = "engagements",
+                phase = snapshot.Phase,
+                problem = environment.IsDevelopment() ? snapshot.Problem : null,
+                updatedAtUtc = snapshot.UpdatedAtUtc
+            }, statusCode: StatusCodes.Status503ServiceUnavailable);
+        }
+
+        var checks = await dependencies.CheckAsync(cancellationToken);
+        var healthy = checks.All(check => check.Healthy);
+
+        var database = checks.Single(check => check.Name == "database");
+        var redis = checks.Single(check => check.Name == "redis");
+        var objectStorage = checks.Single(check => check.Name == "object-storage");
+        var entitlement = checks.Single(check => check.Name == "platform-entitlement");
+
+        var payload = new
+        {
+            status = healthy ? "Healthy" : "Unhealthy",
+            service = "KingdomEngagements",
+            module = "engagements",
+            database = database.Healthy ? "ready" : "unavailable",
+            redis = redis.Status,
+            objectStorage = objectStorage.Status,
+            platformEntitlement = entitlement.Healthy ? "enabled" : "unavailable",
+            dependencies = checks.Select(check => new
+            {
+                name = check.Name,
+                status = check.Status,
+                durationMs = Math.Round(check.DurationMs, 1)
+            })
+        };
+
+        return healthy
+            ? Results.Ok(payload)
+            : Results.Json(payload, statusCode: StatusCodes.Status503ServiceUnavailable);
     }
 }

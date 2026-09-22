@@ -14,6 +14,19 @@ public sealed class EngagementResponsibilityTests
         var first = await fixture.CreateAssignmentAsync(tenantId, "first");
         var second = await fixture.CreateAssignmentAsync(tenantId, "second");
 
+        fixture.Database.Tasks.Add(new EngagementTask
+        {
+            Id = Guid.NewGuid(),
+            AssignmentId = first.Id,
+            Category = "media",
+            Title = "Prepare event media package",
+            Owner = "Unassigned",
+            Status = "open",
+            UpdatedAtUtc = DateTimeOffset.UtcNow
+        });
+        await fixture.Database.SaveChangesAsync();
+        fixture.Database.ChangeTracker.Clear();
+
         await fixture.Service.SetStandingOwnerAsync(
             tenantId,
             "media",
@@ -28,6 +41,10 @@ public sealed class EngagementResponsibilityTests
         Assert.Equal("user-media", firstLane!.Owner!.UserSubject);
         Assert.Equal("standing", firstLane.Owner.Source);
         Assert.Equal("user-media", secondLane!.Owner!.UserSubject);
+
+        var task = await fixture.Database.Tasks.SingleAsync();
+        Assert.Equal("Media Lead", task.Owner);
+        Assert.Equal("user-media", task.OwnerSubject);
     }
 
     [Fact]

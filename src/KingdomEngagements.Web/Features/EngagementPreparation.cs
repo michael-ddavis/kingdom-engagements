@@ -58,6 +58,8 @@ public sealed class EngagementPreparationDbContext(DbContextOptions<EngagementPr
         preparation.Property(x => x.ContactsJson).HasMaxLength(12000).IsRequired();
         preparation.Property(x => x.PromotionRequirements).HasMaxLength(4000);
         preparation.Property(x => x.PrayerFocus).HasMaxLength(4000);
+        preparation.Property(x => x.MinistryPreparationNotes).HasMaxLength(6000);
+        preparation.Property(x => x.HospitalityNotes).HasMaxLength(6000);
         preparation.Property(x => x.HostNotes).HasMaxLength(4000);
 
         var document = modelBuilder.Entity<HostCoordinationDocumentRecord>();
@@ -146,6 +148,8 @@ BEGIN
         [ContactsJson] nvarchar(max) NOT NULL,
         [PromotionRequirements] nvarchar(4000) NULL,
         [PrayerFocus] nvarchar(4000) NULL,
+        [MinistryPreparationNotes] nvarchar(6000) NULL,
+        [HospitalityNotes] nvarchar(6000) NULL,
         [HostNotes] nvarchar(4000) NULL,
         [SubmittedAtUtc] datetimeoffset NULL,
         [CreatedAtUtc] datetimeoffset NOT NULL,
@@ -182,6 +186,15 @@ END;
 """;
 
         await Database.ExecuteSqlRawAsync(sql, cancellationToken);
+
+        const string laneColumnsSql = """
+IF COL_LENGTH(N'[dbo].[EngagementPreparations]', N'MinistryPreparationNotes') IS NULL
+    ALTER TABLE [dbo].[EngagementPreparations] ADD [MinistryPreparationNotes] nvarchar(6000) NULL;
+
+IF COL_LENGTH(N'[dbo].[EngagementPreparations]', N'HospitalityNotes') IS NULL
+    ALTER TABLE [dbo].[EngagementPreparations] ADD [HospitalityNotes] nvarchar(6000) NULL;
+""";
+        await Database.ExecuteSqlRawAsync(laneColumnsSql, cancellationToken);
 
         const string messageSql = """
 IF OBJECT_ID(N'[dbo].[EngagementHostCoordinationMessages]', N'U') IS NULL
@@ -261,6 +274,8 @@ public sealed class EngagementPreparationRecord
     public string ContactsJson { get; set; } = "[]";
     public string? PromotionRequirements { get; set; }
     public string? PrayerFocus { get; set; }
+    public string? MinistryPreparationNotes { get; set; }
+    public string? HospitalityNotes { get; set; }
     public string? HostNotes { get; set; }
     public DateTimeOffset? SubmittedAtUtc { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }

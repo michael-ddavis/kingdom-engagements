@@ -33,11 +33,16 @@ export class OrganizationLandingComponent implements OnInit {
     }
 
     if (this.demoRole.isMinister()) {
-      void this.router.navigate(['/assignments'], { replaceUrl: true });
+      void this.router.navigate(['/organization', 'ctg', 'engagements'], { replaceUrl: true });
       return;
     }
 
-    void this.router.navigate(['/organization', 'ctg', 'bookings'], { replaceUrl: true });
+    if (this.demoRole.isCoordinator() || this.demoRole.isAdministrator()) {
+      void this.router.navigate(['/organization', 'ctg', 'command-center'], { replaceUrl: true });
+      return;
+    }
+
+    void this.router.navigate(['/organization', 'ctg', 'engagements'], { replaceUrl: true });
   }
 
   private selectedOrganization(): string {

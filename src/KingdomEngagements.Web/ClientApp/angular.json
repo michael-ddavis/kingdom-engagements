@@ -27,6 +27,11 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "signalr.min.js",
+                "input": "node_modules/@microsoft/signalr/dist/browser",
+                "output": "vendor/signalr"
               }
             ],
             "styles": [

@@ -12,6 +12,9 @@ public sealed class EngagementsDbContext(DbContextOptions<EngagementsDbContext> 
     public DbSet<EngagementTask> Tasks => Set<EngagementTask>();
     public DbSet<EngagementDocument> Documents => Set<EngagementDocument>();
     public DbSet<EngagementIntegrationReceipt> IntegrationReceipts => Set<EngagementIntegrationReceipt>();
+    public DbSet<StandingResponsibilityAssignment> StandingResponsibilityAssignments => Set<StandingResponsibilityAssignment>();
+    public DbSet<EngagementResponsibilityOverride> EngagementResponsibilityOverrides => Set<EngagementResponsibilityOverride>();
+    public DbSet<EngagementLaneProgress> EngagementLaneProgress => Set<EngagementLaneProgress>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -45,6 +48,7 @@ public sealed class EngagementsDbContext(DbContextOptions<EngagementsDbContext> 
         task.Property(x => x.Category).HasMaxLength(40).IsRequired();
         task.Property(x => x.Title).HasMaxLength(240).IsRequired();
         task.Property(x => x.Owner).HasMaxLength(180).IsRequired();
+        task.Property(x => x.OwnerSubject).HasMaxLength(180);
         task.Property(x => x.Status).HasMaxLength(40).IsRequired();
         task.Property(x => x.Detail).HasMaxLength(3000);
         task.HasIndex(x => new { x.AssignmentId, x.Category, x.Title }).IsUnique();
@@ -56,6 +60,44 @@ public sealed class EngagementsDbContext(DbContextOptions<EngagementsDbContext> 
         document.Property(x => x.Category).HasMaxLength(60).IsRequired();
         document.Property(x => x.Status).HasMaxLength(40).IsRequired();
         document.Property(x => x.StorageReference).HasMaxLength(1000);
+
+        var standingResponsibility = modelBuilder.Entity<StandingResponsibilityAssignment>();
+        standingResponsibility.ToTable("StandingResponsibilityAssignments");
+        standingResponsibility.HasKey(x => x.Id);
+        standingResponsibility.Property(x => x.LaneKey).HasMaxLength(80).IsRequired();
+        standingResponsibility.Property(x => x.UserSubject).HasMaxLength(180).IsRequired();
+        standingResponsibility.Property(x => x.DisplayName).HasMaxLength(180).IsRequired();
+        standingResponsibility.Property(x => x.Email).HasMaxLength(320);
+        standingResponsibility.Property(x => x.UpdatedBySubject).HasMaxLength(180).IsRequired();
+        standingResponsibility.Property(x => x.UpdatedByName).HasMaxLength(180).IsRequired();
+        standingResponsibility.HasIndex(x => new { x.TenantId, x.LaneKey }).IsUnique();
+
+        var responsibilityOverride = modelBuilder.Entity<EngagementResponsibilityOverride>();
+        responsibilityOverride.ToTable("EngagementResponsibilityOverrides");
+        responsibilityOverride.HasKey(x => x.Id);
+        responsibilityOverride.Property(x => x.LaneKey).HasMaxLength(80).IsRequired();
+        responsibilityOverride.Property(x => x.UserSubject).HasMaxLength(180).IsRequired();
+        responsibilityOverride.Property(x => x.DisplayName).HasMaxLength(180).IsRequired();
+        responsibilityOverride.Property(x => x.Email).HasMaxLength(320);
+        responsibilityOverride.Property(x => x.UpdatedBySubject).HasMaxLength(180).IsRequired();
+        responsibilityOverride.Property(x => x.UpdatedByName).HasMaxLength(180).IsRequired();
+        responsibilityOverride.HasIndex(x => new { x.AssignmentId, x.LaneKey }).IsUnique();
+        responsibilityOverride.HasOne(x => x.Assignment).WithMany()
+            .HasForeignKey(x => x.AssignmentId).OnDelete(DeleteBehavior.Cascade);
+
+        var laneProgress = modelBuilder.Entity<EngagementLaneProgress>();
+        laneProgress.ToTable("EngagementLaneProgress");
+        laneProgress.HasKey(x => x.Id);
+        laneProgress.Property(x => x.LaneKey).HasMaxLength(80).IsRequired();
+        laneProgress.Property(x => x.Status).HasMaxLength(40).IsRequired();
+        laneProgress.Property(x => x.Detail).HasMaxLength(3000);
+        laneProgress.Property(x => x.UpdatedBySubject).HasMaxLength(180).IsRequired();
+        laneProgress.Property(x => x.UpdatedByName).HasMaxLength(180).IsRequired();
+        laneProgress.Property(x => x.CompletedBySubject).HasMaxLength(180);
+        laneProgress.Property(x => x.CompletedByName).HasMaxLength(180);
+        laneProgress.HasIndex(x => new { x.AssignmentId, x.LaneKey }).IsUnique();
+        laneProgress.HasOne(x => x.Assignment).WithMany()
+            .HasForeignKey(x => x.AssignmentId).OnDelete(DeleteBehavior.Cascade);
 
         var receipt = modelBuilder.Entity<EngagementIntegrationReceipt>();
         receipt.ToTable("EngagementIntegrationReceipts");
@@ -99,6 +141,7 @@ public sealed class EngagementTask
     public string Category { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
     public string Owner { get; set; } = string.Empty;
+    public string? OwnerSubject { get; set; }
     public string Status { get; set; } = "open";
     public string? Detail { get; set; }
     public DateTimeOffset? DueAtUtc { get; set; }
@@ -158,8 +201,14 @@ public sealed record CreateEngagementTaskRequest(
     string Title,
     string Owner,
     string? Detail,
-    DateTimeOffset? DueAtUtc);
-public sealed record UpdateEngagementTaskRequest(string Status, string? Owner, string? Detail, DateTimeOffset? DueAtUtc);
+    DateTimeOffset? DueAtUtc,
+    string? OwnerSubject = null);
+public sealed record UpdateEngagementTaskRequest(
+    string Status,
+    string? Owner,
+    string? Detail,
+    DateTimeOffset? DueAtUtc,
+    string? OwnerSubject = null);
 public sealed record CreateEngagementDocumentRequest(string Name, string Category, string Status, string? StorageReference);
 
 public sealed record IntegrationEventEnvelope(
@@ -344,6 +393,7 @@ public sealed class EngagementsService(EngagementsDbContext database)
         {
             Id = Guid.NewGuid(), Category = Required(request.Category, nameof(request.Category)).ToLowerInvariant(),
             Title = Required(request.Title, nameof(request.Title)), Owner = Required(request.Owner, nameof(request.Owner)),
+            OwnerSubject = string.IsNullOrWhiteSpace(request.OwnerSubject) ? null : request.OwnerSubject.Trim(),
             Detail = request.Detail?.Trim(), DueAtUtc = request.DueAtUtc, Status = "open", UpdatedAtUtc = DateTimeOffset.UtcNow
         });
         assignment.UpdatedAtUtc = DateTimeOffset.UtcNow;
@@ -359,6 +409,8 @@ public sealed class EngagementsService(EngagementsDbContext database)
         if (assignment is null || task is null) return null;
         task.Status = ValidateWorkflow(request.Status, nameof(request.Status));
         if (!string.IsNullOrWhiteSpace(request.Owner)) task.Owner = request.Owner.Trim();
+        if (request.OwnerSubject is not null)
+            task.OwnerSubject = string.IsNullOrWhiteSpace(request.OwnerSubject) ? null : request.OwnerSubject.Trim();
         task.Detail = request.Detail?.Trim();
         task.DueAtUtc = request.DueAtUtc;
         task.UpdatedAtUtc = DateTimeOffset.UtcNow;

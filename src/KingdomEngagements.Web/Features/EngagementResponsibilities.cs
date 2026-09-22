@@ -130,6 +130,7 @@ public sealed record EngagementResponsibilitySnapshot(
     EngagementSummary Assignment,
     IReadOnlyList<ResponsibilityLaneState> Lanes,
     int ResponsibilityReadinessPercent,
+    int HostCoordinationPercent,
     int CompletedLaneCount,
     int ApplicableLaneCount,
     int OverdueLaneCount,
@@ -480,6 +481,7 @@ public sealed class EngagementResponsibilityService(EngagementsDbContext databas
                 MapSummary(assignment),
                 lanes,
                 readiness,
+                0,
                 completed,
                 applicable.Length,
                 overdue,
@@ -856,12 +858,26 @@ public static class EngagementResponsibilityEndpoints
         group.MapGet("/command-center", async (
             HttpContext context,
             EngagementResponsibilityService service,
+            AssignmentWorkspaceService workspace,
             CancellationToken ct) =>
         {
-            var items = await service.GetCommandCenterAsync(
-                KingdomIdentity.TenantId(context.User, context.Request),
-                ct);
-            return Results.Ok(items);
+            var tenantId = KingdomIdentity.TenantId(context.User, context.Request);
+            var items = await service.GetCommandCenterAsync(tenantId, ct);
+            var enriched = new List<EngagementResponsibilitySnapshot>(items.Count);
+
+            foreach (var item in items)
+            {
+                var assignmentWorkspace = await workspace.GetAsync(
+                    tenantId,
+                    item.Assignment.Id,
+                    ct);
+                enriched.Add(item with
+                {
+                    HostCoordinationPercent = assignmentWorkspace?.Readiness.OverallPercent ?? 0
+                });
+            }
+
+            return Results.Ok(enriched);
         }).RequireAuthorization("EngagementsDirect");
 
         group.MapGet("/my-work", async (

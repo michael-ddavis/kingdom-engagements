@@ -55,7 +55,7 @@ public sealed class EngagementTeamService(
             return people
                 .Where(person => string.Equals(person.Status, "active", StringComparison.OrdinalIgnoreCase))
                 .OrderBy(person => person.DisplayName)
-                .Select(person => new EngagementDirectoryPerson(person.Id, person.DisplayName))
+                .Select(person => new EngagementDirectoryPerson(person.AccountId, person.DisplayName))
                 .ToArray();
         }
         catch (HttpRequestException)
@@ -149,7 +149,7 @@ public sealed class EngagementTeamService(
     }
 
     private sealed record PlatformDirectoryEntry(
-        Guid Id,
+        Guid AccountId,
         string DisplayName,
         string Status);
 }

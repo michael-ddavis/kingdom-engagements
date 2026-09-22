@@ -57,7 +57,7 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
                 @if (roles.canManageAssignments()) {
                   <a class="eng-nav-link" [class.current]="isCurrent('/organization/ctg/command-center')" href="/organization/ctg/command-center">Command Center</a>
                   <a class="eng-nav-link" [class.current]="isBookingDeskCurrent()" href="/organization/ctg/bookings">Booking Desk</a>
-                  <a class="eng-nav-link" [class.current]="isCurrentPrefix('/assignments') || isCurrentPrefix('/organization/ctg/engagements')" href="/assignments">Engagements</a>
+                  <a class="eng-nav-link" [class.current]="isCurrentPrefix('/organization/ctg/engagements')" href="/organization/ctg/engagements">Engagements</a>
                   <a class="eng-nav-link" [class.current]="isCurrent('/organization/ctg/team')" href="/organization/ctg/team">Team</a>
                   <a class="eng-nav-link" [class.current]="isCurrent('/organization/ctg/hosts')" href="/organization/ctg/hosts">Hosts</a>
                   <a class="eng-nav-link" [class.current]="isCurrent('/organization/ctg/programs')" href="/organization/ctg/programs">Programs</a>

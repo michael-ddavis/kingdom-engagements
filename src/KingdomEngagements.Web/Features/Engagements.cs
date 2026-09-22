@@ -16,7 +16,6 @@ public sealed class EngagementsDbContext(DbContextOptions<EngagementsDbContext> 
     public DbSet<EngagementResponsibilityOverride> EngagementResponsibilityOverrides => Set<EngagementResponsibilityOverride>();
     public DbSet<EngagementLaneProgress> EngagementLaneProgress => Set<EngagementLaneProgress>();
     public DbSet<EngagementMediaAsset> MediaAssets => Set<EngagementMediaAsset>();
-    public DbSet<EngagementMediaAsset> MediaAssets => Set<EngagementMediaAsset>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -115,20 +114,6 @@ public sealed class EngagementsDbContext(DbContextOptions<EngagementsDbContext> 
         mediaAsset.Property(x => x.UpdatedBySubject).HasMaxLength(180).IsRequired();
         mediaAsset.Property(x => x.UpdatedByName).HasMaxLength(180).IsRequired();
         mediaAsset.HasIndex(x => new { x.AssignmentId, x.Status });
-        mediaAsset.HasOne(x => x.Assignment).WithMany()
-            .HasForeignKey(x => x.AssignmentId).OnDelete(DeleteBehavior.Cascade);
-
-        var mediaAsset = modelBuilder.Entity<EngagementMediaAsset>();
-        mediaAsset.ToTable("EngagementMediaAssets");
-        mediaAsset.HasKey(x => x.Id);
-        mediaAsset.Property(x => x.Name).HasMaxLength(260).IsRequired();
-        mediaAsset.Property(x => x.AssetType).HasMaxLength(40).IsRequired();
-        mediaAsset.Property(x => x.Status).HasMaxLength(40).IsRequired();
-        mediaAsset.Property(x => x.StorageReference).HasMaxLength(2000);
-        mediaAsset.Property(x => x.Notes).HasMaxLength(4000);
-        mediaAsset.Property(x => x.UpdatedBySubject).HasMaxLength(180).IsRequired();
-        mediaAsset.Property(x => x.UpdatedByName).HasMaxLength(180).IsRequired();
-        mediaAsset.HasIndex(x => new { x.AssignmentId, x.Name, x.AssetType });
         mediaAsset.HasOne(x => x.Assignment).WithMany()
             .HasForeignKey(x => x.AssignmentId).OnDelete(DeleteBehavior.Cascade);
 

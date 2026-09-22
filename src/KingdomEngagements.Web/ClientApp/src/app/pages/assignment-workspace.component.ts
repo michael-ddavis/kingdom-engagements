@@ -14,6 +14,7 @@ import { CloseoutTabComponent } from './tabs/closeout-tab.component';
 import { ContactsTabComponent } from './tabs/contacts-tab.component';
 import { DocumentsTabComponent } from './tabs/documents-tab.component';
 import { TravelTabComponent } from './tabs/travel-tab.component';
+import { HostCoordinationConversationComponent } from '../shared/host-coordination-conversation.component';
 
 type WorkspaceTab =
   | 'overview'
@@ -37,6 +38,7 @@ type WorkspaceTab =
     CareNetworkTabComponent,
     DocumentsTabComponent,
     CloseoutTabComponent,
+    HostCoordinationConversationComponent,
   ],
   template: `
     <section class="eng-page legacy-workspace-page">
@@ -167,6 +169,8 @@ type WorkspaceTab =
                         </button>
                       </article>
                     </div>
+
+                    <app-host-coordination-conversation [assignmentId]="item.summary.id" />
 
                     <details class="legacy-invitation-source-panel">
                       <summary>

@@ -94,7 +94,7 @@ interface ResponsibilityDraft {
           <div class="partial-load-warning">
             <strong>Some operational sections are unavailable.</strong>
             <span>{{ unavailableSections().join(', ') }}</span>
-            <small>If you just pulled the latest code, restart the .NET Engagements backend so it loads the new lane endpoints.</small>
+            <small>If you just pulled the latest code, rebuild the Engagements Docker container.</small>
           </div>
         }
 

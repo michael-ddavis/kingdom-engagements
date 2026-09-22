@@ -37,7 +37,7 @@ public sealed class EngagementTeamService(
 
         using var request = new HttpRequestMessage(
             HttpMethod.Get,
-            $"{platformUrl.TrimEnd('/')}/api/integration/identity/people");
+            $"{platformUrl.TrimEnd('/')}/api/integration/identity/people?module=engagements");
         request.Headers.TryAddWithoutValidation("X-Kingdom-Tenant", tenantId.ToString("D"));
         request.Headers.TryAddWithoutValidation(
             "X-Kingdom-Service-Key",

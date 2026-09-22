@@ -2,6 +2,7 @@ import { Component, OnInit, computed, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { catchError, forkJoin, of } from 'rxjs';
 import { EngagementsApiService } from '../core/engagements-api.service';
+import { EngagementDemoRoleService } from '../core/engagement-demo-role.service';
 import {
   EngagementResponsibilitySnapshot,
   EngagementSummary,
@@ -18,10 +19,12 @@ type EngagementFilter = 'active' | 'attention' | 'upcoming' | 'completed';
     <section class="director-engagements">
       <header class="page-heading">
         <h1>Engagements</h1>
-        <div class="heading-actions">
-          <a class="secondary" routerLink="/organization/ctg/command-center">Command Center</a>
-          <a class="primary" routerLink="/organization/ctg/stand-up">Stand-up →</a>
-        </div>
+        @if (isDirector()) {
+          <div class="heading-actions">
+            <a class="secondary" routerLink="/organization/ctg/command-center">Command Center</a>
+            <a class="primary" routerLink="/organization/ctg/stand-up">Stand-up →</a>
+          </div>
+        }
       </header>
 
       @if (loading()) {
@@ -54,7 +57,9 @@ type EngagementFilter = 'active' | 'attention' | 'upcoming' | 'completed';
               <p class="eyebrow">{{ filterLabel() }}</p>
               <h2>{{ visible().length }} engagement{{ visible().length === 1 ? '' : 's' }}</h2>
             </div>
-            <a routerLink="/organization/ctg/bookings">Open Booking Desk →</a>
+            @if (isDirector()) {
+              <a routerLink="/organization/ctg/bookings">Booking Desk →</a>
+            }
           </header>
 
           @if (visible().length === 0) {
@@ -157,34 +162,35 @@ export class CtgDirectorEngagementsComponent implements OnInit {
   readonly activeCount = computed(() => this.rows().filter(item => !this.isComplete(item.assignment)).length);
   readonly completedCount = computed(() => this.rows().filter(item => this.isComplete(item.assignment)).length);
   readonly upcomingCount = computed(() => this.rows().filter(item => !this.isComplete(item.assignment) && this.withinDays(item.assignment.startsAtUtc,30)).length);
-  readonly attentionCount = computed(() => this.rows().filter(item => {
-    const s=item.snapshot;
-    return !!s && (s.overdueLaneCount>0 || s.unassignedLaneCount>0 || s.lanes.some(lane => lane.status==='blocked'));
-  }).length);
+  readonly attentionCount = computed(() => this.rows().filter(item => this.needsAttention(item)).length);
 
   readonly visible = computed(() => {
     switch(this.filter()){
       case 'completed': return this.rows().filter(item => this.isComplete(item.assignment));
       case 'upcoming': return this.rows().filter(item => !this.isComplete(item.assignment) && this.withinDays(item.assignment.startsAtUtc,30));
-      case 'attention': return this.rows().filter(item => {
-        const s=item.snapshot;
-        return !!s && (s.overdueLaneCount>0 || s.unassignedLaneCount>0 || s.lanes.some(lane => lane.status==='blocked'));
-      });
+      case 'attention': return this.rows().filter(item => this.needsAttention(item));
       default: return this.rows().filter(item => !this.isComplete(item.assignment));
     }
   });
 
-  constructor(private readonly api:EngagementsApiService){}
+  constructor(
+    private readonly api:EngagementsApiService,
+    private readonly roles:EngagementDemoRoleService,
+  ){}
 
   ngOnInit():void{
+    const director = this.roles.canManageAssignments();
+
     forkJoin({
       assignments:this.api.getAssignments(),
-      snapshots:this.api.getCommandCenter().pipe(
-        catchError(() => {
-          this.responsibilityDataUnavailable.set(true);
-          return of([] as readonly EngagementResponsibilitySnapshot[]);
-        }),
-      ),
+      snapshots:director
+        ? this.api.getCommandCenter().pipe(
+            catchError(() => {
+              this.responsibilityDataUnavailable.set(true);
+              return of([] as readonly EngagementResponsibilitySnapshot[]);
+            }),
+          )
+        : of([] as readonly EngagementResponsibilitySnapshot[]),
     }).subscribe({
       next:result=>{
         this.assignments.set(result.assignments);
@@ -196,6 +202,18 @@ export class CtgDirectorEngagementsComponent implements OnInit {
         this.loading.set(false);
       },
     });
+  }
+
+  isDirector():boolean{return this.roles.canManageAssignments();}
+
+  needsAttention(item:{assignment:EngagementSummary;snapshot:EngagementResponsibilitySnapshot|null}):boolean{
+    const snapshot=item.snapshot;
+    if(snapshot){
+      return snapshot.overdueLaneCount>0 ||
+        snapshot.unassignedLaneCount>0 ||
+        snapshot.lanes.some(lane=>lane.status==='blocked');
+    }
+    return item.assignment.openTasks>0 || item.assignment.readinessPercent<100;
   }
 
   lane(snapshot:EngagementResponsibilitySnapshot|null,key:string):ResponsibilityLaneState|null{

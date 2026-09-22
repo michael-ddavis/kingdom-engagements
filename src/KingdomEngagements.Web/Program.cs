@@ -7,6 +7,10 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.AddApostolOSSecretSources();
+builder.ValidateApostolOSProductionConfiguration();
+builder.AddApostolOSObservability();
+
 var provider = builder.Configuration["Database:Provider"] ?? "InMemory";
 var connectionString = builder.Configuration.GetConnectionString("EngagementsDatabase");
 var useSqlServer = provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase);
@@ -217,6 +221,7 @@ builder.Services.AddScoped<EngagementCompletionService>();
 builder.Services.AddScoped<EngagementOperationsCoordinationPublisher>();
 builder.Services.AddScoped<EngagementCareHandoffPublisher>();
 builder.Services.AddSingleton<EngagementsStartupState>();
+builder.Services.AddScoped<EngagementsDependencyHealth>();
 builder.Services.AddHostedService<EngagementsStartupWorker>();
 builder.Services.AddHostedService<EngagementsDemoSeedWorker>();
 builder.Services.AddHostedService<EngagementsDemoDepthWorker>();
@@ -224,6 +229,7 @@ builder.Services.AddHostedService<EngagementsDemoConnectedStoryWorker>();
 
 var app = builder.Build();
 
+app.UseMiddleware<ApostolOSRequestObservabilityMiddleware>();
 app.UseHttpsRedirection();
 app.UseDefaultFiles();
 app.UseStaticFiles();

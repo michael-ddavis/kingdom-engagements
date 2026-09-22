@@ -76,6 +76,7 @@ The workload role needs only the bucket/prefix permissions required by Kingdom E
 s3:GetObject
 s3:PutObject
 s3:DeleteObject
+s3:ListBucket
 ```
 
 Keep the bucket private. Public object URLs are not required.
@@ -96,3 +97,40 @@ Keep the bucket private. Public object URLs are not required.
 ```
 
 This keeps Kingdom Engagements a modular application while allowing the API tier to scale horizontally.
+
+
+## Production secrets
+
+Production can receive sensitive configuration from environment variables or mounted secret files.
+
+Mounted secret filenames use double underscores for configuration separators:
+
+```text
+/run/secrets/ConnectionStrings__EngagementsDatabase
+/run/secrets/ConnectionStrings__Redis
+```
+
+The application maps those files to:
+
+```text
+ConnectionStrings:EngagementsDatabase
+ConnectionStrings:Redis
+```
+
+Do not commit connection strings, passwords, access keys, API keys, or provider credentials to `appsettings*.json`.
+
+## Observability
+
+Production emits structured JSON logs and OpenTelemetry traces/metrics. Configure an OTLP collector with either:
+
+```text
+KingdomOS__Observability__OtlpEndpoint=https://collector.example.com:4317
+```
+
+or the standard OpenTelemetry setting:
+
+```text
+OTEL_EXPORTER_OTLP_ENDPOINT=https://collector.example.com:4317
+```
+
+Use `/health/live` for process liveness and `/health/ready` for load-balancer readiness. Readiness checks SQL Server, Redis, object storage, and the platform entitlement.

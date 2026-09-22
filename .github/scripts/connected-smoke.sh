@@ -8,14 +8,16 @@ minio_name="engagements-minio"
 platform_name="engagements-platform"
 app_name="engagements-app"
 second_app_name="engagements-app-2"
+production_app_name="engagements-app-production"
 password='LocalKingdom0S!'
 
 cleanup() {
   docker logs "$app_name" 2>/dev/null || true
   docker logs "$second_app_name" 2>/dev/null || true
-  docker rm --force "$second_app_name" "$app_name" "$platform_name" "$minio_name" "$redis_name" "$sql_name" >/dev/null 2>&1 || true
+  docker logs "$production_app_name" 2>/dev/null || true
+  docker rm --force "$production_app_name" "$second_app_name" "$app_name" "$platform_name" "$minio_name" "$redis_name" "$sql_name" >/dev/null 2>&1 || true
   docker network rm "$network" >/dev/null 2>&1 || true
-  rm -rf .ci-platform
+  rm -rf .ci-platform .ci-secrets
 }
 trap cleanup EXIT
 
@@ -89,6 +91,54 @@ printf '%s\n' '[{"moduleKey":"engagements","enabled":true}]' > .ci-platform/api/
 docker run --detach --name "$platform_name" --network "$network" \
   -v "$PWD/.ci-platform:/srv:ro" -w /srv \
   python:3.12-alpine python -m http.server 8080 >/dev/null
+
+mkdir -p .ci-secrets
+printf '%s' "Server=$sql_name;Database=KingdomEngagements;User ID=sa;Password=$password;TrustServerCertificate=True" \
+  > .ci-secrets/ConnectionStrings__EngagementsDatabase
+printf '%s' "$redis_name:6379" \
+  > .ci-secrets/ConnectionStrings__Redis
+
+docker run --detach --name "$production_app_name" --network "$network" \
+  -v "$PWD/.ci-secrets:/run/secrets:ro" \
+  -e ASPNETCORE_ENVIRONMENT=Production \
+  -e AllowedHosts=localhost \
+  -e "KingdomOS__HostAccess__PublicBaseUrl=https://coordinate.apostolos.test" \
+  -e KingdomOS__DocumentStorage__S3__BucketName=engagements-ci \
+  -e KingdomOS__DocumentStorage__S3__Region=us-east-1 \
+  -e "KingdomOS__DocumentStorage__S3__ServiceUrl=http://$minio_name:9000" \
+  -e KingdomOS__DocumentStorage__S3__AllowInsecureEndpoint=true \
+  -e KingdomOS__DocumentStorage__S3__ForcePathStyle=true \
+  -e AWS_ACCESS_KEY_ID=minioadmin \
+  -e AWS_SECRET_ACCESS_KEY=minioadmin \
+  -e "KingdomOS__PlatformInternalUrl=http://$platform_name:8080" \
+  -e "KingdomOS__Observability__OtlpEndpoint=http://127.0.0.1:4317" \
+  kingdom-engagements:ci >/dev/null
+
+production_ready=false
+for attempt in {1..60}; do
+  if production_health="$(docker exec "$production_app_name" curl --fail --silent http://localhost:8080/health/ready 2>/dev/null)"; then
+    if grep --quiet '"database":"ready"' <<<"$production_health" \
+      && grep --quiet '"redis":"healthy"' <<<"$production_health" \
+      && grep --quiet '"objectStorage":"healthy"' <<<"$production_health" \
+      && grep --quiet '"platformEntitlement":"enabled"' <<<"$production_health"; then
+      production_ready=true
+      break
+    fi
+  fi
+  sleep 2
+done
+if [ "$production_ready" != true ]; then
+  echo 'Production-mode Engagements did not become ready.' >&2
+  docker logs "$production_app_name" >&2 || true
+  exit 1
+fi
+
+docker exec "$production_app_name" sh -c \
+  "curl --fail --silent -D /tmp/health-headers.txt -o /tmp/health-body.json -H 'X-Correlation-ID: ci-production-correlation' http://localhost:8080/health/ready"
+docker exec "$production_app_name" grep --ignore-case --quiet \
+  '^X-Correlation-ID: ci-production-correlation' /tmp/health-headers.txt
+production_logs="$(docker logs "$production_app_name" 2>&1)"
+grep --quiet 'ci-production-correlation' <<<"$production_logs"
 
 run_engagements_app() {
   local container_name="$1"

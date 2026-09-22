@@ -188,10 +188,10 @@ END;
         await Database.ExecuteSqlRawAsync(sql, cancellationToken);
 
         const string laneColumnsSql = """
-IF COL_LENGTH(N'[dbo].[EngagementPreparations]', N'MinistryPreparationNotes') IS NULL
+IF COL_LENGTH(N'dbo.EngagementPreparations', N'MinistryPreparationNotes') IS NULL
     ALTER TABLE [dbo].[EngagementPreparations] ADD [MinistryPreparationNotes] nvarchar(6000) NULL;
 
-IF COL_LENGTH(N'[dbo].[EngagementPreparations]', N'HospitalityNotes') IS NULL
+IF COL_LENGTH(N'dbo.EngagementPreparations', N'HospitalityNotes') IS NULL
     ALTER TABLE [dbo].[EngagementPreparations] ADD [HospitalityNotes] nvarchar(6000) NULL;
 """;
         await Database.ExecuteSqlRawAsync(laneColumnsSql, cancellationToken);
@@ -1087,32 +1087,53 @@ public static class EngagementPreparationEndpoints
                 ? $"{context.Request.Scheme}://{context.Request.Host}/host/coordination/{item.CoordinationToken}"
                 : null;
             return Results.Ok(new { preparation = item, termsUrl, coordinationUrl });
-        });
+        }).RequireAuthorization("EngagementsDirect");
         internalGroup.MapGet("/{id:guid}/preparation/messages", async (
             Guid id,
             HttpContext context,
             EngagementPreparationService service,
+            EngagementResponsibilityService responsibilities,
             CancellationToken ct) =>
         {
-            var thread = await service.GetMessagesForAssignmentAsync(
-                KingdomIdentity.TenantId(context.User, context.Request),
-                id,
-                ct);
+            var tenantId = KingdomIdentity.TenantId(context.User, context.Request);
+            var subject = KingdomIdentity.Subject(context.User, context.Request);
+            var allowed = KingdomIdentity.CanDirectEngagements(context.User) ||
+                          await responsibilities.IsEffectiveOwnerAsync(
+                              tenantId,
+                              id,
+                              "host-coordination",
+                              subject,
+                              ct);
+            if (!allowed) return Results.Forbid();
+
+            var thread = await service.GetMessagesForAssignmentAsync(tenantId, id, ct);
             return thread is null ? Results.NotFound() : Results.Ok(thread);
-        }).RequireAuthorization("EngagementsDirect");
+        });
         internalGroup.MapPost("/{id:guid}/preparation/messages", async (
             Guid id,
             PostMinistryCoordinationMessageRequest request,
             HttpContext context,
             EngagementPreparationService service,
+            EngagementResponsibilityService responsibilities,
             CancellationToken ct) =>
         {
             try
             {
+                var tenantId = KingdomIdentity.TenantId(context.User, context.Request);
+                var subject = KingdomIdentity.Subject(context.User, context.Request);
+                var allowed = KingdomIdentity.CanDirectEngagements(context.User) ||
+                              await responsibilities.IsEffectiveOwnerAsync(
+                                  tenantId,
+                                  id,
+                                  "host-coordination",
+                                  subject,
+                                  ct);
+                if (!allowed) return Results.Forbid();
+
                 var thread = await service.AddMinistryMessageAsync(
-                    KingdomIdentity.TenantId(context.User, context.Request),
+                    tenantId,
                     id,
-                    context.User.Identity?.Name ?? "Engagement Director",
+                    context.User.Identity?.Name ?? "Engagement team member",
                     request,
                     ct);
                 return thread is null ? Results.NotFound() : Results.Ok(thread);
@@ -1125,7 +1146,7 @@ public static class EngagementPreparationEndpoints
             {
                 return Results.Conflict(new { message = exception.Message });
             }
-        }).RequireAuthorization("EngagementsDirect");
+        });
 
         internalGroup.MapGet("/{id:guid}/preparation/documents/{documentId:guid}", async (Guid id, Guid documentId, bool? download, HttpContext context, EngagementPreparationService service, CancellationToken ct) =>
         {
@@ -1134,7 +1155,7 @@ public static class EngagementPreparationEndpoints
             return download is true
                 ? Results.File(document.Content, document.ContentType, document.FileName, enableRangeProcessing: true)
                 : Results.File(document.Content, document.ContentType, enableRangeProcessing: true);
-        });
+        }).RequireAuthorization("EngagementsDirect");
         return endpoints;
     }
 }

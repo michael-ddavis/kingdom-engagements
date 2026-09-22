@@ -771,7 +771,7 @@ public static class HostAccessEndpoints
     {
         var encodedToken = HtmlEncoder.Default.Encode(token);
 
-        return $"""
+        return $$"""
 <!doctype html>
 <html lang="en">
 <head>

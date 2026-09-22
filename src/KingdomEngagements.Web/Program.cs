@@ -162,7 +162,11 @@ app.UseStaticFiles();
 app.UseAuthentication();
 app.Use(async (context, next) =>
 {
-    if (app.Environment.IsDevelopment())
+    var demoProfilesEnabled =
+        app.Environment.IsDevelopment() &&
+        app.Configuration.GetValue("KingdomOS:Identity:DemoProfilesEnabled", false);
+
+    if (demoProfilesEnabled)
     {
         var organizationKey =
             context.Request.Headers[KingdomIdentity.DemoOrganizationHeader].FirstOrDefault()
@@ -187,6 +191,7 @@ app.Use(async (context, next) =>
             resolvedTenantId,
             demoRole);
     }
+
     await next();
 });
 app.UseMiddleware<EngagementsReadinessMiddleware>();

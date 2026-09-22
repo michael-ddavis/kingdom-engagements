@@ -1148,11 +1148,18 @@ public static class EngagementPreparationEndpoints
         {
             var item = await service.EnsureAsync(KingdomIdentity.TenantId(context.User, context.Request), id, ct);
             if (item is null) return Results.NotFound(new { message = "Assignment preparation could not be initialized." });
-            var termsUrl = $"{context.Request.Scheme}://{context.Request.Host}/host/terms/{item.TermsToken}";
-            var coordinationUrl = item.TermsStatus == "accepted"
-                ? $"{context.Request.Scheme}://{context.Request.Host}/host/coordination/{item.CoordinationToken}"
-                : null;
-            return Results.Ok(new { preparation = item, termsUrl, coordinationUrl });
+            var safePreparation = item with
+            {
+                TermsToken = string.Empty,
+                CoordinationToken = string.Empty
+            };
+
+            return Results.Ok(new
+            {
+                preparation = safePreparation,
+                termsUrl = (string?)null,
+                coordinationUrl = (string?)null
+            });
         }).RequireAuthorization("EngagementsDirect");
         internalGroup.MapGet("/{id:guid}/preparation/messages", async (
             Guid id,

@@ -1477,11 +1477,18 @@ public static class EngagementLaneWorkspaceEndpoints
     {
         if (KingdomIdentity.CanDirectEngagements(context.User)) return true;
 
-        return await responsibilities.IsEffectiveOwnerAsync(
-            KingdomIdentity.TenantId(context.User, context.Request),
-            assignmentId,
-            laneKey,
-            KingdomIdentity.Subject(context.User, context.Request),
-            ct);
+        try
+        {
+            return await responsibilities.IsEffectiveOwnerAsync(
+                KingdomIdentity.TenantId(context.User, context.Request),
+                assignmentId,
+                laneKey,
+                KingdomIdentity.Subject(context.User, context.Request),
+                ct);
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
     }
 }

@@ -15,6 +15,8 @@ import {
   ResponsibilityLaneDefinition,
   ResponsibilityLaneState,
   StandingResponsibilityAssignment,
+  EngagementDirectoryPerson,
+  EngagementTeamMember,
   EngagementResponsibilitySnapshot,
   MyResponsibilityWorkItem,
   TravelLaneDetails,
@@ -390,6 +392,24 @@ export class EngagementsApiService {
     );
   }
 
+
+  getEngagementTeamDirectory(): Observable<readonly EngagementDirectoryPerson[]> {
+    return this.http.get<readonly EngagementDirectoryPerson[]>('/api/engagements/team/directory');
+  }
+
+  getEngagementTeam(): Observable<readonly EngagementTeamMember[]> {
+    return this.http.get<readonly EngagementTeamMember[]>('/api/engagements/team/');
+  }
+
+  addEngagementTeamMember(accountId: string): Observable<EngagementTeamMember> {
+    return this.http.post<EngagementTeamMember>('/api/engagements/team/', { accountId });
+  }
+
+  removeEngagementTeamMember(accountId: string): Observable<void> {
+    return this.http.delete<void>(
+      `/api/engagements/team/${encodeURIComponent(accountId)}`,
+    );
+  }
 
   getResponsibilityLanes(): Observable<readonly ResponsibilityLaneDefinition[]> {
     return this.http.get<readonly ResponsibilityLaneDefinition[]>('/api/engagements/responsibility-lanes');

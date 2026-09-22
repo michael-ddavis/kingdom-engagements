@@ -94,7 +94,7 @@ public static class GlobalBookingDeskEndpoints
                 .ToListAsync(cancellationToken);
 
             return Results.Ok(payloads.Select(ParsePayload).ToArray());
-        });
+        }).RequireAuthorization("EngagementsDirect");
 
         group.MapPost("", async (
             JsonElement payload,

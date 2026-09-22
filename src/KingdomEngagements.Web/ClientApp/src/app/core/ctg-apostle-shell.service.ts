@@ -35,7 +35,7 @@ export class CtgApostleShellService {
 
   private ensureRoadAheadAnchor(version: number, attempt = 0): void {
     if (version !== this.anchorVersion) return;
-    const road = document.querySelector<HTMLElement>('.apostle-dashboard .road-section');
+    const road = document.querySelector<HTMLElement>('.executive-view .road-ahead');
     if (!road) {
       if (attempt < 24) window.setTimeout(() => this.ensureRoadAheadAnchor(version, attempt + 1), 75);
       return;
@@ -49,7 +49,7 @@ export class CtgApostleShellService {
       const target = event.target;
       if (!(target instanceof HTMLImageElement)) return;
       if (!target.src.includes('images.unsplash.com')) return;
-      if (!target.closest('.apostle-dashboard, .apostle-engagement-brief')) return;
+      if (!target.closest('.executive-view, .apostle-engagement-brief')) return;
 
       target.style.display = 'none';
       target.parentElement?.classList.add('ctg-city-image-fallback');

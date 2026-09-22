@@ -70,7 +70,7 @@ export const appConfig: ApplicationConfig = {
       { path: 'organization/ctg/team', component: CtgTeamResponsibilitiesComponent, canActivate: [engagementDirectorGuard] },
       { path: 'organization/ctg/hosts', component: CtgHostActivityComponent, canActivate: [engagementDirectorGuard] },
       { path: 'organization/ctg/engagements/:id', component: CtgDirectorEngagementComponent, canActivate: [engagementDirectorGuard] },
-      { path: 'organization/ctg', component: CtgEngagementsHomeComponent, canActivate: [engagementBookingGuard] },
+      { path: 'organization/ctg', component: CtgCommandCenterComponent, canActivate: [engagementDirectorGuard] },
       { path: 'organization/ctg/bookings', component: CtgBookingDeskComponent, canActivate: [engagementBookingGuard] },
       { path: 'organization/ctg/start-invitation', component: CtgStartInvitationComponent, canActivate: [engagementBookingGuard] },
       { path: 'organization/ctg/programs', component: CtgProgramsComponent, canActivate: [engagementBookingGuard] },

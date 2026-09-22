@@ -145,10 +145,10 @@ public sealed class EngagementLaneWorkspaceTests
 
         Assert.NotNull(brief);
         var json = JsonSerializer.Serialize(brief);
-        Assert.DoesNotContain("TermsToken", json, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("CoordinationToken", json, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Honorarium", json, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("PaymentStatus", json, StringComparison.OrdinalIgnoreCase);
+        Assert.False(json.Contains("TermsToken", StringComparison.OrdinalIgnoreCase));
+        Assert.False(json.Contains("CoordinationToken", StringComparison.OrdinalIgnoreCase));
+        Assert.False(json.Contains("Honorarium", StringComparison.OrdinalIgnoreCase));
+        Assert.False(json.Contains("PaymentStatus", StringComparison.OrdinalIgnoreCase));
     }
 
     private static TestFixture CreateFixture()

@@ -31,6 +31,7 @@ import { CtgHostResponseEnhancementService } from './core/ctg-host-response-enha
 import { CtgBookingDeskPolishService } from './core/ctg-booking-desk-polish.service';
 import { DwcGroupsBrandingService } from './core/dwc-groups-branding.service';
 import { HostCollaborationLinkService } from './core/host-collaboration-link.service';
+import { EngagementRealtimeService } from './core/engagement-realtime.service';
 import {
   MutationToastService,
   mutationToastInterceptor,
@@ -49,6 +50,7 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => inject(DwcGroupsBrandingService).mount()),
     provideAppInitializer(() => inject(MutationToastService).mount()),
     provideAppInitializer(() => inject(HostCollaborationLinkService).mount()),
+    provideAppInitializer(() => inject(EngagementRealtimeService).mount()),
     provideRouter([
       { path: '', component: OrganizationLandingComponent, pathMatch: 'full', canActivate: [engagementHomeGuard] },
       { path: 'invitations', component: InvitationsComponent, canActivate: [engagementBookingGuard] },

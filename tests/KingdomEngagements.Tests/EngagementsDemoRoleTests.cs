@@ -92,6 +92,23 @@ public sealed class EngagementsDemoRoleTests
         Assert.False(EngagementsDemoRoles.CanAccessAssignment(principal, Summary("assignment-unrelated-999")));
     }
 
+    [Fact]
+    public void Missing_demo_role_does_not_default_a_real_user_to_administrator()
+    {
+        var principal = new System.Security.Claims.ClaimsPrincipal(
+            new System.Security.Claims.ClaimsIdentity(
+            [
+                new System.Security.Claims.Claim(
+                    KingdomIdentity.ProductRoleClaim,
+                    "engagements:team-member")
+            ],
+            KingdomIdentity.Scheme));
+
+        Assert.Equal(EngagementsDemoRoles.Minister, EngagementsDemoRoles.CurrentRole(principal));
+        Assert.False(EngagementsDemoRoles.CanUseBookingDesk(principal));
+        Assert.False(EngagementsDemoRoles.CanViewAllEngagements(principal));
+    }
+
     [Theory]
     [InlineData("administrator", "administrator")]
     [InlineData("coordinator", "coordinator")]

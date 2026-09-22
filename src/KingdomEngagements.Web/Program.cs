@@ -170,6 +170,11 @@ builder.Services.AddAuthorization(options =>
         policy.RequireAuthenticatedUser();
         policy.AddRequirements(new HostAccessRequirement());
     });
+    options.AddPolicy(EngagementRealtimeHub.PolicyName, policy =>
+    {
+        policy.AddAuthenticationSchemes(KingdomIdentity.Scheme, HostAccessIdentity.Scheme);
+        policy.RequireAuthenticatedUser();
+    });
 });
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient<EngagementsEntitlementResolver>(client =>
@@ -189,7 +194,9 @@ builder.Services.AddScoped<StaffStartedInvitationsService>();
 builder.Services.AddScoped<HickmanSpeakingRequestsService>();
 builder.Services.AddScoped<EngagementPreparationService>();
 builder.Services.AddScoped<HostAccessService>();
+builder.Services.AddScoped<EngagementRealtimePublisher>();
 builder.Services.AddScoped<IAuthorizationHandler, HostAccessAuthorizationHandler>();
+builder.Services.AddSignalR();
 builder.Services.AddScoped<AssignmentWorkspaceService>();
 builder.Services.AddScoped<EngagementCompletionService>();
 builder.Services.AddScoped<EngagementOperationsCoordinationPublisher>();
@@ -363,6 +370,10 @@ app.MapSpeakingRequestEndpoints();
 app.MapHickmanSpeakingRequestEndpoints();
 app.MapHostAccessEndpoints();
 app.MapEngagementPreparationEndpoints();
+app.MapHub<EngagementRealtimeHub>(
+        EngagementRealtimeHub.Route,
+        options => options.CloseOnAuthenticationExpiration = true)
+    .RequireAuthorization(EngagementRealtimeHub.PolicyName);
 app.MapAssignmentWorkspaceEndpoints();
 app.MapEngagementCompletionEndpoints();
 app.MapEngagementsDemoAccessEndpoints();

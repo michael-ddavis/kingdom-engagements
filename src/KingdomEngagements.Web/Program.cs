@@ -189,7 +189,9 @@ builder.Services.AddScoped<StaffStartedInvitationsService>();
 builder.Services.AddScoped<HickmanSpeakingRequestsService>();
 builder.Services.AddScoped<EngagementPreparationService>();
 builder.Services.AddScoped<HostAccessService>();
+builder.Services.AddScoped<EngagementRealtimePublisher>();
 builder.Services.AddScoped<IAuthorizationHandler, HostAccessAuthorizationHandler>();
+builder.Services.AddSignalR();
 builder.Services.AddScoped<AssignmentWorkspaceService>();
 builder.Services.AddScoped<EngagementCompletionService>();
 builder.Services.AddScoped<EngagementOperationsCoordinationPublisher>();
@@ -363,6 +365,15 @@ app.MapSpeakingRequestEndpoints();
 app.MapHickmanSpeakingRequestEndpoints();
 app.MapHostAccessEndpoints();
 app.MapEngagementPreparationEndpoints();
+app.MapHub<EngagementRealtimeHub>(
+        EngagementRealtimeHub.InternalRoute,
+        options => options.CloseOnAuthenticationExpiration = true)
+    .RequireAuthorization();
+
+app.MapHub<EngagementRealtimeHub>(
+        EngagementRealtimeHub.HostRoute,
+        options => options.CloseOnAuthenticationExpiration = true)
+    .RequireAuthorization(HostAccessIdentity.Policy);
 app.MapAssignmentWorkspaceEndpoints();
 app.MapEngagementCompletionEndpoints();
 app.MapEngagementsDemoAccessEndpoints();

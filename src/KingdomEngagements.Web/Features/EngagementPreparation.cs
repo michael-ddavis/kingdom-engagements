@@ -1188,6 +1188,7 @@ public static class EngagementPreparationEndpoints
             HttpContext context,
             EngagementPreparationService service,
             EngagementResponsibilityService responsibilities,
+            EngagementRealtimeNotifier realtime,
             CancellationToken ct) =>
         {
             try
@@ -1209,7 +1210,20 @@ public static class EngagementPreparationEndpoints
                     context.User.Identity?.Name ?? "Engagement team member",
                     request,
                     ct);
-                return thread is null ? Results.NotFound() : Results.Ok(thread);
+                if (thread is null)
+                    return Results.NotFound();
+
+                var message = thread.Messages.LastOrDefault();
+                if (message is not null)
+                {
+                    await realtime.MessageCreatedAsync(
+                        tenantId,
+                        id,
+                        message,
+                        ct);
+                }
+
+                return Results.Ok(thread);
             }
             catch (ArgumentException exception)
             {

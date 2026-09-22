@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text.Json;
 using KingdomEngagements.Web.Platform;
 using Microsoft.EntityFrameworkCore;
@@ -121,6 +122,7 @@ public sealed class EngagementLaneOperationsService(
     EngagementResponsibilityService responsibilities)
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private const int MaxLaneDocumentBytes = 10 * 1024 * 1024;
     private static readonly HashSet<string> MediaTypes = new(StringComparer.OrdinalIgnoreCase)
     {
         "image", "video", "audio", "document", "link", "graphic", "logo"
@@ -382,6 +384,128 @@ public sealed class EngagementLaneOperationsService(
         return true;
     }
 
+    public async Task<EngagementDocument?> AddLaneDocumentAsync(
+        Guid tenantId,
+        Guid assignmentId,
+        string laneKey,
+        string fileName,
+        string contentType,
+        byte[] content,
+        string actorName,
+        CancellationToken ct)
+    {
+        var lane=EngagementResponsibilityLanes.Get(laneKey);
+        if(content.Length==0) throw new ArgumentException("Choose a file to upload.");
+        if(content.Length>MaxLaneDocumentBytes) throw new ArgumentException("Lane documents must be 10 MB or smaller.");
+
+        await preparationService.EnsureAsync(tenantId,assignmentId,ct);
+        var preparation=await preparationDatabase.Preparations
+            .SingleOrDefaultAsync(x=>x.TenantId==tenantId&&x.AssignmentId==assignmentId,ct);
+        var assignment=await engagementsDatabase.Assignments
+            .Include(x=>x.Documents)
+            .SingleOrDefaultAsync(x=>x.TenantId==tenantId&&x.Id==assignmentId,ct);
+        if(preparation is null||assignment is null) return null;
+
+        var now=DateTimeOffset.UtcNow;
+        var safeFileName=Path.GetFileName(Required(fileName,"fileName"));
+        var source=new HostCoordinationDocumentRecord
+        {
+            Id=Guid.NewGuid(),
+            PreparationId=preparation.Id,
+            FileName=safeFileName,
+            ContentType=string.IsNullOrWhiteSpace(contentType)?"application/octet-stream":contentType.Trim(),
+            Length=content.LongLength,
+            Content=content,
+            UploadedAtUtc=now
+        };
+        preparationDatabase.Documents.Add(source);
+        preparation.UpdatedAtUtc=now;
+
+        var document=new EngagementDocument
+        {
+            Id=Guid.NewGuid(),
+            AssignmentId=assignmentId,
+            Name=safeFileName,
+            Category=lane.Key,
+            Status="received",
+            StorageReference=$"coordination-document:{source.Id}",
+            UpdatedAtUtc=now
+        };
+        assignment.Documents.Add(document);
+        assignment.UpdatedAtUtc=now;
+        if(lane.Key=="documents") assignment.DocumentsStatus="received";
+
+        await preparationDatabase.SaveChangesAsync(ct);
+        await engagementsDatabase.SaveChangesAsync(ct);
+        await AddActivityAsync(tenantId,assignmentId,"lane-document-added",
+            $"{lane.Label} document added",safeFileName,actorName,now,ct);
+        return document;
+    }
+
+    public async Task<HostCoordinationDocumentRecord?> GetLaneDocumentContentAsync(
+        Guid tenantId,
+        Guid assignmentId,
+        string laneKey,
+        Guid documentId,
+        CancellationToken ct)
+    {
+        var lane=EngagementResponsibilityLanes.Get(laneKey);
+        var document=await engagementsDatabase.Documents.AsNoTracking()
+            .SingleOrDefaultAsync(x=>x.AssignmentId==assignmentId&&x.Id==documentId&&x.Category==lane.Key,ct);
+        if(document?.StorageReference is null||
+           !document.StorageReference.StartsWith("coordination-document:",StringComparison.OrdinalIgnoreCase))
+            return null;
+        if(!Guid.TryParse(document.StorageReference["coordination-document:".Length..],out var sourceId))
+            return null;
+
+        return await preparationService.GetDocumentForAssignmentAsync(
+            tenantId,assignmentId,sourceId,ct);
+    }
+
+    public async Task<bool> DeleteLaneDocumentAsync(
+        Guid tenantId,
+        Guid assignmentId,
+        string laneKey,
+        Guid documentId,
+        string actorName,
+        CancellationToken ct)
+    {
+        var lane=EngagementResponsibilityLanes.Get(laneKey);
+        var document=await engagementsDatabase.Documents
+            .SingleOrDefaultAsync(x=>x.AssignmentId==assignmentId&&x.Id==documentId&&x.Category==lane.Key,ct);
+        if(document is null) return false;
+
+        Guid? sourceId=null;
+        if(document.StorageReference?.StartsWith("coordination-document:",StringComparison.OrdinalIgnoreCase)==true &&
+           Guid.TryParse(document.StorageReference["coordination-document:".Length..],out var parsed))
+            sourceId=parsed;
+
+        engagementsDatabase.Documents.Remove(document);
+        var assignment=await engagementsDatabase.Assignments
+            .SingleOrDefaultAsync(x=>x.TenantId==tenantId&&x.Id==assignmentId,ct);
+        if(assignment is null) return false;
+        assignment.UpdatedAtUtc=DateTimeOffset.UtcNow;
+
+        if(sourceId is Guid source)
+        {
+            var preparation=await preparationDatabase.Preparations
+                .SingleOrDefaultAsync(x=>x.TenantId==tenantId&&x.AssignmentId==assignmentId,ct);
+            if(preparation is not null)
+            {
+                var binary=await preparationDatabase.Documents
+                    .SingleOrDefaultAsync(x=>x.PreparationId==preparation.Id&&x.Id==source,ct);
+                if(binary is not null) preparationDatabase.Documents.Remove(binary);
+                preparation.UpdatedAtUtc=DateTimeOffset.UtcNow;
+                await preparationDatabase.SaveChangesAsync(ct);
+            }
+        }
+
+        await engagementsDatabase.SaveChangesAsync(ct);
+        await AddActivityAsync(tenantId,assignmentId,"lane-document-removed",
+            $"{lane.Label} document removed",document.Name,actorName,DateTimeOffset.UtcNow,ct);
+        return true;
+    }
+
     public async Task<IReadOnlyList<EngagementDocument>?> GetDocumentsAsync(Guid tenantId,Guid assignmentId,CancellationToken ct)
     {
         var exists=await engagementsDatabase.Assignments.AsNoTracking()
@@ -557,6 +681,55 @@ public static class EngagementLaneOperationsEndpoints
             await UpdateLaneAsync("media",id,context,service,ct,
                 () => service.UpdateMediaAsync(KingdomIdentity.TenantId(context.User,context.Request),id,request,
                     KingdomIdentity.Subject(context.User,context.Request),context.User.Identity?.Name??"Media lead",ct)));
+
+        group.MapPost("/{laneKey}/documents", async (
+            Guid id,string laneKey,HttpRequest request,HttpContext context,
+            EngagementLaneOperationsService service,CancellationToken ct)=>
+        {
+            if(!await service.CanUseLaneAsync(context.User,context.Request,id,laneKey,ct)) return Results.Forbid();
+            try
+            {
+                if(!request.HasFormContentType) return Results.BadRequest(new {message="Upload a document using multipart form data."});
+                var form=await request.ReadFormAsync(ct);
+                var file=form.Files.GetFile("file");
+                if(file is null) return Results.BadRequest(new {message="Choose a file to upload."});
+                await using var stream=new MemoryStream();
+                await file.CopyToAsync(stream,ct);
+                var item=await service.AddLaneDocumentAsync(
+                    KingdomIdentity.TenantId(context.User,context.Request),id,laneKey,
+                    file.FileName,file.ContentType,stream.ToArray(),
+                    context.User.Identity?.Name??"Engagement team member",ct);
+                return item is null?Results.NotFound():Results.Ok(item);
+            }
+            catch(ArgumentException ex)
+            {
+                return Results.ValidationProblem(new Dictionary<string,string[]>{{"document",[ex.Message]}});
+            }
+        }).DisableAntiforgery();
+
+        group.MapGet("/{laneKey}/documents/{documentId:guid}/content", async (
+            Guid id,string laneKey,Guid documentId,bool? download,HttpContext context,
+            EngagementLaneOperationsService service,CancellationToken ct)=>
+        {
+            if(!await service.CanUseLaneAsync(context.User,context.Request,id,laneKey,ct)) return Results.Forbid();
+            var document=await service.GetLaneDocumentContentAsync(
+                KingdomIdentity.TenantId(context.User,context.Request),id,laneKey,documentId,ct);
+            if(document is null) return Results.NotFound();
+            return download is true
+                ?Results.File(document.Content,document.ContentType,document.FileName,enableRangeProcessing:true)
+                :Results.File(document.Content,document.ContentType,enableRangeProcessing:true);
+        });
+
+        group.MapDelete("/{laneKey}/documents/{documentId:guid}", async (
+            Guid id,string laneKey,Guid documentId,HttpContext context,
+            EngagementLaneOperationsService service,CancellationToken ct)=>
+        {
+            if(!await service.CanUseLaneAsync(context.User,context.Request,id,laneKey,ct)) return Results.Forbid();
+            var deleted=await service.DeleteLaneDocumentAsync(
+                KingdomIdentity.TenantId(context.User,context.Request),id,laneKey,documentId,
+                context.User.Identity?.Name??"Engagement team member",ct);
+            return deleted?Results.NoContent():Results.NotFound();
+        });
 
         group.MapPost("/media/assets", async (
             Guid id,CreateMediaAssetRequest request,HttpContext context,EngagementLaneOperationsService service,CancellationToken ct)=>

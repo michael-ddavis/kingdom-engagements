@@ -21,6 +21,7 @@ import {
   DocumentsLaneDetails,
   EngagementDetails,
   EngagementCompletion,
+  EngagementTeamMember,
   FinanceLaneDetails,
   HospitalityLaneDetails,
   HostCoordinationLaneDetails,
@@ -55,7 +56,6 @@ type DirectorTab =
 interface ResponsibilityDraft {
   laneKey: string;
   displayName: string;
-  email: string;
   userSubject: string;
   status: string;
   detail: string;
@@ -522,9 +522,20 @@ interface ResponsibilityDraft {
         <aside class="responsibility-drawer">
           <header><div><small>Engagement responsibility</small><h2>{{ laneLabel(form.laneKey) }}</h2></div><button type="button" (click)="closeResponsibility()">×</button></header>
           <label class="toggle"><input type="checkbox" [(ngModel)]="form.isApplicable"><span>This lane applies to this engagement</span></label>
-          <label class="field"><span>Owner name</span><input [(ngModel)]="form.displayName"></label>
-          <label class="field"><span>Owner email</span><input type="email" [(ngModel)]="form.email"></label>
-          <label class="field"><span>ApostolOS account ID</span><input [(ngModel)]="form.userSubject"></label>
+          <label class="field"><span>Owner</span>
+            <select [ngModel]="form.userSubject" (ngModelChange)="selectResponsibilityOwner($event)">
+              <option value="">Unassigned</option>
+              @for (member of team(); track member.accountId) {
+                <option [value]="member.accountId">{{ member.displayName }}</option>
+              }
+            </select>
+          </label>
+          @if (form.userSubject) {
+            <div class="selected-account">
+              <span class="avatar">{{ initials(form.displayName) }}</span>
+              <div><strong>{{ form.displayName }}</strong><small>Account ID · {{ form.userSubject }}</small></div>
+            </div>
+          }
           <label class="field"><span>Status</span>
             <select [(ngModel)]="form.status">
               <option value="not-started">Not started</option>
@@ -637,6 +648,7 @@ export class CtgDirectorEngagementComponent implements OnInit {
   readonly saveError = signal<string | null>(null);
   readonly unavailableSections = signal<readonly string[]>([]);
   readonly responsibilityDraft = signal<ResponsibilityDraft | null>(null);
+  readonly team = signal<readonly EngagementTeamMember[]>([]);
   readonly teamLaneKeys = signal<readonly string[]>([]);
 
   assignmentId = '';
@@ -707,6 +719,9 @@ export class CtgDirectorEngagementComponent implements OnInit {
       myWork: director
         ? of([] as readonly MyResponsibilityWorkItem[])
         : this.api.getMyWork().pipe(catchError(() => of([] as readonly MyResponsibilityWorkItem[]))),
+      team: director
+        ? this.api.getEngagementTeam().pipe(catchError(() => of([] as readonly EngagementTeamMember[])))
+        : of([] as readonly EngagementTeamMember[]),
       workspace: director ? this.optionalLoad('Overview', this.api.getWorkspace(this.assignmentId)) : of(null),
       responsibilities: director
         ? this.api.getAssignmentResponsibilities(this.assignmentId).pipe(
@@ -738,6 +753,7 @@ export class CtgDirectorEngagementComponent implements OnInit {
     }).subscribe({
       next: result => {
         this.assignment.set(result.assignment);
+        this.team.set(result.team);
         this.workspace.set(result.workspace?.workspace ?? null);
 
         const teamLanes = result.myWork
@@ -852,13 +868,24 @@ export class CtgDirectorEngagementComponent implements OnInit {
     this.responsibilityDraft.set({
       laneKey: item.key,
       displayName: item.owner?.displayName ?? '',
-      email: item.owner?.email ?? '',
       userSubject: item.owner?.userSubject ?? '',
       status: item.status === 'overdue' ? 'in-progress' : item.status,
       detail: item.detail ?? '',
       dueDate: item.dueAtUtc ? item.dueAtUtc.slice(0, 10) : '',
       isApplicable: item.isApplicable,
     });
+  }
+
+  selectResponsibilityOwner(accountId: string): void {
+    const member = this.team().find(item => item.accountId === accountId);
+    this.responsibilityDraft.update(current => current
+      ? {
+          ...current,
+          userSubject: member?.accountId ?? '',
+          displayName: member?.displayName ?? '',
+        }
+      : current,
+    );
   }
 
   closeResponsibility(): void {
@@ -885,7 +912,7 @@ export class CtgDirectorEngagementComponent implements OnInit {
               draft.laneKey,
               draft.userSubject.trim(),
               draft.displayName.trim(),
-              draft.email.trim() || null,
+              null,
             )
           : this.api.clearEngagementResponsibilityOwner(this.assignmentId, draft.laneKey);
 

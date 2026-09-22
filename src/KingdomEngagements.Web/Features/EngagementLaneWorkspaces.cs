@@ -28,7 +28,8 @@ public sealed record TravelLaneDetails(
     string? ReturnArrivalAirport,
     DateTimeOffset? ReturnDepartsAtUtc,
     DateTimeOffset? ReturnArrivesAtUtc,
-    IReadOnlyList<LaneContactView> Contacts);
+    IReadOnlyList<LaneContactView> Contacts,
+    IReadOnlyList<LaneDocumentDto> Documents);
 
 public sealed record UpdateTravelLaneRequest(
     string? OutboundAirline,
@@ -55,7 +56,8 @@ public sealed record LodgingLaneDetails(
     string? HotelConfirmationNumber,
     DateTimeOffset? HotelCheckInAtUtc,
     DateTimeOffset? HotelCheckOutAtUtc,
-    IReadOnlyList<LaneContactView> Contacts);
+    IReadOnlyList<LaneContactView> Contacts,
+    IReadOnlyList<LaneDocumentDto> Documents);
 
 public sealed record UpdateLodgingLaneRequest(
     string? HotelName,
@@ -71,7 +73,8 @@ public sealed record TransportationLaneDetails(
     string? TransportationPlan,
     string? PickupContactName,
     string? PickupContactPhone,
-    IReadOnlyList<LaneContactView> Contacts);
+    IReadOnlyList<LaneContactView> Contacts,
+    IReadOnlyList<LaneDocumentDto> Documents);
 
 public sealed record UpdateTransportationLaneRequest(
     string? TransportationPlan,
@@ -83,7 +86,8 @@ public sealed record ProgramLaneDetails(
     Guid AssignmentId,
     ResponsibilityLaneState Lane,
     IReadOnlyList<HostScheduleItemInput> Schedule,
-    IReadOnlyList<LaneContactView> Contacts);
+    IReadOnlyList<LaneContactView> Contacts,
+    IReadOnlyList<LaneDocumentDto> Documents);
 
 public sealed record UpdateProgramLaneRequest(
     IReadOnlyList<HostScheduleItemInput>? Schedule,
@@ -192,7 +196,8 @@ public sealed record HospitalityLaneDetails(
     Guid AssignmentId,
     ResponsibilityLaneState Lane,
     string? HospitalityNotes,
-    IReadOnlyList<LaneContactView> Contacts);
+    IReadOnlyList<LaneContactView> Contacts,
+    IReadOnlyList<LaneDocumentDto> Documents);
 
 public sealed record UpdateHospitalityLaneRequest(
     string? HospitalityNotes,
@@ -204,7 +209,8 @@ public sealed record HostCoordinationLaneDetails(
     string CoordinationStatus,
     DateTimeOffset? SubmittedAtUtc,
     string? HostNotes,
-    IReadOnlyList<LaneContactView> Contacts);
+    IReadOnlyList<LaneContactView> Contacts,
+    IReadOnlyList<LaneDocumentDto> Documents);
 
 public sealed record UpdateHostCoordinationLaneRequest(
     string? HostNotes,
@@ -393,7 +399,8 @@ public sealed class EngagementLaneWorkspaceService(
             preparation.ReturnArrivalAirport,
             preparation.ReturnDepartsAtUtc,
             preparation.ReturnArrivesAtUtc,
-            ContactsForLane(preparation, "travel"));
+            ContactsForLane(preparation, "travel"),
+            await DocumentsForLaneAsync(tenantId, assignmentId, "travel", ct));
     }
 
     public async Task<TravelLaneDetails?> UpdateTravelAsync(
@@ -441,7 +448,8 @@ public sealed class EngagementLaneWorkspaceService(
             preparation.HotelConfirmationNumber,
             preparation.HotelCheckInAtUtc,
             preparation.HotelCheckOutAtUtc,
-            ContactsForLane(preparation, "lodging"));
+            ContactsForLane(preparation, "lodging"),
+            await DocumentsForLaneAsync(tenantId, assignmentId, "lodging", ct));
     }
 
     public async Task<LodgingLaneDetails?> UpdateLodgingAsync(
@@ -478,7 +486,8 @@ public sealed class EngagementLaneWorkspaceService(
             preparation.TransportationPlan,
             preparation.PickupContactName,
             preparation.PickupContactPhone,
-            ContactsForLane(preparation, "transportation"));
+            ContactsForLane(preparation, "transportation"),
+            await DocumentsForLaneAsync(tenantId, assignmentId, "transportation", ct));
     }
 
     public async Task<TransportationLaneDetails?> UpdateTransportationAsync(
@@ -512,7 +521,8 @@ public sealed class EngagementLaneWorkspaceService(
             assignmentId,
             lane,
             DeserializeSchedule(preparation.ScheduleJson),
-            ContactsForLane(preparation, "program"));
+            ContactsForLane(preparation, "program"),
+            await DocumentsForLaneAsync(tenantId, assignmentId, "program", ct));
     }
 
     public async Task<ProgramLaneDetails?> UpdateProgramAsync(
@@ -837,7 +847,8 @@ public sealed class EngagementLaneWorkspaceService(
             assignmentId,
             lane,
             preparation.HospitalityNotes,
-            ContactsForLane(preparation, "hospitality"));
+            ContactsForLane(preparation, "hospitality"),
+            await DocumentsForLaneAsync(tenantId, assignmentId, "hospitality", ct));
     }
 
     public async Task<HospitalityLaneDetails?> UpdateHospitalityAsync(
@@ -869,7 +880,8 @@ public sealed class EngagementLaneWorkspaceService(
             preparation.CoordinationStatus,
             preparation.SubmittedAtUtc,
             preparation.HostNotes,
-            ContactsForLane(preparation, "host-coordination", includeAll: true));
+            ContactsForLane(preparation, "host-coordination", includeAll: true),
+            await DocumentsForLaneAsync(tenantId, assignmentId, "host-coordination", ct));
     }
 
     public async Task<HostCoordinationLaneDetails?> UpdateHostCoordinationAsync(
@@ -889,6 +901,24 @@ public sealed class EngagementLaneWorkspaceService(
         await SyncAssignmentAsync(preparation, ct);
         await AddActivityAsync(tenantId, assignmentId, "host-coordination-updated", "Host coordination updated", "Host contacts and coordination notes were updated.", actor, ct);
         return await GetHostCoordinationAsync(tenantId, assignmentId, ct);
+    }
+
+    private async Task<IReadOnlyList<LaneDocumentDto>> DocumentsForLaneAsync(
+        Guid tenantId,
+        Guid assignmentId,
+        string laneKey,
+        CancellationToken ct)
+    {
+        var records = await engagementsDatabase.Documents.AsNoTracking()
+            .Where(document =>
+                document.AssignmentId == assignmentId &&
+                document.Assignment != null &&
+                document.Assignment.TenantId == tenantId &&
+                document.Category == laneKey)
+            .OrderBy(document => document.Name)
+            .ToListAsync(ct);
+
+        return records.Select(MapDocument).ToArray();
     }
 
     private async Task<EngagementPreparationRecord?> GetPreparationAsync(Guid tenantId, Guid assignmentId, CancellationToken ct)

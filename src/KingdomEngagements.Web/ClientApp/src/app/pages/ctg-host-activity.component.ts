@@ -20,11 +20,7 @@ interface HostThreadView {
   template: `
     <section class="host-page">
       <header class="host-heading">
-        <div>
-          <p class="eyebrow">CTG · Engagement Operations</p>
-          <h1>Host Activity</h1>
-          <p>Keep host coordination inside each engagement instead of chasing information across email threads.</p>
-        </div>
+        <h1>Host Activity</h1>
         <a routerLink="/organization/ctg/command-center">← Command Center</a>
       </header>
 

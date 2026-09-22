@@ -3,13 +3,15 @@ set -euo pipefail
 
 network="engagements-ci-${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1}"
 sql_name="engagements-sql"
+redis_name="engagements-redis"
+minio_name="engagements-minio"
 platform_name="engagements-platform"
 app_name="engagements-app"
 password='LocalKingdom0S!'
 
 cleanup() {
   docker logs "$app_name" 2>/dev/null || true
-  docker rm --force "$app_name" "$platform_name" "$sql_name" >/dev/null 2>&1 || true
+  docker rm --force "$app_name" "$platform_name" "$minio_name" "$redis_name" "$sql_name" >/dev/null 2>&1 || true
   docker network rm "$network" >/dev/null 2>&1 || true
   rm -rf .ci-platform
 }
@@ -41,6 +43,46 @@ docker exec "$sql_name" /opt/mssql-tools18/bin/sqlcmd \
   -S localhost -U sa -P "$password" -C \
   -Q "IF DB_ID(N'KingdomEngagements') IS NULL CREATE DATABASE [KingdomEngagements]" >/dev/null
 
+docker run --detach --name "$redis_name" --network "$network" \
+  redis:7-alpine >/dev/null
+
+redis_ready=false
+for attempt in {1..30}; do
+  if docker exec "$redis_name" redis-cli ping 2>/dev/null | grep --quiet PONG; then
+    redis_ready=true
+    break
+  fi
+  sleep 1
+done
+if [ "$redis_ready" != true ]; then
+  echo 'Redis did not become ready.' >&2
+  docker logs "$redis_name" >&2 || true
+  exit 1
+fi
+
+docker run --detach --name "$minio_name" --network "$network" \
+  -e MINIO_ROOT_USER=minioadmin \
+  -e MINIO_ROOT_PASSWORD=minioadmin \
+  minio/minio:latest server /data >/dev/null
+
+minio_ready=false
+for attempt in {1..30}; do
+  if docker run --rm --network "$network" --entrypoint /bin/sh minio/mc:latest \
+    -c "mc alias set local http://$minio_name:9000 minioadmin minioadmin >/dev/null 2>&1 && mc ready local >/dev/null 2>&1"; then
+    minio_ready=true
+    break
+  fi
+  sleep 1
+done
+if [ "$minio_ready" != true ]; then
+  echo 'MinIO did not become ready.' >&2
+  docker logs "$minio_name" >&2 || true
+  exit 1
+fi
+
+docker run --rm --network "$network" --entrypoint /bin/sh minio/mc:latest \
+  -c "mc alias set local http://$minio_name:9000 minioadmin minioadmin >/dev/null && mc mb --ignore-existing local/engagements-ci >/dev/null"
+
 mkdir -p .ci-platform/api
 printf '%s\n' '[{"moduleKey":"engagements","enabled":true}]' > .ci-platform/api/modules
 docker run --detach --name "$platform_name" --network "$network" \
@@ -50,7 +92,17 @@ docker run --detach --name "$platform_name" --network "$network" \
 docker run --detach --name "$app_name" --network "$network" \
   -e ASPNETCORE_ENVIRONMENT=Development \
   -e Database__Provider=SqlServer \
+  -e Database__RequireRelational=true \
   -e "ConnectionStrings__EngagementsDatabase=Server=$sql_name;Database=KingdomEngagements;User ID=sa;Password=$password;TrustServerCertificate=True" \
+  -e "ConnectionStrings__Redis=$redis_name:6379" \
+  -e KingdomOS__DistributedRuntime__RequireRedis=true \
+  -e KingdomOS__DocumentStorage__Provider=S3 \
+  -e KingdomOS__DocumentStorage__S3__BucketName=engagements-ci \
+  -e KingdomOS__DocumentStorage__S3__Region=us-east-1 \
+  -e "KingdomOS__DocumentStorage__S3__ServiceUrl=http://$minio_name:9000" \
+  -e KingdomOS__DocumentStorage__S3__ForcePathStyle=true \
+  -e AWS_ACCESS_KEY_ID=minioadmin \
+  -e AWS_SECRET_ACCESS_KEY=minioadmin \
   -e "KingdomOS__PlatformInternalUrl=http://$platform_name:8080" \
   -e KingdomOS__Identity__DemoProfilesEnabled=true \
   -e KingdomOS__Entitlements__BypassInDevelopment=false \

@@ -461,7 +461,8 @@ public sealed class EngagementResponsibilityService(EngagementsDbContext databas
         var result = new List<EngagementResponsibilitySnapshot>();
         foreach (var assignment in assignments)
         {
-            var lanes = await GetAssignmentLanesAsync(tenantId, assignment.Id, cancellationToken) ?? [];
+            var lanes = await GetAssignmentLanesAsync(tenantId, assignment.Id, cancellationToken)
+                ?? Array.Empty<ResponsibilityLaneState>();
             result.Add(new EngagementResponsibilitySnapshot(MapSummary(assignment), lanes));
         }
 

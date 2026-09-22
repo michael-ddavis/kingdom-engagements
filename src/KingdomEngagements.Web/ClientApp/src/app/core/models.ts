@@ -288,6 +288,22 @@ export interface CareNetworkState {
 }
 
 
+export interface EngagementDirectoryPerson {
+  accountId: string;
+  displayName: string;
+}
+
+export interface EngagementTeamMember {
+  id: string;
+  tenantId: string;
+  accountId: string;
+  displayName: string;
+  isActive: boolean;
+  addedBySubject: string;
+  addedByName: string;
+  addedAtUtc: string;
+}
+
 export interface ResponsibilityLaneDefinition {
   key: string;
   label: string;

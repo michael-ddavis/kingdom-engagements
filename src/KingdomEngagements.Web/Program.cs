@@ -195,9 +195,14 @@ app.Use(async (context, next) =>
         path.StartsWith("/api/engagements/assignments/", StringComparison.OrdinalIgnoreCase) &&
         path.Contains("/responsibilities/", StringComparison.OrdinalIgnoreCase) &&
         path.EndsWith("/progress", StringComparison.OrdinalIgnoreCase);
+    var responsibilityTaskMutation =
+        HttpMethods.IsPut(context.Request.Method) &&
+        path.StartsWith("/api/engagements/assignments/", StringComparison.OrdinalIgnoreCase) &&
+        path.Contains("/tasks/", StringComparison.OrdinalIgnoreCase);
     var assignmentMutation =
         context.Request.Path.StartsWithSegments("/api/engagements/assignments") &&
         !laneProgressMutation &&
+        !responsibilityTaskMutation &&
         !HttpMethods.IsGet(context.Request.Method) &&
         !HttpMethods.IsHead(context.Request.Method) &&
         !HttpMethods.IsOptions(context.Request.Method);

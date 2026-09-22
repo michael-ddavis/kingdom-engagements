@@ -72,6 +72,7 @@ import { EngagementResponsibilitySnapshot, ResponsibilityLaneState } from '../co
             @for (laneItem of importantLanes(snapshot); track laneItem.key) {
               <article
                 [class.complete]="laneItem.status === 'complete'"
+                [class.progress]="laneItem.status === 'in-progress' || laneItem.status === 'ready-for-review'"
                 [class.waiting]="laneItem.status === 'waiting-on-host'"
                 [class.danger]="laneItem.isOverdue || laneItem.status === 'blocked'">
                 <div>

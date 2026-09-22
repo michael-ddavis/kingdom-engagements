@@ -124,6 +124,8 @@ builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("EngagementsWrite", policy => policy.RequireAssertion(context =>
         KingdomIdentity.CanWriteEngagements(context.User)));
+    options.AddPolicy("EngagementsDirect", policy => policy.RequireAssertion(context =>
+        KingdomIdentity.CanDirectEngagements(context.User)));
 });
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient<EngagementsEntitlementResolver>(client =>
@@ -132,6 +134,7 @@ builder.Services.AddHttpClient<EngagementsEntitlementResolver>(client =>
 });
 builder.Services.AddScoped<EngagementsInitializer>();
 builder.Services.AddScoped<EngagementsService>();
+builder.Services.AddScoped<EngagementResponsibilityService>();
 builder.Services.AddScoped<SpeakingRequestsService>();
 builder.Services.AddScoped<StaffStartedInvitationsService>();
 builder.Services.AddScoped<HickmanSpeakingRequestsService>();
@@ -267,6 +270,7 @@ app.MapEngagementPreparationEndpoints();
 app.MapAssignmentWorkspaceEndpoints();
 app.MapEngagementCompletionEndpoints();
 app.MapEngagementsDemoAccessEndpoints();
+app.MapEngagementResponsibilityEndpoints();
 app.MapEngagementsEndpoints();
 
 // Preserve legacy /app links while sending each demo persona to the right workspace.

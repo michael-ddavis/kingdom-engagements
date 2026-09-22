@@ -124,8 +124,26 @@ public static class EngagementsDemoRoles
         return new ClaimsPrincipal(new ClaimsIdentity(claims, KingdomIdentity.Scheme));
     }
 
-    public static string CurrentRole(ClaimsPrincipal principal) =>
-        Normalize(principal.FindFirstValue(RoleClaim));
+    public static string CurrentRole(ClaimsPrincipal principal)
+    {
+        var demoRole = principal.FindFirstValue(RoleClaim);
+        if (!string.IsNullOrWhiteSpace(demoRole))
+            return Normalize(demoRole);
+
+        var productRoles = principal.FindAll(KingdomIdentity.ProductRoleClaim)
+            .Select(claim => claim.Value)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        if (productRoles.Contains("engagements:administrator"))
+            return Administrator;
+        if (productRoles.Contains("engagements:director") ||
+            productRoles.Contains("engagements:coordinator"))
+            return Coordinator;
+        if (productRoles.Contains("engagements:executive"))
+            return Apostle;
+
+        return Minister;
+    }
 
     public static bool IsMinister(ClaimsPrincipal principal) =>
         string.Equals(CurrentRole(principal), Minister, StringComparison.OrdinalIgnoreCase);

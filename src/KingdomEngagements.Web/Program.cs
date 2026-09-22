@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using KingdomEngagements.Web.Features;
 using KingdomEngagements.Web.Platform;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -63,6 +64,19 @@ builder.Services.AddDbContext<EngagementPreparationDbContext>(options =>
     options.UseInMemoryDatabase("KingdomEngagementsPreparation");
 });
 
+builder.Services.AddDbContext<HostAccessDbContext>(options =>
+{
+    if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
+    {
+        if (string.IsNullOrWhiteSpace(connectionString))
+            throw new InvalidOperationException("ConnectionStrings:EngagementsDatabase is required for SQL Server.");
+        options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure());
+        return;
+    }
+
+    options.UseInMemoryDatabase("KingdomEngagementsHostAccess");
+});
+
 builder.Services.AddDbContext<AssignmentWorkspaceDbContext>(options =>
 {
     if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
@@ -119,6 +133,28 @@ builder.Services.AddAuthentication(KingdomIdentity.Scheme)
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
             return Task.CompletedTask;
         };
+    })
+    .AddCookie(HostAccessIdentity.Scheme, options =>
+    {
+        options.Cookie.Name = ".ApostolOS.Host";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+            ? CookieSecurePolicy.SameAsRequest
+            : CookieSecurePolicy.Always;
+        options.ExpireTimeSpan = TimeSpan.FromHours(
+            builder.Configuration.GetValue("KingdomOS:HostAccess:SessionLifetimeHours", 168));
+        options.SlidingExpiration = false;
+        options.Events.OnRedirectToLogin = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return Task.CompletedTask;
+        };
+        options.Events.OnRedirectToAccessDenied = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            return Task.CompletedTask;
+        };
     });
 builder.Services.AddAuthorization(options =>
 {
@@ -128,6 +164,12 @@ builder.Services.AddAuthorization(options =>
         KingdomIdentity.CanWriteEngagements(context.User)));
     options.AddPolicy("EngagementsDirect", policy => policy.RequireAssertion(context =>
         KingdomIdentity.CanDirectEngagements(context.User)));
+    options.AddPolicy(HostAccessIdentity.Policy, policy =>
+    {
+        policy.AddAuthenticationSchemes(HostAccessIdentity.Scheme);
+        policy.RequireAuthenticatedUser();
+        policy.AddRequirements(new HostAccessRequirement());
+    });
 });
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient<EngagementsEntitlementResolver>(client =>
@@ -146,6 +188,8 @@ builder.Services.AddScoped<SpeakingRequestsService>();
 builder.Services.AddScoped<StaffStartedInvitationsService>();
 builder.Services.AddScoped<HickmanSpeakingRequestsService>();
 builder.Services.AddScoped<EngagementPreparationService>();
+builder.Services.AddScoped<HostAccessService>();
+builder.Services.AddScoped<IAuthorizationHandler, HostAccessAuthorizationHandler>();
 builder.Services.AddScoped<AssignmentWorkspaceService>();
 builder.Services.AddScoped<EngagementCompletionService>();
 builder.Services.AddScoped<EngagementOperationsCoordinationPublisher>();
@@ -161,6 +205,23 @@ var app = builder.Build();
 app.UseHttpsRedirection();
 app.UseDefaultFiles();
 app.UseStaticFiles();
+
+var legacyHostTokenRoutesEnabled =
+    app.Environment.IsDevelopment() &&
+    app.Configuration.GetValue("KingdomOS:HostAccess:LegacyTokenRoutesEnabled", true);
+
+app.Use(async (context, next) =>
+{
+    if (!legacyHostTokenRoutesEnabled &&
+        context.Request.Path.StartsWithSegments("/api/public/engagements/preparation"))
+    {
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        return;
+    }
+
+    await next();
+});
+
 app.UseAuthentication();
 app.Use(async (context, next) =>
 {
@@ -288,15 +349,19 @@ app.MapGet("/invite/pastor-hickman", (IWebHostEnvironment environment) =>
     Results.File(Path.Combine(environment.WebRootPath, "invite-hickman.html"), "text/html; charset=utf-8")).AllowAnonymous();
 app.MapGet("/invite/pastor-hickman/requests/{token}", (string token, IWebHostEnvironment environment) =>
     Results.File(Path.Combine(environment.WebRootPath, "invite-hickman.html"), "text/html; charset=utf-8")).AllowAnonymous();
-app.MapGet("/host/terms/{token}", (string token, IWebHostEnvironment environment) =>
-    Results.File(Path.Combine(environment.WebRootPath, "terms.html"), "text/html; charset=utf-8")).AllowAnonymous();
-app.MapGet("/host/coordination/{token}", (string token, IWebHostEnvironment environment) =>
-    Results.File(Path.Combine(environment.WebRootPath, "coordination.html"), "text/html; charset=utf-8")).AllowAnonymous();
+if (legacyHostTokenRoutesEnabled)
+{
+    app.MapGet("/host/terms/{token}", (string token, IWebHostEnvironment environment) =>
+        Results.File(Path.Combine(environment.WebRootPath, "terms.html"), "text/html; charset=utf-8")).AllowAnonymous();
+    app.MapGet("/host/coordination/{token}", (string token, IWebHostEnvironment environment) =>
+        Results.File(Path.Combine(environment.WebRootPath, "coordination.html"), "text/html; charset=utf-8")).AllowAnonymous();
+}
 
 app.MapGlobalBookingDeskEndpoints();
 app.MapStaffStartedInvitationEndpoints();
 app.MapSpeakingRequestEndpoints();
 app.MapHickmanSpeakingRequestEndpoints();
+app.MapHostAccessEndpoints();
 app.MapEngagementPreparationEndpoints();
 app.MapAssignmentWorkspaceEndpoints();
 app.MapEngagementCompletionEndpoints();

@@ -46,10 +46,10 @@ const PERSONAS: Record<EngagementDemoRole, EngagementDemoPersona> = {
   },
   coordinator: {
     role: 'coordinator',
-    label: 'Prophet Courtney / Engagement Director',
-    shortLabel: 'Engagement Director',
+    label: 'Prophet Courtney',
+    shortLabel: 'Courtney',
     person: 'Prophet Courtney Beecham',
-    description: 'Full engagement direction: booking, assignments, responsibility ownership, readiness, accountability, financials, communication, and closeout.',
+    description: 'Full engagement access.',
   },
   apostle: {
     role: 'apostle',
@@ -60,10 +60,10 @@ const PERSONAS: Record<EngagementDemoRole, EngagementDemoPersona> = {
   },
   minister: {
     role: 'minister',
-    label: 'Assigned Team Member / Minister',
-    shortLabel: 'Assigned Minister',
-    person: 'Assigned Minister',
-    description: 'Assigned engagements only: event details, responsibilities, contacts, logistics, and preparation.',
+    label: 'Team Member',
+    shortLabel: 'Team Member',
+    person: 'Team Member',
+    description: 'Assigned engagement work only.',
   },
 };
 
@@ -350,6 +350,16 @@ export class EngagementDemoRoleService {
       .replaceAll('>', '&gt;');
   }
 }
+
+export const engagementWorkspaceGuard: CanActivateFn = () => {
+  const roles = inject(EngagementDemoRoleService);
+
+  if (roles.isApostle()) {
+    return inject(Router).createUrlTree(['/organization/ctg/apostle']);
+  }
+
+  return true;
+};
 
 export const engagementDirectorGuard: CanActivateFn = () => {
   const roles = inject(EngagementDemoRoleService);

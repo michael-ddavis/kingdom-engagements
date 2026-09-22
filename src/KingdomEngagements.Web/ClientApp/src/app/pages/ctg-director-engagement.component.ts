@@ -80,7 +80,7 @@ interface ResponsibilityDraft {
             <span>{{ dateRange(item.summary.startsAtUtc, item.endsAtUtc) }}</span>
           </div>
           <div class="heading-actions">
-            <a [routerLink]="['/assignments', item.summary.id]">Open ministry record</a>
+            <a [routerLink]="['/assignments', item.summary.id]" [queryParams]="{ legacy: 1 }">Open ministry record</a>
             <div class="readiness">
               <strong>{{ readinessPercent() }}%</strong>
               <span>responsibilities complete</span>

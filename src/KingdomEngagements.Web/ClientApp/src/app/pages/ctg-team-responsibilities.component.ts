@@ -22,11 +22,7 @@ interface OwnerDraft {
   template: `
     <section class="team-page">
       <header class="team-heading">
-        <div>
-          <p class="eyebrow">CTG · Engagement Operations</p>
-          <h1>Team Responsibilities</h1>
-          <p>Assign standing owners once. Their responsibility follows them across every active engagement unless Courtney creates a one-engagement override.</p>
-        </div>
+        <h1>Team Responsibilities</h1>
         <a routerLink="/organization/ctg/command-center">← Command Center</a>
       </header>
 
@@ -44,8 +40,8 @@ interface OwnerDraft {
 
         <section class="team-card">
           <header>
-            <div><p class="eyebrow">Standing responsibility model</p><h2>Who owns what across CTG engagements</h2></div>
-            <span>Changes apply to active engagement tasks unless that engagement has an override.</span>
+            <h2>Standing Responsibilities</h2>
+            <span>Defaults apply across active engagements unless overridden.</span>
           </header>
 
           <div class="lane-groups">
@@ -153,7 +149,7 @@ interface OwnerDraft {
 
         <section class="team-card team-accountability">
           <header>
-            <div><p class="eyebrow">Across active engagements</p><h2>Accountability by team member</h2></div>
+            <h2>Team Workload</h2>
             <a routerLink="/organization/ctg/stand-up">Open stand-up →</a>
           </header>
 

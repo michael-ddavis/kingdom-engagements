@@ -604,14 +604,46 @@ public static class EngagementsEndpoints
             }
             catch (ArgumentException exception) { return Results.ValidationProblem(new Dictionary<string, string[]> { ["assignment"] = [exception.Message] }); }
         }).RequireAuthorization("EngagementsWrite");
-        group.MapPost("/assignments/{id:guid}/tasks", async (Guid id, CreateEngagementTaskRequest request, HttpContext context, EngagementsService service, CancellationToken ct) =>
+        group.MapPost("/assignments/{id:guid}/tasks", async (
+            Guid id,
+            CreateEngagementTaskRequest request,
+            HttpContext context,
+            EngagementsService service,
+            EngagementResponsibilityService responsibilities,
+            CancellationToken ct) =>
         {
             try
             {
-                var item = await service.AddTaskAsync(KingdomIdentity.TenantId(context.User, context.Request), id, request, ct);
+                var tenantId = KingdomIdentity.TenantId(context.User, context.Request);
+
+                try
+                {
+                    var lane = await responsibilities.GetLaneAsync(
+                        tenantId,
+                        id,
+                        request.Category,
+                        ct);
+                    if (lane?.Owner is not null)
+                    {
+                        request = request with
+                        {
+                            Owner = lane.Owner.DisplayName,
+                            OwnerSubject = lane.Owner.UserSubject
+                        };
+                    }
+                }
+                catch (ArgumentException)
+                {
+                    // Legacy task categories can continue using the explicitly supplied owner.
+                }
+
+                var item = await service.AddTaskAsync(tenantId, id, request, ct);
                 return item is null ? Results.NotFound() : Results.Ok(item);
             }
-            catch (ArgumentException exception) { return Results.ValidationProblem(new Dictionary<string, string[]> { ["task"] = [exception.Message] }); }
+            catch (ArgumentException exception)
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["task"] = [exception.Message] });
+            }
         }).RequireAuthorization("EngagementsWrite");
         group.MapPut("/assignments/{id:guid}/tasks/{taskId:guid}", async (
             Guid id,

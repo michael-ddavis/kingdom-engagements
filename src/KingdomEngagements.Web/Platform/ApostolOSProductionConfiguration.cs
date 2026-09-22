@@ -66,6 +66,23 @@ public static class ApostolOSProductionConfiguration
             "KingdomOS:DocumentStorage:S3:Region or AWS:Region",
             problems);
 
+        var objectStorageServiceUrl =
+            configuration["KingdomOS:DocumentStorage:S3:ServiceUrl"];
+        var allowInsecureObjectStorageEndpoint =
+            configuration.GetValue(
+                "KingdomOS:DocumentStorage:S3:AllowInsecureEndpoint",
+                false);
+
+        if (!string.IsNullOrWhiteSpace(objectStorageServiceUrl) &&
+            Uri.TryCreate(objectStorageServiceUrl, UriKind.Absolute, out var objectStorageUri))
+        {
+            Require(
+                objectStorageUri.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase) ||
+                allowInsecureObjectStorageEndpoint,
+                "KingdomOS:DocumentStorage:S3:ServiceUrl must use HTTPS in Production unless AllowInsecureEndpoint is explicitly enabled.",
+                problems);
+        }
+
         var publicBaseUrl = configuration["KingdomOS:HostAccess:PublicBaseUrl"];
         Require(
             Uri.TryCreate(publicBaseUrl, UriKind.Absolute, out var publicUri) &&

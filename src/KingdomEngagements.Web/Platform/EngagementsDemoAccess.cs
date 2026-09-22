@@ -192,7 +192,8 @@ public sealed class EngagementsDemoAccessMiddleware(
 
     public async Task InvokeAsync(
         HttpContext context,
-        EngagementsService engagements)
+        EngagementsService engagements,
+        EngagementResponsibilityService responsibilities)
     {
         if (!environment.IsDevelopment() || HttpMethods.IsOptions(context.Request.Method))
         {
@@ -272,11 +273,44 @@ public sealed class EngagementsDemoAccessMiddleware(
 
         if (!EngagementsDemoRoles.CanAccessAssignment(context.User, assignment.Summary))
         {
-            await ForbidAsync(context, "That engagement is not assigned to the current minister persona.");
-            return;
+            var laneKey = LaneKey(rest);
+            var ownsLane = laneKey is not null &&
+                await responsibilities.IsEffectiveOwnerAsync(
+                    KingdomIdentity.TenantId(context.User, context.Request),
+                    assignmentId,
+                    laneKey,
+                    KingdomIdentity.Subject(context.User, context.Request),
+                    context.RequestAborted);
+
+            if (!ownsLane)
+            {
+                await ForbidAsync(context, "That engagement responsibility is not assigned to the current team member.");
+                return;
+            }
         }
 
         await next(context);
+    }
+
+    private static string? LaneKey(string rest)
+    {
+        if (string.IsNullOrWhiteSpace(rest)) return null;
+
+        const string lanePrefix = "/lanes/";
+        if (rest.StartsWith(lanePrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            var value = rest[lanePrefix.Length..].Split('/', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+            return string.IsNullOrWhiteSpace(value) ? null : EngagementResponsibilityLanes.Normalize(value);
+        }
+
+        const string responsibilityPrefix = "/responsibilities/";
+        if (rest.StartsWith(responsibilityPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            var value = rest[responsibilityPrefix.Length..].Split('/', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+            return string.IsNullOrWhiteSpace(value) ? null : EngagementResponsibilityLanes.Normalize(value);
+        }
+
+        return null;
     }
 
     private static async Task<bool> RequestsCompletionAsync(HttpRequest request, CancellationToken cancellationToken)

@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { EngagementsApiService } from '../core/engagements-api.service';
@@ -6,7 +7,7 @@ import { EngagementResponsibilitySnapshot, ResponsibilityLaneState } from '../co
 @Component({
   selector: 'app-ctg-stand-up',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, NgTemplateOutlet],
   template: `
     <section class="standup-page">
       <header class="standup-header">

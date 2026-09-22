@@ -347,3 +347,169 @@ export interface MyResponsibilityWorkItem {
   assignment: EngagementSummary;
   lane: ResponsibilityLaneState;
 }
+
+
+export interface LaneContactView {
+  type: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  editable: boolean;
+}
+
+export interface TravelLaneDetails {
+  assignmentId: string;
+  lane: ResponsibilityLaneState;
+  outboundAirline: string | null;
+  outboundFlightNumber: string | null;
+  outboundConfirmationNumber: string | null;
+  outboundDepartureAirport: string | null;
+  outboundArrivalAirport: string | null;
+  outboundDepartsAtUtc: string | null;
+  outboundArrivesAtUtc: string | null;
+  returnAirline: string | null;
+  returnFlightNumber: string | null;
+  returnConfirmationNumber: string | null;
+  returnDepartureAirport: string | null;
+  returnArrivalAirport: string | null;
+  returnDepartsAtUtc: string | null;
+  returnArrivesAtUtc: string | null;
+  contacts: readonly LaneContactView[];
+}
+
+export interface LodgingLaneDetails {
+  assignmentId: string;
+  lane: ResponsibilityLaneState;
+  hotelName: string | null;
+  hotelAddress: string | null;
+  hotelConfirmationNumber: string | null;
+  hotelCheckInAtUtc: string | null;
+  hotelCheckOutAtUtc: string | null;
+  contacts: readonly LaneContactView[];
+}
+
+export interface TransportationLaneDetails {
+  assignmentId: string;
+  lane: ResponsibilityLaneState;
+  transportationPlan: string | null;
+  pickupContactName: string | null;
+  pickupContactPhone: string | null;
+  contacts: readonly LaneContactView[];
+}
+
+export interface ProgramLaneDetails {
+  assignmentId: string;
+  lane: ResponsibilityLaneState;
+  schedule: readonly HostScheduleItem[];
+  contacts: readonly LaneContactView[];
+}
+
+export interface MediaAsset {
+  id: string;
+  assignmentId: string;
+  name: string;
+  assetType: string;
+  purpose: string;
+  status: string;
+  source: string;
+  storageReference: string | null;
+  externalUrl: string | null;
+  notes: string | null;
+  updatedByName: string;
+  updatedAtUtc: string;
+  createdAtUtc: string;
+}
+
+export interface LaneDocument {
+  id: string;
+  name: string;
+  category: string;
+  status: string;
+  storageReference: string | null;
+  updatedAtUtc: string;
+}
+
+export interface MediaLaneDetails {
+  assignmentId: string;
+  lane: ResponsibilityLaneState;
+  promotionRequirements: string | null;
+  contacts: readonly LaneContactView[];
+  assets: readonly MediaAsset[];
+  documents: readonly LaneDocument[];
+}
+
+export interface DocumentsLaneDetails {
+  assignmentId: string;
+  lane: ResponsibilityLaneState;
+  documents: readonly LaneDocument[];
+}
+
+export interface FinanceLaneDetails {
+  assignmentId: string;
+  lane: ResponsibilityLaneState;
+  travelCoverageStatus: string;
+  lodgingCoverageStatus: string;
+  travelBookedBy: string;
+  honorariumStatus: string;
+  honorariumAmount: number;
+  honorariumCurrency: string;
+  paymentStatus: string;
+}
+
+export interface MinistryPreparationLaneDetails {
+  assignmentId: string;
+  lane: ResponsibilityLaneState;
+  prayerFocus: string | null;
+  ministryPreparationNotes: string | null;
+}
+
+export interface HospitalityLaneDetails {
+  assignmentId: string;
+  lane: ResponsibilityLaneState;
+  hospitalityNotes: string | null;
+  contacts: readonly LaneContactView[];
+}
+
+export interface HostCoordinationLaneDetails {
+  assignmentId: string;
+  lane: ResponsibilityLaneState;
+  coordinationStatus: string;
+  submittedAtUtc: string | null;
+  hostNotes: string | null;
+  contacts: readonly LaneContactView[];
+}
+
+export interface ExecutiveEngagementBrief {
+  assignmentId: string;
+  termsStatus: string;
+  coordinationStatus: string;
+  coordinationSubmittedAtUtc: string | null;
+  travel: {
+    outboundAirline: string | null;
+    outboundFlightNumber: string | null;
+    outboundDepartureAirport: string | null;
+    outboundArrivalAirport: string | null;
+    outboundDepartsAtUtc: string | null;
+    returnAirline: string | null;
+    returnFlightNumber: string | null;
+    returnDepartureAirport: string | null;
+    returnArrivalAirport: string | null;
+    returnDepartsAtUtc: string | null;
+  };
+  lodging: {
+    hotelName: string | null;
+    hotelAddress: string | null;
+    hotelCheckInAtUtc: string | null;
+    hotelCheckOutAtUtc: string | null;
+  };
+  transportation: {
+    transportationPlan: string | null;
+    pickupContactName: string | null;
+    pickupContactPhone: string | null;
+  };
+  schedule: readonly HostScheduleItem[];
+  contacts: readonly HostContact[];
+  prayerFocus: string | null;
+  readiness: AssignmentReadinessRadar;
+  activity: readonly AssignmentActivityItem[];
+}

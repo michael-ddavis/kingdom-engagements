@@ -57,6 +57,21 @@ public sealed class EngagementsDbContextModelSnapshot : ModelSnapshot
             entity.ToTable("EngagementDocuments");
         });
 
+        modelBuilder.Entity<EngagementTeamMember>(entity =>
+        {
+            entity.Property(x => x.Id).ValueGeneratedNever().HasColumnType("uniqueidentifier");
+            entity.Property(x => x.TenantId).HasColumnType("uniqueidentifier");
+            entity.Property(x => x.AccountId).HasColumnType("uniqueidentifier");
+            entity.Property(x => x.DisplayName).HasMaxLength(180).IsRequired();
+            entity.Property(x => x.IsActive);
+            entity.Property(x => x.AddedBySubject).HasMaxLength(180).IsRequired();
+            entity.Property(x => x.AddedByName).HasMaxLength(180).IsRequired();
+            entity.Property(x => x.AddedAtUtc);
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => new { x.TenantId, x.AccountId }).IsUnique();
+            entity.ToTable("EngagementTeamMembers");
+        });
+
         modelBuilder.Entity<EngagementIntegrationReceipt>(entity =>
         {
             entity.Property(x => x.EventId).ValueGeneratedNever().HasColumnType("uniqueidentifier");

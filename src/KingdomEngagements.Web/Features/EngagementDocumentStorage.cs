@@ -205,8 +205,24 @@ public static class EngagementDocumentStorageRegistration
                 "KingdomOS:DocumentStorage:S3:Region or AWS:Region is required when S3 document storage is enabled.");
         }
 
-        builder.Services.AddSingleton<IAmazonS3>(
-            _ => new AmazonS3Client(RegionEndpoint.GetBySystemName(regionName)));
+        var serviceUrl = builder.Configuration["KingdomOS:DocumentStorage:S3:ServiceUrl"];
+        var forcePathStyle = builder.Configuration.GetValue(
+            "KingdomOS:DocumentStorage:S3:ForcePathStyle",
+            !string.IsNullOrWhiteSpace(serviceUrl));
+
+        builder.Services.AddSingleton<IAmazonS3>(_ =>
+        {
+            if (string.IsNullOrWhiteSpace(serviceUrl))
+                return new AmazonS3Client(RegionEndpoint.GetBySystemName(regionName));
+
+            return new AmazonS3Client(
+                new AmazonS3Config
+                {
+                    ServiceURL = serviceUrl,
+                    AuthenticationRegion = regionName,
+                    ForcePathStyle = forcePathStyle
+                });
+        });
 
         builder.Services.AddSingleton<IEngagementDocumentStorage, S3EngagementDocumentStorage>();
     }

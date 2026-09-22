@@ -94,7 +94,6 @@ export class EngagementDemoRoleService {
       );
       this.sessionState.set(session);
       this.initialized.set(true);
-      document.body.dataset['engagementDemoRole'] = session.role;
     } catch {
       this.initialized.set(true);
       await this.redirectToPlatformLogin();

@@ -190,8 +190,14 @@ app.UseAuthorization();
 app.UseMiddleware<EngagementsDemoAccessMiddleware>();
 app.Use(async (context, next) =>
 {
+    var path = context.Request.Path.Value ?? string.Empty;
+    var laneProgressMutation =
+        path.StartsWith("/api/engagements/assignments/", StringComparison.OrdinalIgnoreCase) &&
+        path.Contains("/responsibilities/", StringComparison.OrdinalIgnoreCase) &&
+        path.EndsWith("/progress", StringComparison.OrdinalIgnoreCase);
     var assignmentMutation =
         context.Request.Path.StartsWithSegments("/api/engagements/assignments") &&
+        !laneProgressMutation &&
         !HttpMethods.IsGet(context.Request.Method) &&
         !HttpMethods.IsHead(context.Request.Method) &&
         !HttpMethods.IsOptions(context.Request.Method);

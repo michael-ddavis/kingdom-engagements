@@ -94,7 +94,19 @@ $backendArgs = @(
     "http://localhost:$backendPort"
 )
 
-$backendProcess = Start-Process -FilePath "dotnet" -ArgumentList $backendArgs -WorkingDirectory $web -RedirectStandardOutput $backendOut -RedirectStandardError $backendErr -PassThru
+$previousAspnetEnvironment = $env:ASPNETCORE_ENVIRONMENT
+$previousDotnetEnvironment = $env:DOTNET_ENVIRONMENT
+
+$env:ASPNETCORE_ENVIRONMENT = "Development"
+$env:DOTNET_ENVIRONMENT = "Development"
+
+try {
+    $backendProcess = Start-Process -FilePath "dotnet" -ArgumentList $backendArgs -WorkingDirectory $web -RedirectStandardOutput $backendOut -RedirectStandardError $backendErr -PassThru
+}
+finally {
+    $env:ASPNETCORE_ENVIRONMENT = $previousAspnetEnvironment
+    $env:DOTNET_ENVIRONMENT = $previousDotnetEnvironment
+}
 
 if (-not (Test-Path (Join-Path $client "node_modules"))) {
     Write-Host "Installing Angular dependencies..."
@@ -129,8 +141,7 @@ for ($i = 0; $i -lt 45; $i++) {
     }
 
     try {
-        $headers = @{ "X-Kingdom-Engagements-Demo-Role" = "coordinator" }
-        $null = Invoke-RestMethod -Uri "http://localhost:$backendPort/api/engagements/assignments" -Headers $headers -TimeoutSec 2
+        $null = Invoke-RestMethod -Uri "http://localhost:$backendPort/health/live" -TimeoutSec 2
         $backendReady = $true
         break
     }
@@ -156,7 +167,41 @@ if (-not $backendReady) {
     exit 1
 }
 
-Write-Host "Backend is ready."
+Write-Host "Backend process is listening."
+
+$headers = @{ "X-Kingdom-Engagements-Demo-Role" = "coordinator" }
+
+try {
+    $assignments = Invoke-RestMethod -Uri "http://localhost:$backendPort/api/engagements/assignments" -Headers $headers -TimeoutSec 5
+    Write-Host "Engagements API is ready. Assignments found: $($assignments.Count)"
+}
+catch {
+    Write-Host ""
+    Write-Host "The backend is listening, but the Engagements API is not ready."
+    Write-Host "Checking product health..."
+
+    try {
+        $health = Invoke-RestMethod -Uri "http://localhost:$backendPort/health" -TimeoutSec 5
+        $health | ConvertTo-Json -Depth 8
+    }
+    catch {
+        if ($_.ErrorDetails.Message) {
+            Write-Host $_.ErrorDetails.Message
+        }
+        else {
+            Write-Host $_.Exception.Message
+        }
+    }
+
+    Write-Host ""
+    Write-Host "Backend output log:"
+    if (Test-Path $backendOut) {
+        Get-Content $backendOut -Tail 50
+    }
+    Write-Host ""
+    exit 1
+}
+
 Write-Host "Waiting for Angular..."
 
 $frontendReady = $false

@@ -8,6 +8,7 @@ public sealed class EngagementsAuthorizationTests
     [Theory]
     [InlineData(KingdomIdentity.PermissionClaim, "engagements:assignments:write")]
     [InlineData(KingdomIdentity.ProductRoleClaim, "engagements:administrator")]
+    [InlineData(KingdomIdentity.ProductRoleClaim, "engagements:director")]
     [InlineData(KingdomIdentity.ProductRoleClaim, "engagements:coordinator")]
     [InlineData(KingdomIdentity.TenantRoleClaim, "owner")]
     [InlineData(KingdomIdentity.TenantRoleClaim, "organization-administrator")]
@@ -27,6 +28,29 @@ public sealed class EngagementsAuthorizationTests
     {
         var principal = Principal(new Claim(claimType, value));
         Assert.False(KingdomIdentity.CanWriteEngagements(principal));
+    }
+
+    [Theory]
+    [InlineData(KingdomIdentity.PermissionClaim, "engagements:responsibilities:manage")]
+    [InlineData(KingdomIdentity.ProductRoleClaim, "engagements:administrator")]
+    [InlineData(KingdomIdentity.ProductRoleClaim, "engagements:director")]
+    [InlineData(KingdomIdentity.ProductRoleClaim, "engagements:coordinator")]
+    [InlineData(KingdomIdentity.TenantRoleClaim, "owner")]
+    [InlineData(ClaimTypes.Role, "EngagementDirector")]
+    public void Director_roles_can_manage_engagement_responsibilities(string claimType, string value)
+    {
+        var principal = Principal(new Claim(claimType, value));
+        Assert.True(KingdomIdentity.CanDirectEngagements(principal));
+    }
+
+    [Fact]
+    public void Executive_viewer_cannot_manage_engagement_responsibilities()
+    {
+        var principal = Principal(
+            new Claim(KingdomIdentity.ProductRoleClaim, "engagements:executive"),
+            new Claim(KingdomIdentity.PermissionClaim, "engagements:assignments:read"));
+
+        Assert.False(KingdomIdentity.CanDirectEngagements(principal));
     }
 
     [Theory]

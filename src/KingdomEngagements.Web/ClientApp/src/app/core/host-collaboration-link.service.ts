@@ -151,28 +151,27 @@ export class HostCollaborationLinkService {
     refreshButton.title = 'Reload the latest host collaboration changes';
     refreshButton.addEventListener('click', () => window.location.reload());
 
-    const openLink = document.createElement('button');
-    openLink.type = 'button';
-    openLink.textContent = collaborationLive ? 'Create & open host view ↗' : 'Create & open host setup ↗';
-    openLink.title = 'Creating a new link revokes any previous host link or active host session.';
-    openLink.addEventListener('click', async () => {
-      const originalText = openLink.textContent;
-      openLink.disabled = true;
-      openLink.textContent = 'Creating…';
+    const revokeButton = document.createElement('button');
+    revokeButton.type = 'button';
+    revokeButton.textContent = 'Revoke access';
+    revokeButton.title = 'Immediately invalidates the current host link and host session.';
+    revokeButton.addEventListener('click', async () => {
+      revokeButton.disabled = true;
 
       try {
-        const invitation = await this.issueHostInvitation(assignmentId);
-        linkLine.textContent = `Secure link created · expires ${new Date(invitation.expiresAtUtc).toLocaleString()}`;
-        window.open(invitation.invitationUrl, '_blank', 'noopener');
+        const result = await this.revokeHostAccess(assignmentId);
+        linkLine.textContent = result.revoked
+          ? 'Host access revoked. Create a new secure link when access is needed again.'
+          : 'No active host access was found.';
+        this.toasts.success(result.revoked ? 'Host access revoked.' : 'There was no active host access to revoke.');
       } catch {
-        this.toasts.error('The secure host invitation could not be created.');
+        this.toasts.error('Host access could not be revoked.');
       } finally {
-        openLink.disabled = false;
-        openLink.textContent = originalText;
+        revokeButton.disabled = false;
       }
     });
 
-    actions.append(copyButton, refreshButton, openLink);
+    actions.append(copyButton, refreshButton, revokeButton);
     card.append(copy, actions);
     heading.insertAdjacentElement('afterend', card);
   }
@@ -181,6 +180,15 @@ export class HostCollaborationLinkService {
     return firstValueFrom(
       this.http.post<HostAccessInvitationResponse>(
         `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/host-access/invitations`,
+        {},
+      ),
+    );
+  }
+
+  private revokeHostAccess(assignmentId: string): Promise<{ revoked: boolean }> {
+    return firstValueFrom(
+      this.http.post<{ revoked: boolean }>(
+        `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/host-access/revoke`,
         {},
       ),
     );
@@ -227,7 +235,7 @@ export class HostCollaborationLinkService {
     style.id = this.styleId;
     style.textContent = `
       .apostolos-host-collaboration{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:.72rem 0 1rem;padding:14px 16px;border:1px solid rgba(49,91,135,.18);border-left:4px solid var(--action-primary,#315b87);border-radius:12px;background:linear-gradient(105deg,rgba(248,250,253,.98),rgba(255,255,255,.98));box-shadow:0 8px 24px rgba(15,23,42,.06)}
-      .apostolos-host-collaboration__copy{display:grid;min-width:0;gap:4px}.apostolos-host-collaboration__eyebrow{color:#667085;font-size:.61rem;font-weight:900;letter-spacing:.11em}.apostolos-host-collaboration__title-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.apostolos-host-collaboration__title-row>strong{color:#17263a;font-size:.9rem;letter-spacing:-.01em}.apostolos-host-collaboration__badge{display:inline-flex;align-items:center;padding:3px 7px;border-radius:999px;background:#fff4d8;color:#85621c;font-size:.59rem;font-weight:850}.apostolos-host-collaboration__badge.is-live{background:#e9f7ef;color:#236b48}.apostolos-host-collaboration p{margin:0;color:#5f6b7a;font-size:.7rem;line-height:1.45}.apostolos-host-collaboration__url{display:block;max-width:min(680px,58vw);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#536273;font-size:.62rem;background:transparent}.apostolos-host-collaboration__actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}.apostolos-host-collaboration__actions button,.apostolos-host-collaboration__actions a{display:inline-flex;min-height:38px;align-items:center;justify-content:center;padding:0 12px;border-radius:9px;font-size:.68rem;font-weight:850;text-decoration:none;cursor:pointer}.apostolos-host-collaboration__actions button{border:1px solid #d6dce5;background:#fff;color:#334155}.apostolos-host-collaboration__actions button:last-child{border:1px solid var(--action-primary,#315b87);background:var(--action-primary,#315b87);color:#fff}.apostolos-host-collaboration__actions button:hover{background:#f7f8fa}.apostolos-host-collaboration__actions button:last-child:hover{filter:brightness(.94)}.apostolos-host-collaboration__actions button:focus-visible,.apostolos-host-collaboration__actions a:focus-visible{outline:2px solid var(--action-primary,#315b87);outline-offset:2px}
+      .apostolos-host-collaboration__copy{display:grid;min-width:0;gap:4px}.apostolos-host-collaboration__eyebrow{color:#667085;font-size:.61rem;font-weight:900;letter-spacing:.11em}.apostolos-host-collaboration__title-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.apostolos-host-collaboration__title-row>strong{color:#17263a;font-size:.9rem;letter-spacing:-.01em}.apostolos-host-collaboration__badge{display:inline-flex;align-items:center;padding:3px 7px;border-radius:999px;background:#fff4d8;color:#85621c;font-size:.59rem;font-weight:850}.apostolos-host-collaboration__badge.is-live{background:#e9f7ef;color:#236b48}.apostolos-host-collaboration p{margin:0;color:#5f6b7a;font-size:.7rem;line-height:1.45}.apostolos-host-collaboration__url{display:block;max-width:min(680px,58vw);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#536273;font-size:.62rem;background:transparent}.apostolos-host-collaboration__actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}.apostolos-host-collaboration__actions button,.apostolos-host-collaboration__actions a{display:inline-flex;min-height:38px;align-items:center;justify-content:center;padding:0 12px;border-radius:9px;font-size:.68rem;font-weight:850;text-decoration:none;cursor:pointer}.apostolos-host-collaboration__actions button{border:1px solid #d6dce5;background:#fff;color:#334155}.apostolos-host-collaboration__actions button:hover{background:#f7f8fa}.apostolos-host-collaboration__actions button:focus-visible,.apostolos-host-collaboration__actions a:focus-visible{outline:2px solid var(--action-primary,#315b87);outline-offset:2px}
       @media(max-width:860px){.apostolos-host-collaboration{align-items:stretch;flex-direction:column}.apostolos-host-collaboration__url{max-width:calc(100vw - 72px)}.apostolos-host-collaboration__actions{justify-content:flex-start;flex-wrap:wrap}}
       @media(max-width:520px){.apostolos-host-collaboration__actions{display:grid;grid-template-columns:1fr 1fr}.apostolos-host-collaboration__actions a{grid-column:1/-1}.apostolos-host-collaboration__actions button,.apostolos-host-collaboration__actions a{width:100%}.apostolos-host-collaboration__url{max-width:calc(100vw - 60px)}}
     `;

@@ -192,6 +192,9 @@ export class AssignmentListComponent implements OnInit {
   private readonly curatedDemoAssignments = new Set([
     'assignment-demo-001',
     'assignment-demo-002',
+    'assignment-demo-003',
+    'assignment-demo-004',
+    'assignment-demo-005',
     'assignment-demo-007',
   ]);
   private readonly curatedDemoRequests = new Set(['CTG-DEMO-001']);

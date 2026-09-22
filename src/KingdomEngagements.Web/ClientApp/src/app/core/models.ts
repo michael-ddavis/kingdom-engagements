@@ -81,6 +81,7 @@ export interface HostContact {
 export interface HostCoordinationDocument {
   id: string;
   fileName: string;
+  category: string;
   contentType: string;
   length: number;
   uploadedAtUtc: string;

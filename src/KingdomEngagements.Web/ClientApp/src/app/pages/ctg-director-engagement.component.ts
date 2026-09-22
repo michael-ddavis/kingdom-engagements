@@ -67,7 +67,7 @@ interface ResponsibilityDraft {
   imports: [FormsModule, RouterLink],
   template: `
     <section class="director-engagement">
-      <a class="back-link" routerLink="/organization/ctg/command-center">← Back to Command Center</a>
+      <a class="back-link" routerLink="/organization/ctg/engagements">← Engagements</a>
 
       @if (loading()) {
         <div class="state">Loading engagement operation…</div>
@@ -76,13 +76,11 @@ interface ResponsibilityDraft {
       } @else if (assignment(); as item) {
         <header class="engagement-heading">
           <div>
-            <p class="eyebrow">Engagement Director Workspace</p>
             <h1>{{ item.summary.title }}</h1>
             <p>{{ item.summary.hostOrganization }} · {{ item.summary.location || 'Location pending' }}</p>
             <span>{{ dateRange(item.summary.startsAtUtc, item.endsAtUtc) }}</span>
           </div>
           <div class="heading-actions">
-            <a [routerLink]="['/assignments', item.summary.id]" [queryParams]="{ legacy: 1 }">Open ministry record</a>
             <div class="readiness">
               <strong>{{ readinessPercent() }}%</strong>
               <span>responsibilities complete</span>
@@ -124,7 +122,7 @@ interface ResponsibilityDraft {
             @case ('overview') {
               <section class="overview-grid">
                 <article class="overview-card overview-card--wide">
-                  <header><div><p class="eyebrow">Responsibility health</p><h2>Every piece of this engagement</h2></div><button type="button" (click)="tab.set('responsibilities')">Manage owners →</button></header>
+                  <header><div><h2>Responsibilities</h2></div><button type="button" (click)="tab.set('responsibilities')">Manage owners →</button></header>
                   <div class="responsibility-grid">
                     @for (laneItem of responsibilities(); track laneItem.key) {
                       <button
@@ -143,7 +141,7 @@ interface ResponsibilityDraft {
                 </article>
 
                 <article class="overview-card">
-                  <header><div><p class="eyebrow">Host coordination</p><h2>{{ host()?.coordinationStatus ? label(host()!.coordinationStatus) : 'Not started' }}</h2></div><button type="button" (click)="tab.set('host-coordination')">Open →</button></header>
+                  <header><div><h2>{{ host()?.coordinationStatus ? label(host()!.coordinationStatus) : 'Not started' }}</h2></div><button type="button" (click)="tab.set('host-coordination')">Open →</button></header>
                   <div class="host-meter">
                     <strong>{{ workspace()?.readiness?.overallPercent ?? 0 }}%</strong>
                     <div><i [style.width.%]="workspace()?.readiness?.overallPercent ?? 0"></i></div>
@@ -152,7 +150,7 @@ interface ResponsibilityDraft {
                 </article>
 
                 <article class="overview-card">
-                  <header><div><p class="eyebrow">Next movement</p><h2>Attention items</h2></div></header>
+                  <header><div><h2>Attention items</h2></div></header>
                   @if ((workspace()?.readiness?.attentionItems?.length ?? 0) === 0 && attentionLanes().length === 0) {
                     <p class="empty-copy">Nothing is currently blocked.</p>
                   } @else {
@@ -166,7 +164,7 @@ interface ResponsibilityDraft {
                 </article>
 
                 <article class="overview-card overview-card--wide">
-                  <header><div><p class="eyebrow">Recent activity</p><h2>Who moved what</h2></div><button type="button" (click)="tab.set('activity')">Full activity →</button></header>
+                  <header><div><h2>Recent Activity</h2></div><button type="button" (click)="tab.set('activity')">Full activity →</button></header>
                   <div class="activity-list">
                     @for (activity of (workspace()?.activity ?? []).slice(0, 6); track activity.occurredAtUtc + activity.title) {
                       <div><span></span><p><strong>{{ activity.title }}</strong><small>{{ activity.detail }}</small></p><b>{{ activity.actor }} · {{ relativeDate(activity.occurredAtUtc) }}</b></div>
@@ -178,7 +176,7 @@ interface ResponsibilityDraft {
 
             @case ('responsibilities') {
               <section class="panel">
-                <header><div><p class="eyebrow">Traffic control</p><h2>Responsibility ownership & accountability</h2><p>Standing owners are inherited automatically. Override them here only when this engagement needs someone different.</p></div></header>
+                <header><div><h2>Responsibilities</h2></div></header>
                 <div class="responsibility-list">
                   @for (laneItem of responsibilities(); track laneItem.key) {
                     <article [class.na]="!laneItem.isApplicable">
@@ -212,7 +210,7 @@ interface ResponsibilityDraft {
               @if (host(); as record) {
                 <section class="two-column">
                   <article class="panel">
-                    <header><div><p class="eyebrow">Host coordination</p><h2>Host notes & contacts</h2></div><span>{{ label(record.coordinationStatus) }}</span></header>
+                    <header><div><h2>Host Coordination</h2></div><span>{{ label(record.coordinationStatus) }}</span></header>
                     <label class="field"><span>Internal host coordination notes</span><textarea rows="8" [(ngModel)]="hostDraft.hostNotes"></textarea></label>
                     <div class="contact-list">
                       <h3>Relevant contacts</h3>
@@ -224,7 +222,7 @@ interface ResponsibilityDraft {
                   </article>
 
                   <article class="panel conversation-panel">
-                    <header><div><p class="eyebrow">Host conversation</p><h2>Coordination thread</h2></div><span>{{ thread()?.isClosed ? 'Closed' : 'Open' }}</span></header>
+                    <header><div><h2>Coordination thread</h2></div><span>{{ thread()?.isClosed ? 'Closed' : 'Open' }}</span></header>
                     <div class="thread">
                       @for (message of thread()?.messages ?? []; track message.id) {
                         <div [class.host-message]="message.senderType === 'host'" [class.team-message]="message.senderType === 'ministry'">
@@ -248,7 +246,7 @@ interface ResponsibilityDraft {
             @case ('travel') {
               @if (travel(); as record) {
                 <section class="panel">
-                  <header><div><p class="eyebrow">Travel lane</p><h2>Flights & itinerary</h2></div><span>{{ ownerLabel(record.lane) }}</span></header>
+                  <header><div><h2>Flights & itinerary</h2></div><span>{{ ownerLabel(record.lane) }}</span></header>
                   <div class="form-grid">
                     <h3 class="full">Outbound</h3>
                     <label class="field"><span>Airline</span><input [(ngModel)]="travelDraft.outboundAirline"></label>
@@ -275,7 +273,7 @@ interface ResponsibilityDraft {
             @case ('lodging') {
               @if (lodging(); as record) {
                 <section class="panel">
-                  <header><div><p class="eyebrow">Lodging lane</p><h2>Hotel & stay</h2></div><span>{{ ownerLabel(record.lane) }}</span></header>
+                  <header><div><h2>Hotel & stay</h2></div><span>{{ ownerLabel(record.lane) }}</span></header>
                   <div class="form-grid">
                     <label class="field"><span>Hotel name</span><input [(ngModel)]="lodgingDraft.hotelName"></label>
                     <label class="field"><span>Confirmation</span><input [(ngModel)]="lodgingDraft.hotelConfirmationNumber"></label>
@@ -291,7 +289,7 @@ interface ResponsibilityDraft {
             @case ('transportation') {
               @if (transportation(); as record) {
                 <section class="panel">
-                  <header><div><p class="eyebrow">Ground transportation</p><h2>Local movement & pickup</h2></div><span>{{ ownerLabel(record.lane) }}</span></header>
+                  <header><div><h2>Local movement & pickup</h2></div><span>{{ ownerLabel(record.lane) }}</span></header>
                   <div class="form-grid">
                     <label class="field full"><span>Transportation plan</span><textarea rows="6" [(ngModel)]="transportDraft.transportationPlan"></textarea></label>
                     <label class="field"><span>Pickup contact</span><input [(ngModel)]="transportDraft.pickupContactName"></label>
@@ -306,7 +304,7 @@ interface ResponsibilityDraft {
               @if (media(); as record) {
                 <section class="two-column">
                   <article class="panel">
-                    <header><div><p class="eyebrow">Media & Creative</p><h2>Media preparation</h2></div><span>{{ ownerLabel(record.lane) }}</span></header>
+                    <header><div><h2>Media preparation</h2></div><span>{{ ownerLabel(record.lane) }}</span></header>
                     <label class="field"><span>Promotion / media requirements</span><textarea rows="8" [(ngModel)]="mediaDraft.promotionRequirements"></textarea></label>
                     <div class="contact-list">
                       <h3>Media contacts</h3>
@@ -318,7 +316,7 @@ interface ResponsibilityDraft {
                   </article>
 
                   <article class="panel">
-                    <header><div><p class="eyebrow">Assets</p><h2>Images, video & creative files</h2></div></header>
+                    <header><div><h2>Images, video & creative files</h2></div></header>
                     <div class="asset-list">
                       @for (asset of record.assets; track asset.id) {
                         <div>
@@ -349,7 +347,7 @@ interface ResponsibilityDraft {
             @case ('program') {
               @if (program(); as record) {
                 <section class="panel">
-                  <header><div><p class="eyebrow">Program & Schedule</p><h2>Engagement itinerary</h2></div><span>{{ ownerLabel(record.lane) }}</span></header>
+                  <header><div><h2>Engagement itinerary</h2></div><span>{{ ownerLabel(record.lane) }}</span></header>
                   <div class="schedule-list">
                     @for (scheduleItem of programDraft.schedule; track $index) {
                       <div class="schedule-row">
@@ -371,7 +369,7 @@ interface ResponsibilityDraft {
             @case ('documents') {
               @if (documents(); as record) {
                 <section class="panel">
-                  <header><div><p class="eyebrow">Documents & Agreements</p><h2>Engagement records</h2></div><span>{{ ownerLabel(record.lane) }}</span></header>
+                  <header><div><h2>Engagement records</h2></div><span>{{ ownerLabel(record.lane) }}</span></header>
                   <div class="document-list">
                     @for (document of record.documents; track document.id) {
                       <div><span>{{ label(document.category) }}</span><p><strong>{{ document.name }}</strong><small>{{ label(document.status) }} · {{ dateLabel(document.updatedAtUtc) }}</small></p></div>
@@ -390,7 +388,7 @@ interface ResponsibilityDraft {
             @case ('finance') {
               @if (finance(); as record) {
                 <section class="panel">
-                  <header><div><p class="eyebrow">Finance & Honorarium</p><h2>Terms and payment preparation</h2></div><span>{{ ownerLabel(record.lane) }}</span></header>
+                  <header><div><h2>Terms and payment preparation</h2></div><span>{{ ownerLabel(record.lane) }}</span></header>
                   <div class="form-grid">
                     <label class="field"><span>Travel coverage</span><input [(ngModel)]="financeDraft.travelCoverageStatus"></label>
                     <label class="field"><span>Lodging coverage</span><input [(ngModel)]="financeDraft.lodgingCoverageStatus"></label>
@@ -408,7 +406,7 @@ interface ResponsibilityDraft {
             @case ('ministry-preparation') {
               @if (ministry(); as record) {
                 <section class="panel">
-                  <header><div><p class="eyebrow">Ministry Preparation</p><h2>Spiritual & ministry brief</h2></div><span>{{ ownerLabel(record.lane) }}</span></header>
+                  <header><div><h2>Spiritual & ministry brief</h2></div><span>{{ ownerLabel(record.lane) }}</span></header>
                   <label class="field"><span>Prayer focus</span><textarea rows="5" [(ngModel)]="ministryDraft.prayerFocus"></textarea></label>
                   <label class="field"><span>Ministry preparation notes</span><textarea rows="9" [(ngModel)]="ministryDraft.ministryPreparationNotes"></textarea></label>
                   <footer class="panel-actions"><button type="button" [disabled]="saving()" (click)="saveMinistry()">Save ministry preparation</button></footer>
@@ -419,7 +417,7 @@ interface ResponsibilityDraft {
             @case ('hospitality') {
               @if (hospitality(); as record) {
                 <section class="panel">
-                  <header><div><p class="eyebrow">Hospitality</p><h2>Meals, green room & care</h2></div><span>{{ ownerLabel(record.lane) }}</span></header>
+                  <header><div><h2>Meals, green room & care</h2></div><span>{{ ownerLabel(record.lane) }}</span></header>
                   <label class="field"><span>Hospitality notes</span><textarea rows="10" [(ngModel)]="hospitalityDraft.hospitalityNotes"></textarea></label>
                   <div class="contact-list">
                     <h3>Hospitality contacts</h3>
@@ -436,7 +434,7 @@ interface ResponsibilityDraft {
               @if (completion(); as record) {
                 <section class="two-column">
                   <article class="panel">
-                    <header><div><p class="eyebrow">Closeout & Follow-up</p><h2>Finish the engagement well</h2><p>Track the administrative and relational work that remains after ministry is complete.</p></div><span>{{ record.closeout.completedAtUtc ? 'Complete' : 'Open' }}</span></header>
+                    <header><div><h2>Finish the engagement well</h2><p>Track the administrative and relational work that remains after ministry is complete.</p></div><span>{{ record.closeout.completedAtUtc ? 'Complete' : 'Open' }}</span></header>
                     <label class="field"><span>Event notes</span><textarea rows="6" [(ngModel)]="closeoutDraft.eventNotes"></textarea></label>
                     <label class="field"><span>Testimony / outcome summary</span><textarea rows="6" [(ngModel)]="closeoutDraft.testimonySummary"></textarea></label>
                     <div class="closeout-checks">
@@ -454,7 +452,7 @@ interface ResponsibilityDraft {
                   </article>
 
                   <article class="panel">
-                    <header><div><p class="eyebrow">Ministry responses</p><h2>People & follow-up</h2></div><span>{{ record.totalResponses }} recorded</span></header>
+                    <header><div><h2>People & follow-up</h2></div><span>{{ record.totalResponses }} recorded</span></header>
                     <div class="closeout-summary">
                       <div><small>Responses</small><strong>{{ record.totalResponses }}</strong></div>
                       <div><small>Open follow-ups</small><strong>{{ record.followUpsOpen }}</strong></div>
@@ -482,7 +480,7 @@ interface ResponsibilityDraft {
 
             @case ('activity') {
               <section class="panel">
-                <header><div><p class="eyebrow">Audit trail</p><h2>Engagement activity</h2></div></header>
+                <header><div><h2>Engagement activity</h2></div></header>
                 <div class="activity-list activity-list--full">
                   @for (activity of workspace()?.activity ?? []; track activity.occurredAtUtc + activity.title) {
                     <div><span></span><p><strong>{{ activity.title }}</strong><small>{{ activity.detail }}</small></p><b>{{ activity.actor }} · {{ dateTimeLabel(activity.occurredAtUtc) }}</b></div>

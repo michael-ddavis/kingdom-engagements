@@ -112,6 +112,76 @@ public sealed class EngagementPreparationLifecycleTests
     }
 
     [Fact]
+    public async Task External_document_storage_keeps_file_bytes_out_of_sql_and_restores_them_for_download()
+    {
+        var storage = new TestObjectStorage();
+        await using var fixture = CreateFixture(storage);
+        var tenantId = Guid.NewGuid();
+
+        var request = await fixture.RequestService.CreateAsync(
+            tenantId,
+            ValidRequest(),
+            CancellationToken.None);
+        fixture.Requests.ChangeTracker.Clear();
+
+        var approval = await fixture.RequestService.ApproveAsync(
+            tenantId,
+            request.Id,
+            CancellationToken.None);
+        Assert.NotNull(approval);
+
+        fixture.Requests.ChangeTracker.Clear();
+        fixture.Engagements.ChangeTracker.Clear();
+
+        var preparation = await fixture.PreparationService.EnsureAsync(
+            tenantId,
+            approval.Value.AssignmentId,
+            CancellationToken.None);
+        Assert.NotNull(preparation);
+
+        var accepted = await fixture.PreparationService.AcceptTermsAsync(
+            preparation.TermsToken,
+            new AcceptEngagementTermsRequest(
+                true,
+                "Pastor Jordan Ellis",
+                "jordan@example.org",
+                null),
+            CancellationToken.None);
+        Assert.NotNull(accepted);
+        Assert.NotNull(accepted.CoordinationToken);
+
+        fixture.Preparations.ChangeTracker.Clear();
+
+        byte[] expectedContent = [10, 20, 30, 40, 50];
+        var document = await fixture.PreparationService.AddDocumentAsync(
+            accepted.CoordinationToken!,
+            "travel-confirmation.pdf",
+            "application/pdf",
+            expectedContent,
+            "travel",
+            CancellationToken.None);
+
+        Assert.NotNull(document);
+
+        fixture.Preparations.ChangeTracker.Clear();
+        var storedRecord = await fixture.Preparations.Documents
+            .AsNoTracking()
+            .SingleAsync(x => x.Id == document.Id);
+
+        Assert.Equal(TestObjectStorage.ProviderName, storedRecord.StorageProvider);
+        Assert.False(string.IsNullOrWhiteSpace(storedRecord.StorageKey));
+        Assert.Empty(storedRecord.Content);
+
+        var downloaded = await fixture.PreparationService.GetDocumentForHostAsync(
+            accepted.CoordinationToken!,
+            document.Id,
+            CancellationToken.None);
+
+        Assert.NotNull(downloaded);
+        Assert.Equal(expectedContent, downloaded.Content);
+    }
+
+    [Fact]
     public async Task Host_coordination_conversation_is_shared_and_closes_with_coordination()
     {
         await using var fixture = CreateFixture();
@@ -222,7 +292,7 @@ public sealed class EngagementPreparationLifecycleTests
         AgreementStatus: "not-started",
         EngagementStatus: "proposed");
 
-    private static TestFixture CreateFixture()
+    private static TestFixture CreateFixture(IEngagementDocumentStorage? documentStorage = null)
     {
         var engagementOptions = new DbContextOptionsBuilder<EngagementsDbContext>()
             .ReplaceService<IModelCustomizer, EngagementsModelCustomizer>()
@@ -239,8 +309,56 @@ public sealed class EngagementPreparationLifecycleTests
         var requests = new SpeakingRequestsDbContext(requestOptions);
         var preparations = new EngagementPreparationDbContext(preparationOptions);
         var requestService = new SpeakingRequestsService(requests, engagements);
-        var preparationService = new EngagementPreparationService(preparations, requests, engagements);
+        var preparationService = new EngagementPreparationService(
+            preparations,
+            requests,
+            engagements,
+            documentStorage);
         return new TestFixture(engagements, requests, preparations, requestService, preparationService);
+    }
+
+    private sealed class TestObjectStorage : IEngagementDocumentStorage
+    {
+        public const string ProviderName = "test-object";
+        private readonly Dictionary<string, byte[]> _objects = [];
+
+        public Task<EngagementDocumentStorageResult> StoreAsync(
+            EngagementDocumentStorageRequest request,
+            CancellationToken cancellationToken)
+        {
+            var key = request.DocumentId.ToString("N");
+            _objects[key] = request.Content.ToArray();
+
+            return Task.FromResult(
+                new EngagementDocumentStorageResult(
+                    ProviderName,
+                    key,
+                    []));
+        }
+
+        public Task<byte[]> ReadAsync(
+            HostCoordinationDocumentRecord document,
+            CancellationToken cancellationToken)
+        {
+            if (document.StorageProvider == ProviderName &&
+                document.StorageKey is not null &&
+                _objects.TryGetValue(document.StorageKey, out var content))
+            {
+                return Task.FromResult(content.ToArray());
+            }
+
+            return Task.FromResult(document.Content);
+        }
+
+        public Task DeleteAsync(
+            HostCoordinationDocumentRecord document,
+            CancellationToken cancellationToken)
+        {
+            if (document.StorageKey is not null)
+                _objects.Remove(document.StorageKey);
+
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class TestFixture(

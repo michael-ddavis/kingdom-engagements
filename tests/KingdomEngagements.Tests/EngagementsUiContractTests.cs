@@ -97,7 +97,9 @@ public sealed class EngagementsUiContractTests
             "KingdomEngagements.Web",
             "Program.cs"));
 
-        Assert.Contains("var target = EngagementsDemoRoles.IsMinister(context.User)", program, StringComparison.Ordinal);
+        Assert.Contains("var target = EngagementsDemoRoles.IsApostle(context.User)", program, StringComparison.Ordinal);
+        Assert.Contains("? \"/organization/ctg/apostle\"", program, StringComparison.Ordinal);
+        Assert.Contains(": EngagementsDemoRoles.IsMinister(context.User)", program, StringComparison.Ordinal);
         Assert.Contains("? \"/assignments\"", program, StringComparison.Ordinal);
         Assert.Contains(": \"/organization/ctg/bookings\"", program, StringComparison.Ordinal);
         Assert.Contains("Results.Redirect($\"{target}{context.Request.QueryString}\")", program, StringComparison.Ordinal);

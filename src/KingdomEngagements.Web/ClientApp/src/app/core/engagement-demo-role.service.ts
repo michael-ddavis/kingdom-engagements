@@ -119,9 +119,9 @@ export class EngagementDemoRoleService {
     }
 
     const returnUrl = globalThis.location.href;
-    const separator = platformUrl.includes('?') ? '&' : '?';
+    const loginUrl = `${platformUrl.replace(/\/$/, '')}/login`;
     globalThis.location.assign(
-      `${platformUrl}${separator}returnUrl=${encodeURIComponent(returnUrl)}`,
+      `${loginUrl}?returnUrl=${encodeURIComponent(returnUrl)}`,
     );
   }
 }

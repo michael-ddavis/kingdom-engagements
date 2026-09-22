@@ -11,11 +11,7 @@ import { EngagementResponsibilitySnapshot, ResponsibilityLaneState } from '../co
   template: `
     <section class="standup-page">
       <header class="standup-header">
-        <div>
-          <p>CTG · Engagement Operations</p>
-          <h1>Stand-Up Mode</h1>
-          <span>Walk the team through each upcoming engagement without leaving the page.</span>
-        </div>
+        <h1>Stand-Up</h1>
         <div>
           <a routerLink="/organization/ctg/command-center">← Command Center</a>
           <button type="button" (click)="showAll.set(!showAll())">{{ showAll() ? 'Focus one at a time' : 'Show all engagements' }}</button>

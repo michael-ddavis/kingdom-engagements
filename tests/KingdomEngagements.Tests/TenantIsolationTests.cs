@@ -108,6 +108,7 @@ public sealed class TenantIsolationTests
         AssertFilter<EngagementLaneProgress>(engagements);
         AssertFilter<EngagementMediaAsset>(engagements);
         AssertFilter<EngagementTeamMember>(engagements);
+        AssertFilter<EngagementIntegrationReceipt>(engagements);
 
         AssertFilter<SpeakingRequestRecord>(requests);
         AssertFilter<SpeakingRequestCommunicationRecord>(requests);

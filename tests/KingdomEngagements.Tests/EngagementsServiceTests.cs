@@ -1,5 +1,6 @@
 using System.Text.Json;
 using KingdomEngagements.Web.Features;
+using KingdomEngagements.Web.Platform;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 
@@ -28,6 +29,7 @@ public sealed class EngagementsServiceTests
     {
         await using var fixture = CreateFixture();
         var tenantId = Guid.NewGuid();
+        using var tenantScope = fixture.TenantAccessor.BeginTenant(tenantId, "engagement ingest test");
         var eventId = Guid.NewGuid();
         var envelope = ApprovedAssignment(
             eventId,
@@ -73,6 +75,7 @@ public sealed class EngagementsServiceTests
                 "Atlanta"),
             CancellationToken.None);
         fixture.Database.ChangeTracker.Clear();
+
         await fixture.Service.CreateAsync(
             secondTenant,
             new CreateEngagementRequest(
@@ -100,6 +103,7 @@ public sealed class EngagementsServiceTests
     {
         await using var fixture = CreateFixture();
         var tenantId = Guid.NewGuid();
+        using var tenantScope = fixture.TenantAccessor.BeginTenant(tenantId, "engagement readiness test");
         var created = await fixture.Service.CreateAsync(
             tenantId,
             new CreateEngagementRequest(
@@ -150,12 +154,16 @@ public sealed class EngagementsServiceTests
     public async Task UnsupportedIntegrationEventsAreRejectedWithoutAReceipt()
     {
         await using var fixture = CreateFixture();
+        var tenantId = Guid.NewGuid();
+        using var tenantScope = fixture.TenantAccessor.BeginTenant(
+            tenantId,
+            "unsupported integration event test");
         var envelope = new IntegrationEventEnvelope(
             Guid.NewGuid(),
             "CareCaseOpened",
             1,
             DateTimeOffset.UtcNow,
-            Guid.NewGuid(),
+            tenantId,
             "care",
             JsonSerializer.SerializeToElement(new { subjectId = "person-1" }));
 
@@ -195,14 +203,20 @@ public sealed class EngagementsServiceTests
             .ReplaceService<IModelCustomizer, EngagementsModelCustomizer>()
             .UseInMemoryDatabase($"engagements-tests-{Guid.NewGuid():N}")
             .Options;
-        var database = new EngagementsDbContext(options);
-        return new TestFixture(database, new EngagementsService(database));
+        var tenantAccessor = new TestCurrentTenantAccessor();
+        var database = new EngagementsDbContext(options, tenantAccessor);
+        return new TestFixture(
+            tenantAccessor,
+            database,
+            new EngagementsService(database, tenantAccessor));
     }
 
     private sealed class TestFixture(
+        TestCurrentTenantAccessor tenantAccessor,
         EngagementsDbContext database,
         EngagementsService service) : IAsyncDisposable
     {
+        public TestCurrentTenantAccessor TenantAccessor { get; } = tenantAccessor;
         public EngagementsDbContext Database { get; } = database;
         public EngagementsService Service { get; } = service;
 

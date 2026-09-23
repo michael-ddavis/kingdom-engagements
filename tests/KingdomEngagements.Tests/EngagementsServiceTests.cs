@@ -210,7 +210,8 @@ public sealed class EngagementsServiceTests
             .ReplaceService<IModelCustomizer, EngagementsModelCustomizer>()
             .UseInMemoryDatabase($"engagements-tests-{Guid.NewGuid():N}")
             .Options;
-        var database = new EngagementsDbContext(options);
+        var tenant = new TestTenantAccessor(bypass: true);
+        var database = new EngagementsDbContext(options, tenant);
         return new TestFixture(database, new EngagementsService(database));
     }
 

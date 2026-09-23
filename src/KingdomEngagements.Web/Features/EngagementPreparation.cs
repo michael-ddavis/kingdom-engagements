@@ -4,7 +4,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KingdomEngagements.Web.Features;
 
-public sealed class EngagementPreparationDbContext(DbContextOptions<EngagementPreparationDbContext> options) : DbContext(options)
+public sealed class EngagementPreparationDbContext(
+    DbContextOptions<EngagementPreparationDbContext> options,
+    ICurrentTenantAccessor currentTenant)
+    : TenantScopedDbContext(options, currentTenant)
 {
     public DbSet<EngagementPreparationRecord> Preparations => Set<EngagementPreparationRecord>();
     public DbSet<HostCoordinationDocumentRecord> Documents => Set<HostCoordinationDocumentRecord>();
@@ -73,6 +76,8 @@ public sealed class EngagementPreparationDbContext(DbContextOptions<EngagementPr
         document.Property(x => x.StorageProvider).HasMaxLength(40).IsRequired();
         document.Property(x => x.StorageKey).HasMaxLength(900);
         document.Property(x => x.Content).IsRequired();
+        document.HasOne(x => x.Preparation).WithMany()
+            .HasForeignKey(x => x.PreparationId).OnDelete(DeleteBehavior.Cascade);
 
         var message = modelBuilder.Entity<HostCoordinationMessageRecord>();
         message.ToTable("EngagementHostCoordinationMessages");
@@ -84,6 +89,14 @@ public sealed class EngagementPreparationDbContext(DbContextOptions<EngagementPr
         message.Property(x => x.Message).HasMaxLength(4000).IsRequired();
         message.HasOne(x => x.Preparation).WithMany()
             .HasForeignKey(x => x.PreparationId).OnDelete(DeleteBehavior.Cascade);
+
+        preparation.HasQueryFilter(x => TenantIsolationBypassed || x.TenantId == CurrentTenantId);
+        document.HasQueryFilter(x =>
+            TenantIsolationBypassed ||
+            (x.Preparation != null && x.Preparation.TenantId == CurrentTenantId));
+        message.HasQueryFilter(x =>
+            TenantIsolationBypassed ||
+            (x.Preparation != null && x.Preparation.TenantId == CurrentTenantId));
     }
 
     public async Task EnsureSchemaAsync(CancellationToken cancellationToken)
@@ -319,6 +332,7 @@ public sealed class HostCoordinationDocumentRecord
     public string? StorageKey { get; set; }
     public byte[] Content { get; set; } = [];
     public DateTimeOffset UploadedAtUtc { get; set; }
+    public EngagementPreparationRecord? Preparation { get; set; }
 }
 
 public sealed class HostCoordinationMessageRecord
@@ -464,6 +478,8 @@ public sealed class EngagementPreparationService(
     EngagementPreparationDbContext database,
     SpeakingRequestsDbContext requestsDatabase,
     EngagementsDbContext engagementsDatabase,
+    ICurrentTenantAccessor currentTenant,
+    ITenantIsolationBypass tenantBypass,
     IEngagementDocumentStorage? documentStorage = null)
 {
     private readonly IEngagementDocumentStorage _documentStorage =

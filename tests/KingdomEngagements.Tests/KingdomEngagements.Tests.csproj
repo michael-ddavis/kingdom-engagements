@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <DefineConstants>$(DefineConstants);KINGDOM_ENGAGEMENTS_DEMO</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,6 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/KingdomEngagements.Web/KingdomEngagements.Web.csproj" />
+    <ProjectReference Include="../../src/KingdomEngagements.Web/KingdomEngagements.Web.csproj"
+                      AdditionalProperties="EnableEngagementsDemoFeatures=true" />
   </ItemGroup>
 </Project>

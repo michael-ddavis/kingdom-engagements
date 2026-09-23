@@ -52,13 +52,28 @@ jobs:
       - run: dotnet restore KingdomEngagements.slnx
       - run: dotnet build KingdomEngagements.slnx --configuration Release --no-restore
       - run: dotnet test KingdomEngagements.slnx --configuration Release --no-build
-      - run: docker build --tag kingdom-engagements:ci .
+      - name: Build development validation container
+        run: docker build --build-arg INCLUDE_DEMO_FEATURES=true --tag kingdom-engagements:ci .
+
+      - name: Build and inspect production artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build --tag kingdom-engagements:prod-check .
+          container_id="$(docker create kingdom-engagements:prod-check)"
+          trap 'docker rm --force "$container_id" >/dev/null 2>&1 || true' EXIT
+          docker cp "$container_id:/app/KingdomEngagements.Web.dll" /tmp/KingdomEngagements.Web.dll
+          strings /tmp/KingdomEngagements.Web.dll > /tmp/engagements-production-symbols.txt
+          if grep -E             'EngagementsDemoSeedWorker|EngagementsDemoDepthWorker|EngagementsDemoConnectedStoryWorker|EngagementsDemoAccessMiddleware|EngagementsDemoRoles|DemoTenantId|HeyyKingTenantId|DivineWorldChangersTenantId'             /tmp/engagements-production-symbols.txt; then
+            echo 'Production artifact contains demo-only code or tenant constants.' >&2
+            exit 1
+          fi
 
       - name: Verify Production fails closed with incomplete configuration
         shell: bash
         run: |
           set -euo pipefail
-          container_id="$(docker create -e ASPNETCORE_ENVIRONMENT=Production kingdom-engagements:ci)"
+          container_id="$(docker create -e ASPNETCORE_ENVIRONMENT=Production kingdom-engagements:prod-check)"
           trap 'docker rm --force "$container_id" >/dev/null 2>&1 || true' EXIT
           docker start "$container_id" >/dev/null
           exit_code="$(docker wait "$container_id")"

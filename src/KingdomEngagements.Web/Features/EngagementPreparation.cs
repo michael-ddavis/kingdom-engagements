@@ -4,7 +4,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KingdomEngagements.Web.Features;
 
-public sealed class EngagementPreparationDbContext(DbContextOptions<EngagementPreparationDbContext> options) : DbContext(options)
+public sealed class EngagementPreparationDbContext(
+    DbContextOptions<EngagementPreparationDbContext> options,
+    ICurrentTenantAccessor? tenantAccessor = null) : TenantScopedDbContext(options, tenantAccessor)
 {
     public DbSet<EngagementPreparationRecord> Preparations => Set<EngagementPreparationRecord>();
     public DbSet<HostCoordinationDocumentRecord> Documents => Set<HostCoordinationDocumentRecord>();
@@ -61,6 +63,9 @@ public sealed class EngagementPreparationDbContext(DbContextOptions<EngagementPr
         preparation.Property(x => x.MinistryPreparationNotes).HasColumnType("nvarchar(max)");
         preparation.Property(x => x.HospitalityNotes).HasColumnType("nvarchar(max)");
         preparation.Property(x => x.HostNotes).HasMaxLength(4000);
+        preparation.HasQueryFilter(x =>
+            TenantFilterBypassed ||
+            (TenantFilterHasTenant && x.TenantId == TenantFilterTenantId));
 
         var document = modelBuilder.Entity<HostCoordinationDocumentRecord>();
         document.ToTable("EngagementHostCoordinationDocuments");
@@ -73,6 +78,13 @@ public sealed class EngagementPreparationDbContext(DbContextOptions<EngagementPr
         document.Property(x => x.StorageProvider).HasMaxLength(40).IsRequired();
         document.Property(x => x.StorageKey).HasMaxLength(900);
         document.Property(x => x.Content).IsRequired();
+        document.HasOne(x => x.Preparation).WithMany()
+            .HasForeignKey(x => x.PreparationId).OnDelete(DeleteBehavior.Cascade);
+        document.HasQueryFilter(x =>
+            TenantFilterBypassed ||
+            (TenantFilterHasTenant &&
+             x.Preparation != null &&
+             x.Preparation.TenantId == TenantFilterTenantId));
 
         var message = modelBuilder.Entity<HostCoordinationMessageRecord>();
         message.ToTable("EngagementHostCoordinationMessages");
@@ -84,6 +96,11 @@ public sealed class EngagementPreparationDbContext(DbContextOptions<EngagementPr
         message.Property(x => x.Message).HasMaxLength(4000).IsRequired();
         message.HasOne(x => x.Preparation).WithMany()
             .HasForeignKey(x => x.PreparationId).OnDelete(DeleteBehavior.Cascade);
+        message.HasQueryFilter(x =>
+            TenantFilterBypassed ||
+            (TenantFilterHasTenant &&
+             x.Preparation != null &&
+             x.Preparation.TenantId == TenantFilterTenantId));
     }
 
     public async Task EnsureSchemaAsync(CancellationToken cancellationToken)
@@ -319,6 +336,7 @@ public sealed class HostCoordinationDocumentRecord
     public string? StorageKey { get; set; }
     public byte[] Content { get; set; } = [];
     public DateTimeOffset UploadedAtUtc { get; set; }
+    public EngagementPreparationRecord? Preparation { get; set; }
 }
 
 public sealed class HostCoordinationMessageRecord

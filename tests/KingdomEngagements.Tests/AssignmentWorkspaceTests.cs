@@ -259,20 +259,21 @@ public sealed class AssignmentWorkspaceTests
 
     private static TestFixture CreateFixture()
     {
+        var tenant = new TestTenantAccessor(bypass: true);
         var engagements = new EngagementsDbContext(new DbContextOptionsBuilder<EngagementsDbContext>()
             .ReplaceService<IModelCustomizer, EngagementsModelCustomizer>()
             .UseInMemoryDatabase($"workspace-engagements-{Guid.NewGuid():N}")
-            .Options);
+            .Options, tenant);
         var requests = new SpeakingRequestsDbContext(new DbContextOptionsBuilder<SpeakingRequestsDbContext>()
             .ReplaceService<IModelCustomizer, SpeakingRequestsModelCustomizer>()
             .UseInMemoryDatabase($"workspace-requests-{Guid.NewGuid():N}")
-            .Options);
+            .Options, tenant);
         var preparation = new EngagementPreparationDbContext(new DbContextOptionsBuilder<EngagementPreparationDbContext>()
             .UseInMemoryDatabase($"workspace-preparation-{Guid.NewGuid():N}")
-            .Options);
+            .Options, tenant);
         var activity = new AssignmentWorkspaceDbContext(new DbContextOptionsBuilder<AssignmentWorkspaceDbContext>()
             .UseInMemoryDatabase($"workspace-activity-{Guid.NewGuid():N}")
-            .Options);
+            .Options, tenant);
         var preparationService = new EngagementPreparationService(preparation, requests, engagements);
         var workspace = new AssignmentWorkspaceService(activity, preparation, requests, engagements, preparationService);
         return new TestFixture(engagements, requests, preparation, activity, workspace);

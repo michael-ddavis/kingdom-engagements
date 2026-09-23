@@ -3,6 +3,7 @@ import { Router, RouterOutlet } from '@angular/router';
 import { EngagementsApiService } from './core/engagements-api.service';
 import { EngagementDemoRoleService } from './core/engagement-demo-role.service';
 import { DwcFormationStateService } from './core/dwc-formation-state.service';
+import { AccountPanelComponent } from './shared/account-panel.component';
 import { ProductInfo } from './core/models';
 import { HickmanItinerantPanelComponent } from './shared/hickman-itinerant-panel.component';
 import { OrganizationCommandCenterComponent } from './shared/organization-command-center.component';
@@ -10,7 +11,7 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, OrganizationCommandCenterComponent, HickmanItinerantPanelComponent],
+  imports: [AccountPanelComponent, RouterOutlet, OrganizationCommandCenterComponent, HickmanItinerantPanelComponent],
   encapsulation: ViewEncapsulation.None,
   template: `
     <div class="eng-app">
@@ -77,15 +78,16 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
                 </a>
               }
               @if (!isDwcMemberView()) {
-                <a class="eng-settings-link" [href]="(product()?.platformUrl || 'http://localhost:5100') + '/appearance'">Settings</a>
+                <button type="button" class="eng-settings-link" (click)="accountPanel.open()">Settings</button>
               }
-              <a
+              <button type="button"
                 class="eng-avatar"
-                [href]="product()?.platformUrl || 'http://localhost:5100'"
+                (click)="accountPanel.open()" aria-haspopup="dialog"
                 [attr.aria-label]="'Account for ' + roles.persona().person"
                 title="Account">
                 {{ personaInitials() }}
-              </a>
+              </button>
+              <app-account-panel #accountPanel [name]="roles.persona().person" [role]="roles.persona().label" />
             </div>
           </div>
         </header>
@@ -255,7 +257,7 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
       white-space:nowrap;
     }
 
-    .eng-avatar{text-decoration:none;margin-left:1px}
+    .eng-avatar{text-decoration:none;margin-left:1px;cursor:pointer;font-family:inherit}.eng-settings-link{border:0;cursor:pointer;font-family:inherit}
 
     @media(max-width:1180px){
       .eng-modulebar{align-items:flex-start;flex-wrap:wrap;padding-top:10px;padding-bottom:9px}

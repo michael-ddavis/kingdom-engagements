@@ -46,7 +46,7 @@ const DESTINATION_IMAGES: readonly DestinationImage[] = [
       <header class="executive-hero">
         <div class="executive-hero__copy">
           <span class="hero-eyebrow">Global reach · Eternal impact.</span>
-          <h1>Apostle Cynthia<br><em>Executive View</em></h1>
+          <h1>{{ greeting() }}<br><em>Apostle Cynthia</em></h1>
           <p>Your road ahead at a glance.</p>
           <div class="hero-rule"></div>
           <small>People · Places · Purpose · A greater tomorrow</small>
@@ -58,11 +58,6 @@ const DESTINATION_IMAGES: readonly DestinationImage[] = [
           <i></i>
         </div>
 
-        <img
-          class="executive-hero__portrait"
-          src="/ctg-apostle-cynthia.webp"
-          alt="Apostle Cynthia Thompson"
-        />
       </header>
 
       @if (loading()) {
@@ -269,7 +264,7 @@ const DESTINATION_IMAGES: readonly DestinationImage[] = [
     *{box-sizing:border-box}
     .executive-view{width:min(1540px,calc(100% - 34px));margin:0 auto;padding:16px 0 30px}
     .loading-card{padding:48px;border:1px solid #dfd9cc;border-radius:12px;background:#fffdf8;color:#6f746f;text-align:center}
-    .executive-hero{position:relative;min-height:290px;overflow:hidden;border:1px solid rgba(188,166,90,.24);border-radius:10px;background:linear-gradient(90deg,rgba(5,16,10,.98) 0%,rgba(7,22,12,.86) 31%,rgba(17,38,13,.38) 62%,rgba(5,18,10,.74) 100%),url('/ctg-global-road-map.webp') center/cover no-repeat;color:#fff;box-shadow:0 12px 30px rgba(18,32,20,.12)}
+    .executive-hero{position:relative;min-height:290px;overflow:hidden;border:1px solid rgba(188,166,90,.24);border-radius:10px;background:linear-gradient(90deg,rgba(5,16,10,.36) 0%,rgba(7,22,12,.12) 31%,rgba(17,38,13,0) 62%,rgba(5,18,10,.12) 100%),url('/ctg-executive-map.webp') center/cover no-repeat;color:#fff;box-shadow:0 12px 30px rgba(18,32,20,.12)}
     .executive-hero::after{position:absolute;inset:0;background:linear-gradient(90deg,rgba(1,8,5,.35),transparent 45%,rgba(2,10,5,.15));content:'';pointer-events:none}
     .executive-hero__copy{position:relative;z-index:2;width:min(720px,58%);padding:31px 34px 24px}
     .hero-eyebrow{display:block;color:#d4cfab;font-size:.61rem;font-weight:850;letter-spacing:.34em;text-transform:uppercase}
@@ -317,7 +312,7 @@ const DESTINATION_IMAGES: readonly DestinationImage[] = [
     .readiness small{color:#707770;font-size:.55rem}
     .destination-photo{position:relative;display:block;height:168px;margin:0 10px 10px;overflow:hidden;border-radius:7px;color:#fff;text-decoration:none;background:#132218}
     .destination-photo img,.destination-fallback{display:block;width:100%;height:100%;object-fit:cover}
-    .destination-fallback{background:url('/ctg-global-road-map.webp') center/cover no-repeat}
+    .destination-fallback{background:url('/ctg-executive-map.webp') center/cover no-repeat}
     .destination-shade{position:absolute;inset:0;background:linear-gradient(180deg,transparent 30%,rgba(4,12,8,.72) 100%)}
     .destination-label{position:absolute;z-index:2;left:14px;bottom:12px;display:grid;text-transform:uppercase}
     .destination-label strong{font-family:Georgia,serif;font-size:1rem;letter-spacing:.12em}
@@ -367,7 +362,7 @@ const DESTINATION_IMAGES: readonly DestinationImage[] = [
     .road-stop small{margin-top:3px;font-size:.55rem}
     .road-stop em{color:#cbd2cc;font-size:.49rem;font-style:normal}
     .road-callout{display:grid;grid-template-columns:72px 1fr;align-items:center;min-height:65px;padding:8px 10px;border:1px solid rgba(255,255,255,.12);border-radius:7px;background:#0b1710}
-    .road-callout__map{height:45px;background:url('/ctg-global-road-map.webp') center/cover no-repeat;opacity:.65}
+    .road-callout__map{height:45px;background:url('/ctg-executive-map.webp') center/cover no-repeat;opacity:.65}
     .road-callout small,.road-callout strong{display:block}
     .road-callout small{font-size:.43rem;letter-spacing:.16em;text-transform:uppercase}
     .road-callout strong{margin-top:4px;font-family:Georgia,serif;font-size:.58rem;text-transform:uppercase}
@@ -411,6 +406,11 @@ const DESTINATION_IMAGES: readonly DestinationImage[] = [
   `],
 })
 export class CtgApostleDashboardComponent implements OnInit {
+  greeting(): string {
+    const hour = new Date().getHours();
+    return hour < 12 ? 'Good morning,' : hour < 17 ? 'Good afternoon,' : 'Good evening,';
+  }
+
   readonly assignments = signal<readonly EngagementSummary[]>([]);
   readonly loading = signal(true);
 

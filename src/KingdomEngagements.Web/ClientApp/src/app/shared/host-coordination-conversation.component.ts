@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, Input, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnDestroy, OnInit, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { EngagementsApiService } from '../core/engagements-api.service';
 import { EngagementRealtimeService } from '../core/engagement-realtime.service';
@@ -82,6 +82,7 @@ interface CoordinationUpdatedEvent {
   `],
 })
 export class HostCoordinationConversationComponent implements OnInit, OnDestroy {
+  @Output() readonly threadChanged = new EventEmitter<HostCoordinationThread>();
   @Input({ required: true }) assignmentId = '';
 
   readonly thread = signal<HostCoordinationThread>({ isClosed: false, messages: [] });
@@ -121,6 +122,7 @@ export class HostCoordinationConversationComponent implements OnInit, OnDestroy 
         this.api.sendHostCoordinationMessage(this.assignmentId, message),
       );
       this.thread.set(thread);
+      this.threadChanged.emit(thread);
       this.draft.set('');
     } catch {
       this.error.set('The coordination message could not be sent.');
@@ -138,6 +140,7 @@ export class HostCoordinationConversationComponent implements OnInit, OnDestroy 
         this.api.getHostCoordinationMessages(this.assignmentId),
       );
       this.thread.set(thread);
+      this.threadChanged.emit(thread);
     } catch {
       this.error.set('The host coordination conversation is not available.');
     } finally {
@@ -173,5 +176,6 @@ export class HostCoordinationConversationComponent implements OnInit, OnDestroy 
       ...current,
       messages: [...current.messages, event.message],
     });
+    this.threadChanged.emit(this.thread());
   }
 }

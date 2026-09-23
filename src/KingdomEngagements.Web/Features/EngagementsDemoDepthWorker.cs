@@ -135,6 +135,16 @@ public sealed class EngagementsDemoDepthWorker(
                 await preparations.SaveChangesAsync(ct);
             }
 
+            if (!await preparations.Messages.AnyAsync(x => x.PreparationId == prep.Id, ct))
+            {
+                preparations.Messages.AddRange(
+                    new HostCoordinationMessageRecord { Id = Guid.NewGuid(), PreparationId = prep.Id, SenderType = "host", SenderName = hostName, Message = "Welcome, Courtney! Our host team has added the hotel and airport pickup details. Please let us know if Apostle Thompson needs anything else.", CreatedAtUtc = now.AddDays(-2) },
+                    new HostCoordinationMessageRecord { Id = Guid.NewGuid(), PreparationId = prep.Id, SenderType = "ministry", SenderName = "Courtney", Message = "Thank you! The itinerary looks good. Could you confirm the sound check time and the green room contact?", CreatedAtUtc = now.AddDays(-2).AddHours(1) },
+                    new HostCoordinationMessageRecord { Id = Guid.NewGuid(), PreparationId = prep.Id, SenderType = "host", SenderName = hostName, Message = "Absolutely. Sound check is one hour before the service. I will meet your team at the entrance and show everyone to the green room. The details are in the coordination form as well.", CreatedAtUtc = now.AddDays(-1) },
+                    new HostCoordinationMessageRecord { Id = Guid.NewGuid(), PreparationId = prep.Id, SenderType = "ministry", SenderName = "Courtney", Message = "Perfect, thank you. We will keep all travel and service updates here so both teams stay in sync.", CreatedAtUtc = now.AddHours(-6) });
+                await preparations.SaveChangesAsync(ct);
+            }
+
             if (!await preparations.Documents.AnyAsync(x => x.PreparationId == prep.Id, ct))
             {
                 var itinerary = Encoding.UTF8.GetBytes($"{assignment.Title}\nTravel itinerary\nOutbound: {prep.OutboundAirline} {prep.OutboundFlightNumber} RIC → {prep.OutboundArrivalAirport}\nReturn: {prep.ReturnAirline} {prep.ReturnFlightNumber} {prep.ReturnDepartureAirport} → RIC\nHotel: {prep.HotelName}");
@@ -172,33 +182,37 @@ public sealed class EngagementsDemoDepthWorker(
                 Response(assignment.Id, "healing-testimony", 3, false, null, "Three testimonies were submitted after the gathering.", now.AddDays(-1)));
         }
 
-        // These named handoffs make the cross-module Care story visible and stable on
-        // both fresh and preserved demo databases. Their IDs are also used by Care.
-        await UpsertPersonResponseAsync(
-            completion,
-            PersonResponse(
-                MalikResponseId,
-                assignment.Id,
-                "Malik Robinson",
-                "malik.robinson@example.com",
-                "(804) 555-0143",
-                "pastoral-follow-up",
-                "Requested a personal call and a trusted local church connection after the gathering.",
-                now.AddDays(-2)),
-            ct);
+        // These stable Care handoff IDs belong to the primary demo engagement only.
+        if (assignment.ExternalAssignmentId == "assignment-demo-001")
+        {
+            // These named handoffs make the cross-module Care story visible and stable on
+            // both fresh and preserved demo databases. Their IDs are also used by Care.
+            await UpsertPersonResponseAsync(
+                completion,
+                PersonResponse(
+                    MalikResponseId,
+                    assignment.Id,
+                    "Malik Robinson",
+                    "malik.robinson@example.com",
+                    "(804) 555-0143",
+                    "pastoral-follow-up",
+                    "Requested a personal call and a trusted local church connection after the gathering.",
+                    now.AddDays(-2)),
+                ct);
 
-        await UpsertPersonResponseAsync(
-            completion,
-            PersonResponse(
-                ReneeResponseId,
-                assignment.Id,
-                "Renee Walker",
-                "renee.walker@example.com",
-                "(404) 555-0188",
-                "discipleship",
-                "Asked for a discipleship pathway and ongoing pastoral follow-up.",
-                now.AddDays(-1)),
-            ct);
+            await UpsertPersonResponseAsync(
+                completion,
+                PersonResponse(
+                    ReneeResponseId,
+                    assignment.Id,
+                    "Renee Walker",
+                    "renee.walker@example.com",
+                    "(404) 555-0188",
+                    "discipleship",
+                    "Asked for a discipleship pathway and ongoing pastoral follow-up.",
+                    now.AddDays(-1)),
+                ct);
+        }
 
         if (!await completion.Closeouts.AnyAsync(x => x.TenantId == KingdomIdentity.DemoTenantId && x.AssignmentId == assignment.Id, ct))
         {

@@ -1,3 +1,5 @@
+import { HostCoordinationConversationComponent } from '../shared/host-coordination-conversation.component';
+import { HostAccessLinkComponent } from '../shared/host-access-link.component';
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { catchError, forkJoin, of } from 'rxjs';
@@ -16,7 +18,7 @@ interface HostThreadView {
 @Component({
   selector: 'app-ctg-host-activity',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, HostCoordinationConversationComponent, HostAccessLinkComponent],
   template: `
     <section class="host-page">
       <header class="host-heading">
@@ -73,40 +75,11 @@ interface HostThreadView {
                 </div>
               </header>
 
-              <div class="message-thread">
-                @if (item.thread.messages.length === 0) {
-                  <div class="thread-empty">No conversation has started yet. Courtney can send the first coordination message below.</div>
-                } @else {
-                  @for (message of item.thread.messages; track message.id) {
-                    <article [class.host]="message.senderType === 'host'" [class.ministry]="message.senderType === 'ministry'">
-                      <header><strong>{{ message.senderName }}</strong><span>{{ relativeDate(message.createdAtUtc) }}</span></header>
-                      <p>{{ message.message }}</p>
-                    </article>
-                  }
-                }
-              </div>
-
-              @if (item.thread.isClosed) {
-                <footer class="closed-thread">
-                  <strong>Coordination complete</strong>
-                  <span>This conversation is read-only and remains attached to the engagement history.</span>
-                </footer>
-              } @else {
-                <footer class="message-composer">
-                  <label>
-                    <span>Message host</span>
-                    <textarea
-                      rows="4"
-                      [value]="draftMessage()"
-                      (input)="draftMessage.set($any($event.target).value)"
-                      placeholder="Ask for missing information or confirm the next coordination step."></textarea>
-                  </label>
-                  <div>
-                    @if (sendError()) { <span class="send-error">{{ sendError() }}</span> }
-                    @if (sendMessage()) { <span class="send-success">{{ sendMessage() }}</span> }
-                    <button type="button" [disabled]="sending() || !draftMessage().trim()" (click)="send()">Send message</button>
-                  </div>
-                </footer>
+              @for (active of [item]; track active.snapshot.assignment.id) {
+                <div style="padding:18px">
+                  <app-host-access-link [assignmentId]="active.snapshot.assignment.id" />
+                  <app-host-coordination-conversation [assignmentId]="active.snapshot.assignment.id" (threadChanged)="updateThread(active.snapshot.assignment.id, $event)" />
+                </div>
               }
             } @else {
               <div class="state">Select an engagement host.</div>
@@ -153,6 +126,10 @@ export class CtgHostActivityComponent implements OnInit {
         this.loading.set(false);
       },
     });
+  }
+
+  updateThread(id: string, thread: HostCoordinationThread): void {
+    this.threads.update(items => items.map(item => item.snapshot.assignment.id === id ? { ...item, thread } : item));
   }
 
   lastMessage(item: HostThreadView): HostCoordinationMessage | null {
@@ -228,7 +205,7 @@ export class CtgHostActivityComponent implements OnInit {
             return this.dateValue(a.snapshot.assignment.startsAtUtc) - this.dateValue(b.snapshot.assignment.startsAtUtc);
           });
         this.threads.set(views);
-        this.selectedId.set(views[0]?.snapshot.assignment.id ?? null);
+        this.selectedId.set((views.find(view => !view.thread.isClosed) ?? views[0])?.snapshot.assignment.id ?? null);
         this.loading.set(false);
       },
       error: () => {

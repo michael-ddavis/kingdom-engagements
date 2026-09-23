@@ -1,3 +1,5 @@
+import { HostCoordinationConversationComponent } from '../shared/host-coordination-conversation.component';
+import { HostAccessLinkComponent } from '../shared/host-access-link.component';
 import { Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -66,7 +68,7 @@ interface ResponsibilityDraft {
 @Component({
   selector: 'app-ctg-director-engagement',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, HostCoordinationConversationComponent, HostAccessLinkComponent],
   template: `
     <section class="director-engagement">
       <a class="back-link" [routerLink]="backRoute()">← Engagements</a>
@@ -83,6 +85,7 @@ interface ResponsibilityDraft {
             <span>{{ dateRange(item.summary.startsAtUtc, item.endsAtUtc) }}</span>
           </div>
           <div class="heading-actions">
+            @if (isDirector()) { <button type="button" (click)="tab.set('responsibilities')">Assign team for this engagement</button> }
             <div class="readiness">
               <strong>{{ readinessPercent() }}%</strong>
               <span>responsibilities complete</span>
@@ -242,24 +245,10 @@ interface ResponsibilityDraft {
                   </article>
 
                   @if (isDirector()) {
-                    <article class="panel conversation-panel">
-                      <header><div><h2>Coordination thread</h2></div><span>{{ thread()?.isClosed ? 'Closed' : 'Open' }}</span></header>
-                      <div class="thread">
-                        @for (message of thread()?.messages ?? []; track message.id) {
-                          <div [class.host-message]="message.senderType === 'host'" [class.team-message]="message.senderType === 'ministry'">
-                            <header><strong>{{ message.senderName }}</strong><span>{{ relativeDate(message.createdAtUtc) }}</span></header>
-                            <p>{{ message.message }}</p>
-                          </div>
-                        }
-                        @if ((thread()?.messages?.length ?? 0) === 0) { <p class="empty-copy">No messages yet.</p> }
-                      </div>
-                      @if (!thread()?.isClosed) {
-                        <div class="composer">
-                          <textarea rows="3" [(ngModel)]="hostMessageDraft" placeholder="Message the host about missing information or next steps."></textarea>
-                          <button type="button" [disabled]="saving() || !hostMessageDraft.trim()" (click)="sendHostMessage()">Send message</button>
-                        </div>
-                      }
-                    </article>
+                    <div>
+                      <app-host-access-link [assignmentId]="assignmentId" />
+                      <app-host-coordination-conversation [assignmentId]="assignmentId" />
+                    </div>
                   }
                 </section>
               }
@@ -520,11 +509,12 @@ interface ResponsibilityDraft {
       @if (responsibilityDraft(); as form) {
         <div class="drawer-backdrop" (click)="closeResponsibility()"></div>
         <aside class="responsibility-drawer">
-          <header><div><small>Engagement responsibility</small><h2>{{ laneLabel(form.laneKey) }}</h2></div><button type="button" (click)="closeResponsibility()">×</button></header>
+          <header><div><small>This engagement only</small><h2>{{ laneLabel(form.laneKey) }}</h2></div><button type="button" (click)="closeResponsibility()">×</button></header>
+          <p>Choose a team member for this engagement. Organization-wide assignments stay unchanged.</p>
           <label class="toggle"><input type="checkbox" [(ngModel)]="form.isApplicable"><span>This lane applies to this engagement</span></label>
           <label class="field"><span>Owner</span>
             <select [ngModel]="form.userSubject" (ngModelChange)="selectResponsibilityOwner($event)">
-              <option value="">Unassigned</option>
+              <option value="">Use organization default</option>
               @for (member of team(); track member.accountId) {
                 <option [value]="member.accountId">{{ member.displayName }}</option>
               }
@@ -533,7 +523,7 @@ interface ResponsibilityDraft {
           @if (form.userSubject) {
             <div class="selected-account">
               <span class="avatar">{{ initials(form.displayName) }}</span>
-              <div><strong>{{ form.displayName }}</strong><small>Account ID · {{ form.userSubject }}</small></div>
+              <div><strong>{{ form.displayName }}</strong><small>Assigned to this engagement only</small></div>
             </div>
           }
           <label class="field"><span>Status</span>

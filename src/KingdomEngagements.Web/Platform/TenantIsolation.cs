@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace KingdomEngagements.Web.Platform;

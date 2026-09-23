@@ -158,7 +158,10 @@ public sealed class EngagementsDbContext(
 
         var receipt = modelBuilder.Entity<EngagementIntegrationReceipt>();
         receipt.ToTable("EngagementIntegrationReceipts");
-        receipt.HasKey(x => x.EventId);
+        receipt.HasKey(x => new { x.TenantId, x.EventId });
+        receipt.HasQueryFilter(x =>
+            TenantFilterBypassed ||
+            (TenantFilterHasTenant && x.TenantId == TenantFilterTenantId));
         receipt.Property(x => x.EventName).HasMaxLength(120).IsRequired();
         receipt.Property(x => x.SourceModule).HasMaxLength(80).IsRequired();
     }
@@ -220,6 +223,7 @@ public sealed class EngagementDocument
 
 public sealed class EngagementIntegrationReceipt
 {
+    public Guid TenantId { get; set; }
     public Guid EventId { get; set; }
     public string EventName { get; set; } = string.Empty;
     public string SourceModule { get; set; } = string.Empty;
@@ -444,7 +448,9 @@ public sealed class EngagementsService(EngagementsDbContext database)
 
     public async Task<(bool Duplicate, Guid? AssignmentId)> IngestAsync(IntegrationEventEnvelope envelope, CancellationToken cancellationToken)
     {
-        if (await database.IntegrationReceipts.AnyAsync(x => x.EventId == envelope.EventId, cancellationToken))
+        if (await database.IntegrationReceipts.AnyAsync(
+                x => x.TenantId == envelope.TenantId && x.EventId == envelope.EventId,
+                cancellationToken))
         {
             var existingExternal = PayloadString(envelope.Payload, "assignmentId")
                 ?? PayloadString(envelope.Payload, "subjectId") ?? PayloadString(envelope.Payload, "id");
@@ -490,6 +496,7 @@ public sealed class EngagementsService(EngagementsDbContext database)
         }
         database.IntegrationReceipts.Add(new EngagementIntegrationReceipt
         {
+            TenantId = envelope.TenantId,
             EventId = envelope.EventId, EventName = envelope.EventName,
             SourceModule = envelope.SourceModule, ReceivedAtUtc = DateTimeOffset.UtcNow
         });

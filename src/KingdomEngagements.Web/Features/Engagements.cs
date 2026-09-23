@@ -5,8 +5,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KingdomEngagements.Web.Features;
 
-public sealed class EngagementsDbContext(DbContextOptions<EngagementsDbContext> options)
-    : DbContext(options)
+public sealed class EngagementsDbContext(
+    DbContextOptions<EngagementsDbContext> options,
+    ICurrentTenantAccessor currentTenant)
+    : TenantScopedDbContext(options, currentTenant)
 {
     public DbSet<EngagementAssignment> Assignments => Set<EngagementAssignment>();
     public DbSet<EngagementTask> Tasks => Set<EngagementTask>();
@@ -128,9 +130,23 @@ public sealed class EngagementsDbContext(DbContextOptions<EngagementsDbContext> 
 
         var receipt = modelBuilder.Entity<EngagementIntegrationReceipt>();
         receipt.ToTable("EngagementIntegrationReceipts");
-        receipt.HasKey(x => x.EventId);
+        receipt.HasKey(x => new { x.TenantId, x.EventId });
         receipt.Property(x => x.EventName).HasMaxLength(120).IsRequired();
         receipt.Property(x => x.SourceModule).HasMaxLength(80).IsRequired();
+
+        assignment.HasQueryFilter(x => TenantIsolationBypassed || x.TenantId == CurrentTenantId);
+        task.HasQueryFilter(x =>
+            TenantIsolationBypassed ||
+            (x.Assignment != null && x.Assignment.TenantId == CurrentTenantId));
+        document.HasQueryFilter(x =>
+            TenantIsolationBypassed ||
+            (x.Assignment != null && x.Assignment.TenantId == CurrentTenantId));
+        standingResponsibility.HasQueryFilter(x => TenantIsolationBypassed || x.TenantId == CurrentTenantId);
+        responsibilityOverride.HasQueryFilter(x => TenantIsolationBypassed || x.TenantId == CurrentTenantId);
+        laneProgress.HasQueryFilter(x => TenantIsolationBypassed || x.TenantId == CurrentTenantId);
+        mediaAsset.HasQueryFilter(x => TenantIsolationBypassed || x.TenantId == CurrentTenantId);
+        teamMember.HasQueryFilter(x => TenantIsolationBypassed || x.TenantId == CurrentTenantId);
+        receipt.HasQueryFilter(x => TenantIsolationBypassed || x.TenantId == CurrentTenantId);
     }
 }
 
@@ -190,6 +206,7 @@ public sealed class EngagementDocument
 
 public sealed class EngagementIntegrationReceipt
 {
+    public Guid TenantId { get; set; }
     public Guid EventId { get; set; }
     public string EventName { get; set; } = string.Empty;
     public string SourceModule { get; set; } = string.Empty;
@@ -341,7 +358,9 @@ public sealed class EngagementsInitializer(EngagementsDbContext database)
     }
 }
 
-public sealed class EngagementsService(EngagementsDbContext database)
+public sealed class EngagementsService(
+    EngagementsDbContext database,
+    ICurrentTenantAccessor currentTenant)
 {
     private static readonly HashSet<string> WorkflowStatuses = new(StringComparer.OrdinalIgnoreCase)
         { "not-started", "open", "in-progress", "needs-attention", "confirmed", "complete", "received", "requested", "waived" };
@@ -469,13 +488,19 @@ public sealed class EngagementsService(EngagementsDbContext database)
 
     public async Task<(bool Duplicate, Guid? AssignmentId)> IngestAsync(IntegrationEventEnvelope envelope, CancellationToken cancellationToken)
     {
+        using var tenantScope = currentTenant.BeginTenantScope(
+            envelope.TenantId,
+            "Process tenant-scoped integration event.");
+
         if (await database.IntegrationReceipts.AnyAsync(x => x.EventId == envelope.EventId, cancellationToken))
         {
             var existingExternal = PayloadString(envelope.Payload, "assignmentId")
                 ?? PayloadString(envelope.Payload, "subjectId") ?? PayloadString(envelope.Payload, "id");
             var existingId = existingExternal is null ? null :
-                await database.Assignments.Where(x => x.TenantId == envelope.TenantId && x.ExternalAssignmentId == existingExternal)
-                    .Select(x => (Guid?)x.Id).SingleOrDefaultAsync(cancellationToken);
+                await database.Assignments
+                    .Where(x => x.ExternalAssignmentId == existingExternal)
+                    .Select(x => (Guid?)x.Id)
+                    .SingleOrDefaultAsync(cancellationToken);
             return (true, existingId);
         }
         if (!string.Equals(envelope.EventName, "AssignmentApproved", StringComparison.OrdinalIgnoreCase))
@@ -485,8 +510,9 @@ public sealed class EngagementsService(EngagementsDbContext database)
             ?? PayloadString(envelope.Payload, "subjectId")
             ?? PayloadString(envelope.Payload, "id")
             ?? envelope.EventId.ToString("N");
-        var assignment = await database.Assignments.SingleOrDefaultAsync(x =>
-            x.TenantId == envelope.TenantId && x.ExternalAssignmentId == externalId, cancellationToken);
+        var assignment = await database.Assignments.SingleOrDefaultAsync(
+            x => x.ExternalAssignmentId == externalId,
+            cancellationToken);
         if (assignment is null)
         {
             var now = DateTimeOffset.UtcNow;
@@ -515,6 +541,7 @@ public sealed class EngagementsService(EngagementsDbContext database)
         }
         database.IntegrationReceipts.Add(new EngagementIntegrationReceipt
         {
+            TenantId = envelope.TenantId,
             EventId = envelope.EventId, EventName = envelope.EventName,
             SourceModule = envelope.SourceModule, ReceivedAtUtc = DateTimeOffset.UtcNow
         });

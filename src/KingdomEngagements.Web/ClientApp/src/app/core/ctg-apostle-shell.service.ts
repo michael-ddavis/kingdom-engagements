@@ -65,7 +65,7 @@ export class CtgApostleShellService {
       body.${this.className} .eng-start-action,
       body.${this.className} .eng-settings-link{display:none!important}
       body.${this.className} .eng-modulebar__utilities{border-left:0!important;padding-left:0!important}
-      body.${this.className} .eng-avatar{font-size:0!important;background:#172a46 url('/ctg-apostle-cynthia.webp') center 12%/cover no-repeat!important;color:transparent!important;box-shadow:0 0 0 1px rgba(23,42,70,.12)}
+      body.${this.className} .eng-avatar{font-size:.85rem!important;background:#233b20!important;color:#f3dfaa!important;border:1px solid #7c8446!important;box-shadow:0 0 0 3px rgba(126,148,76,.14)}
       body.${this.className} .eng-avatar::after{display:none!important;content:''}
       body.${this.className} .eng-tenant small{display:block!important;font-size:0!important}
       body.${this.className} .eng-tenant small::before{content:'Executive View';color:#858b84;font-size:.56rem;font-weight:750;letter-spacing:.02em;text-transform:none}

@@ -39,6 +39,18 @@ interface OwnerDraft {
           <article><small>Active overrides</small><strong>{{ overrideCount() }}</strong><span>Engagement-specific ownership</span></article>
         </section>
 
+        <section class="team-card">
+          <header><h2>Assign for one engagement</h2><span>Choose an engagement to assign its team. Standing owners below apply across all engagements.</span></header>
+          <div class="team-add-row">
+            <label><span>Engagement</span><select #engagementChoice (change)="selectedEngagement.set(engagementChoice.value)">
+              <option value="">Select an engagement</option>
+              @for (snapshot of commandCenter(); track snapshot.assignment.id) {
+                <option [value]="snapshot.assignment.id">{{ snapshot.assignment.title }}</option>
+              }
+            </select></label>
+            @if (selectedEngagement()) { <a [routerLink]="['/organization/ctg/engagements', selectedEngagement()]" [queryParams]="{lane: 'responsibilities'}">Assign this engagement →</a> }
+          </div>
+        </section>
         <section class="team-card team-roster">
           <header>
             <h2>Team Members</h2>
@@ -352,6 +364,8 @@ export class CtgTeamResponsibilitiesComponent implements OnInit {
       .map(member => ({ ...member, lanes: [...member.lanes] }))
       .sort((a, b) => b.overdue - a.overdue || a.name.localeCompare(b.name));
   });
+
+  readonly selectedEngagement = signal('');
 
   constructor(private readonly api: EngagementsApiService) {}
 

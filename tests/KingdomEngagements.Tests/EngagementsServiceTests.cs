@@ -24,6 +24,21 @@ public sealed class EngagementsServiceTests
     }
 
     [Fact]
+    public void TenantScopedEntitiesRequireGlobalQueryFilters()
+    {
+        var options = new DbContextOptionsBuilder<EngagementsDbContext>()
+            .ReplaceService<IModelCustomizer, EngagementsModelCustomizer>()
+            .UseInMemoryDatabase($"tenant-filter-contract-{Guid.NewGuid():N}")
+            .Options;
+
+        using var database = new EngagementsDbContext(options);
+
+        Assert.NotNull(database.Model.FindEntityType(typeof(EngagementAssignment))?.GetQueryFilter());
+        Assert.NotNull(database.Model.FindEntityType(typeof(EngagementTask))?.GetQueryFilter());
+        Assert.NotNull(database.Model.FindEntityType(typeof(EngagementDocument))?.GetQueryFilter());
+    }
+
+    [Fact]
     public async Task AssignmentApprovedIntakeIsIdempotent()
     {
         await using var fixture = CreateFixture();

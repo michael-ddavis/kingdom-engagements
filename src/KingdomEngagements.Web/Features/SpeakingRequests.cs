@@ -660,24 +660,59 @@ public static class SpeakingRequestEndpoints
     public static IEndpointRouteBuilder MapSpeakingRequestEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var publicGroup = endpoints.MapGroup("/api/public/engagements/requests").AllowAnonymous();
-        publicGroup.MapPost("", async (SpeakingRequestInput request, SpeakingRequestsService service, CancellationToken ct) =>
-        {
-            try { return Results.Ok(await service.CreateAsync(KingdomIdentity.DemoTenantId, request, ct)); }
-            catch (ArgumentException exception) { return Results.ValidationProblem(new Dictionary<string, string[]> { ["request"] = [exception.Message] }); }
-        });
-        publicGroup.MapGet("/{token}", async (string token, SpeakingRequestsService service, CancellationToken ct) =>
-        {
-            var item = await service.GetForHostAsync(token, ct);
-            return item is null ? Results.NotFound(new { message = "This host update link is invalid, expired, or no longer needed." }) : Results.Ok(item);
-        });
-        publicGroup.MapPut("/{token}", async (string token, HostSpeakingRequestUpdate request, SpeakingRequestsService service, CancellationToken ct) =>
+        publicGroup.MapPost("", async (
+            SpeakingRequestInput request,
+            SpeakingRequestsService service,
+            PublicInvitationTenantResolver tenants,
+            ICurrentTenantAccessor tenantAccessor,
+            CancellationToken ct) =>
         {
             try
             {
+                var tenantId = tenants.PrimaryTenantId;
+                using var tenantScope = tenantAccessor.BeginTenant(
+                    tenantId,
+                    "public primary speaking invitation");
+                return Results.Ok(await service.CreateAsync(tenantId, request, ct));
+            }
+            catch (ArgumentException exception)
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["request"] = [exception.Message] });
+            }
+        });
+        publicGroup.MapGet("/{token}", async (
+            string token,
+            SpeakingRequestsService service,
+            PublicInvitationTenantResolver tenants,
+            ICurrentTenantAccessor tenantAccessor,
+            CancellationToken ct) =>
+        {
+            using var tenantScope = tenantAccessor.BeginTenant(
+                tenants.PrimaryTenantId,
+                "public primary speaking invitation host link");
+            var item = await service.GetForHostAsync(token, ct);
+            return item is null ? Results.NotFound(new { message = "This host update link is invalid, expired, or no longer needed." }) : Results.Ok(item);
+        });
+        publicGroup.MapPut("/{token}", async (
+            string token,
+            HostSpeakingRequestUpdate request,
+            SpeakingRequestsService service,
+            PublicInvitationTenantResolver tenants,
+            ICurrentTenantAccessor tenantAccessor,
+            CancellationToken ct) =>
+        {
+            try
+            {
+                using var tenantScope = tenantAccessor.BeginTenant(
+                    tenants.PrimaryTenantId,
+                    "public primary speaking invitation host response");
                 var item = await service.SubmitHostResponseAsync(token, request, ct);
                 return item is null ? Results.NotFound(new { message = "This host update link is invalid, expired, or no longer needed." }) : Results.Ok(item);
             }
-            catch (ArgumentException exception) { return Results.ValidationProblem(new Dictionary<string, string[]> { ["request"] = [exception.Message] }); }
+            catch (ArgumentException exception)
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["request"] = [exception.Message] });
+            }
         });
 
         var reviewGroup = endpoints.MapGroup("/api/engagements/requests").RequireAuthorization();

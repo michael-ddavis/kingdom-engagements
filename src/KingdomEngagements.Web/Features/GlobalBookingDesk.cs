@@ -4,7 +4,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KingdomEngagements.Web.Features;
 
-public sealed class GlobalBookingDbContext(DbContextOptions<GlobalBookingDbContext> options) : DbContext(options)
+public sealed class GlobalBookingDbContext(
+    DbContextOptions<GlobalBookingDbContext> options,
+    ICurrentTenantAccessor currentTenant)
+    : TenantScopedDbContext(options, currentTenant)
 {
     public DbSet<GlobalBookingRecord> Bookings => Set<GlobalBookingRecord>();
 
@@ -18,6 +21,7 @@ public sealed class GlobalBookingDbContext(DbContextOptions<GlobalBookingDbConte
         booking.Property(x => x.Stage).HasMaxLength(40).IsRequired();
         booking.Property(x => x.Country).HasMaxLength(120).IsRequired();
         booking.Property(x => x.PayloadJson).HasColumnType("nvarchar(max)").IsRequired();
+        booking.HasQueryFilter(x => TenantIsolationBypassed || x.TenantId == CurrentTenantId);
     }
 
     public async Task EnsureSchemaAsync(CancellationToken cancellationToken)

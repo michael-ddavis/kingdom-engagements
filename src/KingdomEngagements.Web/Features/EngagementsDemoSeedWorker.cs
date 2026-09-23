@@ -33,6 +33,10 @@ public sealed class EngagementsDemoSeedWorker(
             try
             {
                 await using var scope = scopeFactory.CreateAsyncScope();
+                var tenantAccessor = scope.ServiceProvider.GetRequiredService<ICurrentTenantAccessor>();
+                using var tenantScope = tenantAccessor.BeginTenant(
+                    KingdomIdentity.DemoTenantId,
+                    "seed development-only Engagements demo data");
                 var engagements = scope.ServiceProvider.GetRequiredService<EngagementsDbContext>();
                 var requests = scope.ServiceProvider.GetRequiredService<SpeakingRequestsDbContext>();
                 await requests.EnsureSchemaAsync(stoppingToken);

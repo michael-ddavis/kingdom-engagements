@@ -57,6 +57,13 @@ public sealed class CurrentTenantAccessor(
         if (string.IsNullOrWhiteSpace(reason))
             throw new ArgumentException("Tenant scope reason is required.", nameof(reason));
 
+        var current = TenantId;
+        if (current is not null && current != tenantId)
+        {
+            throw new InvalidOperationException(
+                $"Tenant scope mismatch. Current tenant {current} cannot be replaced with {tenantId}. Reason: {reason}");
+        }
+
         var previous = _scopedTenantId;
         _scopedTenantId = tenantId;
 

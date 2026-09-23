@@ -5,8 +5,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KingdomEngagements.Web.Features;
 
-public sealed class EngagementsDbContext(DbContextOptions<EngagementsDbContext> options)
-    : DbContext(options)
+public sealed class EngagementsDbContext(
+    DbContextOptions<EngagementsDbContext> options,
+    ICurrentTenantAccessor? tenantAccessor = null)
+    : TenantFilteredDbContext(options, tenantAccessor)
 {
     public DbSet<EngagementAssignment> Assignments => Set<EngagementAssignment>();
     public DbSet<EngagementTask> Tasks => Set<EngagementTask>();
@@ -131,6 +133,28 @@ public sealed class EngagementsDbContext(DbContextOptions<EngagementsDbContext> 
         receipt.HasKey(x => x.EventId);
         receipt.Property(x => x.EventName).HasMaxLength(120).IsRequired();
         receipt.Property(x => x.SourceModule).HasMaxLength(80).IsRequired();
+
+        assignment.HasQueryFilter(x =>
+            TenantFilterBypassed || x.TenantId == CurrentTenantId);
+        task.HasQueryFilter(x =>
+            TenantFilterBypassed ||
+            (x.Assignment != null && x.Assignment.TenantId == CurrentTenantId));
+        document.HasQueryFilter(x =>
+            TenantFilterBypassed ||
+            (x.Assignment != null && x.Assignment.TenantId == CurrentTenantId));
+        standingResponsibility.HasQueryFilter(x =>
+            TenantFilterBypassed || x.TenantId == CurrentTenantId);
+        responsibilityOverride.HasQueryFilter(x =>
+            TenantFilterBypassed || x.TenantId == CurrentTenantId);
+        laneProgress.HasQueryFilter(x =>
+            TenantFilterBypassed || x.TenantId == CurrentTenantId);
+        mediaAsset.HasQueryFilter(x =>
+            TenantFilterBypassed || x.TenantId == CurrentTenantId);
+        teamMember.HasQueryFilter(x =>
+            TenantFilterBypassed || x.TenantId == CurrentTenantId);
+
+        // Integration receipts intentionally remain service-global idempotency metadata.
+        // They contain no ministry payload and event IDs are globally unique.
     }
 }
 

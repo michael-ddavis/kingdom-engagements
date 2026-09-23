@@ -411,13 +411,16 @@ app.MapHub<EngagementRealtimeHub>(
     .RequireAuthorization(HostAccessIdentity.Policy);
 app.MapAssignmentWorkspaceEndpoints();
 app.MapEngagementCompletionEndpoints();
+#if KINGDOM_ENGAGEMENTS_DEMO
 app.MapEngagementsDemoAccessEndpoints();
+#endif
 app.MapEngagementResponsibilityEndpoints();
 app.MapEngagementTeamEndpoints();
 app.MapEngagementLaneWorkspaceEndpoints();
 app.MapEngagementsEndpoints();
 
-// Preserve legacy /app links while sending each demo persona to the right workspace.
+#if KINGDOM_ENGAGEMENTS_DEMO
+// Development/demo builds keep persona-aware legacy redirects for demo walkthroughs.
 app.MapGet("/app", (HttpContext context) =>
 {
     var target = EngagementsDemoRoles.IsApostle(context.User)
@@ -427,6 +430,11 @@ app.MapGet("/app", (HttpContext context) =>
             : "/organization/ctg/bookings";
     return Results.Redirect($"{target}{context.Request.QueryString}");
 });
+#else
+// Production has no demo persona code. Legacy /app resolves to the normal assignment workspace.
+app.MapGet("/app", (HttpContext context) =>
+    Results.Redirect($"/assignments{context.Request.QueryString}"));
+#endif
 app.MapGet("/app/{*path}", (string? path, HttpRequest request) =>
 {
     var canonicalPath = string.IsNullOrWhiteSpace(path)

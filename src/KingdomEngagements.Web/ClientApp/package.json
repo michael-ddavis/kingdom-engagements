@@ -12,7 +12,7 @@
     "build:production": "ng build --configuration production && npm run build:host-realtime",
     "test": "ng test",
     "test:ci": "ng test --watch=false",
-    "build:host-realtime": "esbuild src/host-realtime.ts --bundle --minify --format=iife --outfile=../wwwroot/host-realtime.js"
+    "build:host-realtime": "node scripts/build-host-realtime.mjs"
   },
   "dependencies": {
     "@angular/common": "21.2.0",

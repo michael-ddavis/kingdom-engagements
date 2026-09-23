@@ -64,8 +64,10 @@ public sealed class HostAccessAuthorizationHandler(HostAccessDbContext database)
     }
 }
 
-public sealed class HostAccessDbContext(DbContextOptions<HostAccessDbContext> options)
-    : DbContext(options)
+public sealed class HostAccessDbContext(
+    DbContextOptions<HostAccessDbContext> options,
+    ICurrentTenantAccessor? tenantAccessor = null)
+    : TenantFilteredDbContext(options, tenantAccessor)
 {
     public DbSet<HostAccessInvitationRecord> Invitations => Set<HostAccessInvitationRecord>();
 
@@ -80,6 +82,8 @@ public sealed class HostAccessDbContext(DbContextOptions<HostAccessDbContext> op
         invitation.Property(x => x.TokenHash).HasMaxLength(64).IsRequired();
         invitation.HasIndex(x => x.TokenHash).IsUnique();
         invitation.HasIndex(x => new { x.TenantId, x.AssignmentId, x.CreatedAtUtc });
+        invitation.HasQueryFilter(x =>
+            TenantFilterBypassed || x.TenantId == CurrentTenantId);
     }
 
     public async Task EnsureSchemaAsync(CancellationToken cancellationToken)

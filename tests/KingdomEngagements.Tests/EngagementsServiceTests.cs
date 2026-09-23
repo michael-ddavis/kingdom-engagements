@@ -21,6 +21,7 @@ public sealed class EngagementsServiceTests
         Assert.Contains("20260805000000_InitialEngagementsSchema", migrations);
         Assert.Contains("20260922090000_AddEngagementResponsibilities", migrations);
         Assert.Contains("20260922094500_AddEngagementMediaAssets", migrations);
+        Assert.Contains("20260923130000_TenantScopeIntegrationReceipts", migrations);
     }
 
     [Fact]

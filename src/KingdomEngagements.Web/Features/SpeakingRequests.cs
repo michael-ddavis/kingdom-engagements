@@ -336,12 +336,22 @@ public sealed class SpeakingRequestsService(
     {
         await requestsDatabase.EnsureSchemaAsync(cancellationToken);
 
-        using var bypass = tenantBypass.BeginBypass(
-            "Resolve a unique public speaking-request edit token to its owning tenant.");
+        SpeakingRequestRecord? request;
+        if (currentTenant.TenantId is not null)
+        {
+            request = await requestsDatabase.Requests.AsNoTracking()
+                .Include(x => x.Communications)
+                .SingleOrDefaultAsync(x => x.EditToken == token, cancellationToken);
+        }
+        else
+        {
+            using var bypass = tenantBypass.BeginBypass(
+                "Resolve a unique public speaking-request edit token to its owning tenant.");
 
-        var request = await requestsDatabase.Requests.AsNoTracking()
-            .Include(x => x.Communications)
-            .SingleOrDefaultAsync(x => x.EditToken == token, cancellationToken);
+            request = await requestsDatabase.Requests.AsNoTracking()
+                .Include(x => x.Communications)
+                .SingleOrDefaultAsync(x => x.EditToken == token, cancellationToken);
+        }
 
         if (!HostLinkValid(request)) return null;
         return Map(request!);
@@ -355,15 +365,28 @@ public sealed class SpeakingRequestsService(
 
         Guid requestId;
         Guid tenantId;
-        using (tenantBypass.BeginBypass(
-                   "Resolve a unique public speaking-request edit token before entering its tenant scope."))
+
+        if (currentTenant.TenantId is Guid scopedTenantId)
         {
             var resolved = await requestsDatabase.Requests.AsNoTracking()
                 .SingleOrDefaultAsync(x => x.EditToken == token, cancellationToken);
             if (!HostLinkValid(resolved)) return null;
 
             requestId = resolved!.Id;
-            tenantId = resolved.TenantId;
+            tenantId = scopedTenantId;
+        }
+        else
+        {
+            using (tenantBypass.BeginBypass(
+                       "Resolve a unique public speaking-request edit token before entering its tenant scope."))
+            {
+                var resolved = await requestsDatabase.Requests.AsNoTracking()
+                    .SingleOrDefaultAsync(x => x.EditToken == token, cancellationToken);
+                if (!HostLinkValid(resolved)) return null;
+
+                requestId = resolved!.Id;
+                tenantId = resolved.TenantId;
+            }
         }
 
         using var tenantScope = currentTenant.BeginTenantScope(
@@ -645,9 +668,13 @@ public static class SpeakingRequestEndpoints
     public static IEndpointRouteBuilder MapSpeakingRequestEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var publicGroup = endpoints.MapGroup("/api/public/engagements/requests").AllowAnonymous();
-        publicGroup.MapPost("", async (SpeakingRequestInput request, SpeakingRequestsService service, CancellationToken ct) =>
+        publicGroup.MapPost("", async (
+            SpeakingRequestInput request,
+            SpeakingRequestsService service,
+            PublicInvitationTenantResolver invitationTenants,
+            CancellationToken ct) =>
         {
-            try { return Results.Ok(await service.CreateAsync(KingdomIdentity.DemoTenantId, request, ct)); }
+            try { return Results.Ok(await service.CreateAsync(invitationTenants.CynthiaTenantId, request, ct)); }
             catch (ArgumentException exception) { return Results.ValidationProblem(new Dictionary<string, string[]> { ["request"] = [exception.Message] }); }
         });
         publicGroup.MapGet("/{token}", async (string token, SpeakingRequestsService service, CancellationToken ct) =>

@@ -270,8 +270,11 @@ public sealed record SpeakingRequestDetails(
 
 public sealed class SpeakingRequestsService(
     SpeakingRequestsDbContext requestsDatabase,
-    EngagementsDbContext engagementsDatabase)
+    EngagementsDbContext engagementsDatabase,
+    ICurrentTenantAccessor? tenantAccessor = null)
 {
+    private readonly ICurrentTenantAccessor _tenantAccessor =
+        tenantAccessor ?? NoCurrentTenantAccessor.Instance;
     private static readonly HashSet<string> ConfirmationValues = new(StringComparer.OrdinalIgnoreCase)
         { "yes", "no", "not-determined" };
     private static readonly HashSet<string> TravelOwners = new(StringComparer.OrdinalIgnoreCase)
@@ -285,6 +288,7 @@ public sealed class SpeakingRequestsService(
 
     public async Task<SpeakingRequestDetails> CreateAsync(Guid tenantId, SpeakingRequestInput input, CancellationToken cancellationToken)
     {
+        using var tenantScope = _tenantAccessor.BeginTenant(tenantId, "create speaking request");
         await requestsDatabase.EnsureSchemaAsync(cancellationToken);
         Validate(input);
         var now = DateTimeOffset.UtcNow;
@@ -308,6 +312,7 @@ public sealed class SpeakingRequestsService(
 
     public async Task<IReadOnlyList<SpeakingRequestDetails>> GetAsync(Guid tenantId, CancellationToken cancellationToken)
     {
+        using var tenantScope = _tenantAccessor.BeginTenant(tenantId, "list speaking requests");
         await requestsDatabase.EnsureSchemaAsync(cancellationToken);
         return (await requestsDatabase.Requests.AsNoTracking()
                 .Where(x => x.TenantId == tenantId)
@@ -320,6 +325,7 @@ public sealed class SpeakingRequestsService(
 
     public async Task<SpeakingRequestDetails?> GetAsync(Guid tenantId, Guid id, CancellationToken cancellationToken)
     {
+        using var tenantScope = _tenantAccessor.BeginTenant(tenantId, "get speaking request");
         await requestsDatabase.EnsureSchemaAsync(cancellationToken);
         var request = await requestsDatabase.Requests.AsNoTracking()
             .Include(x => x.Communications)
@@ -330,11 +336,16 @@ public sealed class SpeakingRequestsService(
     public async Task<SpeakingRequestDetails?> GetForHostAsync(string token, CancellationToken cancellationToken)
     {
         await requestsDatabase.EnsureSchemaAsync(cancellationToken);
-        var request = await requestsDatabase.Requests.AsNoTracking()
-            .Include(x => x.Communications)
-            .SingleOrDefaultAsync(x => x.EditToken == token, cancellationToken);
+        var request = await FindHostRequestByTokenAsync(
+            token,
+            tracking: false,
+            cancellationToken);
         if (!HostLinkValid(request)) return null;
-        return Map(request!);
+
+        using var tenantScope = _tenantAccessor.BeginTenant(
+            request!.TenantId,
+            "read speaking request through exact host token");
+        return Map(request);
     }
 
     public async Task<SpeakingRequestDetails?> SubmitHostResponseAsync(string token, HostSpeakingRequestUpdate update, CancellationToken cancellationToken)
@@ -342,11 +353,17 @@ public sealed class SpeakingRequestsService(
         await requestsDatabase.EnsureSchemaAsync(cancellationToken);
         Validate(update.Request);
         var response = Required(update.ResponseMessage, nameof(update.ResponseMessage));
-        var request = await requestsDatabase.Requests.Include(x => x.Communications)
-            .SingleOrDefaultAsync(x => x.EditToken == token, cancellationToken);
+        var request = await FindHostRequestByTokenAsync(
+            token,
+            tracking: true,
+            cancellationToken);
         if (!HostLinkValid(request)) return null;
 
-        Apply(request!, update.Request);
+        using var tenantScope = _tenantAccessor.BeginTenant(
+            request!.TenantId,
+            "update speaking request through exact host token");
+
+        Apply(request, update.Request);
         var now = DateTimeOffset.UtcNow;
         request!.Status = "awaiting-review";
         request.EditTokenExpiresAtUtc = null;
@@ -358,6 +375,7 @@ public sealed class SpeakingRequestsService(
 
     public async Task<SpeakingRequestDetails?> RequestInformationAsync(Guid tenantId, Guid id, string message, CancellationToken cancellationToken)
     {
+        using var tenantScope = _tenantAccessor.BeginTenant(tenantId, "request speaking-request information");
         await requestsDatabase.EnsureSchemaAsync(cancellationToken);
         var text = Required(message, nameof(message));
         var request = await requestsDatabase.Requests.Include(x => x.Communications)
@@ -376,6 +394,7 @@ public sealed class SpeakingRequestsService(
 
     public async Task<SpeakingRequestDetails?> DeclineAsync(Guid tenantId, Guid id, string reason, CancellationToken cancellationToken)
     {
+        using var tenantScope = _tenantAccessor.BeginTenant(tenantId, "decline speaking request");
         await requestsDatabase.EnsureSchemaAsync(cancellationToken);
         var text = Required(reason, nameof(reason));
         var request = await requestsDatabase.Requests.Include(x => x.Communications)
@@ -394,6 +413,7 @@ public sealed class SpeakingRequestsService(
 
     public async Task<(SpeakingRequestDetails Request, Guid AssignmentId)?> ApproveAsync(Guid tenantId, Guid id, CancellationToken cancellationToken)
     {
+        using var tenantScope = _tenantAccessor.BeginTenant(tenantId, "approve speaking request");
         await requestsDatabase.EnsureSchemaAsync(cancellationToken);
         var request = await requestsDatabase.Requests.Include(x => x.Communications)
             .SingleOrDefaultAsync(x => x.TenantId == tenantId && x.Id == id, cancellationToken);
@@ -546,6 +566,30 @@ public sealed class SpeakingRequestsService(
     {
         if (request.Status is "approved" or "declined")
             throw new InvalidOperationException($"Request {request.ReferenceNumber} is already {request.Status}.");
+    }
+
+    private async Task<SpeakingRequestRecord?> FindHostRequestByTokenAsync(
+        string token,
+        bool tracking,
+        CancellationToken cancellationToken)
+    {
+        IQueryable<SpeakingRequestRecord> Query() =>
+            tracking
+                ? requestsDatabase.Requests.Include(x => x.Communications)
+                : requestsDatabase.Requests.AsNoTracking().Include(x => x.Communications);
+
+        if (_tenantAccessor.TenantId is not null)
+        {
+            return await Query().SingleOrDefaultAsync(
+                x => x.EditToken == token,
+                cancellationToken);
+        }
+
+        using var bypass = _tenantAccessor.BeginFilterBypass(
+            "resolve speaking-request tenant from an exact opaque host token");
+        return await Query().SingleOrDefaultAsync(
+            x => x.EditToken == token,
+            cancellationToken);
     }
 
     private static bool HostLinkValid(SpeakingRequestRecord? request) =>

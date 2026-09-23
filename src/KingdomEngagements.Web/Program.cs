@@ -228,9 +228,11 @@ builder.Services.AddScoped<EngagementCareHandoffPublisher>();
 builder.Services.AddSingleton<EngagementsStartupState>();
 builder.Services.AddScoped<EngagementsDependencyHealth>();
 builder.Services.AddHostedService<EngagementsStartupWorker>();
+#if DEMO_CODE
 builder.Services.AddHostedService<EngagementsDemoSeedWorker>();
 builder.Services.AddHostedService<EngagementsDemoDepthWorker>();
 builder.Services.AddHostedService<EngagementsDemoConnectedStoryWorker>();
+#endif
 
 var app = builder.Build();
 
@@ -256,6 +258,7 @@ app.Use(async (context, next) =>
 });
 
 app.UseAuthentication();
+#if DEMO_CODE
 app.Use(async (context, next) =>
 {
     var demoProfilesEnabled =
@@ -290,10 +293,13 @@ app.Use(async (context, next) =>
 
     await next();
 });
+#endif
 app.UseMiddleware<EngagementsReadinessMiddleware>();
 app.UseMiddleware<EngagementsEntitlementMiddleware>();
 app.UseAuthorization();
+#if DEMO_CODE
 app.UseMiddleware<EngagementsDemoAccessMiddleware>();
+#endif
 app.Use(async (context, next) =>
 {
     var path = context.Request.Path.Value ?? string.Empty;
@@ -407,12 +413,15 @@ app.MapHub<EngagementRealtimeHub>(
     .RequireAuthorization(HostAccessIdentity.Policy);
 app.MapAssignmentWorkspaceEndpoints();
 app.MapEngagementCompletionEndpoints();
+#if DEMO_CODE
 app.MapEngagementsDemoAccessEndpoints();
+#endif
 app.MapEngagementResponsibilityEndpoints();
 app.MapEngagementTeamEndpoints();
 app.MapEngagementLaneWorkspaceEndpoints();
 app.MapEngagementsEndpoints();
 
+#if DEMO_CODE
 // Preserve legacy /app links while sending each demo persona to the right workspace.
 app.MapGet("/app", (HttpContext context) =>
 {
@@ -423,6 +432,11 @@ app.MapGet("/app", (HttpContext context) =>
             : "/organization/ctg/bookings";
     return Results.Redirect($"{target}{context.Request.QueryString}");
 });
+#else
+// Preserve legacy /app links without loading demo persona code in production.
+app.MapGet("/app", (HttpContext context) =>
+    Results.Redirect($"/assignments{context.Request.QueryString}"));
+#endif
 app.MapGet("/app/{*path}", (string? path, HttpRequest request) =>
 {
     var canonicalPath = string.IsNullOrWhiteSpace(path)

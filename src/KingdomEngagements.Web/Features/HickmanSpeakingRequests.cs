@@ -240,9 +240,8 @@ public sealed class HickmanSpeakingRequestsService(
         CancellationToken cancellationToken)
     {
         await requestsDatabase.EnsureSchemaAsync(cancellationToken);
-        return await requestsDatabase.Requests.AsNoTracking().AnyAsync(item =>
-            item.TenantId == tenantId &&
-            item.EditToken == token,
+        return await requestsDatabase.Requests.AsNoTracking().AnyAsync(
+            item => item.EditToken == token,
             cancellationToken);
     }
 

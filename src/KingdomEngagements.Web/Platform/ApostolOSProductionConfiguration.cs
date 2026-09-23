@@ -110,6 +110,21 @@ public static class ApostolOSProductionConfiguration
             "KingdomOS:Entitlements:FailOpenInDevelopment must be false in Production.",
             problems);
 
+        RequireTenantId(
+            configuration["KingdomOS:TenantRouting:DefaultPublicInvitationTenantId"],
+            "KingdomOS:TenantRouting:DefaultPublicInvitationTenantId",
+            problems);
+
+        RequireTenantId(
+            configuration["KingdomOS:TenantRouting:HickmanPublicInvitationTenantId"],
+            "KingdomOS:TenantRouting:HickmanPublicInvitationTenantId",
+            problems);
+
+        RequireTenantId(
+            configuration["KingdomOS:TenantRouting:ReadinessTenantId"],
+            "KingdomOS:TenantRouting:ReadinessTenantId",
+            problems);
+
         var allowedHosts = configuration["AllowedHosts"];
         Require(
             !string.IsNullOrWhiteSpace(allowedHosts) && allowedHosts.Trim() != "*",
@@ -171,5 +186,11 @@ public static class ApostolOSProductionConfiguration
     {
         if (string.IsNullOrWhiteSpace(value))
             problems.Add($"{name} is required in Production.");
+    }
+
+    private static void RequireTenantId(string? value, string name, ICollection<string> problems)
+    {
+        if (!Guid.TryParse(value, out var tenantId) || tenantId == Guid.Empty)
+            problems.Add($"{name} must contain a non-empty UUID in Production.");
     }
 }

@@ -1,4 +1,5 @@
 using KingdomEngagements.Web.Features;
+using KingdomEngagements.Web.Platform;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 
@@ -11,6 +12,7 @@ public sealed class SpeakingRequestLifecycleTests
     {
         await using var fixture = CreateFixture();
         var tenantId = Guid.NewGuid();
+        using var tenantScope = fixture.TenantAccessor.BeginTenant(tenantId, "speaking request lifecycle test");
 
         var started = await fixture.StartedService.StartAsync(
             tenantId,
@@ -77,6 +79,7 @@ public sealed class SpeakingRequestLifecycleTests
     {
         await using var fixture = CreateFixture();
         var tenantId = Guid.NewGuid();
+        using var tenantScope = fixture.TenantAccessor.BeginTenant(tenantId, "speaking request lifecycle test");
         var created = await fixture.Service.CreateAsync(tenantId, ValidRequest(), CancellationToken.None);
 
         Assert.Equal("awaiting-review", created.Status);
@@ -134,6 +137,7 @@ public sealed class SpeakingRequestLifecycleTests
     {
         await using var fixture = CreateFixture();
         var tenantId = Guid.NewGuid();
+        using var tenantScope = fixture.TenantAccessor.BeginTenant(tenantId, "speaking request lifecycle test");
         var created = await fixture.Service.CreateAsync(tenantId, ValidRequest(), CancellationToken.None);
         fixture.Requests.ChangeTracker.Clear();
 
@@ -186,6 +190,7 @@ public sealed class SpeakingRequestLifecycleTests
 
     private static TestFixture CreateFixture()
     {
+        var tenantAccessor = new TestCurrentTenantAccessor();
         var engagementOptions = new DbContextOptionsBuilder<EngagementsDbContext>()
             .ReplaceService<IModelCustomizer, EngagementsModelCustomizer>()
             .UseInMemoryDatabase($"engagements-lifecycle-{Guid.NewGuid():N}")
@@ -194,22 +199,25 @@ public sealed class SpeakingRequestLifecycleTests
             .ReplaceService<IModelCustomizer, SpeakingRequestsModelCustomizer>()
             .UseInMemoryDatabase($"engagement-requests-{Guid.NewGuid():N}")
             .Options;
-        var engagements = new EngagementsDbContext(engagementOptions);
-        var requests = new SpeakingRequestsDbContext(requestOptions);
-        var service = new SpeakingRequestsService(requests, engagements);
+        var engagements = new EngagementsDbContext(engagementOptions, tenantAccessor);
+        var requests = new SpeakingRequestsDbContext(requestOptions, tenantAccessor);
+        var service = new SpeakingRequestsService(requests, engagements, tenantAccessor);
         return new TestFixture(
+            tenantAccessor,
             engagements,
             requests,
             service,
-            new StaffStartedInvitationsService(requests, service));
+            new StaffStartedInvitationsService(requests, service, tenantAccessor));
     }
 
     private sealed class TestFixture(
+        TestCurrentTenantAccessor tenantAccessor,
         EngagementsDbContext engagements,
         SpeakingRequestsDbContext requests,
         SpeakingRequestsService service,
         StaffStartedInvitationsService startedService) : IAsyncDisposable
     {
+        public TestCurrentTenantAccessor TenantAccessor { get; } = tenantAccessor;
         public EngagementsDbContext Engagements { get; } = engagements;
         public SpeakingRequestsDbContext Requests { get; } = requests;
         public SpeakingRequestsService Service { get; } = service;

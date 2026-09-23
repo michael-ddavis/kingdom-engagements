@@ -3,7 +3,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KingdomEngagements.Web.Features;
 
-public sealed class SpeakingRequestsDbContext(DbContextOptions<SpeakingRequestsDbContext> options) : DbContext(options)
+public sealed class SpeakingRequestsDbContext(
+    DbContextOptions<SpeakingRequestsDbContext> options,
+    ICurrentTenantAccessor? tenantAccessor = null)
+    : TenantFilteredDbContext(options, tenantAccessor)
 {
     public DbSet<SpeakingRequestRecord> Requests => Set<SpeakingRequestRecord>();
     public DbSet<SpeakingRequestCommunicationRecord> Communications => Set<SpeakingRequestCommunicationRecord>();
@@ -51,6 +54,12 @@ public sealed class SpeakingRequestsDbContext(DbContextOptions<SpeakingRequestsD
         communication.Property(x => x.Type).HasMaxLength(60).IsRequired();
         communication.Property(x => x.Message).HasMaxLength(4000).IsRequired();
         communication.Property(x => x.Actor).HasMaxLength(180).IsRequired();
+
+        request.HasQueryFilter(x =>
+            TenantFilterBypassed || x.TenantId == CurrentTenantId);
+        communication.HasQueryFilter(x =>
+            TenantFilterBypassed ||
+            (x.Request != null && x.Request.TenantId == CurrentTenantId));
     }
 
     public async Task EnsureSchemaAsync(CancellationToken cancellationToken)

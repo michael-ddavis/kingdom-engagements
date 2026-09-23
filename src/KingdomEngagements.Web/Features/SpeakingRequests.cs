@@ -3,7 +3,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KingdomEngagements.Web.Features;
 
-public sealed class SpeakingRequestsDbContext(DbContextOptions<SpeakingRequestsDbContext> options) : DbContext(options)
+public sealed class SpeakingRequestsDbContext(
+    DbContextOptions<SpeakingRequestsDbContext> options,
+    ICurrentTenantAccessor? tenantAccessor = null) : TenantScopedDbContext(options, tenantAccessor)
 {
     public DbSet<SpeakingRequestRecord> Requests => Set<SpeakingRequestRecord>();
     public DbSet<SpeakingRequestCommunicationRecord> Communications => Set<SpeakingRequestCommunicationRecord>();
@@ -44,6 +46,9 @@ public sealed class SpeakingRequestsDbContext(DbContextOptions<SpeakingRequestsD
         request.Property(x => x.DeclineReason).HasMaxLength(3000);
         request.HasMany(x => x.Communications).WithOne(x => x.Request)
             .HasForeignKey(x => x.RequestId).OnDelete(DeleteBehavior.Cascade);
+        request.HasQueryFilter(x =>
+            TenantFilterBypassed ||
+            (TenantFilterHasTenant && x.TenantId == TenantFilterTenantId));
 
         var communication = modelBuilder.Entity<SpeakingRequestCommunicationRecord>();
         communication.ToTable("EngagementSpeakingRequestCommunications");
@@ -51,6 +56,11 @@ public sealed class SpeakingRequestsDbContext(DbContextOptions<SpeakingRequestsD
         communication.Property(x => x.Type).HasMaxLength(60).IsRequired();
         communication.Property(x => x.Message).HasMaxLength(4000).IsRequired();
         communication.Property(x => x.Actor).HasMaxLength(180).IsRequired();
+        communication.HasQueryFilter(x =>
+            TenantFilterBypassed ||
+            (TenantFilterHasTenant &&
+             x.Request != null &&
+             x.Request.TenantId == TenantFilterTenantId));
     }
 
     public async Task EnsureSchemaAsync(CancellationToken cancellationToken)

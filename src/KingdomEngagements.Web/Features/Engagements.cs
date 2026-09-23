@@ -310,33 +310,46 @@ public sealed class EngagementsInitializer(EngagementsDbContext database)
     }
 }
 
-public sealed class EngagementsService(EngagementsDbContext database)
+public sealed class EngagementsService(
+    EngagementsDbContext database,
+    ICurrentTenantAccessor? tenantAccessor = null)
 {
+    private readonly ICurrentTenantAccessor _tenantAccessor =
+        tenantAccessor ?? NoCurrentTenantAccessor.Instance;
     private static readonly HashSet<string> WorkflowStatuses = new(StringComparer.OrdinalIgnoreCase)
         { "not-started", "open", "in-progress", "needs-attention", "confirmed", "complete", "received", "requested", "waived" };
 
-    public async Task<IReadOnlyList<EngagementSummary>> GetAsync(Guid tenantId, CancellationToken cancellationToken) =>
-        (await database.Assignments.AsNoTracking()
-            .Where(x => x.TenantId == tenantId)
-            .Include(x => x.Tasks)
-            .OrderBy(x => x.StartsAtUtc)
-            .ToListAsync(cancellationToken))
-        .Select(MapSummary)
-        .ToArray();
+    public async Task<IReadOnlyList<EngagementSummary>> GetAsync(
+        Guid tenantId,
+        CancellationToken cancellationToken)
+    {
+        using var tenantScope = _tenantAccessor.BeginTenant(
+            tenantId,
+            "list engagements");
+
+        return (await database.Assignments.AsNoTracking()
+                .Include(x => x.Tasks)
+                .OrderBy(x => x.StartsAtUtc)
+                .ToListAsync(cancellationToken))
+            .Select(MapSummary)
+            .ToArray();
+    }
 
     public async Task<EngagementDetails?> GetAsync(Guid tenantId, Guid id, CancellationToken cancellationToken)
     {
+        using var tenantScope = _tenantAccessor.BeginTenant(tenantId, "get engagement");
         var assignment = await database.Assignments.AsNoTracking()
             .Include(x => x.Tasks)
             .Include(x => x.Documents)
-            .SingleOrDefaultAsync(x => x.TenantId == tenantId && x.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
         return assignment is null ? null : MapDetails(assignment);
     }
 
     public async Task<EngagementDetails> CreateAsync(Guid tenantId, CreateEngagementRequest request, CancellationToken cancellationToken)
     {
+        using var tenantScope = _tenantAccessor.BeginTenant(tenantId, "create engagement");
         var externalId = Required(request.ExternalAssignmentId, nameof(request.ExternalAssignmentId));
-        if (await database.Assignments.AnyAsync(x => x.TenantId == tenantId && x.ExternalAssignmentId == externalId, cancellationToken))
+        if (await database.Assignments.AnyAsync(x => x.ExternalAssignmentId == externalId, cancellationToken))
             throw new InvalidOperationException("That assignment is already in Kingdom Engagements.");
         var now = DateTimeOffset.UtcNow;
         var assignment = new EngagementAssignment
@@ -355,9 +368,10 @@ public sealed class EngagementsService(EngagementsDbContext database)
 
     public async Task<EngagementDetails?> UpdateAsync(Guid tenantId, Guid id, UpdateEngagementRequest request, CancellationToken cancellationToken)
     {
+        using var tenantScope = _tenantAccessor.BeginTenant(tenantId, "update engagement");
         var assignment = await database.Assignments
             .Include(x => x.Tasks).Include(x => x.Documents)
-            .SingleOrDefaultAsync(x => x.TenantId == tenantId && x.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
         if (assignment is null) return null;
         assignment.Title = Required(request.Title, nameof(request.Title));
         assignment.SpeakerName = Required(request.SpeakerName, nameof(request.SpeakerName));
@@ -382,8 +396,9 @@ public sealed class EngagementsService(EngagementsDbContext database)
 
     public async Task<EngagementDetails?> AddTaskAsync(Guid tenantId, Guid id, CreateEngagementTaskRequest request, CancellationToken cancellationToken)
     {
+        using var tenantScope = _tenantAccessor.BeginTenant(tenantId, "add engagement task");
         var assignment = await database.Assignments.Include(x => x.Tasks).Include(x => x.Documents)
-            .SingleOrDefaultAsync(x => x.TenantId == tenantId && x.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
         if (assignment is null) return null;
         assignment.Tasks.Add(new EngagementTask
         {
@@ -399,8 +414,9 @@ public sealed class EngagementsService(EngagementsDbContext database)
 
     public async Task<EngagementDetails?> UpdateTaskAsync(Guid tenantId, Guid id, Guid taskId, UpdateEngagementTaskRequest request, CancellationToken cancellationToken)
     {
+        using var tenantScope = _tenantAccessor.BeginTenant(tenantId, "update engagement task");
         var assignment = await database.Assignments.Include(x => x.Tasks).Include(x => x.Documents)
-            .SingleOrDefaultAsync(x => x.TenantId == tenantId && x.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
         var task = assignment?.Tasks.SingleOrDefault(x => x.Id == taskId);
         if (assignment is null || task is null) return null;
         task.Status = ValidateWorkflow(request.Status, nameof(request.Status));
@@ -417,8 +433,9 @@ public sealed class EngagementsService(EngagementsDbContext database)
 
     public async Task<EngagementDetails?> AddDocumentAsync(Guid tenantId, Guid id, CreateEngagementDocumentRequest request, CancellationToken cancellationToken)
     {
+        using var tenantScope = _tenantAccessor.BeginTenant(tenantId, "add engagement document");
         var assignment = await database.Assignments.Include(x => x.Tasks).Include(x => x.Documents)
-            .SingleOrDefaultAsync(x => x.TenantId == tenantId && x.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
         if (assignment is null) return null;
         assignment.Documents.Add(new EngagementDocument
         {
@@ -432,18 +449,33 @@ public sealed class EngagementsService(EngagementsDbContext database)
         return MapDetails(assignment);
     }
 
-    public async Task<EngagementDocument?> GetDocumentAsync(Guid tenantId, Guid assignmentId, Guid documentId, CancellationToken cancellationToken) =>
-        await database.Documents.AsNoTracking()
-            .SingleOrDefaultAsync(item => item.AssignmentId == assignmentId && item.Id == documentId && item.Assignment != null && item.Assignment.TenantId == tenantId, cancellationToken);
+    public async Task<EngagementDocument?> GetDocumentAsync(
+        Guid tenantId,
+        Guid assignmentId,
+        Guid documentId,
+        CancellationToken cancellationToken)
+    {
+        using var tenantScope = _tenantAccessor.BeginTenant(
+            tenantId,
+            "get engagement document");
+
+        return await database.Documents.AsNoTracking()
+            .SingleOrDefaultAsync(
+                item => item.AssignmentId == assignmentId && item.Id == documentId,
+                cancellationToken);
+    }
 
     public async Task<(bool Duplicate, Guid? AssignmentId)> IngestAsync(IntegrationEventEnvelope envelope, CancellationToken cancellationToken)
     {
+        using var tenantScope = _tenantAccessor.BeginTenant(
+            envelope.TenantId,
+            "ingest signed platform engagement event");
         if (await database.IntegrationReceipts.AnyAsync(x => x.EventId == envelope.EventId, cancellationToken))
         {
             var existingExternal = PayloadString(envelope.Payload, "assignmentId")
                 ?? PayloadString(envelope.Payload, "subjectId") ?? PayloadString(envelope.Payload, "id");
             var existingId = existingExternal is null ? null :
-                await database.Assignments.Where(x => x.TenantId == envelope.TenantId && x.ExternalAssignmentId == existingExternal)
+                await database.Assignments.Where(x => x.ExternalAssignmentId == existingExternal)
                     .Select(x => (Guid?)x.Id).SingleOrDefaultAsync(cancellationToken);
             return (true, existingId);
         }
@@ -455,7 +487,7 @@ public sealed class EngagementsService(EngagementsDbContext database)
             ?? PayloadString(envelope.Payload, "id")
             ?? envelope.EventId.ToString("N");
         var assignment = await database.Assignments.SingleOrDefaultAsync(x =>
-            x.TenantId == envelope.TenantId && x.ExternalAssignmentId == externalId, cancellationToken);
+            x.ExternalAssignmentId == externalId, cancellationToken);
         if (assignment is null)
         {
             var now = DateTimeOffset.UtcNow;

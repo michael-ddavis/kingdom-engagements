@@ -197,6 +197,11 @@ builder.Services.AddAuthorization(options =>
     });
 });
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<CurrentTenantAccessor>();
+builder.Services.AddScoped<ICurrentTenantAccessor>(
+    services => services.GetRequiredService<CurrentTenantAccessor>());
+builder.Services.AddScoped<ITenantIsolationBypass>(
+    services => services.GetRequiredService<CurrentTenantAccessor>());
 builder.Services.AddHttpClient<EngagementsEntitlementResolver>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(3);

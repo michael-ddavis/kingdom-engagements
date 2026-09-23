@@ -1,4 +1,5 @@
 using KingdomEngagements.Web.Features;
+using KingdomEngagements.Web.Platform;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 
@@ -11,6 +12,7 @@ public sealed class EngagementPreparationLifecycleTests
     {
         await using var fixture = CreateFixture();
         var tenantId = Guid.NewGuid();
+        using var tenantScope = fixture.TenantAccessor.BeginTenant(tenantId, "engagement preparation test");
         var request = await fixture.RequestService.CreateAsync(tenantId, ValidRequest(), CancellationToken.None);
         fixture.Requests.ChangeTracker.Clear();
         var approval = await fixture.RequestService.ApproveAsync(tenantId, request.Id, CancellationToken.None);
@@ -117,6 +119,7 @@ public sealed class EngagementPreparationLifecycleTests
         var storage = new TestObjectStorage();
         await using var fixture = CreateFixture(storage);
         var tenantId = Guid.NewGuid();
+        using var tenantScope = fixture.TenantAccessor.BeginTenant(tenantId, "engagement preparation test");
 
         var request = await fixture.RequestService.CreateAsync(
             tenantId,
@@ -186,6 +189,7 @@ public sealed class EngagementPreparationLifecycleTests
     {
         await using var fixture = CreateFixture();
         var tenantId = Guid.NewGuid();
+        using var tenantScope = fixture.TenantAccessor.BeginTenant(tenantId, "engagement preparation test");
         var request = await fixture.RequestService.CreateAsync(tenantId, ValidRequest(), CancellationToken.None);
         fixture.Requests.ChangeTracker.Clear();
 
@@ -294,6 +298,7 @@ public sealed class EngagementPreparationLifecycleTests
 
     private static TestFixture CreateFixture(IEngagementDocumentStorage? documentStorage = null)
     {
+        var tenantAccessor = new TestCurrentTenantAccessor();
         var engagementOptions = new DbContextOptionsBuilder<EngagementsDbContext>()
             .ReplaceService<IModelCustomizer, EngagementsModelCustomizer>()
             .UseInMemoryDatabase($"engagements-preparation-{Guid.NewGuid():N}")
@@ -305,16 +310,26 @@ public sealed class EngagementPreparationLifecycleTests
         var preparationOptions = new DbContextOptionsBuilder<EngagementPreparationDbContext>()
             .UseInMemoryDatabase($"preparation-{Guid.NewGuid():N}")
             .Options;
-        var engagements = new EngagementsDbContext(engagementOptions);
-        var requests = new SpeakingRequestsDbContext(requestOptions);
-        var preparations = new EngagementPreparationDbContext(preparationOptions);
-        var requestService = new SpeakingRequestsService(requests, engagements);
+        var engagements = new EngagementsDbContext(engagementOptions, tenantAccessor);
+        var requests = new SpeakingRequestsDbContext(requestOptions, tenantAccessor);
+        var preparations = new EngagementPreparationDbContext(preparationOptions, tenantAccessor);
+        var requestService = new SpeakingRequestsService(
+            requests,
+            engagements,
+            tenantAccessor);
         var preparationService = new EngagementPreparationService(
             preparations,
             requests,
             engagements,
-            documentStorage);
-        return new TestFixture(engagements, requests, preparations, requestService, preparationService);
+            documentStorage,
+            tenantAccessor);
+        return new TestFixture(
+            tenantAccessor,
+            engagements,
+            requests,
+            preparations,
+            requestService,
+            preparationService);
     }
 
     private sealed class TestObjectStorage : IEngagementDocumentStorage
@@ -367,12 +382,14 @@ public sealed class EngagementPreparationLifecycleTests
     }
 
     private sealed class TestFixture(
+        TestCurrentTenantAccessor tenantAccessor,
         EngagementsDbContext engagements,
         SpeakingRequestsDbContext requests,
         EngagementPreparationDbContext preparations,
         SpeakingRequestsService requestService,
         EngagementPreparationService preparationService) : IAsyncDisposable
     {
+        public TestCurrentTenantAccessor TenantAccessor { get; } = tenantAccessor;
         public EngagementsDbContext Engagements { get; } = engagements;
         public SpeakingRequestsDbContext Requests { get; } = requests;
         public EngagementPreparationDbContext Preparations { get; } = preparations;

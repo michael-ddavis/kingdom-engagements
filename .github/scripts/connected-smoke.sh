@@ -184,6 +184,52 @@ run_engagements_app "$app_name"
 
 wait_for_app "$app_name"
 
+tenant_a_assignment="$(docker exec "$app_name" curl --fail --silent \
+  -H 'X-Kingdom-Demo-Organization: ctg' \
+  -H 'Content-Type: application/json' \
+  -X POST http://localhost:8080/api/engagements/assignments \
+  -d '{"externalAssignmentId":"ci-tenant-a-only","title":"Tenant A isolation record","speakerName":"Tenant A Speaker","hostOrganization":"Tenant A Host","startsAtUtc":null,"endsAtUtc":null,"location":null}')"
+tenant_a_id="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["summary"]["id"])' <<<"$tenant_a_assignment")"
+
+docker exec "$app_name" curl --fail --silent \
+  -H 'X-Kingdom-Demo-Organization: ctg' \
+  -H 'Content-Type: application/json' \
+  -X POST "http://localhost:8080/api/engagements/assignments/$tenant_a_id/tasks" \
+  -d '{"category":"host","title":"tenant-a-task-only","owner":"CI","detail":null,"dueAtUtc":null}' >/dev/null
+
+tenant_b_assignment="$(docker exec "$app_name" curl --fail --silent \
+  -H 'X-Kingdom-Demo-Organization: heyy-king' \
+  -H 'Content-Type: application/json' \
+  -X POST http://localhost:8080/api/engagements/assignments \
+  -d '{"externalAssignmentId":"ci-tenant-b-only","title":"Tenant B isolation record","speakerName":"Tenant B Speaker","hostOrganization":"Tenant B Host","startsAtUtc":null,"endsAtUtc":null,"location":null}')"
+tenant_b_id="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["summary"]["id"])' <<<"$tenant_b_assignment")"
+
+docker exec "$app_name" curl --fail --silent \
+  -H 'X-Kingdom-Demo-Organization: heyy-king' \
+  -H 'Content-Type: application/json' \
+  -X POST "http://localhost:8080/api/engagements/assignments/$tenant_b_id/tasks" \
+  -d '{"category":"host","title":"tenant-b-task-only","owner":"CI","detail":null,"dueAtUtc":null}' >/dev/null
+
+tenant_a_probe="$(docker exec "$app_name" curl --fail --silent \
+  -H 'X-Kingdom-Demo-Organization: ctg' \
+  http://localhost:8080/api/engagements/tenant-isolation-probe)"
+grep --quiet 'ci-tenant-a-only' <<<"$tenant_a_probe"
+grep --quiet 'tenant-a-task-only' <<<"$tenant_a_probe"
+if grep --quiet 'ci-tenant-b-only\|tenant-b-task-only' <<<"$tenant_a_probe"; then
+  echo 'Tenant B data leaked into tenant A SQL query-filter probe.' >&2
+  exit 1
+fi
+
+tenant_b_probe="$(docker exec "$app_name" curl --fail --silent \
+  -H 'X-Kingdom-Demo-Organization: heyy-king' \
+  http://localhost:8080/api/engagements/tenant-isolation-probe)"
+grep --quiet 'ci-tenant-b-only' <<<"$tenant_b_probe"
+grep --quiet 'tenant-b-task-only' <<<"$tenant_b_probe"
+if grep --quiet 'ci-tenant-a-only\|tenant-a-task-only' <<<"$tenant_b_probe"; then
+  echo 'Tenant A data leaked into tenant B SQL query-filter probe.' >&2
+  exit 1
+fi
+
 docker exec "$app_name" curl --fail --silent http://localhost:8080/invite/apostle-cynthia \
   | grep --quiet 'Invite Cynthia Thompson'
 

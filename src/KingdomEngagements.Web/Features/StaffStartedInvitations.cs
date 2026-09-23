@@ -22,8 +22,11 @@ public sealed record StartedInvitationLinkResult(
 
 public sealed class StaffStartedInvitationsService(
     SpeakingRequestsDbContext requestsDatabase,
-    SpeakingRequestsService speakingRequests)
+    SpeakingRequestsService speakingRequests,
+    ICurrentTenantAccessor? tenantAccessor = null)
 {
+    private readonly ICurrentTenantAccessor _tenantAccessor =
+        tenantAccessor ?? NoCurrentTenantAccessor.Instance;
     private const string WaitingOnHostStatus = "host-completion-needed";
 
     public async Task<SpeakingRequestDetails> StartAsync(
@@ -31,6 +34,9 @@ public sealed class StaffStartedInvitationsService(
         StartSpeakingInvitationInput input,
         CancellationToken cancellationToken)
     {
+        using var tenantScope = _tenantAccessor.BeginTenant(
+            tenantId,
+            "start staff-created speaking invitation");
         await requestsDatabase.EnsureSchemaAsync(cancellationToken);
 
         var contactName = Required(input.ContactName, nameof(input.ContactName));
@@ -139,10 +145,13 @@ public sealed class StaffStartedInvitationsService(
         Guid id,
         CancellationToken cancellationToken)
     {
+        using var tenantScope = _tenantAccessor.BeginTenant(
+            tenantId,
+            "refresh staff-created host invitation link");
         await requestsDatabase.EnsureSchemaAsync(cancellationToken);
         var request = await requestsDatabase.Requests
             .Include(item => item.Communications)
-            .SingleOrDefaultAsync(item => item.TenantId == tenantId && item.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(item => item.Id == id, cancellationToken);
         if (request is null) return null;
         if (request.Status != WaitingOnHostStatus)
             throw new InvalidOperationException($"Invitation {request.ReferenceNumber} is no longer waiting for initial host completion.");
@@ -198,8 +207,13 @@ public static class StaffStartedInvitationEndpoints
         publicGroup.MapGet("/{token}", async (
             string token,
             StaffStartedInvitationsService service,
+            PublicInvitationTenantResolver tenants,
+            ICurrentTenantAccessor tenantAccessor,
             CancellationToken ct) =>
         {
+            using var tenantScope = tenantAccessor.BeginTenant(
+                tenants.PrimaryTenantId,
+                "public staff-created invitation host link");
             var item = await service.GetForHostAsync(token, ct);
             return item is null
                 ? Results.NotFound(new { message = "This invitation completion link is invalid, expired, or has already been completed." })
@@ -209,10 +223,15 @@ public static class StaffStartedInvitationEndpoints
             string token,
             SpeakingRequestInput request,
             StaffStartedInvitationsService service,
+            PublicInvitationTenantResolver tenants,
+            ICurrentTenantAccessor tenantAccessor,
             CancellationToken ct) =>
         {
             try
             {
+                using var tenantScope = tenantAccessor.BeginTenant(
+                    tenants.PrimaryTenantId,
+                    "public staff-created invitation host completion");
                 var item = await service.CompleteAsync(token, request, ct);
                 return item is null
                     ? Results.NotFound(new { message = "This invitation completion link is invalid, expired, or has already been completed." })

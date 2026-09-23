@@ -197,6 +197,7 @@ builder.Services.AddAuthorization(options =>
     });
 });
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentTenantAccessor, CurrentTenantAccessor>();
 builder.Services.AddHttpClient<EngagementsEntitlementResolver>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(3);
@@ -285,6 +286,7 @@ app.Use(async (context, next) =>
 
     await next();
 });
+app.UseMiddleware<TenantContextMiddleware>();
 app.UseMiddleware<EngagementsReadinessMiddleware>();
 app.UseMiddleware<EngagementsEntitlementMiddleware>();
 app.UseAuthorization();

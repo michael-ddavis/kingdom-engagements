@@ -198,6 +198,7 @@ builder.Services.AddAuthorization(options =>
 });
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentTenantAccessor, CurrentTenantAccessor>();
+builder.Services.AddSingleton<PublicInvitationTenantResolver>();
 builder.Services.AddHttpClient<EngagementsEntitlementResolver>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(3);
@@ -224,9 +225,11 @@ builder.Services.AddScoped<EngagementCareHandoffPublisher>();
 builder.Services.AddSingleton<EngagementsStartupState>();
 builder.Services.AddScoped<EngagementsDependencyHealth>();
 builder.Services.AddHostedService<EngagementsStartupWorker>();
+#if KINGDOM_ENGAGEMENTS_DEMO
 builder.Services.AddHostedService<EngagementsDemoSeedWorker>();
 builder.Services.AddHostedService<EngagementsDemoDepthWorker>();
 builder.Services.AddHostedService<EngagementsDemoConnectedStoryWorker>();
+#endif
 
 var app = builder.Build();
 
@@ -252,6 +255,7 @@ app.Use(async (context, next) =>
 });
 
 app.UseAuthentication();
+#if KINGDOM_ENGAGEMENTS_DEMO
 app.Use(async (context, next) =>
 {
     var demoProfilesEnabled =
@@ -286,11 +290,14 @@ app.Use(async (context, next) =>
 
     await next();
 });
+#endif
 app.UseMiddleware<TenantContextMiddleware>();
 app.UseMiddleware<EngagementsReadinessMiddleware>();
 app.UseMiddleware<EngagementsEntitlementMiddleware>();
 app.UseAuthorization();
+#if KINGDOM_ENGAGEMENTS_DEMO
 app.UseMiddleware<EngagementsDemoAccessMiddleware>();
+#endif
 app.Use(async (context, next) =>
 {
     var path = context.Request.Path.Value ?? string.Empty;

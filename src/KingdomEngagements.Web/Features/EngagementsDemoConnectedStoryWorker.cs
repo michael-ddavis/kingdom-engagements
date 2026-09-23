@@ -34,6 +34,10 @@ public sealed class EngagementsDemoConnectedStoryWorker(
             try
             {
                 await using var scope = scopeFactory.CreateAsyncScope();
+                var tenantAccessor = scope.ServiceProvider.GetRequiredService<ICurrentTenantAccessor>();
+                using var tenantScope = tenantAccessor.BeginTenant(
+                    KingdomIdentity.DemoTenantId,
+                    "seed development-only Engagements demo data");
                 var engagements = scope.ServiceProvider.GetRequiredService<EngagementsDbContext>();
                 var requests = scope.ServiceProvider.GetRequiredService<SpeakingRequestsDbContext>();
                 var preparations = scope.ServiceProvider.GetRequiredService<EngagementPreparationDbContext>();

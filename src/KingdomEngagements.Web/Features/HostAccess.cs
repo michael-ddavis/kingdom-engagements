@@ -200,7 +200,8 @@ public sealed class HostAccessService(
     HostAccessDbContext database,
     EngagementPreparationDbContext preparationDatabase,
     EngagementsDbContext engagementsDatabase,
-    IConfiguration configuration)
+    IConfiguration configuration,
+    ICurrentTenantAccessor tenantContext)
 {
     private const int TokenBytes = 32;
     private const int DefaultInvitationLifetimeHours = 168;
@@ -277,9 +278,14 @@ public sealed class HostAccessService(
         var tokenHash = HashToken(token);
         var now = DateTimeOffset.UtcNow;
 
-        var invitation = await database.Invitations.SingleOrDefaultAsync(
-            x => x.TokenHash == tokenHash,
-            cancellationToken);
+        HostAccessInvitationRecord? invitation;
+        using (tenantContext.BeginCrossTenantBypass(
+                   "Resolve a host invitation token to its owning tenant."))
+        {
+            invitation = await database.Invitations.SingleOrDefaultAsync(
+                x => x.TokenHash == tokenHash,
+                cancellationToken);
+        }
 
         if (invitation is null ||
             invitation.RevokedAtUtc is not null ||
@@ -288,6 +294,10 @@ public sealed class HostAccessService(
         {
             return null;
         }
+
+        using var tenantScope = tenantContext.BeginTenantScope(
+            invitation.TenantId,
+            "Continue redeemed host invitation in its owning tenant.");
 
         var preparation = await preparationDatabase.Preparations.AsNoTracking()
             .SingleOrDefaultAsync(

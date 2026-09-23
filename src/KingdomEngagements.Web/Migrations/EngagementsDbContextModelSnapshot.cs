@@ -74,11 +74,12 @@ public sealed class EngagementsDbContextModelSnapshot : ModelSnapshot
 
         modelBuilder.Entity<EngagementIntegrationReceipt>(entity =>
         {
+            entity.Property(x => x.TenantId).HasColumnType("uniqueidentifier");
             entity.Property(x => x.EventId).ValueGeneratedNever().HasColumnType("uniqueidentifier");
             entity.Property(x => x.EventName).HasMaxLength(120).IsRequired();
             entity.Property(x => x.SourceModule).HasMaxLength(80).IsRequired();
             entity.Property(x => x.ReceivedAtUtc);
-            entity.HasKey(x => x.EventId);
+            entity.HasKey(x => new { x.TenantId, x.EventId });
             entity.ToTable("EngagementIntegrationReceipts");
         });
 

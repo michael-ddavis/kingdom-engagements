@@ -39,6 +39,7 @@ public sealed class EngagementsDemoSeedWorker(
 
                 await RemoveRetiredSourceRowsAsync(engagements, requests, stoppingToken);
                 await SeedAssignmentsAsync(engagements, stoppingToken);
+                await SeedDemoTeamAsync(engagements, stoppingToken);
                 await SeedRequestsAsync(requests, stoppingToken);
                 await RemoveRetiredSourceRowsAsync(engagements, requests, stoppingToken);
 
@@ -254,6 +255,102 @@ public sealed class EngagementsDemoSeedWorker(
         await db.SaveChangesAsync(ct);
     }
 
+    private static async Task SeedDemoTeamAsync(
+        EngagementsDbContext db,
+        CancellationToken ct)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var team = new[]
+        {
+            new
+            {
+                AccountId = Guid.Parse("c7100000-0000-4000-8000-000000000002"),
+                Name = "Prophet Courtney Beecham",
+                Lanes = new[] { "host-coordination", "program" }
+            },
+            new
+            {
+                AccountId = Guid.Parse("c7100000-0000-4000-8000-000000000003"),
+                Name = "Naomi Carter",
+                Lanes = new[] { "travel", "lodging", "transportation" }
+            },
+            new
+            {
+                AccountId = Guid.Parse("c7100000-0000-4000-8000-000000000004"),
+                Name = "David Brooks",
+                Lanes = new[] { "media", "production" }
+            },
+            new
+            {
+                AccountId = Guid.Parse("c7100000-0000-4000-8000-000000000005"),
+                Name = "Jasmine Reed",
+                Lanes = new[] { "documents", "finance" }
+            },
+            new
+            {
+                AccountId = Guid.Parse("c7100000-0000-4000-8000-000000000006"),
+                Name = "Marcus Hill",
+                Lanes = new[] { "ministry-preparation", "hospitality", "closeout", "security-protocol", "resources-merchandise" }
+            }
+        };
+
+        foreach (var person in team)
+        {
+            var member = await db.TeamMembers.SingleOrDefaultAsync(
+                item =>
+                    item.TenantId == KingdomIdentity.DemoTenantId &&
+                    item.AccountId == person.AccountId,
+                ct);
+
+            if (member is null)
+            {
+                member = new EngagementTeamMember
+                {
+                    Id = Guid.NewGuid(),
+                    TenantId = KingdomIdentity.DemoTenantId,
+                    AccountId = person.AccountId
+                };
+                db.TeamMembers.Add(member);
+            }
+
+            member.DisplayName = person.Name;
+            member.IsActive = true;
+            member.AddedBySubject = "c7100000-0000-4000-8000-000000000002";
+            member.AddedByName = "Prophet Courtney Beecham";
+            member.AddedAtUtc = now;
+
+            foreach (var laneKey in person.Lanes)
+            {
+                var standing = await db.StandingResponsibilityAssignments.SingleOrDefaultAsync(
+                    item =>
+                        item.TenantId == KingdomIdentity.DemoTenantId &&
+                        item.LaneKey == laneKey,
+                    ct);
+
+                if (standing is null)
+                {
+                    standing = new StandingResponsibilityAssignment
+                    {
+                        Id = Guid.NewGuid(),
+                        TenantId = KingdomIdentity.DemoTenantId,
+                        LaneKey = laneKey
+                    };
+                    db.StandingResponsibilityAssignments.Add(standing);
+                }
+
+                standing.UserSubject = person.AccountId.ToString("D");
+                standing.DisplayName = person.Name;
+                standing.Email = null;
+                standing.IsActive = true;
+                standing.UpdatedBySubject = "c7100000-0000-4000-8000-000000000002";
+                standing.UpdatedByName = "Prophet Courtney Beecham";
+                standing.UpdatedAtUtc = now;
+            }
+        }
+
+        await db.SaveChangesAsync(ct);
+    }
+
     private static async Task SeedRequestsAsync(
         SpeakingRequestsDbContext requests,
         CancellationToken ct)
@@ -369,8 +466,25 @@ public sealed class EngagementsDemoSeedWorker(
         string notes,
         params TaskSeed[] tasks) => new(externalId, title, speaker, host, contactName, contactEmail, location, startDays, endDays, status, travelStatus, lodgingStatus, transportationStatus, hostStatus, documentsStatus, closeoutStatus, notes, tasks);
 
-    private static TaskSeed Task(string category, string title, string owner, string status, int dueDays, string detail) =>
-        new(category, title, owner, status, dueDays, detail);
+    private static TaskSeed Task(
+        string category,
+        string title,
+        string owner,
+        string status,
+        int dueDays,
+        string detail) =>
+        new(category, title, DemoOwner(category, owner), status, dueDays, detail);
+
+    private static string DemoOwner(string category, string fallback) =>
+        EngagementResponsibilityLanes.Normalize(category) switch
+        {
+            "host-coordination" or "program" => "Prophet Courtney Beecham",
+            "travel" or "lodging" or "transportation" => "Naomi Carter",
+            "media" or "production" => "David Brooks",
+            "documents" or "finance" => "Jasmine Reed",
+            "ministry-preparation" or "hospitality" or "closeout" or "security-protocol" or "resources-merchandise" => "Marcus Hill",
+            _ => fallback
+        };
 
     private static RequestSeed Request(
         string reference,

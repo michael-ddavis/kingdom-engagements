@@ -274,7 +274,7 @@ public sealed class AssignmentWorkspaceTests
         var activity = new AssignmentWorkspaceDbContext(new DbContextOptionsBuilder<AssignmentWorkspaceDbContext>()
             .UseInMemoryDatabase($"workspace-activity-{Guid.NewGuid():N}")
             .Options, tenant);
-        var preparationService = new EngagementPreparationService(preparation, requests, engagements);
+        var preparationService = new EngagementPreparationService(preparation, requests, engagements, tenant);
         var workspace = new AssignmentWorkspaceService(activity, preparation, requests, engagements, preparationService);
         return new TestFixture(engagements, requests, preparation, activity, workspace);
     }

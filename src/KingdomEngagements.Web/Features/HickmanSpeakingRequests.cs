@@ -22,7 +22,7 @@ public sealed class HickmanSpeakingRequestsService(
         SpeakingRequestInput input,
         CancellationToken cancellationToken)
     {
-        var tenantId = tenantId;
+        var tenantId = tenants.HickmanPublicInvitationTenantId;
         using var tenantScope = tenantContext.BeginTenantScope(
             tenantId,
             "Create a Hickman public invitation in its configured tenant.");
@@ -71,7 +71,7 @@ public sealed class HickmanSpeakingRequestsService(
         string message,
         CancellationToken cancellationToken)
     {
-        var tenantId = tenantId;
+        var tenantId = tenants.HickmanPublicInvitationTenantId;
         using var tenantScope = tenantContext.BeginTenantScope(
             tenantId,
             "Operate on Hickman invitation data in its configured tenant.");
@@ -90,7 +90,7 @@ public sealed class HickmanSpeakingRequestsService(
         string reason,
         CancellationToken cancellationToken)
     {
-        var tenantId = tenantId;
+        var tenantId = tenants.HickmanPublicInvitationTenantId;
         using var tenantScope = tenantContext.BeginTenantScope(
             tenantId,
             "Operate on Hickman invitation data in its configured tenant.");
@@ -108,7 +108,7 @@ public sealed class HickmanSpeakingRequestsService(
         Guid id,
         CancellationToken cancellationToken)
     {
-        var tenantId = tenantId;
+        var tenantId = tenants.HickmanPublicInvitationTenantId;
         using var tenantScope = tenantContext.BeginTenantScope(
             tenantId,
             "Operate on Hickman invitation data in its configured tenant.");

@@ -466,8 +466,25 @@ public sealed class EngagementsDemoSeedWorker(
         string notes,
         params TaskSeed[] tasks) => new(externalId, title, speaker, host, contactName, contactEmail, location, startDays, endDays, status, travelStatus, lodgingStatus, transportationStatus, hostStatus, documentsStatus, closeoutStatus, notes, tasks);
 
-    private static TaskSeed Task(string category, string title, string owner, string status, int dueDays, string detail) =>
-        new(category, title, owner, status, dueDays, detail);
+    private static TaskSeed Task(
+        string category,
+        string title,
+        string owner,
+        string status,
+        int dueDays,
+        string detail) =>
+        new(category, title, DemoOwner(category, owner), status, dueDays, detail);
+
+    private static string DemoOwner(string category, string fallback) =>
+        EngagementResponsibilityLanes.Normalize(category) switch
+        {
+            "host-coordination" or "program" => "Prophet Courtney Beecham",
+            "travel" or "lodging" or "transportation" => "Naomi Carter",
+            "media" or "production" => "David Brooks",
+            "documents" or "finance" => "Jasmine Reed",
+            "ministry-preparation" or "hospitality" or "closeout" or "security-protocol" or "resources-merchandise" => "Marcus Hill",
+            _ => fallback
+        };
 
     private static RequestSeed Request(
         string reference,

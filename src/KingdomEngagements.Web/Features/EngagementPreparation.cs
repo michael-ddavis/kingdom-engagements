@@ -4,7 +4,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KingdomEngagements.Web.Features;
 
-public sealed class EngagementPreparationDbContext(DbContextOptions<EngagementPreparationDbContext> options) : DbContext(options)
+public sealed class EngagementPreparationDbContext(
+    DbContextOptions<EngagementPreparationDbContext> options,
+    ICurrentTenantAccessor? tenantAccessor = null)
+    : TenantFilteredDbContext(options, tenantAccessor)
 {
     public DbSet<EngagementPreparationRecord> Preparations => Set<EngagementPreparationRecord>();
     public DbSet<HostCoordinationDocumentRecord> Documents => Set<HostCoordinationDocumentRecord>();
@@ -73,6 +76,8 @@ public sealed class EngagementPreparationDbContext(DbContextOptions<EngagementPr
         document.Property(x => x.StorageProvider).HasMaxLength(40).IsRequired();
         document.Property(x => x.StorageKey).HasMaxLength(900);
         document.Property(x => x.Content).IsRequired();
+        document.HasOne(x => x.Preparation).WithMany()
+            .HasForeignKey(x => x.PreparationId).OnDelete(DeleteBehavior.Cascade);
 
         var message = modelBuilder.Entity<HostCoordinationMessageRecord>();
         message.ToTable("EngagementHostCoordinationMessages");
@@ -84,6 +89,15 @@ public sealed class EngagementPreparationDbContext(DbContextOptions<EngagementPr
         message.Property(x => x.Message).HasMaxLength(4000).IsRequired();
         message.HasOne(x => x.Preparation).WithMany()
             .HasForeignKey(x => x.PreparationId).OnDelete(DeleteBehavior.Cascade);
+
+        preparation.HasQueryFilter(x =>
+            TenantFilterBypassed || x.TenantId == CurrentTenantId);
+        document.HasQueryFilter(x =>
+            TenantFilterBypassed ||
+            (x.Preparation != null && x.Preparation.TenantId == CurrentTenantId));
+        message.HasQueryFilter(x =>
+            TenantFilterBypassed ||
+            (x.Preparation != null && x.Preparation.TenantId == CurrentTenantId));
     }
 
     public async Task EnsureSchemaAsync(CancellationToken cancellationToken)
@@ -311,6 +325,7 @@ public sealed class HostCoordinationDocumentRecord
 {
     public Guid Id { get; set; }
     public Guid PreparationId { get; set; }
+    public EngagementPreparationRecord? Preparation { get; set; }
     public string FileName { get; set; } = string.Empty;
     public string Category { get; set; } = "host-coordination";
     public string ContentType { get; set; } = "application/octet-stream";

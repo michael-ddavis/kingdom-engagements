@@ -315,8 +315,8 @@ public sealed class EngagementsDemoSeedWorker(
 
             member.DisplayName = person.Name;
             member.IsActive = true;
-            member.AddedBySubject = "demo-seed";
-            member.AddedByName = "ApostolOS Demo Setup";
+            member.AddedBySubject = "c7100000-0000-4000-8000-000000000002";
+            member.AddedByName = "Prophet Courtney Beecham";
             member.AddedAtUtc = now;
 
             foreach (var laneKey in person.Lanes)
@@ -342,8 +342,8 @@ public sealed class EngagementsDemoSeedWorker(
                 standing.DisplayName = person.Name;
                 standing.Email = null;
                 standing.IsActive = true;
-                standing.UpdatedBySubject = "demo-seed";
-                standing.UpdatedByName = "ApostolOS Demo Setup";
+                standing.UpdatedBySubject = "c7100000-0000-4000-8000-000000000002";
+                standing.UpdatedByName = "Prophet Courtney Beecham";
                 standing.UpdatedAtUtc = now;
             }
         }

@@ -122,9 +122,10 @@ public sealed class HostAccessTests
             .UseInMemoryDatabase($"host-access-{Guid.NewGuid():N}")
             .Options;
 
-        var engagements = new EngagementsDbContext(engagementOptions);
-        var preparations = new EngagementPreparationDbContext(preparationOptions);
-        var hostAccess = new HostAccessDbContext(hostAccessOptions);
+        var tenant = new TestTenantAccessor(tenantId);
+        var engagements = new EngagementsDbContext(engagementOptions, tenant);
+        var preparations = new EngagementPreparationDbContext(preparationOptions, tenant);
+        var hostAccess = new HostAccessDbContext(hostAccessOptions, tenant);
 
         var now = DateTimeOffset.UtcNow;
 
@@ -179,7 +180,8 @@ public sealed class HostAccessTests
             hostAccess,
             preparations,
             engagements,
-            configuration);
+            configuration,
+            tenant);
 
         return new TestFixture(
             tenantId,

@@ -1,4 +1,5 @@
 using KingdomEngagements.Web.Features;
+using KingdomEngagements.Web.Platform;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 
@@ -11,6 +12,7 @@ public sealed class AssignmentWorkspaceTests
     {
         await using var fixture = CreateFixture();
         var tenantId = Guid.NewGuid();
+        using var tenantScope = fixture.TenantAccessor.BeginTenant(tenantId, "assignment workspace test");
         var assignmentId = Guid.NewGuid();
         var requestId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
@@ -161,6 +163,7 @@ public sealed class AssignmentWorkspaceTests
     {
         await using var fixture = CreateFixture();
         var tenantId = Guid.NewGuid();
+        using var tenantScope = fixture.TenantAccessor.BeginTenant(tenantId, "assignment workspace test");
         var assignmentId = Guid.NewGuid();
         var requestId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
@@ -259,32 +262,50 @@ public sealed class AssignmentWorkspaceTests
 
     private static TestFixture CreateFixture()
     {
+        var tenantAccessor = new TestCurrentTenantAccessor();
         var engagements = new EngagementsDbContext(new DbContextOptionsBuilder<EngagementsDbContext>()
             .ReplaceService<IModelCustomizer, EngagementsModelCustomizer>()
             .UseInMemoryDatabase($"workspace-engagements-{Guid.NewGuid():N}")
-            .Options);
+            .Options, tenantAccessor);
         var requests = new SpeakingRequestsDbContext(new DbContextOptionsBuilder<SpeakingRequestsDbContext>()
             .ReplaceService<IModelCustomizer, SpeakingRequestsModelCustomizer>()
             .UseInMemoryDatabase($"workspace-requests-{Guid.NewGuid():N}")
-            .Options);
+            .Options, tenantAccessor);
         var preparation = new EngagementPreparationDbContext(new DbContextOptionsBuilder<EngagementPreparationDbContext>()
             .UseInMemoryDatabase($"workspace-preparation-{Guid.NewGuid():N}")
-            .Options);
+            .Options, tenantAccessor);
         var activity = new AssignmentWorkspaceDbContext(new DbContextOptionsBuilder<AssignmentWorkspaceDbContext>()
             .UseInMemoryDatabase($"workspace-activity-{Guid.NewGuid():N}")
-            .Options);
-        var preparationService = new EngagementPreparationService(preparation, requests, engagements);
-        var workspace = new AssignmentWorkspaceService(activity, preparation, requests, engagements, preparationService);
-        return new TestFixture(engagements, requests, preparation, activity, workspace);
+            .Options, tenantAccessor);
+        var preparationService = new EngagementPreparationService(
+            preparation,
+            requests,
+            engagements,
+            tenantAccessor: tenantAccessor);
+        var workspace = new AssignmentWorkspaceService(
+            activity,
+            preparation,
+            requests,
+            engagements,
+            preparationService);
+        return new TestFixture(
+            tenantAccessor,
+            engagements,
+            requests,
+            preparation,
+            activity,
+            workspace);
     }
 
     private sealed class TestFixture(
+        TestCurrentTenantAccessor tenantAccessor,
         EngagementsDbContext engagements,
         SpeakingRequestsDbContext requests,
         EngagementPreparationDbContext preparation,
         AssignmentWorkspaceDbContext activity,
         AssignmentWorkspaceService workspace) : IAsyncDisposable
     {
+        public TestCurrentTenantAccessor TenantAccessor { get; } = tenantAccessor;
         public EngagementsDbContext Engagements { get; } = engagements;
         public SpeakingRequestsDbContext Requests { get; } = requests;
         public EngagementPreparationDbContext Preparation { get; } = preparation;

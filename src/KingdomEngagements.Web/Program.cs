@@ -197,6 +197,8 @@ builder.Services.AddAuthorization(options =>
     });
 });
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentTenantAccessor, CurrentTenantAccessor>();
+builder.Services.AddSingleton<TenantConfiguration>();
 builder.Services.AddHttpClient<EngagementsEntitlementResolver>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(3);
@@ -223,9 +225,11 @@ builder.Services.AddScoped<EngagementCareHandoffPublisher>();
 builder.Services.AddSingleton<EngagementsStartupState>();
 builder.Services.AddScoped<EngagementsDependencyHealth>();
 builder.Services.AddHostedService<EngagementsStartupWorker>();
+#if DEMO_FEATURES
 builder.Services.AddHostedService<EngagementsDemoSeedWorker>();
 builder.Services.AddHostedService<EngagementsDemoDepthWorker>();
 builder.Services.AddHostedService<EngagementsDemoConnectedStoryWorker>();
+#endif
 
 var app = builder.Build();
 
@@ -251,6 +255,7 @@ app.Use(async (context, next) =>
 });
 
 app.UseAuthentication();
+#if DEMO_FEATURES
 app.Use(async (context, next) =>
 {
     var demoProfilesEnabled =
@@ -285,10 +290,13 @@ app.Use(async (context, next) =>
 
     await next();
 });
+#endif
 app.UseMiddleware<EngagementsReadinessMiddleware>();
 app.UseMiddleware<EngagementsEntitlementMiddleware>();
 app.UseAuthorization();
+#if DEMO_FEATURES
 app.UseMiddleware<EngagementsDemoAccessMiddleware>();
+#endif
 app.Use(async (context, next) =>
 {
     var path = context.Request.Path.Value ?? string.Empty;
@@ -402,12 +410,15 @@ app.MapHub<EngagementRealtimeHub>(
     .RequireAuthorization(HostAccessIdentity.Policy);
 app.MapAssignmentWorkspaceEndpoints();
 app.MapEngagementCompletionEndpoints();
+#if DEMO_FEATURES
 app.MapEngagementsDemoAccessEndpoints();
+#endif
 app.MapEngagementResponsibilityEndpoints();
 app.MapEngagementTeamEndpoints();
 app.MapEngagementLaneWorkspaceEndpoints();
 app.MapEngagementsEndpoints();
 
+#if DEMO_FEATURES
 // Preserve legacy /app links while sending each demo persona to the right workspace.
 app.MapGet("/app", (HttpContext context) =>
 {
@@ -426,6 +437,18 @@ app.MapGet("/app/{*path}", (string? path, HttpRequest request) =>
 
     return Results.Redirect($"{canonicalPath}{request.QueryString}");
 });
+
+#else
+app.MapGet("/app", (HttpRequest request) =>
+    Results.Redirect($"/assignments{request.QueryString}"));
+app.MapGet("/app/{*path}", (string? path, HttpRequest request) =>
+{
+    var canonicalPath = string.IsNullOrWhiteSpace(path)
+        ? "/assignments"
+        : $"/{path.TrimStart('/')}";
+    return Results.Redirect($"{canonicalPath}{request.QueryString}");
+});
+#endif
 
 app.MapFallbackToFile("index.html");
 app.Run();

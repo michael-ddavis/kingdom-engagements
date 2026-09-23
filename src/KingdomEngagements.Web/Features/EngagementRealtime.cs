@@ -38,7 +38,9 @@ public sealed record EngagementDocumentAddedEvent(
 
 public sealed class EngagementRealtimeHub(
     EngagementResponsibilityService responsibilities,
-    HostAccessDbContext hostAccessDatabase) : Hub
+    HostAccessDbContext hostAccessDatabase,
+    EngagementsDbContext engagementsDatabase,
+    ICurrentTenantAccessor tenantAccessor) : Hub
 {
     public const string InternalRoute = "/hubs/engagements";
     public const string HostRoute = "/hubs/engagements/host";
@@ -69,6 +71,15 @@ public sealed class EngagementRealtimeHub(
         if (tenantId is null || assignedEngagementId != assignmentId)
             throw new HubException("This host session cannot access the requested engagement.");
 
+        using var tenantScope = tenantAccessor.BeginTenant(
+            tenantId.Value,
+            "authorize host SignalR engagement group");
+
+        var assignmentExists = await engagementsDatabase.Assignments.AsNoTracking()
+            .AnyAsync(x => x.Id == assignmentId, Context.ConnectionAborted);
+        if (!assignmentExists)
+            throw new HubException("This engagement is not available in the authenticated tenant.");
+
         var now = DateTimeOffset.UtcNow;
         var accessIsActive = await hostAccessDatabase.Invitations.AsNoTracking().AnyAsync(invitation =>
             invitation.Id == accessId &&
@@ -91,8 +102,17 @@ public sealed class EngagementRealtimeHub(
         Guid assignmentId)
     {
         var tenantClaim = user.FindFirstValue(KingdomIdentity.TenantClaim);
-        if (!Guid.TryParse(tenantClaim, out var tenantId))
+        if (!Guid.TryParse(tenantClaim, out var tenantId) || tenantId == Guid.Empty)
             throw new HubException("A tenant is required for realtime engagement access.");
+
+        using var tenantScope = tenantAccessor.BeginTenant(
+            tenantId,
+            "authorize internal SignalR engagement group");
+
+        var assignmentExists = await engagementsDatabase.Assignments.AsNoTracking()
+            .AnyAsync(x => x.Id == assignmentId, Context.ConnectionAborted);
+        if (!assignmentExists)
+            throw new HubException("This engagement is not available in the authenticated tenant.");
 
         var subject = user.FindFirstValue(ClaimTypes.NameIdentifier) ?? "unknown";
         var allowed = KingdomIdentity.CanDirectEngagements(user) ||
@@ -114,7 +134,8 @@ public sealed class EngagementRealtimeHub(
 
 public sealed class EngagementRealtimePublisher(
     IHubContext<EngagementRealtimeHub> hub,
-    HostAccessDbContext hostAccessDatabase)
+    HostAccessDbContext hostAccessDatabase,
+    ICurrentTenantAccessor tenantAccessor)
 {
     public Task MessageCreatedAsync(
         Guid tenantId,
@@ -165,6 +186,9 @@ public sealed class EngagementRealtimePublisher(
         object payload,
         CancellationToken cancellationToken)
     {
+        using var tenantScope = tenantAccessor.BeginTenant(
+            tenantId,
+            "publish engagement realtime event");
         await hostAccessDatabase.EnsureSchemaAsync(cancellationToken);
 
         await hub.Clients

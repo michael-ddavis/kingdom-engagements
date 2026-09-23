@@ -38,7 +38,8 @@ public sealed record EngagementDocumentAddedEvent(
 
 public sealed class EngagementRealtimeHub(
     EngagementResponsibilityService responsibilities,
-    HostAccessDbContext hostAccessDatabase) : Hub
+    HostAccessDbContext hostAccessDatabase,
+    ICurrentTenantAccessor tenantContext) : Hub
 {
     public const string InternalRoute = "/hubs/engagements";
     public const string HostRoute = "/hubs/engagements/host";
@@ -69,6 +70,10 @@ public sealed class EngagementRealtimeHub(
         if (tenantId is null || assignedEngagementId != assignmentId)
             throw new HubException("This host session cannot access the requested engagement.");
 
+        using var tenantScope = tenantContext.BeginTenantScope(
+            tenantId.Value,
+            "Authorize host realtime group membership.");
+
         var now = DateTimeOffset.UtcNow;
         var accessIsActive = await hostAccessDatabase.Invitations.AsNoTracking().AnyAsync(invitation =>
             invitation.Id == accessId &&
@@ -94,6 +99,10 @@ public sealed class EngagementRealtimeHub(
         if (!Guid.TryParse(tenantClaim, out var tenantId))
             throw new HubException("A tenant is required for realtime engagement access.");
 
+        using var tenantScope = tenantContext.BeginTenantScope(
+            tenantId,
+            "Authorize internal realtime group membership.");
+
         var subject = user.FindFirstValue(ClaimTypes.NameIdentifier) ?? "unknown";
         var allowed = KingdomIdentity.CanDirectEngagements(user) ||
                       await responsibilities.IsEffectiveOwnerAsync(
@@ -114,7 +123,8 @@ public sealed class EngagementRealtimeHub(
 
 public sealed class EngagementRealtimePublisher(
     IHubContext<EngagementRealtimeHub> hub,
-    HostAccessDbContext hostAccessDatabase)
+    HostAccessDbContext hostAccessDatabase,
+    ICurrentTenantAccessor tenantContext)
 {
     public Task MessageCreatedAsync(
         Guid tenantId,
@@ -165,6 +175,10 @@ public sealed class EngagementRealtimePublisher(
         object payload,
         CancellationToken cancellationToken)
     {
+        using var tenantScope = tenantContext.BeginTenantScope(
+            tenantId,
+            "Publish engagement realtime events only inside the owning tenant.");
+
         await hostAccessDatabase.EnsureSchemaAsync(cancellationToken);
 
         await hub.Clients

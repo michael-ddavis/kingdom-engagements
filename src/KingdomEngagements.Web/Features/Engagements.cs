@@ -757,6 +757,7 @@ public static class EngagementsEndpoints
             IConfiguration configuration,
             IWebHostEnvironment environment,
             EngagementsService service,
+            ICurrentTenantAccessor tenantContext,
             CancellationToken ct) =>
         {
             var configuredKey = configuration["KingdomOS:Integration:ServiceKey"];
@@ -766,6 +767,9 @@ public static class EngagementsEndpoints
                 return Results.Unauthorized();
             try
             {
+                using var tenantScope = tenantContext.BeginTenantScope(
+                    envelope.TenantId,
+                    "Authenticated integration event envelope tenant.");
                 var result = await service.IngestAsync(envelope, ct);
                 return Results.Ok(new { accepted = true, duplicate = result.Duplicate, assignmentId = result.AssignmentId });
             }

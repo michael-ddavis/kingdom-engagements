@@ -54,7 +54,7 @@ interface OwnerDraft {
                 <option value="">Select an ApostolOS account</option>
                 @for (person of availableDirectory(); track person.accountId) {
                   <option [value]="person.accountId">
-                    {{ person.displayName }} · {{ person.accountId }}
+                    {{ person.displayName }}
                   </option>
                 }
               </select>
@@ -80,7 +80,7 @@ interface OwnerDraft {
                   <span class="avatar">{{ initials(member.displayName) }}</span>
                   <div>
                     <strong>{{ member.displayName }}</strong>
-                    <small>Account ID · {{ member.accountId }}</small>
+                    <small>CTG Engagements team</small>
                   </div>
                   <button
                     type="button"
@@ -123,7 +123,7 @@ interface OwnerDraft {
                           <span class="avatar">{{ initials(owner.displayName) }}</span>
                           <span>
                             <strong>{{ owner.displayName }}</strong>
-                            <small>Account ID · {{ owner.userSubject }}</small>
+                            <small>Standing owner</small>
                           </span>
                         </div>
                       } @else {
@@ -178,7 +178,7 @@ interface OwnerDraft {
                 <span class="avatar">{{ initials(form.displayName) }}</span>
                 <div>
                   <strong>{{ form.displayName }}</strong>
-                  <small>Account ID · {{ form.userSubject }}</small>
+                  <small>Selected team member</small>
                 </div>
               </div>
             }
@@ -459,7 +459,7 @@ export class CtgTeamResponsibilitiesComponent implements OnInit {
     const form = this.draft();
     if (!form) return;
     if (!form.displayName.trim() || !form.userSubject.trim()) {
-      this.editorError.set('Team member name and ApostolOS account ID are required.');
+      this.editorError.set('Choose a team member before saving.');
       return;
     }
 

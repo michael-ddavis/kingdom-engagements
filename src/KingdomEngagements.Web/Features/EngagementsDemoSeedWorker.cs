@@ -39,6 +39,7 @@ public sealed class EngagementsDemoSeedWorker(
 
                 await RemoveRetiredSourceRowsAsync(engagements, requests, stoppingToken);
                 await SeedAssignmentsAsync(engagements, stoppingToken);
+                await SeedDemoTeamAndResponsibilitiesAsync(engagements, stoppingToken);
                 await SeedRequestsAsync(requests, stoppingToken);
                 await RemoveRetiredSourceRowsAsync(engagements, requests, stoppingToken);
 
@@ -254,6 +255,211 @@ public sealed class EngagementsDemoSeedWorker(
         await db.SaveChangesAsync(ct);
     }
 
+    private static async Task SeedDemoTeamAndResponsibilitiesAsync(
+        EngagementsDbContext db,
+        CancellationToken ct)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var directorId = Guid.Parse("c7100000-0000-4000-8000-000000000002");
+
+        var team = new[]
+        {
+            new DemoTeamSeed(
+                directorId,
+                "Prophet Courtney Beecham",
+                "courtney@ctg.local"),
+            new DemoTeamSeed(
+                Guid.Parse("b1000000-0000-4000-8000-000000000002"),
+                "Alicia Grant",
+                "alicia@ctg.local"),
+            new DemoTeamSeed(
+                Guid.Parse("b1000000-0000-4000-8000-000000000003"),
+                "Marcus Reed",
+                "marcus@ctg.local"),
+            new DemoTeamSeed(
+                Guid.Parse("b1000000-0000-4000-8000-000000000004"),
+                "Jordan Lee",
+                "jordan@ctg.local")
+        };
+
+        foreach (var seed in team)
+        {
+            var member = await db.TeamMembers.SingleOrDefaultAsync(
+                item =>
+                    item.TenantId == KingdomIdentity.DemoTenantId &&
+                    item.AccountId == seed.AccountId,
+                ct);
+
+            if (member is null)
+            {
+                member = new EngagementTeamMember
+                {
+                    Id = Guid.NewGuid(),
+                    TenantId = KingdomIdentity.DemoTenantId,
+                    AccountId = seed.AccountId
+                };
+                db.TeamMembers.Add(member);
+            }
+
+            member.DisplayName = seed.DisplayName;
+            member.IsActive = true;
+            member.AddedBySubject = directorId.ToString("D");
+            member.AddedByName = "Prophet Courtney Beecham";
+            member.AddedAtUtc = now;
+        }
+
+        var standingOwners = new[]
+        {
+            new DemoResponsibilityOwner("host-coordination", team[0]),
+            new DemoResponsibilityOwner("program", team[0]),
+            new DemoResponsibilityOwner("finance", team[0]),
+            new DemoResponsibilityOwner("closeout", team[0]),
+            new DemoResponsibilityOwner("security-protocol", team[0]),
+            new DemoResponsibilityOwner("travel", team[1]),
+            new DemoResponsibilityOwner("lodging", team[1]),
+            new DemoResponsibilityOwner("transportation", team[1]),
+            new DemoResponsibilityOwner("hospitality", team[1]),
+            new DemoResponsibilityOwner("media", team[2]),
+            new DemoResponsibilityOwner("documents", team[2]),
+            new DemoResponsibilityOwner("production", team[2]),
+            new DemoResponsibilityOwner("ministry-preparation", team[3]),
+            new DemoResponsibilityOwner("resources-merchandise", team[3])
+        };
+
+        foreach (var seed in standingOwners)
+        {
+            var assignment = await db.StandingResponsibilityAssignments.SingleOrDefaultAsync(
+                item =>
+                    item.TenantId == KingdomIdentity.DemoTenantId &&
+                    item.LaneKey == seed.LaneKey,
+                ct);
+
+            if (assignment is null)
+            {
+                assignment = new StandingResponsibilityAssignment
+                {
+                    Id = Guid.NewGuid(),
+                    TenantId = KingdomIdentity.DemoTenantId,
+                    LaneKey = seed.LaneKey
+                };
+                db.StandingResponsibilityAssignments.Add(assignment);
+            }
+
+            assignment.UserSubject = seed.Owner.AccountId.ToString("D");
+            assignment.DisplayName = seed.Owner.DisplayName;
+            assignment.Email = seed.Owner.Email;
+            assignment.IsActive = true;
+            assignment.UpdatedBySubject = directorId.ToString("D");
+            assignment.UpdatedByName = "Prophet Courtney Beecham";
+            assignment.UpdatedAtUtc = now;
+        }
+
+        var ownerByLane = standingOwners.ToDictionary(
+            item => item.LaneKey,
+            item => item.Owner,
+            StringComparer.OrdinalIgnoreCase);
+
+        var demoAssignments = await db.Assignments
+            .Include(item => item.Tasks)
+            .Where(item =>
+                item.TenantId == KingdomIdentity.DemoTenantId &&
+                item.ExternalAssignmentId.StartsWith("assignment-demo-"))
+            .ToListAsync(ct);
+
+        foreach (var assignment in demoAssignments)
+        {
+            foreach (var task in assignment.Tasks)
+            {
+                var laneKey = EngagementResponsibilityLanes.Normalize(task.Category);
+                if (!ownerByLane.TryGetValue(laneKey, out var owner))
+                    continue;
+
+                task.Owner = owner.DisplayName;
+                task.OwnerSubject = owner.AccountId.ToString("D");
+                task.UpdatedAtUtc = now;
+            }
+        }
+
+        var progressSeeds = new[]
+        {
+            new DemoLaneProgressSeed("assignment-demo-001", "media", "complete", "Approved speaker assets are ready for the host team.", 2),
+            new DemoLaneProgressSeed("assignment-demo-001", "program", "complete", "The ministry schedule and soundcheck window are confirmed.", 2),
+            new DemoLaneProgressSeed("assignment-demo-001", "finance", "in-progress", "Honorarium paperwork is complete; payment confirmation is still pending.", 1),
+            new DemoLaneProgressSeed("assignment-demo-001", "ministry-preparation", "complete", "Prayer focus, audience notes, and ministry emphasis have been reviewed.", 1),
+            new DemoLaneProgressSeed("assignment-demo-001", "hospitality", "complete", "Green room, meals, and arrival hospitality are confirmed.", 1),
+
+            new DemoLaneProgressSeed("assignment-demo-002", "media", "complete", "Promotion assets are approved.", 5),
+            new DemoLaneProgressSeed("assignment-demo-002", "program", "complete", "Program flow and ministry times are confirmed.", 5),
+            new DemoLaneProgressSeed("assignment-demo-002", "finance", "complete", "Honorarium and reimbursement details are confirmed.", 4),
+            new DemoLaneProgressSeed("assignment-demo-002", "ministry-preparation", "complete", "Ministry focus and prayer preparation are complete.", 4),
+            new DemoLaneProgressSeed("assignment-demo-002", "hospitality", "complete", "Hospitality plan is complete.", 3),
+
+            new DemoLaneProgressSeed("assignment-demo-003", "media", "complete", "International conference assets are approved.", 8),
+            new DemoLaneProgressSeed("assignment-demo-003", "program", "blocked", "The host is finalizing the leadership reception and final service flow.", 6),
+            new DemoLaneProgressSeed("assignment-demo-003", "finance", "complete", "International honorarium details are confirmed.", 7),
+            new DemoLaneProgressSeed("assignment-demo-003", "ministry-preparation", "in-progress", "Final leadership briefing notes are being prepared.", 5),
+            new DemoLaneProgressSeed("assignment-demo-003", "hospitality", "complete", "Hospitality and arrival support are confirmed.", 5),
+
+            new DemoLaneProgressSeed("assignment-demo-004", "media", "in-progress", "Final conference graphic package is being reviewed.", 9),
+            new DemoLaneProgressSeed("assignment-demo-004", "program", "complete", "Conference schedule is confirmed.", 10),
+            new DemoLaneProgressSeed("assignment-demo-004", "finance", "complete", "Honorarium and international expense coverage are confirmed.", 9),
+            new DemoLaneProgressSeed("assignment-demo-004", "ministry-preparation", "complete", "Prayer and ministry focus are ready.", 8),
+            new DemoLaneProgressSeed("assignment-demo-004", "hospitality", "complete", "Hospitality plan is confirmed.", 8),
+
+            new DemoLaneProgressSeed("assignment-demo-005", "media", "complete", "Promotion and media assets are approved.", 12),
+            new DemoLaneProgressSeed("assignment-demo-005", "program", "complete", "Gathering schedule is confirmed.", 12),
+            new DemoLaneProgressSeed("assignment-demo-005", "finance", "complete", "Honorarium and expenses are confirmed.", 11),
+            new DemoLaneProgressSeed("assignment-demo-005", "ministry-preparation", "complete", "Ministry preparation is complete.", 10),
+            new DemoLaneProgressSeed("assignment-demo-005", "hospitality", "complete", "Hospitality is confirmed.", 10)
+        };
+
+        foreach (var seed in progressSeeds)
+        {
+            var assignment = demoAssignments.SingleOrDefault(
+                item => item.ExternalAssignmentId == seed.ExternalAssignmentId);
+            if (assignment is null)
+                continue;
+
+            var progress = await db.EngagementLaneProgress.SingleOrDefaultAsync(
+                item =>
+                    item.TenantId == KingdomIdentity.DemoTenantId &&
+                    item.AssignmentId == assignment.Id &&
+                    item.LaneKey == seed.LaneKey,
+                ct);
+
+            if (progress is null)
+            {
+                progress = new EngagementLaneProgress
+                {
+                    Id = Guid.NewGuid(),
+                    TenantId = KingdomIdentity.DemoTenantId,
+                    AssignmentId = assignment.Id,
+                    LaneKey = seed.LaneKey
+                };
+                db.EngagementLaneProgress.Add(progress);
+            }
+
+            progress.IsApplicable = true;
+            progress.Status = seed.Status;
+            progress.Detail = seed.Detail;
+            progress.DueAtUtc = assignment.StartsAtUtc?.AddDays(-seed.DueBeforeStartDays);
+            progress.UpdatedBySubject = directorId.ToString("D");
+            progress.UpdatedByName = "Prophet Courtney Beecham";
+            progress.UpdatedAtUtc = now;
+            progress.CompletedBySubject = seed.Status == "complete"
+                ? directorId.ToString("D")
+                : null;
+            progress.CompletedByName = seed.Status == "complete"
+                ? "Prophet Courtney Beecham"
+                : null;
+            progress.CompletedAtUtc = seed.Status == "complete"
+                ? now.AddDays(-1)
+                : null;
+        }
+
+        await db.SaveChangesAsync(ct);
+    }
+
     private static async Task SeedRequestsAsync(
         SpeakingRequestsDbContext requests,
         CancellationToken ct)
@@ -402,6 +608,22 @@ public sealed class EngagementsDemoSeedWorker(
         "assignment-demo-007" => [new("Signed agreement", "agreement", "received"), new("Final ministry report", "closeout", "received")],
         _ => []
     };
+
+    private sealed record DemoTeamSeed(
+        Guid AccountId,
+        string DisplayName,
+        string Email);
+
+    private sealed record DemoResponsibilityOwner(
+        string LaneKey,
+        DemoTeamSeed Owner);
+
+    private sealed record DemoLaneProgressSeed(
+        string ExternalAssignmentId,
+        string LaneKey,
+        string Status,
+        string Detail,
+        int DueBeforeStartDays);
 
     private sealed record AssignmentSeed(
         string ExternalId, string Title, string Speaker, string Host, string ContactName, string ContactEmail,

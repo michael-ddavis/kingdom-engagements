@@ -137,6 +137,53 @@ public abstract class TenantFilteredDbContext : Microsoft.EntityFrameworkCore.Db
 
     protected Guid CurrentTenantId => _tenantAccessor.TenantId ?? Guid.Empty;
     protected bool TenantFilterBypassed => _tenantAccessor.IsFilterBypassed;
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        ValidateTenantWrites();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(
+        bool acceptAllChangesOnSuccess,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateTenantWrites();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    private void ValidateTenantWrites()
+    {
+        if (_tenantAccessor.IsFilterBypassed)
+            throw new InvalidOperationException(
+                "Tenant filter bypass scopes are query-only and cannot be used while saving changes.");
+
+        var tenantId = _tenantAccessor.TenantId;
+
+        foreach (var entry in ChangeTracker.Entries()
+                     .Where(entry => entry.State is
+                         Microsoft.EntityFrameworkCore.EntityState.Added or
+                         Microsoft.EntityFrameworkCore.EntityState.Modified or
+                         Microsoft.EntityFrameworkCore.EntityState.Deleted))
+        {
+            var tenantProperty = entry.Metadata.FindProperty("TenantId");
+            if (tenantProperty is null || tenantProperty.ClrType != typeof(Guid))
+                continue;
+
+            if (tenantId is null)
+            {
+                throw new InvalidOperationException(
+                    $"Tenant-scoped write to {entry.Metadata.ClrType.Name} was attempted without a current tenant.");
+            }
+
+            var value = (Guid?)entry.Property("TenantId").CurrentValue;
+            if (value != tenantId)
+            {
+                throw new InvalidOperationException(
+                    $"Tenant-scoped write to {entry.Metadata.ClrType.Name} targeted tenant {value} while the current tenant is {tenantId}.");
+            }
+        }
+    }
 }
 
 public sealed class TenantContextMiddleware(RequestDelegate next)

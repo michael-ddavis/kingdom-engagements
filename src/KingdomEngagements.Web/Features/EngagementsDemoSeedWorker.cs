@@ -39,6 +39,7 @@ public sealed class EngagementsDemoSeedWorker(
 
                 await RemoveRetiredSourceRowsAsync(engagements, requests, stoppingToken);
                 await SeedAssignmentsAsync(engagements, stoppingToken);
+                await SeedDemoTeamAsync(engagements, stoppingToken);
                 await SeedRequestsAsync(requests, stoppingToken);
                 await RemoveRetiredSourceRowsAsync(engagements, requests, stoppingToken);
 
@@ -248,6 +249,102 @@ public sealed class EngagementsDemoSeedWorker(
                 document.Category = documentSeed.Category;
                 document.Status = documentSeed.Status;
                 document.UpdatedAtUtc = now;
+            }
+        }
+
+        await db.SaveChangesAsync(ct);
+    }
+
+    private static async Task SeedDemoTeamAsync(
+        EngagementsDbContext db,
+        CancellationToken ct)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var team = new[]
+        {
+            new
+            {
+                AccountId = Guid.Parse("c7100000-0000-4000-8000-000000000002"),
+                Name = "Prophet Courtney Beecham",
+                Lanes = new[] { "host-coordination", "program" }
+            },
+            new
+            {
+                AccountId = Guid.Parse("c7100000-0000-4000-8000-000000000003"),
+                Name = "Naomi Carter",
+                Lanes = new[] { "travel", "lodging", "transportation" }
+            },
+            new
+            {
+                AccountId = Guid.Parse("c7100000-0000-4000-8000-000000000004"),
+                Name = "David Brooks",
+                Lanes = new[] { "media", "production" }
+            },
+            new
+            {
+                AccountId = Guid.Parse("c7100000-0000-4000-8000-000000000005"),
+                Name = "Jasmine Reed",
+                Lanes = new[] { "documents", "finance" }
+            },
+            new
+            {
+                AccountId = Guid.Parse("c7100000-0000-4000-8000-000000000006"),
+                Name = "Marcus Hill",
+                Lanes = new[] { "ministry-preparation", "hospitality", "closeout", "security-protocol", "resources-merchandise" }
+            }
+        };
+
+        foreach (var person in team)
+        {
+            var member = await db.TeamMembers.SingleOrDefaultAsync(
+                item =>
+                    item.TenantId == KingdomIdentity.DemoTenantId &&
+                    item.AccountId == person.AccountId,
+                ct);
+
+            if (member is null)
+            {
+                member = new EngagementTeamMember
+                {
+                    Id = Guid.NewGuid(),
+                    TenantId = KingdomIdentity.DemoTenantId,
+                    AccountId = person.AccountId
+                };
+                db.TeamMembers.Add(member);
+            }
+
+            member.DisplayName = person.Name;
+            member.IsActive = true;
+            member.AddedBySubject = "demo-seed";
+            member.AddedByName = "ApostolOS Demo Setup";
+            member.AddedAtUtc = now;
+
+            foreach (var laneKey in person.Lanes)
+            {
+                var standing = await db.StandingResponsibilityAssignments.SingleOrDefaultAsync(
+                    item =>
+                        item.TenantId == KingdomIdentity.DemoTenantId &&
+                        item.LaneKey == laneKey,
+                    ct);
+
+                if (standing is null)
+                {
+                    standing = new StandingResponsibilityAssignment
+                    {
+                        Id = Guid.NewGuid(),
+                        TenantId = KingdomIdentity.DemoTenantId,
+                        LaneKey = laneKey
+                    };
+                    db.StandingResponsibilityAssignments.Add(standing);
+                }
+
+                standing.UserSubject = person.AccountId.ToString("D");
+                standing.DisplayName = person.Name;
+                standing.Email = null;
+                standing.IsActive = true;
+                standing.UpdatedBySubject = "demo-seed";
+                standing.UpdatedByName = "ApostolOS Demo Setup";
+                standing.UpdatedAtUtc = now;
             }
         }
 

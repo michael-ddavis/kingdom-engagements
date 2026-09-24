@@ -725,6 +725,7 @@ public sealed class EngagementPreparationService(
         CancellationToken cancellationToken)
     {
         await database.EnsureSchemaAsync(cancellationToken);
+        using var tenantBypass = currentTenant.BeginBypass("Update public host coordination token.");
         var preparation = await database.Preparations
             .SingleOrDefaultAsync(x => x.CoordinationToken == token, cancellationToken);
         if (!CoordinationLinkValid(preparation)) return null;

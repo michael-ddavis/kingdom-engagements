@@ -3,8 +3,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KingdomEngagements.Web.Features;
 
-public sealed class EngagementCompletionDbContext(DbContextOptions<EngagementCompletionDbContext> options) : DbContext(options)
+public sealed class EngagementCompletionDbContext(
+    ICurrentTenant currentTenant,
+    DbContextOptions<EngagementCompletionDbContext> options) : DbContext(options)
 {
+    private Guid? CurrentTenantId => currentTenant.TenantId;
+    private bool TenantBypass => currentTenant.BypassActive;
     public DbSet<MinistryResponseRecord> Responses => Set<MinistryResponseRecord>();
     public DbSet<EngagementCloseoutRecord> Closeouts => Set<EngagementCloseoutRecord>();
 
@@ -32,6 +36,11 @@ public sealed class EngagementCompletionDbContext(DbContextOptions<EngagementCom
         closeout.Property(x => x.EventNotes).HasMaxLength(4000);
         closeout.Property(x => x.TestimonySummary).HasMaxLength(4000);
         closeout.Property(x => x.HostFollowUpNotes).HasMaxLength(4000);
+
+        response.HasQueryFilter(x =>
+            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.Value));
+        closeout.HasQueryFilter(x =>
+            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.Value));
     }
 
     public async Task EnsureSchemaAsync(CancellationToken cancellationToken)

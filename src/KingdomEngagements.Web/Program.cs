@@ -12,6 +12,8 @@ builder.AddApostolOSSecretSources();
 builder.ValidateApostolOSProductionConfiguration();
 builder.AddApostolOSObservability();
 
+builder.Services.AddScoped<ICurrentTenant, CurrentTenant>();
+
 var provider = builder.Configuration["Database:Provider"] ?? "InMemory";
 var connectionString = builder.Configuration.GetConnectionString("EngagementsDatabase");
 var useSqlServer = provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase);
@@ -234,9 +236,11 @@ builder.Services.AddScoped<EngagementCareHandoffPublisher>();
 builder.Services.AddSingleton<EngagementsStartupState>();
 builder.Services.AddScoped<EngagementsDependencyHealth>();
 builder.Services.AddHostedService<EngagementsStartupWorker>();
+#if ENGAGEMENTS_DEMO
 builder.Services.AddHostedService<EngagementsDemoSeedWorker>();
 builder.Services.AddHostedService<EngagementsDemoDepthWorker>();
 builder.Services.AddHostedService<EngagementsDemoConnectedStoryWorker>();
+#endif
 
 var app = builder.Build();
 
@@ -262,6 +266,7 @@ app.Use(async (context, next) =>
 });
 
 app.UseAuthentication();
+#if ENGAGEMENTS_DEMO
 app.Use(async (context, next) =>
 {
     var demoProfilesEnabled =
@@ -296,10 +301,14 @@ app.Use(async (context, next) =>
 
     await next();
 });
+#endif
+app.UseMiddleware<CurrentTenantMiddleware>();
 app.UseMiddleware<EngagementsReadinessMiddleware>();
 app.UseMiddleware<EngagementsEntitlementMiddleware>();
 app.UseAuthorization();
+#if ENGAGEMENTS_DEMO
 app.UseMiddleware<EngagementsDemoAccessMiddleware>();
+#endif
 app.Use(async (context, next) =>
 {
     var path = context.Request.Path.Value ?? string.Empty;
@@ -369,7 +378,7 @@ app.MapGet("/api/product", async (
         careEnabled = careState == ModuleEntitlementState.Enabled,
         boundary = "Invitation intake, review, accepted terms, host coordination, travel, lodging, transportation, documents, readiness, event outcomes, follow-up, and closeout."
     });
-});
+}).RequireAuthorization();
 app.MapGet("/api/capabilities", async (
     HttpContext context,
     EngagementsEntitlementResolver entitlements,
@@ -378,7 +387,7 @@ app.MapGet("/api/capabilities", async (
     var tenantId = KingdomIdentity.TenantId(context.User, context.Request);
     var state = await entitlements.GetStateAsync(tenantId, cancellationToken);
     return Results.Ok(new { engagementsEnabled = state == ModuleEntitlementState.Enabled, state = state.ToString() });
-});
+}).RequireAuthorization();
 
 app.MapGet("/invite/apostle-cynthia", (IWebHostEnvironment environment) =>
     Results.File(Path.Combine(environment.WebRootPath, "invite.html"), "text/html; charset=utf-8")).AllowAnonymous();
@@ -413,12 +422,15 @@ app.MapHub<EngagementRealtimeHub>(
     .RequireAuthorization(HostAccessIdentity.Policy);
 app.MapAssignmentWorkspaceEndpoints();
 app.MapEngagementCompletionEndpoints();
+#if ENGAGEMENTS_DEMO
 app.MapEngagementsDemoAccessEndpoints();
+#endif
 app.MapEngagementResponsibilityEndpoints();
 app.MapEngagementTeamEndpoints();
 app.MapEngagementLaneWorkspaceEndpoints();
 app.MapEngagementsEndpoints();
 
+#if ENGAGEMENTS_DEMO
 // Preserve legacy /app links while sending each demo persona to the right workspace.
 app.MapGet("/app", (HttpContext context) =>
 {
@@ -437,6 +449,13 @@ app.MapGet("/app/{*path}", (string? path, HttpRequest request) =>
 
     return Results.Redirect($"{canonicalPath}{request.QueryString}");
 });
+
+#else
+app.MapGet("/app", (HttpRequest request) =>
+    Results.Redirect($"/assignments{request.QueryString}"));
+app.MapGet("/app/{*path}", (HttpRequest request) =>
+    Results.Redirect($"/assignments{request.QueryString}"));
+#endif
 
 app.MapFallbackToFile("index.html");
 app.Run();

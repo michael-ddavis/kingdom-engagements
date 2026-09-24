@@ -36,7 +36,9 @@ public sealed class HostAccessRequirement : IAuthorizationRequirement
 {
 }
 
-public sealed class HostAccessAuthorizationHandler(HostAccessDbContext database)
+public sealed class HostAccessAuthorizationHandler(
+    HostAccessDbContext database,
+    ICurrentTenant currentTenant)
     : AuthorizationHandler<HostAccessRequirement>
 {
     protected override async Task HandleRequirementAsync(
@@ -50,6 +52,7 @@ public sealed class HostAccessAuthorizationHandler(HostAccessDbContext database)
         if (accessId is null || tenantId is null || assignmentId is null)
             return;
 
+        using var tenantScope = currentTenant.UseTenant(tenantId.Value);
         var now = DateTimeOffset.UtcNow;
         var isActive = await database.Invitations.AsNoTracking().AnyAsync(invitation =>
             invitation.Id == accessId.Value &&
@@ -64,9 +67,13 @@ public sealed class HostAccessAuthorizationHandler(HostAccessDbContext database)
     }
 }
 
-public sealed class HostAccessDbContext(DbContextOptions<HostAccessDbContext> options)
+public sealed class HostAccessDbContext(
+    ICurrentTenant currentTenant,
+    DbContextOptions<HostAccessDbContext> options)
     : DbContext(options)
 {
+    private Guid? CurrentTenantId => currentTenant.TenantId;
+    private bool TenantBypass => currentTenant.BypassActive;
     public DbSet<HostAccessInvitationRecord> Invitations => Set<HostAccessInvitationRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -80,6 +87,8 @@ public sealed class HostAccessDbContext(DbContextOptions<HostAccessDbContext> op
         invitation.Property(x => x.TokenHash).HasMaxLength(64).IsRequired();
         invitation.HasIndex(x => x.TokenHash).IsUnique();
         invitation.HasIndex(x => new { x.TenantId, x.AssignmentId, x.CreatedAtUtc });
+        invitation.HasQueryFilter(x =>
+            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.Value));
     }
 
     public async Task EnsureSchemaAsync(CancellationToken cancellationToken)
@@ -195,7 +204,8 @@ public sealed class HostAccessService(
     HostAccessDbContext database,
     EngagementPreparationDbContext preparationDatabase,
     EngagementsDbContext engagementsDatabase,
-    IConfiguration configuration)
+    IConfiguration configuration,
+    ICurrentTenant currentTenant)
 {
     private const int TokenBytes = 32;
     private const int DefaultInvitationLifetimeHours = 168;
@@ -272,6 +282,7 @@ public sealed class HostAccessService(
         var tokenHash = HashToken(token);
         var now = DateTimeOffset.UtcNow;
 
+        using var tenantBypass = currentTenant.BeginBypass("Redeem host-access invitation token.");
         var invitation = await database.Invitations.SingleOrDefaultAsync(
             x => x.TokenHash == tokenHash,
             cancellationToken);
@@ -284,6 +295,8 @@ public sealed class HostAccessService(
             return null;
         }
 
+        tenantBypass.Dispose();
+        using var tenantScope = currentTenant.UseTenant(invitation.TenantId);
         var preparation = await preparationDatabase.Preparations.AsNoTracking()
             .SingleOrDefaultAsync(
                 x =>
@@ -380,6 +393,7 @@ public sealed class HostAccessService(
         if (tenantId is null || assignmentId is null)
             return null;
 
+        using var tenantScope = currentTenant.UseTenant(tenantId.Value);
         await preparationDatabase.EnsureSchemaAsync(cancellationToken);
 
         return await preparationDatabase.Preparations.AsNoTracking()

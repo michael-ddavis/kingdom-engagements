@@ -4,8 +4,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KingdomEngagements.Web.Features;
 
-public sealed class EngagementPreparationDbContext(DbContextOptions<EngagementPreparationDbContext> options) : DbContext(options)
+public sealed class EngagementPreparationDbContext(
+    ICurrentTenant currentTenant,
+    DbContextOptions<EngagementPreparationDbContext> options) : DbContext(options)
 {
+    private Guid? CurrentTenantId => currentTenant.TenantId;
+    private bool TenantBypass => currentTenant.BypassActive;
     public DbSet<EngagementPreparationRecord> Preparations => Set<EngagementPreparationRecord>();
     public DbSet<HostCoordinationDocumentRecord> Documents => Set<HostCoordinationDocumentRecord>();
     public DbSet<HostCoordinationMessageRecord> Messages => Set<HostCoordinationMessageRecord>();
@@ -73,6 +77,8 @@ public sealed class EngagementPreparationDbContext(DbContextOptions<EngagementPr
         document.Property(x => x.StorageProvider).HasMaxLength(40).IsRequired();
         document.Property(x => x.StorageKey).HasMaxLength(900);
         document.Property(x => x.Content).IsRequired();
+        document.HasOne(x => x.Preparation).WithMany()
+            .HasForeignKey(x => x.PreparationId).OnDelete(DeleteBehavior.Cascade);
 
         var message = modelBuilder.Entity<HostCoordinationMessageRecord>();
         message.ToTable("EngagementHostCoordinationMessages");
@@ -84,6 +90,13 @@ public sealed class EngagementPreparationDbContext(DbContextOptions<EngagementPr
         message.Property(x => x.Message).HasMaxLength(4000).IsRequired();
         message.HasOne(x => x.Preparation).WithMany()
             .HasForeignKey(x => x.PreparationId).OnDelete(DeleteBehavior.Cascade);
+
+        preparation.HasQueryFilter(x =>
+            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.Value));
+        document.HasQueryFilter(x =>
+            TenantBypass || (CurrentTenantId.HasValue && x.Preparation != null && x.Preparation.TenantId == CurrentTenantId.Value));
+        message.HasQueryFilter(x =>
+            TenantBypass || (CurrentTenantId.HasValue && x.Preparation != null && x.Preparation.TenantId == CurrentTenantId.Value));
     }
 
     public async Task EnsureSchemaAsync(CancellationToken cancellationToken)
@@ -319,6 +332,7 @@ public sealed class HostCoordinationDocumentRecord
     public string? StorageKey { get; set; }
     public byte[] Content { get; set; } = [];
     public DateTimeOffset UploadedAtUtc { get; set; }
+    public EngagementPreparationRecord? Preparation { get; set; }
 }
 
 public sealed class HostCoordinationMessageRecord
@@ -464,6 +478,7 @@ public sealed class EngagementPreparationService(
     EngagementPreparationDbContext database,
     SpeakingRequestsDbContext requestsDatabase,
     EngagementsDbContext engagementsDatabase,
+    ICurrentTenant currentTenant,
     IEngagementDocumentStorage? documentStorage = null)
 {
     private readonly IEngagementDocumentStorage _documentStorage =
@@ -588,6 +603,7 @@ public sealed class EngagementPreparationService(
     public async Task<EngagementTermsDetails?> GetTermsAsync(string token, CancellationToken cancellationToken)
     {
         await database.EnsureSchemaAsync(cancellationToken);
+        using var tenantBypass = currentTenant.BeginBypass("Resolve public engagement terms token.");
         var preparation = await database.Preparations.AsNoTracking()
             .SingleOrDefaultAsync(x => x.TermsToken == token, cancellationToken);
         if (preparation is null) return null;
@@ -604,6 +620,7 @@ public sealed class EngagementPreparationService(
         var email = Required(input.SignatoryEmail, nameof(input.SignatoryEmail)).ToLowerInvariant();
         if (!email.Contains('@')) throw new ArgumentException("A valid signatory email is required.");
 
+        using var tenantBypass = currentTenant.BeginBypass("Accept public engagement terms token.");
         var preparation = await database.Preparations.SingleOrDefaultAsync(x => x.TermsToken == token, cancellationToken);
         if (preparation is null) return null;
         if (preparation.TermsStatus == "accepted") return MapTerms(preparation, includeCoordinationToken: true);
@@ -665,6 +682,7 @@ public sealed class EngagementPreparationService(
     public async Task<HostCoordinationDetails?> GetCoordinationAsync(string token, CancellationToken cancellationToken)
     {
         await database.EnsureSchemaAsync(cancellationToken);
+        using var tenantBypass = currentTenant.BeginBypass("Resolve public host coordination token.");
         var preparation = await database.Preparations.AsNoTracking()
             .SingleOrDefaultAsync(x => x.CoordinationToken == token, cancellationToken);
         if (!CoordinationLinkValid(preparation)) return null;
@@ -674,6 +692,7 @@ public sealed class EngagementPreparationService(
     public async Task<HostCoordinationDetails?> SaveCoordinationAsync(string token, HostCoordinationUpdate input, CancellationToken cancellationToken)
     {
         await database.EnsureSchemaAsync(cancellationToken);
+        using var tenantBypass = currentTenant.BeginBypass("Update public host coordination token.");
         var preparation = await database.Preparations.SingleOrDefaultAsync(x => x.CoordinationToken == token, cancellationToken);
         if (!CoordinationLinkValid(preparation)) return null;
 
@@ -692,6 +711,7 @@ public sealed class EngagementPreparationService(
         CancellationToken cancellationToken)
     {
         await database.EnsureSchemaAsync(cancellationToken);
+        using var tenantBypass = currentTenant.BeginBypass("Resolve public host coordination token.");
         var preparation = await database.Preparations.AsNoTracking()
             .SingleOrDefaultAsync(x => x.CoordinationToken == token, cancellationToken);
         if (!CoordinationLinkValid(preparation)) return null;
@@ -705,6 +725,7 @@ public sealed class EngagementPreparationService(
         CancellationToken cancellationToken)
     {
         await database.EnsureSchemaAsync(cancellationToken);
+        using var tenantBypass = currentTenant.BeginBypass("Update public host coordination token.");
         var preparation = await database.Preparations
             .SingleOrDefaultAsync(x => x.CoordinationToken == token, cancellationToken);
         if (!CoordinationLinkValid(preparation)) return null;
@@ -779,6 +800,7 @@ public sealed class EngagementPreparationService(
         CancellationToken cancellationToken)
     {
         await database.EnsureSchemaAsync(cancellationToken);
+        using var tenantBypass = currentTenant.BeginBypass("Update public host coordination token.");
         var preparation = await database.Preparations.SingleOrDefaultAsync(x => x.CoordinationToken == token, cancellationToken);
         if (!CoordinationLinkValid(preparation)) return null;
         if (content.Length == 0) throw new ArgumentException("Choose a file to upload.");
@@ -852,6 +874,7 @@ public sealed class EngagementPreparationService(
     public async Task<HostCoordinationDocumentRecord?> GetDocumentForHostAsync(string token, Guid documentId, CancellationToken cancellationToken)
     {
         await database.EnsureSchemaAsync(cancellationToken);
+        using var tenantBypass = currentTenant.BeginBypass("Resolve public host coordination token.");
         var preparation = await database.Preparations.AsNoTracking()
             .SingleOrDefaultAsync(x => x.CoordinationToken == token, cancellationToken);
         if (!CoordinationLinkValid(preparation)) return null;

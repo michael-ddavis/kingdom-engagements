@@ -3,8 +3,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KingdomEngagements.Web.Features;
 
-public sealed class SpeakingRequestsDbContext(DbContextOptions<SpeakingRequestsDbContext> options) : DbContext(options)
+public sealed class SpeakingRequestsDbContext(
+    ICurrentTenant currentTenant,
+    DbContextOptions<SpeakingRequestsDbContext> options) : DbContext(options)
 {
+    private Guid? CurrentTenantId => currentTenant.TenantId;
+    private bool TenantBypass => currentTenant.BypassActive;
     public DbSet<SpeakingRequestRecord> Requests => Set<SpeakingRequestRecord>();
     public DbSet<SpeakingRequestCommunicationRecord> Communications => Set<SpeakingRequestCommunicationRecord>();
 
@@ -51,6 +55,11 @@ public sealed class SpeakingRequestsDbContext(DbContextOptions<SpeakingRequestsD
         communication.Property(x => x.Type).HasMaxLength(60).IsRequired();
         communication.Property(x => x.Message).HasMaxLength(4000).IsRequired();
         communication.Property(x => x.Actor).HasMaxLength(180).IsRequired();
+
+        request.HasQueryFilter(x =>
+            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.Value));
+        communication.HasQueryFilter(x =>
+            TenantBypass || (CurrentTenantId.HasValue && x.Request != null && x.Request.TenantId == CurrentTenantId.Value));
     }
 
     public async Task EnsureSchemaAsync(CancellationToken cancellationToken)
@@ -261,7 +270,8 @@ public sealed record SpeakingRequestDetails(
 
 public sealed class SpeakingRequestsService(
     SpeakingRequestsDbContext requestsDatabase,
-    EngagementsDbContext engagementsDatabase)
+    EngagementsDbContext engagementsDatabase,
+    ICurrentTenant currentTenant)
 {
     private static readonly HashSet<string> ConfirmationValues = new(StringComparer.OrdinalIgnoreCase)
         { "yes", "no", "not-determined" };
@@ -321,6 +331,7 @@ public sealed class SpeakingRequestsService(
     public async Task<SpeakingRequestDetails?> GetForHostAsync(string token, CancellationToken cancellationToken)
     {
         await requestsDatabase.EnsureSchemaAsync(cancellationToken);
+        using var tenantBypass = currentTenant.BeginBypass("Resolve public speaking-request host token.");
         var request = await requestsDatabase.Requests.AsNoTracking()
             .Include(x => x.Communications)
             .SingleOrDefaultAsync(x => x.EditToken == token, cancellationToken);
@@ -331,6 +342,7 @@ public sealed class SpeakingRequestsService(
     public async Task<SpeakingRequestDetails?> SubmitHostResponseAsync(string token, HostSpeakingRequestUpdate update, CancellationToken cancellationToken)
     {
         await requestsDatabase.EnsureSchemaAsync(cancellationToken);
+        using var tenantBypass = currentTenant.BeginBypass("Update public speaking-request host token.");
         Validate(update.Request);
         var response = Required(update.ResponseMessage, nameof(update.ResponseMessage));
         var request = await requestsDatabase.Requests.Include(x => x.Communications)
@@ -607,10 +619,23 @@ public static class SpeakingRequestEndpoints
     public static IEndpointRouteBuilder MapSpeakingRequestEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var publicGroup = endpoints.MapGroup("/api/public/engagements/requests").AllowAnonymous();
-        publicGroup.MapPost("", async (SpeakingRequestInput request, SpeakingRequestsService service, CancellationToken ct) =>
+        publicGroup.MapPost("", async (
+            SpeakingRequestInput request,
+            SpeakingRequestsService service,
+            IConfiguration configuration,
+            CancellationToken ct) =>
         {
-            try { return Results.Ok(await service.CreateAsync(KingdomIdentity.DemoTenantId, request, ct)); }
-            catch (ArgumentException exception) { return Results.ValidationProblem(new Dictionary<string, string[]> { ["request"] = [exception.Message] }); }
+            try
+            {
+                var tenantId = TenantIsolation.RequireConfiguredTenant(
+                    configuration,
+                    "KingdomOS:Engagements:PublicIntakeTenantId");
+                return Results.Ok(await service.CreateAsync(tenantId, request, ct));
+            }
+            catch (ArgumentException exception)
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["request"] = [exception.Message] });
+            }
         });
         publicGroup.MapGet("/{token}", async (string token, SpeakingRequestsService service, CancellationToken ct) =>
         {

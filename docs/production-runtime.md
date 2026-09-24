@@ -2,6 +2,40 @@
 
 Kingdom Engagements can run locally without distributed infrastructure, but production should enable the relational database, Redis, and object-storage safeguards below.
 
+## Tenant isolation guarantee
+
+Tenant isolation is enforced at both the request boundary and the EF Core model boundary.
+
+- Authenticated staff requests resolve the tenant only from the signed `kingdom:tenant-id` claim. The `X-Kingdom-Tenant` request header is not trusted for tenant selection, and a missing tenant claim does not fall back to a demo tenant.
+- Every tenant-scoped entity in the seven Engagements DbContexts has an EF Core global query filter. Child records without their own `TenantId` are filtered through their tenant-owned parent navigation.
+- Host-access authorization establishes tenant scope from the signed host session claims before querying host invitations.
+- SignalR internal and host joins establish tenant scope from authenticated claims before resolving assignment access.
+- Anonymous host/update links use explicit, short-lived tenant-filter bypass scopes only to resolve globally unique opaque tokens. Every bypass requires a reason and is logged.
+- Development seed workers explicitly bind the demo tenant rather than bypassing tenant filters.
+
+Manual `TenantId` predicates remain in feature queries as defense in depth where they also document resource ownership. They are no longer the primary isolation mechanism.
+
+To verify this contract, run:
+
+```text
+dotnet test KingdomEngagements.slnx --configuration Release
+```
+
+`TenantIsolationTests` verifies direct entity filtering, navigation/child filtering, SQL Server query translation, all tenant-scoped DbContext models, and rejection of request-header tenant selection.
+
+## Production/demo build boundary
+
+Release builds are demo-free by default. `EngagementsDemoSeedWorker`, `EngagementsDemoDepthWorker`, `EngagementsDemoConnectedStoryWorker`, and the demo access middleware/roles are excluded from the production server assembly at compile time.
+
+A development/demo artifact must opt in explicitly:
+
+```text
+dotnet publish -c Release -p:IncludeDemoServerFeatures=true
+docker build --build-arg INCLUDE_DEMO_SERVER_FEATURES=true .
+```
+
+The existing production configuration validator remains a second defense and still rejects demo profiles in the Production environment. CI additionally extracts the production server assembly and fails if demo runtime type names are present.
+
 ## Production environment settings
 
 ```text

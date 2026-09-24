@@ -5,9 +5,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KingdomEngagements.Web.Features;
 
-public sealed class EngagementsDbContext(DbContextOptions<EngagementsDbContext> options)
+public sealed class EngagementsDbContext(
+    ICurrentTenant currentTenant,
+    DbContextOptions<EngagementsDbContext> options)
     : DbContext(options)
 {
+    private Guid? CurrentTenantId => currentTenant.TenantId;
+    private bool TenantBypass => currentTenant.BypassActive;
     public DbSet<EngagementAssignment> Assignments => Set<EngagementAssignment>();
     public DbSet<EngagementTask> Tasks => Set<EngagementTask>();
     public DbSet<EngagementDocument> Documents => Set<EngagementDocument>();
@@ -131,6 +135,23 @@ public sealed class EngagementsDbContext(DbContextOptions<EngagementsDbContext> 
         receipt.HasKey(x => x.EventId);
         receipt.Property(x => x.EventName).HasMaxLength(120).IsRequired();
         receipt.Property(x => x.SourceModule).HasMaxLength(80).IsRequired();
+
+        assignment.HasQueryFilter(x =>
+            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.Value));
+        task.HasQueryFilter(x =>
+            TenantBypass || (CurrentTenantId.HasValue && x.Assignment != null && x.Assignment.TenantId == CurrentTenantId.Value));
+        document.HasQueryFilter(x =>
+            TenantBypass || (CurrentTenantId.HasValue && x.Assignment != null && x.Assignment.TenantId == CurrentTenantId.Value));
+        standingResponsibility.HasQueryFilter(x =>
+            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.Value));
+        responsibilityOverride.HasQueryFilter(x =>
+            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.Value));
+        laneProgress.HasQueryFilter(x =>
+            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.Value));
+        teamMember.HasQueryFilter(x =>
+            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.Value));
+        mediaAsset.HasQueryFilter(x =>
+            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.Value));
     }
 }
 
@@ -283,61 +304,6 @@ public sealed class EngagementsInitializer(EngagementsDbContext database)
             await database.Database.MigrateAsync(cancellationToken);
         else
             await database.Database.EnsureCreatedAsync(cancellationToken);
-
-        if (await database.Assignments.AnyAsync(cancellationToken)) return;
-
-        var now = DateTimeOffset.UtcNow;
-        var assignment = new EngagementAssignment
-        {
-            Id = Guid.NewGuid(),
-            TenantId = KingdomIdentity.DemoTenantId,
-            ExternalAssignmentId = "assignment-demo-001",
-            Title = "Kingdom Leadership Gathering",
-            SpeakerName = "Cynthia Thompson",
-            HostOrganization = "New Covenant Fellowship",
-            HostContactName = "Jordan Ellis",
-            HostContactEmail = "jordan@example.org",
-            Location = "Atlanta, Georgia",
-            StartsAtUtc = now.AddDays(21),
-            EndsAtUtc = now.AddDays(23),
-            Status = "planning",
-            TravelStatus = "in-progress",
-            LodgingStatus = "confirmed",
-            TransportationStatus = "needs-attention",
-            HostStatus = "confirmed",
-            DocumentsStatus = "in-progress",
-            CloseoutStatus = "not-started",
-            Notes = "Keep host logistics and traveler-facing details inside Engagements.",
-            CreatedAtUtc = now,
-            UpdatedAtUtc = now,
-        };
-        assignment.Tasks.Add(new EngagementTask
-        {
-            Id = Guid.NewGuid(), Category = "travel", Title = "Confirm flight itinerary",
-            Owner = "Engagement Coordinator", Status = "in-progress", DueAtUtc = now.AddDays(7), UpdatedAtUtc = now
-        });
-        assignment.Tasks.Add(new EngagementTask
-        {
-            Id = Guid.NewGuid(), Category = "transportation", Title = "Confirm airport pickup",
-            Owner = "Host Coordinator", Status = "open", DueAtUtc = now.AddDays(12), UpdatedAtUtc = now
-        });
-        assignment.Tasks.Add(new EngagementTask
-        {
-            Id = Guid.NewGuid(), Category = "host", Title = "Approve final event schedule",
-            Owner = "Host Organization", Status = "complete", DueAtUtc = now.AddDays(5), UpdatedAtUtc = now
-        });
-        assignment.Documents.Add(new EngagementDocument
-        {
-            Id = Guid.NewGuid(), Name = "Speaker agreement", Category = "agreement",
-            Status = "received", UpdatedAtUtc = now
-        });
-        assignment.Documents.Add(new EngagementDocument
-        {
-            Id = Guid.NewGuid(), Name = "Final itinerary", Category = "travel",
-            Status = "requested", UpdatedAtUtc = now
-        });
-        database.Assignments.Add(assignment);
-        await database.SaveChangesAsync(cancellationToken);
     }
 }
 

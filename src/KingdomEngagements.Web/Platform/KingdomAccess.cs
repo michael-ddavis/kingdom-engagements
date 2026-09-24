@@ -17,17 +17,25 @@ public static class KingdomIdentity
     public static readonly Guid DivineWorldChangersTenantId = Guid.Parse("d1c00000-0000-4000-8000-000000000001");
     public static readonly Guid HeyyKingTenantId = Guid.Parse("e1100000-0000-4000-8000-000000000001");
 
-    public static Guid TenantId(ClaimsPrincipal principal, HttpRequest request)
+    public static bool TryTenantId(ClaimsPrincipal principal, out Guid tenantId)
     {
-        var value = principal.FindFirstValue(TenantClaim)
-            ?? request.Headers["X-Kingdom-Tenant"].FirstOrDefault();
-        return Guid.TryParse(value, out var tenantId) ? tenantId : DemoTenantId;
+        var value = principal.FindFirstValue(TenantClaim);
+        return Guid.TryParse(value, out tenantId) && tenantId != Guid.Empty;
     }
 
-    public static string Subject(ClaimsPrincipal principal, HttpRequest request) =>
-        principal.FindFirstValue(ClaimTypes.NameIdentifier)
-        ?? request.Headers["X-Kingdom-Subject"].FirstOrDefault()
-        ?? "unknown";
+    public static Guid TenantId(ClaimsPrincipal principal, HttpRequest request)
+    {
+        _ = request;
+        return TryTenantId(principal, out var tenantId)
+            ? tenantId
+            : throw new UnauthorizedAccessException("A valid tenant claim is required.");
+    }
+
+    public static string Subject(ClaimsPrincipal principal, HttpRequest request)
+    {
+        _ = request;
+        return principal.FindFirstValue(ClaimTypes.NameIdentifier) ?? "unknown";
+    }
 
     public static bool HasEngagementsAccess(ClaimsPrincipal principal)
     {
@@ -259,7 +267,12 @@ public sealed class EngagementsEntitlementMiddleware(
             return;
         }
 
-        var tenantId = KingdomIdentity.TenantId(context.User, context.Request);
+        if (!KingdomIdentity.TryTenantId(context.User, out var tenantId))
+        {
+            await next(context);
+            return;
+        }
+
         var state = await entitlements.GetStateAsync(tenantId, context.RequestAborted);
         if (state == ModuleEntitlementState.Enabled ||
             (state == ModuleEntitlementState.Unavailable && environment.IsDevelopment() &&

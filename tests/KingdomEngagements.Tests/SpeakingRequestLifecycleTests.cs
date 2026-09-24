@@ -194,9 +194,9 @@ public sealed class SpeakingRequestLifecycleTests
             .ReplaceService<IModelCustomizer, SpeakingRequestsModelCustomizer>()
             .UseInMemoryDatabase($"engagement-requests-{Guid.NewGuid():N}")
             .Options;
-        var engagements = new EngagementsDbContext(engagementOptions);
-        var requests = new SpeakingRequestsDbContext(requestOptions);
-        var service = new SpeakingRequestsService(requests, engagements);
+        var engagements = new EngagementsDbContext(TestTenants.Bypass, engagementOptions);
+        var requests = new SpeakingRequestsDbContext(TestTenants.Bypass, requestOptions);
+        var service = new SpeakingRequestsService(requests, engagements, TestTenants.Bypass);
         return new TestFixture(
             engagements,
             requests,

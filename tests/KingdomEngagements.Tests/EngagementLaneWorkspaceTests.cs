@@ -168,12 +168,12 @@ public sealed class EngagementLaneWorkspaceTests
             .UseInMemoryDatabase($"lane-activity-{Guid.NewGuid():N}")
             .Options;
 
-        var engagements = new EngagementsDbContext(engagementOptions);
-        var requests = new SpeakingRequestsDbContext(requestOptions);
-        var preparations = new EngagementPreparationDbContext(preparationOptions);
-        var activity = new AssignmentWorkspaceDbContext(activityOptions);
+        var engagements = new EngagementsDbContext(TestTenants.Bypass, engagementOptions);
+        var requests = new SpeakingRequestsDbContext(TestTenants.Bypass, requestOptions);
+        var preparations = new EngagementPreparationDbContext(TestTenants.Bypass, preparationOptions);
+        var activity = new AssignmentWorkspaceDbContext(TestTenants.Bypass, activityOptions);
 
-        var preparationService = new EngagementPreparationService(preparations, requests, engagements);
+        var preparationService = new EngagementPreparationService(preparations, requests, engagements, TestTenants.Bypass);
         var workspace = new AssignmentWorkspaceService(
             activity,
             preparations,

@@ -6,6 +6,7 @@ COPY src/KingdomEngagements.Web/ClientApp/ ./
 RUN npm run build:production
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+ARG INCLUDE_DEMO_SERVER_FEATURES=false
 WORKDIR /src
 COPY src/KingdomEngagements.Web/KingdomEngagements.Web.csproj src/KingdomEngagements.Web/
 RUN dotnet restore src/KingdomEngagements.Web/KingdomEngagements.Web.csproj
@@ -13,6 +14,7 @@ COPY . .
 RUN dotnet publish src/KingdomEngagements.Web/KingdomEngagements.Web.csproj \
     --configuration Release \
     --property:BuildAngular=false \
+    --property:IncludeDemoServerFeatures=${INCLUDE_DEMO_SERVER_FEATURES} \
     --no-restore \
     --output /app/publish
 

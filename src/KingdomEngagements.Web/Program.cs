@@ -378,7 +378,7 @@ app.MapGet("/api/product", async (
         careEnabled = careState == ModuleEntitlementState.Enabled,
         boundary = "Invitation intake, review, accepted terms, host coordination, travel, lodging, transportation, documents, readiness, event outcomes, follow-up, and closeout."
     });
-});
+}).RequireAuthorization();
 app.MapGet("/api/capabilities", async (
     HttpContext context,
     EngagementsEntitlementResolver entitlements,
@@ -387,7 +387,7 @@ app.MapGet("/api/capabilities", async (
     var tenantId = KingdomIdentity.TenantId(context.User, context.Request);
     var state = await entitlements.GetStateAsync(tenantId, cancellationToken);
     return Results.Ok(new { engagementsEnabled = state == ModuleEntitlementState.Enabled, state = state.ToString() });
-});
+}).RequireAuthorization();
 
 app.MapGet("/invite/apostle-cynthia", (IWebHostEnvironment environment) =>
     Results.File(Path.Combine(environment.WebRootPath, "invite.html"), "text/html; charset=utf-8")).AllowAnonymous();

@@ -54,6 +54,21 @@ jobs:
       - run: dotnet test KingdomEngagements.slnx --configuration Release --no-build
       - run: docker build --tag kingdom-engagements:ci .
 
+      - name: Verify production server assembly contains no demo runtime types
+        shell: bash
+        run: |
+          set -euo pipefail
+          container_id="$(docker create kingdom-engagements:ci)"
+          trap 'docker rm --force "$container_id" >/dev/null 2>&1 || true; rm -f /tmp/KingdomEngagements.Web.dll' EXIT
+          docker cp "$container_id:/app/KingdomEngagements.Web.dll" /tmp/KingdomEngagements.Web.dll
+          if grep -aE 'EngagementsDemo(SeedWorker|DepthWorker|ConnectedStoryWorker|AccessMiddleware|Roles)' /tmp/KingdomEngagements.Web.dll; then
+            echo 'Production assembly contains demo runtime types.' >&2
+            exit 1
+          fi
+
+      - name: Build development demo image
+        run: docker build --build-arg INCLUDE_DEMO_SERVER_FEATURES=true --tag kingdom-engagements:demo-ci .
+
       - name: Verify Production fails closed with incomplete configuration
         shell: bash
         run: |
@@ -81,7 +96,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          container_id="$(docker run --detach             -e ASPNETCORE_ENVIRONMENT=Development             -e KingdomOS__Identity__DemoProfilesEnabled=true             kingdom-engagements:ci)"
+          container_id="$(docker run --detach             -e ASPNETCORE_ENVIRONMENT=Development             -e KingdomOS__Identity__DemoProfilesEnabled=true             kingdom-engagements:demo-ci)"
           trap 'docker logs "$container_id" || true; docker rm --force "$container_id" >/dev/null 2>&1 || true' EXIT
           for attempt in {1..30}; do
             if health_payload="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/health 2>/dev/null)"; then

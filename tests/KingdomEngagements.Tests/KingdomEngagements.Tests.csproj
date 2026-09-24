@@ -5,7 +5,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <IncludeDemoServerFeatures Condition="'$(IncludeDemoServerFeatures)' == '' and '$(Configuration)' == 'Debug'">true</IncludeDemoServerFeatures>
+    <IncludeDemoServerFeatures Condition="'$(IncludeDemoServerFeatures)' == ''">false</IncludeDemoServerFeatures>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(IncludeDemoServerFeatures)' != 'true'">
+    <Compile Remove="EngagementsDemoRoleTests.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.10" />
@@ -19,6 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/KingdomEngagements.Web/KingdomEngagements.Web.csproj" />
+    <ProjectReference Include="../../src/KingdomEngagements.Web/KingdomEngagements.Web.csproj"
+                      AdditionalProperties="IncludeDemoServerFeatures=$(IncludeDemoServerFeatures)" />
   </ItemGroup>
 </Project>

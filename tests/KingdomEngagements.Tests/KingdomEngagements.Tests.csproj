@@ -5,7 +5,15 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <EnableDemoCode Condition="'$(EnableDemoCode)' == '' and '$(Configuration)' == 'Debug'">true</EnableDemoCode>
+    <EnableDemoCode Condition="'$(EnableDemoCode)' == ''">false</EnableDemoCode>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(EnableDemoCode)' != 'true'">
+    <Compile Remove="EngagementsDemoRoleTests.cs" />
+    <Compile Remove="EngagementsAuthorizationTests.cs" />
+    <Compile Remove="EngagementsUiContractTests.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.10" />
@@ -19,6 +27,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/KingdomEngagements.Web/KingdomEngagements.Web.csproj" />
+    <ProjectReference Include="../../src/KingdomEngagements.Web/KingdomEngagements.Web.csproj" AdditionalProperties="EnableDemoCode=$(EnableDemoCode)" />
   </ItemGroup>
 </Project>

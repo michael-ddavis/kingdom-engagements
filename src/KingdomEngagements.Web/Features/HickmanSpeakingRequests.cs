@@ -11,22 +11,28 @@ namespace KingdomEngagements.Web.Features;
 public sealed class HickmanSpeakingRequestsService(
     SpeakingRequestsService speakingRequests,
     SpeakingRequestsDbContext requestsDatabase,
-    EngagementsDbContext engagementsDatabase)
+    EngagementsDbContext engagementsDatabase,
+    ICurrentTenantAccessor currentTenant)
 {
     private const string TeamName = "Heyy King Itinerant Ministry";
     private const string SpeakerName = "Pastor Derwin Hickman";
 
     public async Task<SpeakingRequestDetails> CreateAsync(
+        Guid tenantId,
         SpeakingRequestInput input,
         CancellationToken cancellationToken)
     {
+        using var tenantScope = currentTenant.BeginTenantScope(
+            tenantId,
+            "Process the configured Pastor Hickman invitation tenant.");
+
         var created = await speakingRequests.CreateAsync(
-            KingdomIdentity.HeyyKingTenantId,
+            tenantId,
             input,
             cancellationToken);
 
         var record = await requestsDatabase.Requests.SingleAsync(
-            item => item.Id == created.Id && item.TenantId == KingdomIdentity.HeyyKingTenantId,
+            item => item.Id == created.Id && item.TenantId == tenantId,
             cancellationToken);
         if (record.ReferenceNumber.StartsWith("CTG-", StringComparison.OrdinalIgnoreCase))
         {
@@ -36,74 +42,99 @@ public sealed class HickmanSpeakingRequestsService(
         }
 
         return (await speakingRequests.GetAsync(
-            KingdomIdentity.HeyyKingTenantId,
+            tenantId,
             created.Id,
             cancellationToken))!;
     }
 
     public async Task<SpeakingRequestDetails?> GetForHostAsync(
+        Guid tenantId,
         string token,
         CancellationToken cancellationToken)
     {
-        if (!await BelongsToHeyyKingAsync(token, cancellationToken)) return null;
+        using var tenantScope = currentTenant.BeginTenantScope(
+            tenantId,
+            "Read Pastor Hickman host request inside the configured tenant.");
+
+        if (!await BelongsToTenantAsync(token, cancellationToken)) return null;
         return await speakingRequests.GetForHostAsync(token, cancellationToken);
     }
 
     public async Task<SpeakingRequestDetails?> SubmitHostResponseAsync(
+        Guid tenantId,
         string token,
         HostSpeakingRequestUpdate update,
         CancellationToken cancellationToken)
     {
-        if (!await BelongsToHeyyKingAsync(token, cancellationToken)) return null;
+        using var tenantScope = currentTenant.BeginTenantScope(
+            tenantId,
+            "Update Pastor Hickman host request inside the configured tenant.");
+
+        if (!await BelongsToTenantAsync(token, cancellationToken)) return null;
         return await speakingRequests.SubmitHostResponseAsync(token, update, cancellationToken);
     }
 
     public async Task<SpeakingRequestDetails?> RequestInformationAsync(
+        Guid tenantId,
         Guid id,
         string message,
         CancellationToken cancellationToken)
     {
+        using var tenantScope = currentTenant.BeginTenantScope(
+            tenantId,
+            "Review Pastor Hickman request inside the authenticated tenant.");
+
         var item = await speakingRequests.RequestInformationAsync(
-            KingdomIdentity.HeyyKingTenantId,
+            tenantId,
             id,
             message,
             cancellationToken);
         if (item is null) return null;
         await ReplaceLatestActorAsync(id, "information-requested", cancellationToken);
-        return await speakingRequests.GetAsync(KingdomIdentity.HeyyKingTenantId, id, cancellationToken);
+        return await speakingRequests.GetAsync(tenantId, id, cancellationToken);
     }
 
     public async Task<SpeakingRequestDetails?> DeclineAsync(
+        Guid tenantId,
         Guid id,
         string reason,
         CancellationToken cancellationToken)
     {
+        using var tenantScope = currentTenant.BeginTenantScope(
+            tenantId,
+            "Decline Pastor Hickman request inside the authenticated tenant.");
+
         var item = await speakingRequests.DeclineAsync(
-            KingdomIdentity.HeyyKingTenantId,
+            tenantId,
             id,
             reason,
             cancellationToken);
         if (item is null) return null;
         await ReplaceLatestActorAsync(id, "declined", cancellationToken);
-        return await speakingRequests.GetAsync(KingdomIdentity.HeyyKingTenantId, id, cancellationToken);
+        return await speakingRequests.GetAsync(tenantId, id, cancellationToken);
     }
 
     public async Task<(SpeakingRequestDetails Request, Guid AssignmentId)?> ApproveAsync(
+        Guid tenantId,
         Guid id,
         CancellationToken cancellationToken)
     {
+        using var tenantScope = currentTenant.BeginTenantScope(
+            tenantId,
+            "Approve Pastor Hickman request inside the authenticated tenant.");
+
         await requestsDatabase.EnsureSchemaAsync(cancellationToken);
         var request = await requestsDatabase.Requests
             .Include(item => item.Communications)
             .SingleOrDefaultAsync(item =>
-                item.TenantId == KingdomIdentity.HeyyKingTenantId && item.Id == id,
+                item.TenantId == tenantId && item.Id == id,
                 cancellationToken);
         if (request is null) return null;
 
         if (request.AssignmentId is Guid existingAssignmentId)
         {
             var existing = await speakingRequests.GetAsync(
-                KingdomIdentity.HeyyKingTenantId, id, cancellationToken);
+                tenantId, id, cancellationToken);
             return existing is null ? null : (existing, existingAssignmentId);
         }
 
@@ -114,7 +145,7 @@ public sealed class HickmanSpeakingRequestsService(
         var externalId = $"request:{request.ReferenceNumber}";
         var assignment = await engagementsDatabase.Assignments
             .SingleOrDefaultAsync(item =>
-                item.TenantId == KingdomIdentity.HeyyKingTenantId &&
+                item.TenantId == tenantId &&
                 item.ExternalAssignmentId == externalId,
                 cancellationToken);
         var now = DateTimeOffset.UtcNow;
@@ -124,7 +155,7 @@ public sealed class HickmanSpeakingRequestsService(
             assignment = new EngagementAssignment
             {
                 Id = Guid.NewGuid(),
-                TenantId = KingdomIdentity.HeyyKingTenantId,
+                TenantId = tenantId,
                 ExternalAssignmentId = externalId,
                 Title = request.EventName,
                 SpeakerName = SpeakerName,
@@ -200,18 +231,17 @@ public sealed class HickmanSpeakingRequestsService(
         await requestsDatabase.SaveChangesAsync(cancellationToken);
 
         var mapped = await speakingRequests.GetAsync(
-            KingdomIdentity.HeyyKingTenantId, id, cancellationToken);
+            tenantId, id, cancellationToken);
         return mapped is null ? null : (mapped, assignment.Id);
     }
 
-    private async Task<bool> BelongsToHeyyKingAsync(
+    private async Task<bool> BelongsToTenantAsync(
         string token,
         CancellationToken cancellationToken)
     {
         await requestsDatabase.EnsureSchemaAsync(cancellationToken);
-        return await requestsDatabase.Requests.AsNoTracking().AnyAsync(item =>
-            item.TenantId == KingdomIdentity.HeyyKingTenantId &&
-            item.EditToken == token,
+        return await requestsDatabase.Requests.AsNoTracking().AnyAsync(
+            item => item.EditToken == token,
             cancellationToken);
     }
 
@@ -287,9 +317,10 @@ public static class HickmanSpeakingRequestEndpoints
         group.MapPost("", async (
             SpeakingRequestInput request,
             HickmanSpeakingRequestsService service,
+            PublicInvitationTenantResolver invitationTenants,
             CancellationToken ct) =>
         {
-            try { return Results.Ok(await service.CreateAsync(request, ct)); }
+            try { return Results.Ok(await service.CreateAsync(invitationTenants.HickmanTenantId, request, ct)); }
             catch (ArgumentException exception)
             {
                 return Results.ValidationProblem(new Dictionary<string, string[]>
@@ -302,9 +333,10 @@ public static class HickmanSpeakingRequestEndpoints
         group.MapGet("/{token}", async (
             string token,
             HickmanSpeakingRequestsService service,
+            PublicInvitationTenantResolver invitationTenants,
             CancellationToken ct) =>
         {
-            var item = await service.GetForHostAsync(token, ct);
+            var item = await service.GetForHostAsync(invitationTenants.HickmanTenantId, token, ct);
             return item is null
                 ? Results.NotFound(new
                 {
@@ -317,11 +349,16 @@ public static class HickmanSpeakingRequestEndpoints
             string token,
             HostSpeakingRequestUpdate request,
             HickmanSpeakingRequestsService service,
+            PublicInvitationTenantResolver invitationTenants,
             CancellationToken ct) =>
         {
             try
             {
-                var item = await service.SubmitHostResponseAsync(token, request, ct);
+                var item = await service.SubmitHostResponseAsync(
+                    invitationTenants.HickmanTenantId,
+                    token,
+                    request,
+                    ct);
                 return item is null
                     ? Results.NotFound(new
                     {
@@ -355,10 +392,13 @@ public sealed class HickmanSpeakingRequestReviewMiddleware(RequestDelegate next)
 
     public async Task InvokeAsync(
         HttpContext context,
-        HickmanSpeakingRequestsService service)
+        HickmanSpeakingRequestsService service,
+        PublicInvitationTenantResolver invitationTenants)
     {
+        var tenantId = KingdomIdentity.TenantId(context.User, context.Request);
+
         if (!HttpMethods.IsPost(context.Request.Method) ||
-            KingdomIdentity.TenantId(context.User, context.Request) != KingdomIdentity.HeyyKingTenantId)
+            tenantId != invitationTenants.HickmanTenantId)
         {
             await next(context);
             return;
@@ -396,7 +436,7 @@ public sealed class HickmanSpeakingRequestReviewMiddleware(RequestDelegate next)
                         return;
                     }
                     var item = await service.RequestInformationAsync(
-                        id, body.Message, context.RequestAborted);
+                        tenantId, id, body.Message, context.RequestAborted);
                     if (item is null)
                     {
                         context.Response.StatusCode = StatusCodes.Status404NotFound;
@@ -415,7 +455,7 @@ public sealed class HickmanSpeakingRequestReviewMiddleware(RequestDelegate next)
                         context.Response.StatusCode = StatusCodes.Status400BadRequest;
                         return;
                     }
-                    var item = await service.DeclineAsync(id, body.Reason, context.RequestAborted);
+                    var item = await service.DeclineAsync(tenantId, id, body.Reason, context.RequestAborted);
                     if (item is null)
                     {
                         context.Response.StatusCode = StatusCodes.Status404NotFound;
@@ -426,7 +466,7 @@ public sealed class HickmanSpeakingRequestReviewMiddleware(RequestDelegate next)
                 }
                 case "approve":
                 {
-                    var result = await service.ApproveAsync(id, context.RequestAborted);
+                    var result = await service.ApproveAsync(tenantId, id, context.RequestAborted);
                     if (result is null)
                     {
                         context.Response.StatusCode = StatusCodes.Status404NotFound;

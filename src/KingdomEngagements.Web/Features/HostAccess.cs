@@ -15,7 +15,7 @@ public static class HostAccessIdentity
     public const string Scheme = "ApostolOS.Host";
     public const string Policy = "HostEngagementAccess";
     public const string AccessIdClaim = "apostolos.host_access_id";
-    public const string TenantIdClaim = "apostolos.tenant_id";
+    public const string TenantIdClaim = ApostolOSTenantClaims.HostTenantClaim;
     public const string AssignmentIdClaim = "apostolos.assignment_id";
     public const string EmailClaim = "apostolos.host_email";
 
@@ -64,8 +64,10 @@ public sealed class HostAccessAuthorizationHandler(HostAccessDbContext database)
     }
 }
 
-public sealed class HostAccessDbContext(DbContextOptions<HostAccessDbContext> options)
-    : DbContext(options)
+public sealed class HostAccessDbContext(
+    DbContextOptions<HostAccessDbContext> options,
+    ICurrentTenantAccessor currentTenant)
+    : TenantScopedDbContext(options, currentTenant)
 {
     public DbSet<HostAccessInvitationRecord> Invitations => Set<HostAccessInvitationRecord>();
 
@@ -80,6 +82,7 @@ public sealed class HostAccessDbContext(DbContextOptions<HostAccessDbContext> op
         invitation.Property(x => x.TokenHash).HasMaxLength(64).IsRequired();
         invitation.HasIndex(x => x.TokenHash).IsUnique();
         invitation.HasIndex(x => new { x.TenantId, x.AssignmentId, x.CreatedAtUtc });
+        invitation.HasQueryFilter(x => TenantIsolationBypassed || x.TenantId == CurrentTenantId);
     }
 
     public async Task EnsureSchemaAsync(CancellationToken cancellationToken)
@@ -195,7 +198,9 @@ public sealed class HostAccessService(
     HostAccessDbContext database,
     EngagementPreparationDbContext preparationDatabase,
     EngagementsDbContext engagementsDatabase,
-    IConfiguration configuration)
+    IConfiguration configuration,
+    ICurrentTenantAccessor currentTenant,
+    ITenantIsolationBypass tenantBypass)
 {
     private const int TokenBytes = 32;
     private const int DefaultInvitationLifetimeHours = 168;
@@ -206,6 +211,9 @@ public sealed class HostAccessService(
         Guid assignmentId,
         CancellationToken cancellationToken)
     {
+        using var tenantScope = currentTenant.BeginTenantScope(
+            tenantId,
+            "Access host invitation records for the requested engagement tenant.");
         await database.EnsureSchemaAsync(cancellationToken);
 
         var assignment = await engagementsDatabase.Assignments.AsNoTracking()
@@ -270,8 +278,25 @@ public sealed class HostAccessService(
             return null;
 
         var tokenHash = HashToken(token);
-        var now = DateTimeOffset.UtcNow;
+        Guid? owningTenantId;
 
+        using (tenantBypass.BeginBypass(
+                   "Resolve a one-time host invitation token to its owning tenant."))
+        {
+            owningTenantId = await database.Invitations.AsNoTracking()
+                .Where(x => x.TokenHash == tokenHash)
+                .Select(x => (Guid?)x.TenantId)
+                .SingleOrDefaultAsync(cancellationToken);
+        }
+
+        if (owningTenantId is null)
+            return null;
+
+        using var tenantScope = currentTenant.BeginTenantScope(
+            owningTenantId.Value,
+            "Redeem host invitation inside its owning tenant.");
+
+        var now = DateTimeOffset.UtcNow;
         var invitation = await database.Invitations.SingleOrDefaultAsync(
             x => x.TokenHash == tokenHash,
             cancellationToken);
@@ -320,6 +345,9 @@ public sealed class HostAccessService(
         Guid assignmentId,
         CancellationToken cancellationToken)
     {
+        using var tenantScope = currentTenant.BeginTenantScope(
+            tenantId,
+            "Access host invitation records for the requested engagement tenant.");
         await database.EnsureSchemaAsync(cancellationToken);
 
         var latest = await database.Invitations.AsNoTracking()
@@ -349,6 +377,9 @@ public sealed class HostAccessService(
         Guid assignmentId,
         CancellationToken cancellationToken)
     {
+        using var tenantScope = currentTenant.BeginTenantScope(
+            tenantId,
+            "Access host invitation records for the requested engagement tenant.");
         await database.EnsureSchemaAsync(cancellationToken);
 
         var now = DateTimeOffset.UtcNow;

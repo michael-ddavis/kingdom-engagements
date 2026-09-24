@@ -5,7 +5,17 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>KingdomEngagements.Web</RootNamespace>
     <SpaRoot>ClientApp\</SpaRoot>
+    <EnableDemoCode Condition="'$(EnableDemoCode)' == '' and '$(Configuration)' == 'Debug'">true</EnableDemoCode>
+    <EnableDemoCode Condition="'$(EnableDemoCode)' == ''">false</EnableDemoCode>
+    <DefineConstants Condition="'$(EnableDemoCode)' == 'true'">$(DefineConstants);DEMO_CODE</DefineConstants>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(EnableDemoCode)' != 'true'">
+    <Compile Remove="Features/EngagementsDemoSeedWorker.cs" />
+    <Compile Remove="Features/EngagementsDemoDepthWorker.cs" />
+    <Compile Remove="Features/EngagementsDemoConnectedStoryWorker.cs" />
+    <Compile Remove="Platform/EngagementsDemoAccess.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="AWSSDK.S3" Version="4.0.103.3" />

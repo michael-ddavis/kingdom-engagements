@@ -6,13 +6,16 @@ COPY src/KingdomEngagements.Web/ClientApp/ ./
 RUN npm run build:production
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+ARG BUILD_CONFIGURATION=Release
+ARG ENABLE_DEMO_CODE=false
 WORKDIR /src
 COPY src/KingdomEngagements.Web/KingdomEngagements.Web.csproj src/KingdomEngagements.Web/
 RUN dotnet restore src/KingdomEngagements.Web/KingdomEngagements.Web.csproj
 COPY . .
 RUN dotnet publish src/KingdomEngagements.Web/KingdomEngagements.Web.csproj \
-    --configuration Release \
+    --configuration $BUILD_CONFIGURATION \
     --property:BuildAngular=false \
+    --property:EnableDemoCode=$ENABLE_DEMO_CODE \
     --no-restore \
     --output /app/publish
 

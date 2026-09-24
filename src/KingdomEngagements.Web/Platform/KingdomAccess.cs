@@ -19,9 +19,12 @@ public static class KingdomIdentity
 
     public static Guid TenantId(ClaimsPrincipal principal, HttpRequest request)
     {
-        var value = principal.FindFirstValue(TenantClaim)
-            ?? request.Headers["X-Kingdom-Tenant"].FirstOrDefault();
-        return Guid.TryParse(value, out var tenantId) ? tenantId : DemoTenantId;
+        var value = principal.FindFirstValue(TenantClaim);
+        if (Guid.TryParse(value, out var tenantId) && tenantId != Guid.Empty)
+            return tenantId;
+
+        throw new UnauthorizedAccessException(
+            "An authenticated tenant claim is required for Kingdom Engagements.");
     }
 
     public static string Subject(ClaimsPrincipal principal, HttpRequest request) =>

@@ -4,7 +4,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KingdomEngagements.Web.Features;
 
-public sealed class AssignmentWorkspaceDbContext(DbContextOptions<AssignmentWorkspaceDbContext> options) : DbContext(options)
+public sealed class AssignmentWorkspaceDbContext(
+    DbContextOptions<AssignmentWorkspaceDbContext> options,
+    ICurrentTenantAccessor currentTenant)
+    : TenantScopedDbContext(options, currentTenant)
 {
     public DbSet<AssignmentWorkspaceActivityRecord> Activities => Set<AssignmentWorkspaceActivityRecord>();
 
@@ -19,6 +22,7 @@ public sealed class AssignmentWorkspaceDbContext(DbContextOptions<AssignmentWork
         activity.Property(x => x.Detail).HasMaxLength(3000).IsRequired();
         activity.Property(x => x.Actor).HasMaxLength(180).IsRequired();
         activity.HasIndex(x => new { x.TenantId, x.AssignmentId, x.OccurredAtUtc });
+        activity.HasQueryFilter(x => TenantIsolationBypassed || x.TenantId == CurrentTenantId);
     }
 
     public async Task EnsureSchemaAsync(CancellationToken cancellationToken)

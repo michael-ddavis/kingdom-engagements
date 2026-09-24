@@ -267,7 +267,12 @@ public sealed class EngagementsEntitlementMiddleware(
             return;
         }
 
-        var tenantId = KingdomIdentity.TenantId(context.User, context.Request);
+        if (!KingdomIdentity.TryTenantId(context.User, out var tenantId))
+        {
+            await next(context);
+            return;
+        }
+
         var state = await entitlements.GetStateAsync(tenantId, context.RequestAborted);
         if (state == ModuleEntitlementState.Enabled ||
             (state == ModuleEntitlementState.Unavailable && environment.IsDevelopment() &&

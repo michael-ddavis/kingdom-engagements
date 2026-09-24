@@ -1,1 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-labelledby="title"><title id="title">ApostolOS</title><path fill="#f8fafc" d="M17 137 68 18h22l51 119h-25l-14-34H56l-14 34zm48-56h28L79 47z"/><path fill="#3b82d0" d="M37 124c26-33 62-45 108-34-38 3-69 18-94 45z"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="220 140 940 850" role="img" aria-labelledby="title desc">
+  <title id="title">ApostolOS</title>
+  <desc id="desc">White ApostolOS A mark with blue ascending path for dark surfaces.</desc>
+  <defs>
+    <linearGradient id="a-dark" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#f3f6fb"/></linearGradient>
+    <linearGradient id="path-dark" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#1269e8"/><stop offset="1" stop-color="#2f80f4"/></linearGradient>
+  </defs>
+  <path fill="url(#a-dark)" d="M 628,183 L 266,946 L 377,946 L 628,428 L 740,666 L 844,646 Z"/>
+  <path fill="url(#a-dark)" d="M 789,767 L 876,946 L 987,946 L 883,728 Z"/>
+  <path fill="url(#path-dark)" d="M 1122,653 L 1095,649 L 1035,648 L 967,651 L 894,659 L 777,682 L 728,696 L 665,719 L 579,763 L 514,811 L 457,870 L 429,909 L 408,946 L 527,946 L 569,886 L 625,832 L 698,782 L 777,743 L 861,712 L 935,691 Z"/>
+</svg>

@@ -5,7 +5,20 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>KingdomEngagements.Web</RootNamespace>
     <SpaRoot>ClientApp\</SpaRoot>
+    <IncludeDemoFeatures Condition="'$(IncludeDemoFeatures)' == ''">true</IncludeDemoFeatures>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(IncludeDemoFeatures)' == 'true'">
+    <DefineConstants>$(DefineConstants);DEMO_FEATURES</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(IncludeDemoFeatures)' != 'true'">
+    <Compile Remove="Features/EngagementsDemoSeedWorker.cs" />
+    <Compile Remove="Features/EngagementsDemoDepthWorker.cs" />
+    <Compile Remove="Features/EngagementsDemoConnectedStoryWorker.cs" />
+    <Compile Remove="Platform/EngagementsDemoAccess.cs" />
+    <Compile Remove="Platform/KingdomAccess.Demo.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="AWSSDK.S3" Version="4.0.103.3" />

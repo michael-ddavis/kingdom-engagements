@@ -3,7 +3,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KingdomEngagements.Web.Features;
 
-public sealed class EngagementCompletionDbContext(DbContextOptions<EngagementCompletionDbContext> options) : DbContext(options)
+public sealed class EngagementCompletionDbContext(
+    DbContextOptions<EngagementCompletionDbContext> options,
+    ICurrentTenantAccessor? tenantAccessor = null) : TenantScopedDbContext(options, tenantAccessor)
 {
     public DbSet<MinistryResponseRecord> Responses => Set<MinistryResponseRecord>();
     public DbSet<EngagementCloseoutRecord> Closeouts => Set<EngagementCloseoutRecord>();
@@ -23,6 +25,9 @@ public sealed class EngagementCompletionDbContext(DbContextOptions<EngagementCom
         response.Property(x => x.FollowUpStatus).HasMaxLength(40).IsRequired();
         response.Property(x => x.FollowUpOwner).HasMaxLength(180);
         response.Property(x => x.FollowUpNotes).HasMaxLength(4000);
+        response.HasQueryFilter(x =>
+            TenantFilterBypassed ||
+            (TenantFilterHasTenant && x.TenantId == TenantFilterTenantId));
 
         var closeout = modelBuilder.Entity<EngagementCloseoutRecord>();
         closeout.ToTable("EngagementCloseouts");
@@ -32,6 +37,9 @@ public sealed class EngagementCompletionDbContext(DbContextOptions<EngagementCom
         closeout.Property(x => x.EventNotes).HasMaxLength(4000);
         closeout.Property(x => x.TestimonySummary).HasMaxLength(4000);
         closeout.Property(x => x.HostFollowUpNotes).HasMaxLength(4000);
+        closeout.HasQueryFilter(x =>
+            TenantFilterBypassed ||
+            (TenantFilterHasTenant && x.TenantId == TenantFilterTenantId));
     }
 
     public async Task EnsureSchemaAsync(CancellationToken cancellationToken)

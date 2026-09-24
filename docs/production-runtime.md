@@ -134,3 +134,75 @@ OTEL_EXPORTER_OTLP_ENDPOINT=https://collector.example.com:4317
 ```
 
 Use `/health/live` for process liveness and `/health/ready` for load-balancer readiness. Readiness checks SQL Server, Redis, object storage, and the platform entitlement.
+
+
+## Tenant isolation guarantee
+
+Kingdom Engagements treats the active tenant as a data-access boundary, not a controller convention.
+
+Every tenant-scoped EF Core model in all seven Engagements DbContexts has a global query filter:
+
+- `EngagementsDbContext`
+- `SpeakingRequestsDbContext`
+- `GlobalBookingDbContext`
+- `EngagementPreparationDbContext`
+- `HostAccessDbContext`
+- `AssignmentWorkspaceDbContext`
+- `EngagementCompletionDbContext`
+
+Entities with their own `TenantId` filter directly on that column. Child entities such as engagement tasks, assignment documents, speaking-request communications, and host coordination messages/documents filter through their required parent navigation. This means a query that forgets to type `.Where(x => x.TenantId == tenantId)` still cannot see another tenant.
+
+`CurrentTenantAccessor` is scoped to the request. It resolves the main ApostolOS `kingdom:tenant` claim and the separate host-access `apostolos.tenant_id` claim. Conflicting claims are rejected. Missing tenant identity no longer falls back to a demo/default tenant.
+
+Tenant-scoped writes are also validated before `SaveChanges`: an added or modified entity with a `TenantId` different from the active tenant is rejected.
+
+### Explicit tenant scopes and bypasses
+
+Code running outside an authenticated HTTP request must establish a tenant deliberately:
+
+```csharp
+using var tenantScope = tenantContext.BeginTenantScope(
+    tenantId,
+    "Reason this background or integration operation owns this tenant.");
+```
+
+Cross-tenant query-filter bypass is not a general repository feature. The only approved use is narrow token-to-tenant discovery for public one-time/request links whose tenant is not known until the opaque token is resolved. Bypass calls require a non-empty reason and emit a warning log:
+
+```csharp
+using (tenantContext.BeginCrossTenantBypass(
+    "Resolve a host invitation token to its owning tenant."))
+{
+    // token lookup only
+}
+```
+
+Immediately after discovery, code must enter the discovered tenant scope before further reads or writes.
+
+Existing explicit `TenantId == tenantId` predicates remain on service/mutation boundaries as defense in depth and to make ownership requirements obvious during code review. They are no longer the primary isolation mechanism.
+
+SignalR uses the same rule: host and internal group joins establish the tenant scope before querying assignment/access records. A client-supplied engagement ID cannot change the tenant group it is authorized to join.
+
+### Verifying isolation
+
+CI verifies isolation in two providers:
+
+1. EF InMemory regression tests seed two tenants, then query direct and navigation-scoped DbSets without tenant predicates.
+2. The connected SQL Server smoke test creates records in two organizations and calls a demo-only probe whose EF queries intentionally contain no tenant `Where` clause. Each tenant must see only its own assignments and child tasks.
+
+The initial regression test was intentionally committed before the filters and failed because `GetQueryFilter()` returned null. Keep the isolation tests as a release gate.
+
+The query filters add no columns and require no DDL change. The migration schema and the manual `EnsureSchemaAsync` DDL paths therefore remain structurally unchanged by this hardening. Navigation-based filters use relationships already represented by the existing foreign keys.
+
+## Demo-code production boundary
+
+Demo data workers, demo persona middleware/endpoints, and demo tenant identity constants are compiled only when `IncludeDemoFeatures=true`.
+
+The production Docker build defaults to:
+
+```text
+IncludeDemoFeatures=false
+```
+
+CI builds a separate demo-enabled image for local/demo smoke tests, then builds the default production image and inspects the actual `KingdomEngagements.Web.dll`. The build fails if demo worker, demo middleware, demo-role, or demo-tenant symbols are present in the production binary.
+
+The runtime checks in `ApostolOSProductionConfiguration` remain in place as a second layer. Compile-time exclusion is the primary guarantee; runtime configuration is not relied on to keep demo code from executing in production.

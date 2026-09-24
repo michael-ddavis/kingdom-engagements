@@ -305,10 +305,11 @@ public sealed class EngagementPreparationLifecycleTests
         var preparationOptions = new DbContextOptionsBuilder<EngagementPreparationDbContext>()
             .UseInMemoryDatabase($"preparation-{Guid.NewGuid():N}")
             .Options;
-        var engagements = new EngagementsDbContext(engagementOptions);
-        var requests = new SpeakingRequestsDbContext(requestOptions);
-        var preparations = new EngagementPreparationDbContext(preparationOptions);
-        var requestService = new SpeakingRequestsService(requests, engagements);
+        var tenant = new TestTenantAccessor(bypass: true);
+        var engagements = new EngagementsDbContext(engagementOptions, tenant);
+        var requests = new SpeakingRequestsDbContext(requestOptions, tenant);
+        var preparations = new EngagementPreparationDbContext(preparationOptions, tenant);
+        var requestService = new SpeakingRequestsService(requests, engagements, tenant);
         var preparationService = new EngagementPreparationService(
             preparations,
             requests,

@@ -139,7 +139,7 @@ public sealed class EngagementResponsibilityTests
             .UseInMemoryDatabase($"responsibility-tests-{Guid.NewGuid():N}")
             .Options;
 
-        var database = new EngagementsDbContext(options);
+        var database = new EngagementsDbContext(options, new TestTenantAccessor(bypass: true));
         return new TestFixture(database, new EngagementResponsibilityService(database));
     }
 

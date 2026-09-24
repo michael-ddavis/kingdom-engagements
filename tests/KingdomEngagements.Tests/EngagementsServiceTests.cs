@@ -21,6 +21,22 @@ public sealed class EngagementsServiceTests
         Assert.Contains("20260805000000_InitialEngagementsSchema", migrations);
         Assert.Contains("20260922090000_AddEngagementResponsibilities", migrations);
         Assert.Contains("20260922094500_AddEngagementMediaAssets", migrations);
+        Assert.Contains("20260923130000_TenantScopeIntegrationReceipts", migrations);
+    }
+
+    [Fact]
+    public void TenantScopedEntitiesRequireGlobalQueryFilters()
+    {
+        var options = new DbContextOptionsBuilder<EngagementsDbContext>()
+            .ReplaceService<IModelCustomizer, EngagementsModelCustomizer>()
+            .UseInMemoryDatabase($"tenant-filter-contract-{Guid.NewGuid():N}")
+            .Options;
+
+        using var database = new EngagementsDbContext(options);
+
+        Assert.NotNull(database.Model.FindEntityType(typeof(EngagementAssignment))?.GetQueryFilter());
+        Assert.NotNull(database.Model.FindEntityType(typeof(EngagementTask))?.GetQueryFilter());
+        Assert.NotNull(database.Model.FindEntityType(typeof(EngagementDocument))?.GetQueryFilter());
     }
 
     [Fact]
@@ -195,7 +211,8 @@ public sealed class EngagementsServiceTests
             .ReplaceService<IModelCustomizer, EngagementsModelCustomizer>()
             .UseInMemoryDatabase($"engagements-tests-{Guid.NewGuid():N}")
             .Options;
-        var database = new EngagementsDbContext(options);
+        var tenant = new TestTenantAccessor(bypass: true);
+        var database = new EngagementsDbContext(options, tenant);
         return new TestFixture(database, new EngagementsService(database));
     }
 

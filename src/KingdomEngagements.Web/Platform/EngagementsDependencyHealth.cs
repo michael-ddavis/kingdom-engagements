@@ -21,6 +21,7 @@ public sealed class EngagementsDependencyHealth(
     IEngagementDocumentStorage documentStorage,
     EngagementsEntitlementResolver entitlements,
     IConfiguration configuration,
+    TenantConfiguration tenantConfiguration,
     ILogger<EngagementsDependencyHealth> logger)
 {
     public async Task<IReadOnlyList<EngagementsDependencyStatus>> CheckAsync(
@@ -94,7 +95,7 @@ public sealed class EngagementsDependencyHealth(
         try
         {
             var state = await entitlements.GetStateAsync(
-                KingdomIdentity.DemoTenantId,
+                tenantConfiguration.ReadinessTenantId,
                 cancellationToken);
 
             var healthy = state == ModuleEntitlementState.Enabled;

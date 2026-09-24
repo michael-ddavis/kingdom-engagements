@@ -5,8 +5,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KingdomEngagements.Web.Features;
 
-public sealed class EngagementsDbContext(DbContextOptions<EngagementsDbContext> options)
-    : DbContext(options)
+public sealed class EngagementsDbContext(
+    DbContextOptions<EngagementsDbContext> options,
+    ICurrentTenantAccessor? tenantAccessor = null)
+    : TenantScopedDbContext(options, tenantAccessor)
 {
     public DbSet<EngagementAssignment> Assignments => Set<EngagementAssignment>();
     public DbSet<EngagementTask> Tasks => Set<EngagementTask>();
@@ -39,6 +41,9 @@ public sealed class EngagementsDbContext(DbContextOptions<EngagementsDbContext> 
         assignment.Property(x => x.CloseoutStatus).HasMaxLength(40).IsRequired();
         assignment.Property(x => x.Notes).HasMaxLength(12000);
         assignment.HasIndex(x => new { x.TenantId, x.ExternalAssignmentId }).IsUnique();
+        assignment.HasQueryFilter(x =>
+            TenantFilterBypassed ||
+            (TenantFilterHasTenant && x.TenantId == TenantFilterTenantId));
         assignment.HasMany(x => x.Tasks).WithOne(x => x.Assignment)
             .HasForeignKey(x => x.AssignmentId).OnDelete(DeleteBehavior.Cascade);
         assignment.HasMany(x => x.Documents).WithOne(x => x.Assignment)
@@ -54,6 +59,11 @@ public sealed class EngagementsDbContext(DbContextOptions<EngagementsDbContext> 
         task.Property(x => x.Status).HasMaxLength(40).IsRequired();
         task.Property(x => x.Detail).HasMaxLength(3000);
         task.HasIndex(x => new { x.AssignmentId, x.Category, x.Title }).IsUnique();
+        task.HasQueryFilter(x =>
+            TenantFilterBypassed ||
+            (TenantFilterHasTenant &&
+             x.Assignment != null &&
+             x.Assignment.TenantId == TenantFilterTenantId));
 
         var document = modelBuilder.Entity<EngagementDocument>();
         document.ToTable("EngagementDocuments");
@@ -62,6 +72,11 @@ public sealed class EngagementsDbContext(DbContextOptions<EngagementsDbContext> 
         document.Property(x => x.Category).HasMaxLength(60).IsRequired();
         document.Property(x => x.Status).HasMaxLength(40).IsRequired();
         document.Property(x => x.StorageReference).HasMaxLength(1000);
+        document.HasQueryFilter(x =>
+            TenantFilterBypassed ||
+            (TenantFilterHasTenant &&
+             x.Assignment != null &&
+             x.Assignment.TenantId == TenantFilterTenantId));
 
         var standingResponsibility = modelBuilder.Entity<StandingResponsibilityAssignment>();
         standingResponsibility.ToTable("StandingResponsibilityAssignments");
@@ -73,6 +88,9 @@ public sealed class EngagementsDbContext(DbContextOptions<EngagementsDbContext> 
         standingResponsibility.Property(x => x.UpdatedBySubject).HasMaxLength(180).IsRequired();
         standingResponsibility.Property(x => x.UpdatedByName).HasMaxLength(180).IsRequired();
         standingResponsibility.HasIndex(x => new { x.TenantId, x.LaneKey }).IsUnique();
+        standingResponsibility.HasQueryFilter(x =>
+            TenantFilterBypassed ||
+            (TenantFilterHasTenant && x.TenantId == TenantFilterTenantId));
 
         var responsibilityOverride = modelBuilder.Entity<EngagementResponsibilityOverride>();
         responsibilityOverride.ToTable("EngagementResponsibilityOverrides");
@@ -86,6 +104,9 @@ public sealed class EngagementsDbContext(DbContextOptions<EngagementsDbContext> 
         responsibilityOverride.HasIndex(x => new { x.AssignmentId, x.LaneKey }).IsUnique();
         responsibilityOverride.HasOne(x => x.Assignment).WithMany()
             .HasForeignKey(x => x.AssignmentId).OnDelete(DeleteBehavior.Cascade);
+        responsibilityOverride.HasQueryFilter(x =>
+            TenantFilterBypassed ||
+            (TenantFilterHasTenant && x.TenantId == TenantFilterTenantId));
 
         var laneProgress = modelBuilder.Entity<EngagementLaneProgress>();
         laneProgress.ToTable("EngagementLaneProgress");
@@ -100,6 +121,9 @@ public sealed class EngagementsDbContext(DbContextOptions<EngagementsDbContext> 
         laneProgress.HasIndex(x => new { x.AssignmentId, x.LaneKey }).IsUnique();
         laneProgress.HasOne(x => x.Assignment).WithMany()
             .HasForeignKey(x => x.AssignmentId).OnDelete(DeleteBehavior.Cascade);
+        laneProgress.HasQueryFilter(x =>
+            TenantFilterBypassed ||
+            (TenantFilterHasTenant && x.TenantId == TenantFilterTenantId));
 
         var teamMember = modelBuilder.Entity<EngagementTeamMember>();
         teamMember.ToTable("EngagementTeamMembers");
@@ -108,6 +132,9 @@ public sealed class EngagementsDbContext(DbContextOptions<EngagementsDbContext> 
         teamMember.Property(x => x.AddedBySubject).HasMaxLength(180).IsRequired();
         teamMember.Property(x => x.AddedByName).HasMaxLength(180).IsRequired();
         teamMember.HasIndex(x => new { x.TenantId, x.AccountId }).IsUnique();
+        teamMember.HasQueryFilter(x =>
+            TenantFilterBypassed ||
+            (TenantFilterHasTenant && x.TenantId == TenantFilterTenantId));
 
         var mediaAsset = modelBuilder.Entity<EngagementMediaAsset>();
         mediaAsset.ToTable("EngagementMediaAssets");
@@ -125,10 +152,16 @@ public sealed class EngagementsDbContext(DbContextOptions<EngagementsDbContext> 
         mediaAsset.HasIndex(x => new { x.AssignmentId, x.Status });
         mediaAsset.HasOne(x => x.Assignment).WithMany()
             .HasForeignKey(x => x.AssignmentId).OnDelete(DeleteBehavior.Cascade);
+        mediaAsset.HasQueryFilter(x =>
+            TenantFilterBypassed ||
+            (TenantFilterHasTenant && x.TenantId == TenantFilterTenantId));
 
         var receipt = modelBuilder.Entity<EngagementIntegrationReceipt>();
         receipt.ToTable("EngagementIntegrationReceipts");
-        receipt.HasKey(x => x.EventId);
+        receipt.HasKey(x => new { x.TenantId, x.EventId });
+        receipt.HasQueryFilter(x =>
+            TenantFilterBypassed ||
+            (TenantFilterHasTenant && x.TenantId == TenantFilterTenantId));
         receipt.Property(x => x.EventName).HasMaxLength(120).IsRequired();
         receipt.Property(x => x.SourceModule).HasMaxLength(80).IsRequired();
     }
@@ -190,6 +223,7 @@ public sealed class EngagementDocument
 
 public sealed class EngagementIntegrationReceipt
 {
+    public Guid TenantId { get; set; }
     public Guid EventId { get; set; }
     public string EventName { get; set; } = string.Empty;
     public string SourceModule { get; set; } = string.Empty;
@@ -283,61 +317,6 @@ public sealed class EngagementsInitializer(EngagementsDbContext database)
             await database.Database.MigrateAsync(cancellationToken);
         else
             await database.Database.EnsureCreatedAsync(cancellationToken);
-
-        if (await database.Assignments.AnyAsync(cancellationToken)) return;
-
-        var now = DateTimeOffset.UtcNow;
-        var assignment = new EngagementAssignment
-        {
-            Id = Guid.NewGuid(),
-            TenantId = KingdomIdentity.DemoTenantId,
-            ExternalAssignmentId = "assignment-demo-001",
-            Title = "Kingdom Leadership Gathering",
-            SpeakerName = "Cynthia Thompson",
-            HostOrganization = "New Covenant Fellowship",
-            HostContactName = "Jordan Ellis",
-            HostContactEmail = "jordan@example.org",
-            Location = "Atlanta, Georgia",
-            StartsAtUtc = now.AddDays(21),
-            EndsAtUtc = now.AddDays(23),
-            Status = "planning",
-            TravelStatus = "in-progress",
-            LodgingStatus = "confirmed",
-            TransportationStatus = "needs-attention",
-            HostStatus = "confirmed",
-            DocumentsStatus = "in-progress",
-            CloseoutStatus = "not-started",
-            Notes = "Keep host logistics and traveler-facing details inside Engagements.",
-            CreatedAtUtc = now,
-            UpdatedAtUtc = now,
-        };
-        assignment.Tasks.Add(new EngagementTask
-        {
-            Id = Guid.NewGuid(), Category = "travel", Title = "Confirm flight itinerary",
-            Owner = "Engagement Coordinator", Status = "in-progress", DueAtUtc = now.AddDays(7), UpdatedAtUtc = now
-        });
-        assignment.Tasks.Add(new EngagementTask
-        {
-            Id = Guid.NewGuid(), Category = "transportation", Title = "Confirm airport pickup",
-            Owner = "Host Coordinator", Status = "open", DueAtUtc = now.AddDays(12), UpdatedAtUtc = now
-        });
-        assignment.Tasks.Add(new EngagementTask
-        {
-            Id = Guid.NewGuid(), Category = "host", Title = "Approve final event schedule",
-            Owner = "Host Organization", Status = "complete", DueAtUtc = now.AddDays(5), UpdatedAtUtc = now
-        });
-        assignment.Documents.Add(new EngagementDocument
-        {
-            Id = Guid.NewGuid(), Name = "Speaker agreement", Category = "agreement",
-            Status = "received", UpdatedAtUtc = now
-        });
-        assignment.Documents.Add(new EngagementDocument
-        {
-            Id = Guid.NewGuid(), Name = "Final itinerary", Category = "travel",
-            Status = "requested", UpdatedAtUtc = now
-        });
-        database.Assignments.Add(assignment);
-        await database.SaveChangesAsync(cancellationToken);
     }
 }
 
@@ -469,7 +448,9 @@ public sealed class EngagementsService(EngagementsDbContext database)
 
     public async Task<(bool Duplicate, Guid? AssignmentId)> IngestAsync(IntegrationEventEnvelope envelope, CancellationToken cancellationToken)
     {
-        if (await database.IntegrationReceipts.AnyAsync(x => x.EventId == envelope.EventId, cancellationToken))
+        if (await database.IntegrationReceipts.AnyAsync(
+                x => x.TenantId == envelope.TenantId && x.EventId == envelope.EventId,
+                cancellationToken))
         {
             var existingExternal = PayloadString(envelope.Payload, "assignmentId")
                 ?? PayloadString(envelope.Payload, "subjectId") ?? PayloadString(envelope.Payload, "id");
@@ -515,6 +496,7 @@ public sealed class EngagementsService(EngagementsDbContext database)
         }
         database.IntegrationReceipts.Add(new EngagementIntegrationReceipt
         {
+            TenantId = envelope.TenantId,
             EventId = envelope.EventId, EventName = envelope.EventName,
             SourceModule = envelope.SourceModule, ReceivedAtUtc = DateTimeOffset.UtcNow
         });
@@ -782,6 +764,7 @@ public static class EngagementsEndpoints
             IConfiguration configuration,
             IWebHostEnvironment environment,
             EngagementsService service,
+            ICurrentTenantAccessor tenantContext,
             CancellationToken ct) =>
         {
             var configuredKey = configuration["KingdomOS:Integration:ServiceKey"];
@@ -791,6 +774,9 @@ public static class EngagementsEndpoints
                 return Results.Unauthorized();
             try
             {
+                using var tenantScope = tenantContext.BeginTenantScope(
+                    envelope.TenantId,
+                    "Authenticated integration event envelope tenant.");
                 var result = await service.IngestAsync(envelope, ct);
                 return Results.Ok(new { accepted = true, duplicate = result.Duplicate, assignmentId = result.AssignmentId });
             }

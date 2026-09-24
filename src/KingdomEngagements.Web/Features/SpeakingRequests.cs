@@ -3,7 +3,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KingdomEngagements.Web.Features;
 
-public sealed class SpeakingRequestsDbContext(DbContextOptions<SpeakingRequestsDbContext> options) : DbContext(options)
+public sealed class SpeakingRequestsDbContext(
+    DbContextOptions<SpeakingRequestsDbContext> options,
+    ICurrentTenantAccessor? tenantAccessor = null) : TenantScopedDbContext(options, tenantAccessor)
 {
     public DbSet<SpeakingRequestRecord> Requests => Set<SpeakingRequestRecord>();
     public DbSet<SpeakingRequestCommunicationRecord> Communications => Set<SpeakingRequestCommunicationRecord>();
@@ -44,6 +46,9 @@ public sealed class SpeakingRequestsDbContext(DbContextOptions<SpeakingRequestsD
         request.Property(x => x.DeclineReason).HasMaxLength(3000);
         request.HasMany(x => x.Communications).WithOne(x => x.Request)
             .HasForeignKey(x => x.RequestId).OnDelete(DeleteBehavior.Cascade);
+        request.HasQueryFilter(x =>
+            TenantFilterBypassed ||
+            (TenantFilterHasTenant && x.TenantId == TenantFilterTenantId));
 
         var communication = modelBuilder.Entity<SpeakingRequestCommunicationRecord>();
         communication.ToTable("EngagementSpeakingRequestCommunications");
@@ -51,6 +56,11 @@ public sealed class SpeakingRequestsDbContext(DbContextOptions<SpeakingRequestsD
         communication.Property(x => x.Type).HasMaxLength(60).IsRequired();
         communication.Property(x => x.Message).HasMaxLength(4000).IsRequired();
         communication.Property(x => x.Actor).HasMaxLength(180).IsRequired();
+        communication.HasQueryFilter(x =>
+            TenantFilterBypassed ||
+            (TenantFilterHasTenant &&
+             x.Request != null &&
+             x.Request.TenantId == TenantFilterTenantId));
     }
 
     public async Task EnsureSchemaAsync(CancellationToken cancellationToken)
@@ -261,7 +271,8 @@ public sealed record SpeakingRequestDetails(
 
 public sealed class SpeakingRequestsService(
     SpeakingRequestsDbContext requestsDatabase,
-    EngagementsDbContext engagementsDatabase)
+    EngagementsDbContext engagementsDatabase,
+    ICurrentTenantAccessor tenantContext)
 {
     private static readonly HashSet<string> ConfirmationValues = new(StringComparer.OrdinalIgnoreCase)
         { "yes", "no", "not-determined" };
@@ -321,11 +332,22 @@ public sealed class SpeakingRequestsService(
     public async Task<SpeakingRequestDetails?> GetForHostAsync(string token, CancellationToken cancellationToken)
     {
         await requestsDatabase.EnsureSchemaAsync(cancellationToken);
-        var request = await requestsDatabase.Requests.AsNoTracking()
-            .Include(x => x.Communications)
-            .SingleOrDefaultAsync(x => x.EditToken == token, cancellationToken);
+
+        SpeakingRequestRecord? request;
+        using (tenantContext.BeginCrossTenantBypass(
+                   "Resolve a public speaking-request token to its owning tenant."))
+        {
+            request = await requestsDatabase.Requests.AsNoTracking()
+                .Include(x => x.Communications)
+                .SingleOrDefaultAsync(x => x.EditToken == token, cancellationToken);
+        }
+
         if (!HostLinkValid(request)) return null;
-        return Map(request!);
+
+        using var tenantScope = tenantContext.BeginTenantScope(
+            request!.TenantId,
+            "Continue public speaking-request access in the token's owning tenant.");
+        return Map(request);
     }
 
     public async Task<SpeakingRequestDetails?> SubmitHostResponseAsync(string token, HostSpeakingRequestUpdate update, CancellationToken cancellationToken)
@@ -333,13 +355,24 @@ public sealed class SpeakingRequestsService(
         await requestsDatabase.EnsureSchemaAsync(cancellationToken);
         Validate(update.Request);
         var response = Required(update.ResponseMessage, nameof(update.ResponseMessage));
-        var request = await requestsDatabase.Requests.Include(x => x.Communications)
-            .SingleOrDefaultAsync(x => x.EditToken == token, cancellationToken);
+
+        SpeakingRequestRecord? request;
+        using (tenantContext.BeginCrossTenantBypass(
+                   "Resolve a public speaking-request token before applying a host response."))
+        {
+            request = await requestsDatabase.Requests.Include(x => x.Communications)
+                .SingleOrDefaultAsync(x => x.EditToken == token, cancellationToken);
+        }
+
         if (!HostLinkValid(request)) return null;
 
-        Apply(request!, update.Request);
+        using var tenantScope = tenantContext.BeginTenantScope(
+            request!.TenantId,
+            "Apply a host response in the speaking request's owning tenant.");
+
+        Apply(request, update.Request);
         var now = DateTimeOffset.UtcNow;
-        request!.Status = "awaiting-review";
+        request.Status = "awaiting-review";
         request.EditTokenExpiresAtUtc = null;
         request.UpdatedAtUtc = now;
         request.Communications.Add(NewCommunication(request.Id, "host-responded", response, request.ContactName, now));
@@ -607,9 +640,21 @@ public static class SpeakingRequestEndpoints
     public static IEndpointRouteBuilder MapSpeakingRequestEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var publicGroup = endpoints.MapGroup("/api/public/engagements/requests").AllowAnonymous();
-        publicGroup.MapPost("", async (SpeakingRequestInput request, SpeakingRequestsService service, CancellationToken ct) =>
+        publicGroup.MapPost("", async (
+            SpeakingRequestInput request,
+            SpeakingRequestsService service,
+            TenantConfiguration tenants,
+            ICurrentTenantAccessor tenantContext,
+            CancellationToken ct) =>
         {
-            try { return Results.Ok(await service.CreateAsync(KingdomIdentity.DemoTenantId, request, ct)); }
+            try
+            {
+                var tenantId = tenants.DefaultPublicInvitationTenantId;
+                using var tenantScope = tenantContext.BeginTenantScope(
+                    tenantId,
+                    "Public invitation intake is routed by configured ministry tenant.");
+                return Results.Ok(await service.CreateAsync(tenantId, request, ct));
+            }
             catch (ArgumentException exception) { return Results.ValidationProblem(new Dictionary<string, string[]> { ["request"] = [exception.Message] }); }
         });
         publicGroup.MapGet("/{token}", async (string token, SpeakingRequestsService service, CancellationToken ct) =>

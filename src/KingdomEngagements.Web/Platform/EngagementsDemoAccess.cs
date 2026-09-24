@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -365,6 +366,28 @@ public static class EngagementsDemoAccessEndpoints
     public static IEndpointRouteBuilder MapEngagementsDemoAccessEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/engagements").RequireAuthorization("EngagementsAccess");
+
+        group.MapGet("/tenant-isolation-probe", async (
+            HttpContext context,
+            EngagementsDbContext database,
+            CancellationToken cancellationToken) =>
+        {
+            var tenantId = KingdomIdentity.TenantId(context.User, context.Request);
+
+            // Intentionally no tenant predicate: this endpoint exists only in DEMO_FEATURES
+            // builds so connected SQL CI can prove the EF global filters are the boundary.
+            var assignments = await database.Assignments.AsNoTracking()
+                .OrderBy(x => x.ExternalAssignmentId)
+                .Select(x => x.ExternalAssignmentId)
+                .ToArrayAsync(cancellationToken);
+
+            var tasks = await database.Tasks.AsNoTracking()
+                .OrderBy(x => x.Title)
+                .Select(x => x.Title)
+                .ToArrayAsync(cancellationToken);
+
+            return Results.Ok(new { tenantId, assignments, tasks });
+        });
 
         group.MapGet("/demo-persona", (HttpContext context) =>
         {

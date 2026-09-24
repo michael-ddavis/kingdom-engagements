@@ -4,7 +4,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KingdomEngagements.Web.Features;
 
-public sealed class EngagementPreparationDbContext(DbContextOptions<EngagementPreparationDbContext> options) : DbContext(options)
+public sealed class EngagementPreparationDbContext(
+    DbContextOptions<EngagementPreparationDbContext> options,
+    ICurrentTenantAccessor? tenantAccessor = null)
+    : TenantFilteredDbContext(options, tenantAccessor)
 {
     public DbSet<EngagementPreparationRecord> Preparations => Set<EngagementPreparationRecord>();
     public DbSet<HostCoordinationDocumentRecord> Documents => Set<HostCoordinationDocumentRecord>();
@@ -73,6 +76,8 @@ public sealed class EngagementPreparationDbContext(DbContextOptions<EngagementPr
         document.Property(x => x.StorageProvider).HasMaxLength(40).IsRequired();
         document.Property(x => x.StorageKey).HasMaxLength(900);
         document.Property(x => x.Content).IsRequired();
+        document.HasOne(x => x.Preparation).WithMany()
+            .HasForeignKey(x => x.PreparationId).OnDelete(DeleteBehavior.Cascade);
 
         var message = modelBuilder.Entity<HostCoordinationMessageRecord>();
         message.ToTable("EngagementHostCoordinationMessages");
@@ -84,6 +89,15 @@ public sealed class EngagementPreparationDbContext(DbContextOptions<EngagementPr
         message.Property(x => x.Message).HasMaxLength(4000).IsRequired();
         message.HasOne(x => x.Preparation).WithMany()
             .HasForeignKey(x => x.PreparationId).OnDelete(DeleteBehavior.Cascade);
+
+        preparation.HasQueryFilter(x =>
+            TenantFilterBypassed || x.TenantId == CurrentTenantId);
+        document.HasQueryFilter(x =>
+            TenantFilterBypassed ||
+            (x.Preparation != null && x.Preparation.TenantId == CurrentTenantId));
+        message.HasQueryFilter(x =>
+            TenantFilterBypassed ||
+            (x.Preparation != null && x.Preparation.TenantId == CurrentTenantId));
     }
 
     public async Task EnsureSchemaAsync(CancellationToken cancellationToken)
@@ -311,6 +325,7 @@ public sealed class HostCoordinationDocumentRecord
 {
     public Guid Id { get; set; }
     public Guid PreparationId { get; set; }
+    public EngagementPreparationRecord? Preparation { get; set; }
     public string FileName { get; set; } = string.Empty;
     public string Category { get; set; } = "host-coordination";
     public string ContentType { get; set; } = "application/octet-stream";
@@ -464,16 +479,20 @@ public sealed class EngagementPreparationService(
     EngagementPreparationDbContext database,
     SpeakingRequestsDbContext requestsDatabase,
     EngagementsDbContext engagementsDatabase,
-    IEngagementDocumentStorage? documentStorage = null)
+    IEngagementDocumentStorage? documentStorage = null,
+    ICurrentTenantAccessor? tenantAccessor = null)
 {
     private readonly IEngagementDocumentStorage _documentStorage =
         documentStorage ?? DatabaseEngagementDocumentStorage.Instance;
+    private readonly ICurrentTenantAccessor _tenantAccessor =
+        tenantAccessor ?? NoCurrentTenantAccessor.Instance;
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private const int MaxDocumentBytes = 10 * 1024 * 1024;
 
     public async Task<EngagementPreparationDetails?> EnsureAsync(Guid tenantId, Guid assignmentId, CancellationToken cancellationToken)
     {
+        using var tenantScope = _tenantAccessor.BeginTenant(tenantId, "ensure engagement preparation");
         await database.EnsureSchemaAsync(cancellationToken);
         await requestsDatabase.EnsureSchemaAsync(cancellationToken);
 
@@ -588,9 +607,11 @@ public sealed class EngagementPreparationService(
     public async Task<EngagementTermsDetails?> GetTermsAsync(string token, CancellationToken cancellationToken)
     {
         await database.EnsureSchemaAsync(cancellationToken);
-        var preparation = await database.Preparations.AsNoTracking()
-            .SingleOrDefaultAsync(x => x.TermsToken == token, cancellationToken);
+        var preparation = await FindPreparationByTermsTokenAsync(token, tracking: false, cancellationToken);
         if (preparation is null) return null;
+        using var tenantScope = _tenantAccessor.BeginTenant(
+            preparation.TenantId,
+            "read engagement terms through capability token");
         if (preparation.TermsStatus != "accepted" && preparation.TermsTokenExpiresAtUtc <= DateTimeOffset.UtcNow) return null;
         return MapTerms(preparation, includeCoordinationToken: preparation.TermsStatus == "accepted");
     }
@@ -604,8 +625,11 @@ public sealed class EngagementPreparationService(
         var email = Required(input.SignatoryEmail, nameof(input.SignatoryEmail)).ToLowerInvariant();
         if (!email.Contains('@')) throw new ArgumentException("A valid signatory email is required.");
 
-        var preparation = await database.Preparations.SingleOrDefaultAsync(x => x.TermsToken == token, cancellationToken);
+        var preparation = await FindPreparationByTermsTokenAsync(token, tracking: true, cancellationToken);
         if (preparation is null) return null;
+        using var tenantScope = _tenantAccessor.BeginTenant(
+            preparation.TenantId,
+            "accept engagement terms through capability token");
         if (preparation.TermsStatus == "accepted") return MapTerms(preparation, includeCoordinationToken: true);
         if (preparation.TermsTokenExpiresAtUtc <= DateTimeOffset.UtcNow) return null;
 
@@ -665,19 +689,24 @@ public sealed class EngagementPreparationService(
     public async Task<HostCoordinationDetails?> GetCoordinationAsync(string token, CancellationToken cancellationToken)
     {
         await database.EnsureSchemaAsync(cancellationToken);
-        var preparation = await database.Preparations.AsNoTracking()
-            .SingleOrDefaultAsync(x => x.CoordinationToken == token, cancellationToken);
+        var preparation = await FindPreparationByCoordinationTokenAsync(token, tracking: false, cancellationToken);
         if (!CoordinationLinkValid(preparation)) return null;
-        return await MapCoordinationAsync(preparation!, cancellationToken);
+        using var tenantScope = _tenantAccessor.BeginTenant(
+            preparation!.TenantId,
+            "read host coordination through capability token");
+        return await MapCoordinationAsync(preparation, cancellationToken);
     }
 
     public async Task<HostCoordinationDetails?> SaveCoordinationAsync(string token, HostCoordinationUpdate input, CancellationToken cancellationToken)
     {
         await database.EnsureSchemaAsync(cancellationToken);
-        var preparation = await database.Preparations.SingleOrDefaultAsync(x => x.CoordinationToken == token, cancellationToken);
+        var preparation = await FindPreparationByCoordinationTokenAsync(token, tracking: true, cancellationToken);
         if (!CoordinationLinkValid(preparation)) return null;
+        using var tenantScope = _tenantAccessor.BeginTenant(
+            preparation!.TenantId,
+            "update host coordination through capability token");
 
-        ApplyCoordination(preparation!, input);
+        ApplyCoordination(preparation, input);
         var now = DateTimeOffset.UtcNow;
         preparation!.CoordinationStatus = input.Submit ? "submitted" : "in-progress";
         preparation.SubmittedAtUtc = input.Submit ? now : preparation.SubmittedAtUtc;
@@ -695,8 +724,11 @@ public sealed class EngagementPreparationService(
         var preparation = await database.Preparations.AsNoTracking()
             .SingleOrDefaultAsync(x => x.CoordinationToken == token, cancellationToken);
         if (!CoordinationLinkValid(preparation)) return null;
+        using var tenantScope = _tenantAccessor.BeginTenant(
+            preparation!.TenantId,
+            "read host coordination messages through capability token");
 
-        return await MapMessageThreadAsync(preparation!, cancellationToken);
+        return await MapMessageThreadAsync(preparation, cancellationToken);
     }
 
     public async Task<HostCoordinationThread?> AddHostMessageAsync(
@@ -708,7 +740,10 @@ public sealed class EngagementPreparationService(
         var preparation = await database.Preparations
             .SingleOrDefaultAsync(x => x.CoordinationToken == token, cancellationToken);
         if (!CoordinationLinkValid(preparation)) return null;
-        if (string.Equals(preparation!.CoordinationStatus, "submitted", StringComparison.OrdinalIgnoreCase))
+        using var tenantScope = _tenantAccessor.BeginTenant(
+            preparation!.TenantId,
+            "mutate host coordination through capability token");
+        if (string.Equals(preparation.CoordinationStatus, "submitted", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("Host coordination is complete and this conversation is closed.");
 
         AddMessage(
@@ -726,6 +761,7 @@ public sealed class EngagementPreparationService(
         Guid assignmentId,
         CancellationToken cancellationToken)
     {
+        using var tenantScope = _tenantAccessor.BeginTenant(tenantId, "read assignment coordination messages");
         await database.EnsureSchemaAsync(cancellationToken);
         var preparation = await database.Preparations.AsNoTracking()
             .SingleOrDefaultAsync(
@@ -743,6 +779,7 @@ public sealed class EngagementPreparationService(
         PostMinistryCoordinationMessageRequest request,
         CancellationToken cancellationToken)
     {
+        using var tenantScope = _tenantAccessor.BeginTenant(tenantId, "add ministry coordination message");
         await database.EnsureSchemaAsync(cancellationToken);
         var preparation = await database.Preparations
             .SingleOrDefaultAsync(
@@ -779,8 +816,11 @@ public sealed class EngagementPreparationService(
         CancellationToken cancellationToken)
     {
         await database.EnsureSchemaAsync(cancellationToken);
-        var preparation = await database.Preparations.SingleOrDefaultAsync(x => x.CoordinationToken == token, cancellationToken);
+        var preparation = await FindPreparationByCoordinationTokenAsync(token, tracking: true, cancellationToken);
         if (!CoordinationLinkValid(preparation)) return null;
+        using var tenantScope = _tenantAccessor.BeginTenant(
+            preparation!.TenantId,
+            "upload host coordination document through capability token");
         if (content.Length == 0) throw new ArgumentException("Choose a file to upload.");
         if (content.Length > MaxDocumentBytes) throw new ArgumentException("Host coordination documents must be 10 MB or smaller.");
 
@@ -855,6 +895,9 @@ public sealed class EngagementPreparationService(
         var preparation = await database.Preparations.AsNoTracking()
             .SingleOrDefaultAsync(x => x.CoordinationToken == token, cancellationToken);
         if (!CoordinationLinkValid(preparation)) return null;
+        using var tenantScope = _tenantAccessor.BeginTenant(
+            preparation!.TenantId,
+            "download host coordination document through capability token");
         var document = await database.Documents.AsNoTracking()
             .SingleOrDefaultAsync(x => x.PreparationId == preparation!.Id && x.Id == documentId, cancellationToken);
         if (document is null) return null;
@@ -865,6 +908,7 @@ public sealed class EngagementPreparationService(
 
     public async Task<HostCoordinationDocumentRecord?> GetDocumentForAssignmentAsync(Guid tenantId, Guid assignmentId, Guid documentId, CancellationToken cancellationToken)
     {
+        using var tenantScope = _tenantAccessor.BeginTenant(tenantId, "read assignment coordination document");
         await database.EnsureSchemaAsync(cancellationToken);
         var preparationId = await database.Preparations.AsNoTracking()
             .Where(x => x.TenantId == tenantId && x.AssignmentId == assignmentId)
@@ -877,6 +921,56 @@ public sealed class EngagementPreparationService(
 
         document.Content = await _documentStorage.ReadAsync(document, cancellationToken);
         return document;
+    }
+
+    private async Task<EngagementPreparationRecord?> FindPreparationByTermsTokenAsync(
+        string token,
+        bool tracking,
+        CancellationToken cancellationToken)
+    {
+        return await FindPreparationByCapabilityTokenAsync(
+            token,
+            tracking,
+            termsToken: true,
+            cancellationToken);
+    }
+
+    private async Task<EngagementPreparationRecord?> FindPreparationByCoordinationTokenAsync(
+        string token,
+        bool tracking,
+        CancellationToken cancellationToken)
+    {
+        return await FindPreparationByCapabilityTokenAsync(
+            token,
+            tracking,
+            termsToken: false,
+            cancellationToken);
+    }
+
+    private async Task<EngagementPreparationRecord?> FindPreparationByCapabilityTokenAsync(
+        string token,
+        bool tracking,
+        bool termsToken,
+        CancellationToken cancellationToken)
+    {
+        IQueryable<EngagementPreparationRecord> Query() =>
+            tracking ? database.Preparations : database.Preparations.AsNoTracking();
+
+        if (_tenantAccessor.TenantId is not null)
+        {
+            return termsToken
+                ? await Query().SingleOrDefaultAsync(x => x.TermsToken == token, cancellationToken)
+                : await Query().SingleOrDefaultAsync(x => x.CoordinationToken == token, cancellationToken);
+        }
+
+        using var bypass = _tenantAccessor.BeginFilterBypass(
+            termsToken
+                ? "resolve engagement tenant from an exact terms capability token"
+                : "resolve engagement tenant from an exact coordination capability token");
+
+        return termsToken
+            ? await Query().SingleOrDefaultAsync(x => x.TermsToken == token, cancellationToken)
+            : await Query().SingleOrDefaultAsync(x => x.CoordinationToken == token, cancellationToken);
     }
 
     private async Task SyncAssignmentAsync(EngagementPreparationRecord preparation, bool submitted, CancellationToken cancellationToken)

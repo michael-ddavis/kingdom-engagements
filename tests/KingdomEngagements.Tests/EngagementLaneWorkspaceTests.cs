@@ -1,5 +1,6 @@
 using System.Text.Json;
 using KingdomEngagements.Web.Features;
+using KingdomEngagements.Web.Platform;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 
@@ -153,6 +154,9 @@ public sealed class EngagementLaneWorkspaceTests
 
     private static TestFixture CreateFixture()
     {
+        var tenantId = Guid.NewGuid();
+        var tenantAccessor = new TestCurrentTenantAccessor();
+        var tenantScope = tenantAccessor.BeginTenant(tenantId, "engagement lane workspace fixture");
         var engagementOptions = new DbContextOptionsBuilder<EngagementsDbContext>()
             .ReplaceService<IModelCustomizer, EngagementsModelCustomizer>()
             .UseInMemoryDatabase($"lane-engagements-{Guid.NewGuid():N}")
@@ -168,12 +172,16 @@ public sealed class EngagementLaneWorkspaceTests
             .UseInMemoryDatabase($"lane-activity-{Guid.NewGuid():N}")
             .Options;
 
-        var engagements = new EngagementsDbContext(engagementOptions);
-        var requests = new SpeakingRequestsDbContext(requestOptions);
-        var preparations = new EngagementPreparationDbContext(preparationOptions);
-        var activity = new AssignmentWorkspaceDbContext(activityOptions);
+        var engagements = new EngagementsDbContext(engagementOptions, tenantAccessor);
+        var requests = new SpeakingRequestsDbContext(requestOptions, tenantAccessor);
+        var preparations = new EngagementPreparationDbContext(preparationOptions, tenantAccessor);
+        var activity = new AssignmentWorkspaceDbContext(activityOptions, tenantAccessor);
 
-        var preparationService = new EngagementPreparationService(preparations, requests, engagements);
+        var preparationService = new EngagementPreparationService(
+            preparations,
+            requests,
+            engagements,
+            tenantAccessor: tenantAccessor);
         var workspace = new AssignmentWorkspaceService(
             activity,
             preparations,
@@ -190,7 +198,8 @@ public sealed class EngagementLaneWorkspaceTests
             responsibilities);
 
         return new TestFixture(
-            Guid.NewGuid(),
+            tenantId,
+            tenantScope,
             engagements,
             requests,
             preparations,
@@ -200,6 +209,7 @@ public sealed class EngagementLaneWorkspaceTests
 
     private sealed class TestFixture(
         Guid tenantId,
+        IDisposable tenantScope,
         EngagementsDbContext engagements,
         SpeakingRequestsDbContext requests,
         EngagementPreparationDbContext preparations,
@@ -242,6 +252,7 @@ public sealed class EngagementLaneWorkspaceTests
 
         public async ValueTask DisposeAsync()
         {
+            tenantScope.Dispose();
             await Activity.DisposeAsync();
             await Preparations.DisposeAsync();
             await Requests.DisposeAsync();

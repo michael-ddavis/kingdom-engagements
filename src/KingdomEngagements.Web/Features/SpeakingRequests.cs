@@ -3,7 +3,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KingdomEngagements.Web.Features;
 
-public sealed class SpeakingRequestsDbContext(DbContextOptions<SpeakingRequestsDbContext> options) : DbContext(options)
+public sealed class SpeakingRequestsDbContext(
+    DbContextOptions<SpeakingRequestsDbContext> options,
+    ICurrentTenantAccessor? tenantAccessor = null)
+    : TenantFilteredDbContext(options, tenantAccessor)
 {
     public DbSet<SpeakingRequestRecord> Requests => Set<SpeakingRequestRecord>();
     public DbSet<SpeakingRequestCommunicationRecord> Communications => Set<SpeakingRequestCommunicationRecord>();
@@ -51,6 +54,12 @@ public sealed class SpeakingRequestsDbContext(DbContextOptions<SpeakingRequestsD
         communication.Property(x => x.Type).HasMaxLength(60).IsRequired();
         communication.Property(x => x.Message).HasMaxLength(4000).IsRequired();
         communication.Property(x => x.Actor).HasMaxLength(180).IsRequired();
+
+        request.HasQueryFilter(x =>
+            TenantFilterBypassed || x.TenantId == CurrentTenantId);
+        communication.HasQueryFilter(x =>
+            TenantFilterBypassed ||
+            (x.Request != null && x.Request.TenantId == CurrentTenantId));
     }
 
     public async Task EnsureSchemaAsync(CancellationToken cancellationToken)
@@ -261,8 +270,11 @@ public sealed record SpeakingRequestDetails(
 
 public sealed class SpeakingRequestsService(
     SpeakingRequestsDbContext requestsDatabase,
-    EngagementsDbContext engagementsDatabase)
+    EngagementsDbContext engagementsDatabase,
+    ICurrentTenantAccessor? tenantAccessor = null)
 {
+    private readonly ICurrentTenantAccessor _tenantAccessor =
+        tenantAccessor ?? NoCurrentTenantAccessor.Instance;
     private static readonly HashSet<string> ConfirmationValues = new(StringComparer.OrdinalIgnoreCase)
         { "yes", "no", "not-determined" };
     private static readonly HashSet<string> TravelOwners = new(StringComparer.OrdinalIgnoreCase)
@@ -276,6 +288,7 @@ public sealed class SpeakingRequestsService(
 
     public async Task<SpeakingRequestDetails> CreateAsync(Guid tenantId, SpeakingRequestInput input, CancellationToken cancellationToken)
     {
+        using var tenantScope = _tenantAccessor.BeginTenant(tenantId, "create speaking request");
         await requestsDatabase.EnsureSchemaAsync(cancellationToken);
         Validate(input);
         var now = DateTimeOffset.UtcNow;
@@ -299,6 +312,7 @@ public sealed class SpeakingRequestsService(
 
     public async Task<IReadOnlyList<SpeakingRequestDetails>> GetAsync(Guid tenantId, CancellationToken cancellationToken)
     {
+        using var tenantScope = _tenantAccessor.BeginTenant(tenantId, "list speaking requests");
         await requestsDatabase.EnsureSchemaAsync(cancellationToken);
         return (await requestsDatabase.Requests.AsNoTracking()
                 .Where(x => x.TenantId == tenantId)
@@ -311,6 +325,7 @@ public sealed class SpeakingRequestsService(
 
     public async Task<SpeakingRequestDetails?> GetAsync(Guid tenantId, Guid id, CancellationToken cancellationToken)
     {
+        using var tenantScope = _tenantAccessor.BeginTenant(tenantId, "get speaking request");
         await requestsDatabase.EnsureSchemaAsync(cancellationToken);
         var request = await requestsDatabase.Requests.AsNoTracking()
             .Include(x => x.Communications)
@@ -321,11 +336,16 @@ public sealed class SpeakingRequestsService(
     public async Task<SpeakingRequestDetails?> GetForHostAsync(string token, CancellationToken cancellationToken)
     {
         await requestsDatabase.EnsureSchemaAsync(cancellationToken);
-        var request = await requestsDatabase.Requests.AsNoTracking()
-            .Include(x => x.Communications)
-            .SingleOrDefaultAsync(x => x.EditToken == token, cancellationToken);
+        var request = await FindHostRequestByTokenAsync(
+            token,
+            tracking: false,
+            cancellationToken);
         if (!HostLinkValid(request)) return null;
-        return Map(request!);
+
+        using var tenantScope = _tenantAccessor.BeginTenant(
+            request!.TenantId,
+            "read speaking request through exact host token");
+        return Map(request);
     }
 
     public async Task<SpeakingRequestDetails?> SubmitHostResponseAsync(string token, HostSpeakingRequestUpdate update, CancellationToken cancellationToken)
@@ -333,11 +353,17 @@ public sealed class SpeakingRequestsService(
         await requestsDatabase.EnsureSchemaAsync(cancellationToken);
         Validate(update.Request);
         var response = Required(update.ResponseMessage, nameof(update.ResponseMessage));
-        var request = await requestsDatabase.Requests.Include(x => x.Communications)
-            .SingleOrDefaultAsync(x => x.EditToken == token, cancellationToken);
+        var request = await FindHostRequestByTokenAsync(
+            token,
+            tracking: true,
+            cancellationToken);
         if (!HostLinkValid(request)) return null;
 
-        Apply(request!, update.Request);
+        using var tenantScope = _tenantAccessor.BeginTenant(
+            request!.TenantId,
+            "update speaking request through exact host token");
+
+        Apply(request, update.Request);
         var now = DateTimeOffset.UtcNow;
         request!.Status = "awaiting-review";
         request.EditTokenExpiresAtUtc = null;
@@ -349,6 +375,7 @@ public sealed class SpeakingRequestsService(
 
     public async Task<SpeakingRequestDetails?> RequestInformationAsync(Guid tenantId, Guid id, string message, CancellationToken cancellationToken)
     {
+        using var tenantScope = _tenantAccessor.BeginTenant(tenantId, "request speaking-request information");
         await requestsDatabase.EnsureSchemaAsync(cancellationToken);
         var text = Required(message, nameof(message));
         var request = await requestsDatabase.Requests.Include(x => x.Communications)
@@ -367,6 +394,7 @@ public sealed class SpeakingRequestsService(
 
     public async Task<SpeakingRequestDetails?> DeclineAsync(Guid tenantId, Guid id, string reason, CancellationToken cancellationToken)
     {
+        using var tenantScope = _tenantAccessor.BeginTenant(tenantId, "decline speaking request");
         await requestsDatabase.EnsureSchemaAsync(cancellationToken);
         var text = Required(reason, nameof(reason));
         var request = await requestsDatabase.Requests.Include(x => x.Communications)
@@ -385,6 +413,7 @@ public sealed class SpeakingRequestsService(
 
     public async Task<(SpeakingRequestDetails Request, Guid AssignmentId)?> ApproveAsync(Guid tenantId, Guid id, CancellationToken cancellationToken)
     {
+        using var tenantScope = _tenantAccessor.BeginTenant(tenantId, "approve speaking request");
         await requestsDatabase.EnsureSchemaAsync(cancellationToken);
         var request = await requestsDatabase.Requests.Include(x => x.Communications)
             .SingleOrDefaultAsync(x => x.TenantId == tenantId && x.Id == id, cancellationToken);
@@ -539,6 +568,30 @@ public sealed class SpeakingRequestsService(
             throw new InvalidOperationException($"Request {request.ReferenceNumber} is already {request.Status}.");
     }
 
+    private async Task<SpeakingRequestRecord?> FindHostRequestByTokenAsync(
+        string token,
+        bool tracking,
+        CancellationToken cancellationToken)
+    {
+        IQueryable<SpeakingRequestRecord> Query() =>
+            tracking
+                ? requestsDatabase.Requests.Include(x => x.Communications)
+                : requestsDatabase.Requests.AsNoTracking().Include(x => x.Communications);
+
+        if (_tenantAccessor.TenantId is not null)
+        {
+            return await Query().SingleOrDefaultAsync(
+                x => x.EditToken == token,
+                cancellationToken);
+        }
+
+        using var bypass = _tenantAccessor.BeginFilterBypass(
+            "resolve speaking-request tenant from an exact opaque host token");
+        return await Query().SingleOrDefaultAsync(
+            x => x.EditToken == token,
+            cancellationToken);
+    }
+
     private static bool HostLinkValid(SpeakingRequestRecord? request) =>
         request is not null &&
         request.Status == "information-needed" &&
@@ -607,24 +660,59 @@ public static class SpeakingRequestEndpoints
     public static IEndpointRouteBuilder MapSpeakingRequestEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var publicGroup = endpoints.MapGroup("/api/public/engagements/requests").AllowAnonymous();
-        publicGroup.MapPost("", async (SpeakingRequestInput request, SpeakingRequestsService service, CancellationToken ct) =>
-        {
-            try { return Results.Ok(await service.CreateAsync(KingdomIdentity.DemoTenantId, request, ct)); }
-            catch (ArgumentException exception) { return Results.ValidationProblem(new Dictionary<string, string[]> { ["request"] = [exception.Message] }); }
-        });
-        publicGroup.MapGet("/{token}", async (string token, SpeakingRequestsService service, CancellationToken ct) =>
-        {
-            var item = await service.GetForHostAsync(token, ct);
-            return item is null ? Results.NotFound(new { message = "This host update link is invalid, expired, or no longer needed." }) : Results.Ok(item);
-        });
-        publicGroup.MapPut("/{token}", async (string token, HostSpeakingRequestUpdate request, SpeakingRequestsService service, CancellationToken ct) =>
+        publicGroup.MapPost("", async (
+            SpeakingRequestInput request,
+            SpeakingRequestsService service,
+            PublicInvitationTenantResolver tenants,
+            ICurrentTenantAccessor tenantAccessor,
+            CancellationToken ct) =>
         {
             try
             {
+                var tenantId = tenants.PrimaryTenantId;
+                using var tenantScope = tenantAccessor.BeginTenant(
+                    tenantId,
+                    "public primary speaking invitation");
+                return Results.Ok(await service.CreateAsync(tenantId, request, ct));
+            }
+            catch (ArgumentException exception)
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["request"] = [exception.Message] });
+            }
+        });
+        publicGroup.MapGet("/{token}", async (
+            string token,
+            SpeakingRequestsService service,
+            PublicInvitationTenantResolver tenants,
+            ICurrentTenantAccessor tenantAccessor,
+            CancellationToken ct) =>
+        {
+            using var tenantScope = tenantAccessor.BeginTenant(
+                tenants.PrimaryTenantId,
+                "public primary speaking invitation host link");
+            var item = await service.GetForHostAsync(token, ct);
+            return item is null ? Results.NotFound(new { message = "This host update link is invalid, expired, or no longer needed." }) : Results.Ok(item);
+        });
+        publicGroup.MapPut("/{token}", async (
+            string token,
+            HostSpeakingRequestUpdate request,
+            SpeakingRequestsService service,
+            PublicInvitationTenantResolver tenants,
+            ICurrentTenantAccessor tenantAccessor,
+            CancellationToken ct) =>
+        {
+            try
+            {
+                using var tenantScope = tenantAccessor.BeginTenant(
+                    tenants.PrimaryTenantId,
+                    "public primary speaking invitation host response");
                 var item = await service.SubmitHostResponseAsync(token, request, ct);
                 return item is null ? Results.NotFound(new { message = "This host update link is invalid, expired, or no longer needed." }) : Results.Ok(item);
             }
-            catch (ArgumentException exception) { return Results.ValidationProblem(new Dictionary<string, string[]> { ["request"] = [exception.Message] }); }
+            catch (ArgumentException exception)
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["request"] = [exception.Message] });
+            }
         });
 
         var reviewGroup = endpoints.MapGroup("/api/engagements/requests").RequireAuthorization();

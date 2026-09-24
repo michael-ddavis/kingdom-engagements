@@ -93,8 +93,16 @@ public sealed class EngagementsDependencyHealth(
 
         try
         {
+            var healthTenantText = configuration["KingdomOS:Health:TenantId"];
+            if (!Guid.TryParse(healthTenantText, out var healthTenantId) ||
+                healthTenantId == Guid.Empty)
+            {
+                throw new InvalidOperationException(
+                    "KingdomOS:Health:TenantId must contain a non-empty tenant ID.");
+            }
+
             var state = await entitlements.GetStateAsync(
-                KingdomIdentity.DemoTenantId,
+                healthTenantId,
                 cancellationToken);
 
             var healthy = state == ModuleEntitlementState.Enabled;

@@ -1,4 +1,5 @@
 using KingdomEngagements.Web.Features;
+using KingdomEngagements.Web.Platform;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
@@ -108,6 +109,8 @@ public sealed class HostAccessTests
         var tenantId = Guid.NewGuid();
         var assignmentId = Guid.NewGuid();
         var requestId = Guid.NewGuid();
+        var tenantAccessor = new TestCurrentTenantAccessor();
+        var tenantScope = tenantAccessor.BeginTenant(tenantId, "host access fixture");
 
         var engagementOptions = new DbContextOptionsBuilder<EngagementsDbContext>()
             .ReplaceService<IModelCustomizer, EngagementsModelCustomizer>()
@@ -122,9 +125,9 @@ public sealed class HostAccessTests
             .UseInMemoryDatabase($"host-access-{Guid.NewGuid():N}")
             .Options;
 
-        var engagements = new EngagementsDbContext(engagementOptions);
-        var preparations = new EngagementPreparationDbContext(preparationOptions);
-        var hostAccess = new HostAccessDbContext(hostAccessOptions);
+        var engagements = new EngagementsDbContext(engagementOptions, tenantAccessor);
+        var preparations = new EngagementPreparationDbContext(preparationOptions, tenantAccessor);
+        var hostAccess = new HostAccessDbContext(hostAccessOptions, tenantAccessor);
 
         var now = DateTimeOffset.UtcNow;
 
@@ -179,11 +182,13 @@ public sealed class HostAccessTests
             hostAccess,
             preparations,
             engagements,
-            configuration);
+            configuration,
+            tenantAccessor);
 
         return new TestFixture(
             tenantId,
             assignmentId,
+            tenantScope,
             engagements,
             preparations,
             hostAccess,
@@ -193,6 +198,7 @@ public sealed class HostAccessTests
     private sealed class TestFixture(
         Guid tenantId,
         Guid assignmentId,
+        IDisposable tenantScope,
         EngagementsDbContext engagements,
         EngagementPreparationDbContext preparations,
         HostAccessDbContext hostAccess,
@@ -207,6 +213,7 @@ public sealed class HostAccessTests
 
         public async ValueTask DisposeAsync()
         {
+            tenantScope.Dispose();
             await HostAccess.DisposeAsync();
             await Preparations.DisposeAsync();
             await Engagements.DisposeAsync();

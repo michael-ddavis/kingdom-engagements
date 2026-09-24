@@ -5,7 +5,19 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>KingdomEngagements.Web</RootNamespace>
     <SpaRoot>ClientApp\</SpaRoot>
+    <EnableEngagementsDemoFeatures Condition="'$(EnableEngagementsDemoFeatures)' == '' and '$(Configuration)' == 'Debug'">true</EnableEngagementsDemoFeatures>
+    <EnableEngagementsDemoFeatures Condition="'$(EnableEngagementsDemoFeatures)' == ''">false</EnableEngagementsDemoFeatures>
+    <DefineConstants Condition="'$(EnableEngagementsDemoFeatures)' == 'true'">$(DefineConstants);KINGDOM_ENGAGEMENTS_DEMO</DefineConstants>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(EnableEngagementsDemoFeatures)' != 'true'">
+    <Compile Remove="Features/EngagementsDemoSeedWorker.cs" />
+    <Compile Remove="Features/EngagementsDemoDepthWorker.cs" />
+    <Compile Remove="Features/EngagementsDemoConnectedStoryWorker.cs" />
+    <Compile Remove="Platform/EngagementsDemoAccess.cs" />
+    <Content Remove="wwwroot/demo-lock.css" />
+    <Content Remove="wwwroot/demo-lock.js" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="AWSSDK.S3" Version="4.0.103.3" />

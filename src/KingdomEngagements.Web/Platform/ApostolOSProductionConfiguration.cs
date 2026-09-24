@@ -110,6 +110,19 @@ public static class ApostolOSProductionConfiguration
             "KingdomOS:Entitlements:FailOpenInDevelopment must be false in Production.",
             problems);
 
+        RequireTenantId(
+            configuration["KingdomOS:PublicInvitations:PrimaryTenantId"],
+            "KingdomOS:PublicInvitations:PrimaryTenantId",
+            problems);
+        RequireTenantId(
+            configuration["KingdomOS:PublicInvitations:ItinerantTenantId"],
+            "KingdomOS:PublicInvitations:ItinerantTenantId",
+            problems);
+        RequireTenantId(
+            configuration["KingdomOS:Health:TenantId"],
+            "KingdomOS:Health:TenantId",
+            problems);
+
         var allowedHosts = configuration["AllowedHosts"];
         Require(
             !string.IsNullOrWhiteSpace(allowedHosts) && allowedHosts.Trim() != "*",
@@ -171,5 +184,14 @@ public static class ApostolOSProductionConfiguration
     {
         if (string.IsNullOrWhiteSpace(value))
             problems.Add($"{name} is required in Production.");
+    }
+
+    private static void RequireTenantId(
+        string? value,
+        string name,
+        ICollection<string> problems)
+    {
+        if (!Guid.TryParse(value, out var tenantId) || tenantId == Guid.Empty)
+            problems.Add($"{name} must contain a non-empty tenant ID in Production.");
     }
 }

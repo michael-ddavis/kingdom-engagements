@@ -1,4 +1,5 @@
 using KingdomEngagements.Web.Features;
+using KingdomEngagements.Web.Platform;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 
@@ -11,6 +12,7 @@ public sealed class EngagementResponsibilityTests
     {
         await using var fixture = CreateFixture();
         var tenantId = Guid.NewGuid();
+        using var tenantScope = fixture.TenantAccessor.BeginTenant(tenantId, "responsibility test");
         var first = await fixture.CreateAssignmentAsync(tenantId, "first");
         var second = await fixture.CreateAssignmentAsync(tenantId, "second");
 
@@ -52,6 +54,7 @@ public sealed class EngagementResponsibilityTests
     {
         await using var fixture = CreateFixture();
         var tenantId = Guid.NewGuid();
+        using var tenantScope = fixture.TenantAccessor.BeginTenant(tenantId, "responsibility test");
         var assignment = await fixture.CreateAssignmentAsync(tenantId, "override");
 
         await fixture.Service.SetStandingOwnerAsync(
@@ -82,6 +85,7 @@ public sealed class EngagementResponsibilityTests
     {
         await using var fixture = CreateFixture();
         var tenantId = Guid.NewGuid();
+        using var tenantScope = fixture.TenantAccessor.BeginTenant(tenantId, "responsibility test");
         var assignment = await fixture.CreateAssignmentAsync(tenantId, "complete");
 
         await fixture.Service.SetStandingOwnerAsync(
@@ -112,6 +116,7 @@ public sealed class EngagementResponsibilityTests
     {
         await using var fixture = CreateFixture();
         var tenantId = Guid.NewGuid();
+        using var tenantScope = fixture.TenantAccessor.BeginTenant(tenantId, "responsibility test");
         var assignment = await fixture.CreateAssignmentAsync(tenantId, "production");
 
         var initial = await fixture.Service.GetLaneAsync(tenantId, assignment.Id, "production", CancellationToken.None);
@@ -139,14 +144,20 @@ public sealed class EngagementResponsibilityTests
             .UseInMemoryDatabase($"responsibility-tests-{Guid.NewGuid():N}")
             .Options;
 
-        var database = new EngagementsDbContext(options);
-        return new TestFixture(database, new EngagementResponsibilityService(database));
+        var tenantAccessor = new TestCurrentTenantAccessor();
+        var database = new EngagementsDbContext(options, tenantAccessor);
+        return new TestFixture(
+            tenantAccessor,
+            database,
+            new EngagementResponsibilityService(database));
     }
 
     private sealed class TestFixture(
+        TestCurrentTenantAccessor tenantAccessor,
         EngagementsDbContext database,
         EngagementResponsibilityService service) : IAsyncDisposable
     {
+        public TestCurrentTenantAccessor TenantAccessor { get; } = tenantAccessor;
         public EngagementsDbContext Database { get; } = database;
         public EngagementResponsibilityService Service { get; } = service;
 

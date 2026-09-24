@@ -64,8 +64,10 @@ public sealed class HostAccessAuthorizationHandler(HostAccessDbContext database)
     }
 }
 
-public sealed class HostAccessDbContext(DbContextOptions<HostAccessDbContext> options)
-    : DbContext(options)
+public sealed class HostAccessDbContext(
+    DbContextOptions<HostAccessDbContext> options,
+    ICurrentTenantAccessor? tenantAccessor = null)
+    : TenantFilteredDbContext(options, tenantAccessor)
 {
     public DbSet<HostAccessInvitationRecord> Invitations => Set<HostAccessInvitationRecord>();
 
@@ -80,6 +82,8 @@ public sealed class HostAccessDbContext(DbContextOptions<HostAccessDbContext> op
         invitation.Property(x => x.TokenHash).HasMaxLength(64).IsRequired();
         invitation.HasIndex(x => x.TokenHash).IsUnique();
         invitation.HasIndex(x => new { x.TenantId, x.AssignmentId, x.CreatedAtUtc });
+        invitation.HasQueryFilter(x =>
+            TenantFilterBypassed || x.TenantId == CurrentTenantId);
     }
 
     public async Task EnsureSchemaAsync(CancellationToken cancellationToken)
@@ -195,8 +199,11 @@ public sealed class HostAccessService(
     HostAccessDbContext database,
     EngagementPreparationDbContext preparationDatabase,
     EngagementsDbContext engagementsDatabase,
-    IConfiguration configuration)
+    IConfiguration configuration,
+    ICurrentTenantAccessor? tenantAccessor = null)
 {
+    private readonly ICurrentTenantAccessor _tenantAccessor =
+        tenantAccessor ?? NoCurrentTenantAccessor.Instance;
     private const int TokenBytes = 32;
     private const int DefaultInvitationLifetimeHours = 168;
     private const int DefaultSessionLifetimeHours = 168;
@@ -206,6 +213,9 @@ public sealed class HostAccessService(
         Guid assignmentId,
         CancellationToken cancellationToken)
     {
+        using var tenantScope = _tenantAccessor.BeginTenant(
+            tenantId,
+            "issue host access invitation");
         await database.EnsureSchemaAsync(cancellationToken);
 
         var assignment = await engagementsDatabase.Assignments.AsNoTracking()
@@ -272,9 +282,21 @@ public sealed class HostAccessService(
         var tokenHash = HashToken(token);
         var now = DateTimeOffset.UtcNow;
 
-        var invitation = await database.Invitations.SingleOrDefaultAsync(
-            x => x.TokenHash == tokenHash,
-            cancellationToken);
+        HostAccessInvitationRecord? invitation;
+        if (_tenantAccessor.TenantId is not null)
+        {
+            invitation = await database.Invitations.SingleOrDefaultAsync(
+                x => x.TokenHash == tokenHash,
+                cancellationToken);
+        }
+        else
+        {
+            using var bypass = _tenantAccessor.BeginFilterBypass(
+                "resolve host-access tenant from an exact one-time invitation token");
+            invitation = await database.Invitations.SingleOrDefaultAsync(
+                x => x.TokenHash == tokenHash,
+                cancellationToken);
+        }
 
         if (invitation is null ||
             invitation.RevokedAtUtc is not null ||
@@ -283,6 +305,10 @@ public sealed class HostAccessService(
         {
             return null;
         }
+
+        using var tenantScope = _tenantAccessor.BeginTenant(
+            invitation.TenantId,
+            "redeem host access invitation");
 
         var preparation = await preparationDatabase.Preparations.AsNoTracking()
             .SingleOrDefaultAsync(
@@ -320,6 +346,9 @@ public sealed class HostAccessService(
         Guid assignmentId,
         CancellationToken cancellationToken)
     {
+        using var tenantScope = _tenantAccessor.BeginTenant(
+            tenantId,
+            "read host access status");
         await database.EnsureSchemaAsync(cancellationToken);
 
         var latest = await database.Invitations.AsNoTracking()
@@ -349,6 +378,9 @@ public sealed class HostAccessService(
         Guid assignmentId,
         CancellationToken cancellationToken)
     {
+        using var tenantScope = _tenantAccessor.BeginTenant(
+            tenantId,
+            "revoke host access");
         await database.EnsureSchemaAsync(cancellationToken);
 
         var now = DateTimeOffset.UtcNow;

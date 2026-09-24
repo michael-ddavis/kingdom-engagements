@@ -259,21 +259,21 @@ public sealed class AssignmentWorkspaceTests
 
     private static TestFixture CreateFixture()
     {
-        var engagements = new EngagementsDbContext(new DbContextOptionsBuilder<EngagementsDbContext>()
+        var engagements = new EngagementsDbContext(TestTenants.Bypass, new DbContextOptionsBuilder<EngagementsDbContext>()
             .ReplaceService<IModelCustomizer, EngagementsModelCustomizer>()
             .UseInMemoryDatabase($"workspace-engagements-{Guid.NewGuid():N}")
             .Options);
-        var requests = new SpeakingRequestsDbContext(new DbContextOptionsBuilder<SpeakingRequestsDbContext>()
+        var requests = new SpeakingRequestsDbContext(TestTenants.Bypass, new DbContextOptionsBuilder<SpeakingRequestsDbContext>()
             .ReplaceService<IModelCustomizer, SpeakingRequestsModelCustomizer>()
             .UseInMemoryDatabase($"workspace-requests-{Guid.NewGuid():N}")
             .Options);
-        var preparation = new EngagementPreparationDbContext(new DbContextOptionsBuilder<EngagementPreparationDbContext>()
+        var preparation = new EngagementPreparationDbContext(TestTenants.Bypass, new DbContextOptionsBuilder<EngagementPreparationDbContext>()
             .UseInMemoryDatabase($"workspace-preparation-{Guid.NewGuid():N}")
             .Options);
-        var activity = new AssignmentWorkspaceDbContext(new DbContextOptionsBuilder<AssignmentWorkspaceDbContext>()
+        var activity = new AssignmentWorkspaceDbContext(TestTenants.Bypass, new DbContextOptionsBuilder<AssignmentWorkspaceDbContext>()
             .UseInMemoryDatabase($"workspace-activity-{Guid.NewGuid():N}")
             .Options);
-        var preparationService = new EngagementPreparationService(preparation, requests, engagements);
+        var preparationService = new EngagementPreparationService(preparation, requests, engagements, TestTenants.Bypass);
         var workspace = new AssignmentWorkspaceService(activity, preparation, requests, engagements, preparationService);
         return new TestFixture(engagements, requests, preparation, activity, workspace);
     }

@@ -15,7 +15,7 @@ public sealed class EngagementsServiceTests
             .UseSqlServer("Server=localhost;Database=KingdomEngagements;Integrated Security=true;TrustServerCertificate=true")
             .Options;
 
-        using var database = new EngagementsDbContext(options);
+        using var database = new EngagementsDbContext(TestTenants.Bypass, options);
 
         var migrations = database.Database.GetMigrations().ToArray();
         Assert.Contains("20260805000000_InitialEngagementsSchema", migrations);
@@ -195,7 +195,7 @@ public sealed class EngagementsServiceTests
             .ReplaceService<IModelCustomizer, EngagementsModelCustomizer>()
             .UseInMemoryDatabase($"engagements-tests-{Guid.NewGuid():N}")
             .Options;
-        var database = new EngagementsDbContext(options);
+        var database = new EngagementsDbContext(TestTenants.Bypass, options);
         return new TestFixture(database, new EngagementsService(database));
     }
 

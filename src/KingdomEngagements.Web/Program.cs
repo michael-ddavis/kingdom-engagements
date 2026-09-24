@@ -11,6 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddApostolOSSecretSources();
 builder.ValidateApostolOSProductionConfiguration();
 builder.AddApostolOSObservability();
+builder.Services.AddProblemDetails();
 
 var provider = builder.Configuration["Database:Provider"] ?? "InMemory";
 var connectionString = builder.Configuration.GetConnectionString("EngagementsDatabase");
@@ -159,6 +160,9 @@ builder.Services.AddAuthentication(KingdomIdentity.Scheme)
         options.Cookie.Name = ".KingdomOS.Identity";
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+            ? CookieSecurePolicy.SameAsRequest
+            : CookieSecurePolicy.Always;
         options.Events.OnRedirectToLogin = context =>
         {
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
@@ -241,6 +245,9 @@ builder.Services.AddHostedService<EngagementsDemoConnectedStoryWorker>();
 var app = builder.Build();
 
 app.UseMiddleware<ApostolOSRequestObservabilityMiddleware>();
+app.UseExceptionHandler();
+if (!app.Environment.IsDevelopment())
+    app.UseHsts();
 app.UseHttpsRedirection();
 app.UseDefaultFiles();
 app.UseStaticFiles();

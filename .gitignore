@@ -6,3 +6,13 @@ obj/
 .vs/
 .vscode/
 .DS_Store
+
+# Generated frontend and validation artifacts
+node_modules/
+dist/
+.angular/
+coverage/
+TestResults/
+.ci-platform/
+.ci-secrets/
+src/KingdomEngagements.Web/wwwroot/host-realtime.js

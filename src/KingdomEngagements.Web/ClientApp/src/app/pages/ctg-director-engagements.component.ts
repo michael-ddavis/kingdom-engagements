@@ -18,7 +18,7 @@ type EngagementFilter = 'active' | 'attention' | 'upcoming' | 'completed';
   template: `
     <section class="director-engagements">
       <header class="page-heading">
-        <h1>Engagements</h1>
+        <div><h1>Engagements</h1><p class="page-intro">Choose an engagement to see what needs attention and handle your next task.</p></div>
         @if (isDirector()) {
           <div class="heading-actions">
             <a class="secondary" routerLink="/organization/ctg/command-center">Command Center</a>
@@ -33,22 +33,22 @@ type EngagementFilter = 'active' | 'attention' | 'upcoming' | 'completed';
         <div class="state error">{{ error() }}</div>
       } @else {
         <section class="summary">
-          <button type="button" [class.selected]="filter() === 'active'" (click)="filter.set('active')">
+          <button type="button" [class.selected]="filter() === 'active'" [attr.aria-pressed]="filter() === 'active'" (click)="filter.set('active')">
             <small>Active</small><strong>{{ activeCount() }}</strong><span>Approved work in motion</span>
           </button>
-          <button type="button" [class.selected]="filter() === 'attention'" (click)="filter.set('attention')">
+          <button type="button" [class.selected]="filter() === 'attention'" [attr.aria-pressed]="filter() === 'attention'" (click)="filter.set('attention')">
             <small>Need attention</small><strong>{{ attentionCount() }}</strong><span>Blocked, overdue or unassigned</span>
           </button>
-          <button type="button" [class.selected]="filter() === 'upcoming'" (click)="filter.set('upcoming')">
+          <button type="button" [class.selected]="filter() === 'upcoming'" [attr.aria-pressed]="filter() === 'upcoming'" (click)="filter.set('upcoming')">
             <small>Next 30 days</small><strong>{{ upcomingCount() }}</strong><span>Immediate road ahead</span>
           </button>
-          <button type="button" [class.selected]="filter() === 'completed'" (click)="filter.set('completed')">
+          <button type="button" [class.selected]="filter() === 'completed'" [attr.aria-pressed]="filter() === 'completed'" (click)="filter.set('completed')">
             <small>Completed</small><strong>{{ completedCount() }}</strong><span>Past engagement records</span>
           </button>
         </section>
 
         @if (responsibilityDataUnavailable()) {
-          <div class="state warning">Engagements are available, but responsibility/readiness details are temporarily unavailable. Rebuild the Engagements Docker container after pulling the latest branch.</div>
+          <div class="state warning">Engagements are available, but responsibility/readiness details are temporarily unavailable. Open an engagement to view available details, or refresh to try again.</div>
         }
 
         <section class="engagement-list">
@@ -63,7 +63,12 @@ type EngagementFilter = 'active' | 'attention' | 'upcoming' | 'completed';
           </header>
 
           @if (visible().length === 0) {
-            <div class="empty">No engagements match this view.</div>
+            <div class="empty">
+              <p>{{ filter() === 'active' ? 'No active engagements yet.' : 'No engagements match this view.' }}</p>
+              @if (filter() !== 'active') { <button type="button" (click)="filter.set('active')">View active engagements</button> }
+              @else if (isDirector()) { <a routerLink="/organization/ctg/bookings">Review invitations in the Booking Desk →</a> }
+              @else { <p>Your engagements will appear here when the coordinator assigns you.</p> }
+            </div>
           } @else {
             <div class="rows">
               @for (item of visible(); track item.assignment.id) {
@@ -131,6 +136,8 @@ type EngagementFilter = 'active' | 'attention' | 'upcoming' | 'completed';
     </section>
   `,
   styles: [`
+    .page-intro{margin:8px 0 0;color:#59665f;font-size:.9rem;line-height:1.5}.empty a{color:#315faf}.empty button{padding:10px 16px;border:1px solid #d6dbe0;border-radius:8px;background:#fff;color:#172a46;cursor:pointer;font:inherit}
+
     :host{
       display:block;
       --status-complete-bg:#e9f5ed;

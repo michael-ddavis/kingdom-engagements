@@ -1,0 +1,79 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { test } from 'node:test';
+import { JSDOM } from 'jsdom';
+
+const html = await readFile(new URL('../../wwwroot/coordination.html', import.meta.url), 'utf8');
+const script = await readFile(new URL('../../wwwroot/coordination.js', import.meta.url), 'utf8');
+
+async function setup(t, failSave = false) {
+  const dom = new JSDOM(html, { url: 'https://example.test/host/coordination', runScripts: 'outside-only' });
+  t.after(() => dom.window.close());
+  const { window } = dom;
+  window.scrollTo = () => {};
+  const calls = [];
+  let record = {
+    referenceNumber: 'TEST-1', eventName: 'Test gathering', hostOrganization: 'Test host',
+    eventStartDate: '2026-10-30', eventEndDate: '2026-10-30', coordinationStatus: 'draft',
+    hotelName: 'Existing hotel', contacts: [], schedule: [], documents: [],
+  };
+  window.fetch = async (url, options = {}) => {
+    if (options.method === 'PUT') {
+      const body = JSON.parse(options.body);
+      calls.push(body);
+      if (failSave) return { ok: false, json: async () => ({ message: 'Could not save. Try again.' }) };
+      record = { ...record, ...body, coordinationStatus: body.submit ? 'submitted' : 'draft' };
+    }
+    return { ok: true, json: async () => url.endsWith('/messages') ? { messages: [], isClosed: false } : record };
+  };
+  window.eval(script);
+  await new Promise(resolve => setImmediate(resolve));
+  return { window, document: window.document, calls };
+}
+
+test('saving retains values from closed sections and keeps the current section open', async t => {
+  const { document, calls } = await setup(t);
+  const hotel = document.querySelector('[name="hotelName"]');
+  const prayer = document.querySelector('[name="prayerFocus"]');
+  assert.equal(hotel.closest('details').open, false);
+  prayer.closest('details').open = true;
+  prayer.value = 'Unity';
+  document.querySelector('#save-progress').click();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(calls[0].hotelName, 'Existing hotel');
+  assert.equal(calls[0].prayerFocus, 'Unity');
+  assert.equal(calls[0].submit, false);
+  assert.equal(prayer.closest('details').open, true);
+  assert.equal(document.querySelector('#save-progress').textContent, 'Saved ✓');
+});
+
+test('invalid email in a closed section reveals the field and prevents submission', async t => {
+  const { document, calls } = await setup(t);
+  const email = document.querySelector('#contact-list [data-name="email"]');
+  email.value = 'not-an-email';
+  assert.equal(email.closest('details').open, false);
+  document.querySelector('#coordination-form button[type="submit"]').click();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(email.closest('details').open, true);
+  assert.equal(calls.length, 0);
+});
+
+test('submission includes closed-section values and shows confirmation', async t => {
+  const { document, calls } = await setup(t);
+  document.querySelector('#coordination-form button[type="submit"]').click();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(calls[0].submit, true);
+  assert.equal(calls[0].hotelName, 'Existing hotel');
+  assert.equal(document.querySelector('#submitted-banner').hidden, false);
+});
+
+test('failed save keeps entered values and allows retry', async t => {
+  const { document } = await setup(t, true);
+  const hotel = document.querySelector('[name="hotelName"]');
+  hotel.value = 'Updated hotel';
+  document.querySelector('#save-progress').click();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(hotel.value, 'Updated hotel');
+  assert.equal(document.querySelector('#save-progress').disabled, false);
+  assert.match(document.querySelector('#coordination-save-toast').textContent, /Could not save/);
+});

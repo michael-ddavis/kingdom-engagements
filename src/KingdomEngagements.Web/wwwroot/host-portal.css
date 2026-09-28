@@ -65,3 +65,34 @@
   .coordination-message { max-width: 94%; }
   .coordination-message-form { align-items: stretch; flex-direction: column; }
 }
+
+/* Host coordination: a short overview, expandable sections and reachable save actions. */
+.coordination-guide { margin-bottom: 24px; padding: 20px; border-left: 3px solid var(--gold); background: var(--paper); }
+.coordination-guide h3 { margin: 0 0 8px; font-size: 1.1rem; }
+.coordination-guide p { margin: 8px 0 0; line-height: 1.6; color: #495466; }
+.coordination-guide a { color: #304f7b; text-underline-offset: 3px; }
+.coordination-section > summary { cursor: pointer; min-height: 44px; color: var(--ink); }
+.coordination-section > summary > span { display: inline-grid; gap: 5px; vertical-align: middle; margin-left: 8px; }
+.coordination-section > summary small { color: #687386; font-size: .75rem; }
+.coordination-section > summary strong { font-size: 1.05rem; }
+.coordination-section[open] > summary { margin-bottom: 22px; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
+.coordination-section > summary:focus-visible, .coordination-page a:focus-visible, .coordination-page button:focus-visible { outline: 3px solid #7756a7; outline-offset: 4px; }
+.coordination-save-bar { position: sticky; bottom: 0; z-index: 5; margin-top: 24px; padding: 16px; border: 1px solid var(--line); background: var(--paper); box-shadow: 0 -6px 20px rgba(16,34,61,.06); }
+.coordination-save-bar p { margin: 0 0 10px; color: #495466; font-size: .85rem; line-height: 1.5; }
+.coordination-save-bar .button-row { margin: 0; }
+.coordination-page #host-messages { margin-top: 24px; scroll-margin-top: 20px; }
+.coordination-page .field, .coordination-page .repeat-row > * { min-width: 0; }
+@media(max-width: 1100px) {
+  .coordination-page .repeat-row.schedule, .coordination-page .repeat-row.contacts { grid-template-columns: 1fr 1fr !important; }
+}
+@media(max-width: 600px) {
+  .coordination-page .host-brand { height: 180px; }
+  .coordination-page .host-brand-copy { left: 22px; right: 22px; bottom: 20px; }
+  .coordination-page .host-brand-copy h1 { font-size: 2rem; margin: 0; }
+  .coordination-page .host-brand-copy p:last-child, .coordination-page .host-brand-logo { display: none; }
+  .coordination-page .portal-section { padding: 18px; }
+  .coordination-page .portal-section header { flex-direction: column; }
+  .coordination-page .repeat-row.schedule, .coordination-page .repeat-row.contacts { grid-template-columns: 1fr !important; }
+  .coordination-save-bar { position: static; }
+  .coordination-save-bar .button-row { display: grid; }
+}

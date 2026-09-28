@@ -32,6 +32,13 @@ interface HostActivityPreview {
         </div>
       </header>
 
+      <nav class="start-actions" aria-label="Start here">
+        <div><strong>What do you need to do?</strong><p>Start an invitation, review requests, or prepare an approved engagement.</p></div>
+        <a routerLink="/organization/ctg/start-invitation">Start an invitation <span>Enter a name and email, then share the host link.</span></a>
+        <a routerLink="/organization/ctg/bookings">Review invitations <span>Follow up with hosts and review incoming requests.</span></a>
+        <a routerLink="/organization/ctg/engagements">Prepare an engagement <span>Find the team, travel plans, and host details.</span></a>
+      </nav>
+
       @if (loading()) {
         <div class="director-state">Loading the engagement operation…</div>
       } @else if (error()) {
@@ -280,6 +287,8 @@ interface HostActivityPreview {
     </section>
   `,
   styles: [`
+    .start-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:18px 0 24px}.start-actions>div{grid-column:1/-1}.start-actions p{margin:6px 0;color:#59665f;line-height:1.5}.start-actions>a{display:grid;gap:8px;padding:16px;border:1px solid #d8ded9;border-radius:10px;background:#fffdfa;color:#234b78;text-decoration:none;font-weight:750}.start-actions a span{font-size:.85rem;font-weight:400;line-height:1.5;color:#59665f}.start-actions a:hover{border-color:#315faf}.start-actions a:focus-visible{outline:3px solid #315faf;outline-offset:3px}@media(max-width:700px){.start-actions{grid-template-columns:1fr}}
+
     :host{
       display:block;
       --status-complete-bg:#e9f5ed;

@@ -74,7 +74,7 @@ interface ResponsibilityDraft {
       <a class="back-link" [routerLink]="backRoute()">← Engagements</a>
 
       @if (loading()) {
-        <div class="state">Loading engagement operation…</div>
+        <div class="state">Loading engagement…</div>
       } @else if (error()) {
         <div class="state error">{{ error() }}</div>
       } @else if (assignment(); as item) {
@@ -97,7 +97,7 @@ interface ResponsibilityDraft {
           <div class="partial-load-warning">
             <strong>Some operational sections are unavailable.</strong>
             <span>{{ unavailableSections().join(', ') }}</span>
-            <small>If you just pulled the latest code, rebuild the Engagements Docker container.</small>
+            <small>You can continue using the available sections. Refresh to try loading the missing details again.</small>
           </div>
         }
 
@@ -118,11 +118,18 @@ interface ResponsibilityDraft {
           }
         </section>
 
+        @if (tab() === 'overview') { <p class="workspace-help">{{ isDirector() ? 'Start with responsibilities below: choose who handles each area, then open a section to add details or follow up with the host.' : 'Your assigned responsibilities appear below. Open one to review its details and update your progress.' }}</p> }
+        <label class="workspace-section-picker">Go to section
+          <select [value]="tab()" (change)="selectSection($any($event.target).value)">
+            @for (tabItem of visibleTabs(); track tabItem.key) { <option [value]="tabItem.key">{{ tabItem.label }}</option> }
+          </select>
+        </label>
         <nav class="workspace-tabs" aria-label="Engagement director sections">
           @for (tabItem of visibleTabs(); track tabItem.key) {
             <button
               type="button"
               [class.active]="tab() === tabItem.key"
+              [attr.aria-current]="tab() === tabItem.key ? 'page' : null"
               (click)="tab.set(tabItem.key)">
               {{ tabItem.label }}
               @if (tabItem.lane && lane(tabItem.lane); as laneItem) {
@@ -154,7 +161,7 @@ interface ResponsibilityDraft {
                       </button>
                     }
                     @if (!isDirector() && responsibilities().length === 0) {
-                      <p class="empty-copy team-empty">No responsibility lanes are assigned to you for this engagement.</p>
+                      <p class="empty-copy team-empty">You have no assigned responsibilities for this engagement yet. Ask your coordinator what you should handle.</p>
                     }
                   </div>
                 </article>
@@ -544,6 +551,8 @@ interface ResponsibilityDraft {
     </section>
   `,
   styles: [`
+    .workspace-help{color:#536158;line-height:1.6;margin:18px 0 12px;font-size:.9rem}.workspace-section-picker{display:none}@media(max-width:900px){.workspace-section-picker{display:grid;gap:8px;font-size:.9rem;font-weight:700;margin:16px 0}.workspace-section-picker select{width:100%;min-height:44px;padding:10px;border:1px solid #c8d0c9;border-radius:8px;background:#fffdfa;color:#172a46;font:inherit}.workspace-tabs{display:none!important}}
+
     :host{
       display:block;
       --status-complete-bg:#e9f5ed;
@@ -784,6 +793,11 @@ export class CtgDirectorEngagementComponent implements OnInit {
 
   backRoute(): string {
     return this.isDirector() ? '/organization/ctg/engagements' : '/assignments';
+  }
+
+  selectSection(key: string): void {
+    const section = this.visibleTabs().find(item => item.key === key);
+    if (section) this.tab.set(section.key);
   }
 
   visibleTabs(): readonly { key: DirectorTab; label: string; lane?: string }[] {

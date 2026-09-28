@@ -319,6 +319,10 @@ async function save(submit) {
     saveInFlight = false;
   }
 }
+form.addEventListener('invalid', event => {
+  const section = event.target.closest('details');
+  if (section) section.open = true;
+}, true);
 form.addEventListener('input', () => { formDirty = true; });
 form.addEventListener('change', () => { formDirty = true; });
 document.querySelector('#add-schedule').addEventListener('click', () => { addSchedule({ date: coordination?.eventStartDate }); formDirty = true; });

@@ -355,8 +355,14 @@ function renderMessages() {
       : 'Type your message to the ministry team…';
   }
 
-  if (messageThread?.isClosed && messageDeliveryCopy) {
-    messageDeliveryCopy.textContent = 'This conversation has been closed by the ministry team. Previous messages are still available.';
+  if (messageDeliveryCopy) {
+    if (messageThread?.isClosed) {
+      messageDeliveryCopy.textContent = 'This conversation has been closed by the ministry team. Previous messages are still available.';
+    } else if (realtimeStatus?.classList.contains('is-live')) {
+      messageDeliveryCopy.textContent = 'New replies appear automatically while this page is open.';
+    } else {
+      messageDeliveryCopy.textContent = 'Messages are saved with this engagement.';
+    }
   }
 
   const sendButton = messageForm?.querySelector('button[type="submit"]');

@@ -8,3 +8,6 @@
 *.db
 *.db-shm
 *.db-wal
+**/TestResults
+**/coverage
+.ci-*

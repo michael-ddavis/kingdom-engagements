@@ -13,6 +13,5 @@ dist/
 .angular/
 coverage/
 TestResults/
-.ci-platform/
-.ci-secrets/
+.ci-*/
 src/KingdomEngagements.Web/wwwroot/host-realtime.js

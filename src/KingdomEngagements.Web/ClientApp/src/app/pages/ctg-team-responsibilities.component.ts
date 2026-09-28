@@ -23,7 +23,10 @@ interface OwnerDraft {
   template: `
     <section class="team-page">
       <header class="team-heading">
-        <h1>Team Responsibilities</h1>
+        <div>
+          <h1>Team setup</h1>
+          <p>Choose who is on the Engagements team and who normally handles each kind of work.</p>
+        </div>
         <a routerLink="/organization/ctg/command-center">← Command Center</a>
       </header>
 
@@ -32,24 +35,17 @@ interface OwnerDraft {
       } @else if (error()) {
         <div class="state error">{{ error() }}</div>
       } @else {
-        <section class="team-summary">
-          <article><small>Team members</small><strong>{{ team().length }}</strong><span>Engagements roster</span></article>
-          <article><small>Standing owners</small><strong>{{ assignments().length }}</strong><span>Organization-wide defaults</span></article>
-          <article><small>Unassigned defaults</small><strong>{{ unassignedDefaults() }}</strong><span>Need a standing owner</span></article>
-          <article><small>Active overrides</small><strong>{{ overrideCount() }}</strong><span>Engagement-specific ownership</span></article>
+        <section class="team-setup-guide" aria-label="How team setup works">
+          <article><span>1</span><div><strong>Add your people</strong><small>Build the list of people who can work on engagements.</small></div></article>
+          <article><span>2</span><div><strong>Choose default owners</strong><small>Set who normally handles travel, media, hospitality, and other areas.</small></div></article>
+          <article><span>3</span><div><strong>Adjust only when needed</strong><small>You can change the owner for one engagement without changing the default.</small></div></article>
         </section>
 
-        <section class="team-card">
-          <header><h2>Assign for one engagement</h2><span>Choose an engagement to assign its team. Standing owners below apply across all engagements.</span></header>
-          <div class="team-add-row">
-            <label><span>Engagement</span><select #engagementChoice (change)="selectedEngagement.set(engagementChoice.value)">
-              <option value="">Select an engagement</option>
-              @for (snapshot of commandCenter(); track snapshot.assignment.id) {
-                <option [value]="snapshot.assignment.id">{{ snapshot.assignment.title }}</option>
-              }
-            </select></label>
-            @if (selectedEngagement()) { <a [routerLink]="['/organization/ctg/engagements', selectedEngagement()]" [queryParams]="{lane: 'responsibilities'}">Assign this engagement →</a> }
-          </div>
+        <section class="team-summary">
+          <article><small>Team members</small><strong>{{ team().length }}</strong><span>People available for engagement work</span></article>
+          <article><small>Default owners</small><strong>{{ assignments().length }}</strong><span>Automatically used across engagements</span></article>
+          <article><small>Needs a default owner</small><strong>{{ unassignedDefaults() }}</strong><span>Responsibilities not assigned yet</span></article>
+          <article><small>One-off assignments</small><strong>{{ overrideCount() }}</strong><span>Changed for a specific engagement</span></article>
         </section>
         <section class="team-card team-roster">
           <header>
@@ -108,8 +104,8 @@ interface OwnerDraft {
 
         <section class="team-card">
           <header>
-            <h2>Standing Responsibilities</h2>
-            <span>Defaults apply across active engagements unless overridden.</span>
+            <div><h2>Default responsibilities</h2><p>Choose who normally handles each area. You can still change an owner on a specific engagement later.</p></div>
+            <span>These choices are reused automatically.</span>
           </header>
 
           <div class="lane-groups">
@@ -117,7 +113,7 @@ interface OwnerDraft {
               <section>
                 <header class="group-heading">
                   <h3>{{ group.name }}</h3>
-                  <span>{{ group.lanes.length }} lane{{ group.lanes.length === 1 ? '' : 's' }}</span>
+                  <span>{{ group.lanes.length }} responsibilit{{ group.lanes.length === 1 ? 'y' : 'ies' }}</span>
                 </header>
                 <div class="lane-list">
                   @for (lane of group.lanes; track lane.key) {
@@ -135,13 +131,13 @@ interface OwnerDraft {
                           <span class="avatar">{{ initials(owner.displayName) }}</span>
                           <span>
                             <strong>{{ owner.displayName }}</strong>
-                            <small>Standing responsibility owner</small>
+                            <small>Default owner</small>
                           </span>
                         </div>
                       } @else {
                         <div class="owner-card owner-card--empty">
                           <span class="avatar">?</span>
-                          <span><strong>Unassigned</strong><small>No standing owner</small></span>
+                          <span><strong>Unassigned</strong><small>No default owner yet</small></span>
                         </div>
                       }
 
@@ -152,7 +148,7 @@ interface OwnerDraft {
                       </div>
 
                       <button type="button" (click)="editLane(lane)">
-                        {{ assignmentFor(lane.key) ? 'Change owner' : 'Assign owner' }}
+                        {{ assignmentFor(lane.key) ? 'Change default' : 'Choose default' }}
                       </button>
                     </article>
                   }
@@ -162,14 +158,32 @@ interface OwnerDraft {
           </div>
         </section>
 
+        <details class="one-engagement-assignment">
+          <summary>
+            <span><strong>Change ownership for one engagement</strong><small>Use this only when a specific event needs a different person than the normal default.</small></span>
+            <b>Advanced</b>
+          </summary>
+          <div class="one-engagement-body">
+            <label><span>Engagement</span><select #engagementChoice (change)="selectedEngagement.set(engagementChoice.value)">
+              <option value="">Select an engagement</option>
+              @for (snapshot of commandCenter(); track snapshot.assignment.id) {
+                <option [value]="snapshot.assignment.id">{{ snapshot.assignment.title }}</option>
+              }
+            </select></label>
+            @if (selectedEngagement()) {
+              <a [routerLink]="['/organization/ctg/engagements', selectedEngagement()]" [queryParams]="{lane: 'responsibilities'}">Open team assignments →</a>
+            }
+          </div>
+        </details>
+
         @if (draft(); as form) {
           <div class="editor-backdrop" (click)="closeEditor()"></div>
           <aside class="owner-editor" aria-label="Standing responsibility owner editor">
             <header>
-              <div><small>Standing responsibility</small><h2>{{ laneLabel(form.laneKey) }}</h2></div>
+              <div><small>Default responsibility</small><h2>{{ laneLabel(form.laneKey) }}</h2></div>
               <button type="button" (click)="closeEditor()" aria-label="Close">×</button>
             </header>
-            <p>Assign the person who normally owns this responsibility for every CTG engagement. Courtney can still override the owner on a specific engagement.</p>
+            <p>Choose the person who normally handles this responsibility. This person will be preselected on engagements, but you can change it for any individual event.</p>
 
             <label>
               <span>Team member</span>
@@ -209,7 +223,7 @@ interface OwnerDraft {
               <span></span>
               <button class="secondary-button" type="button" (click)="closeEditor()">Cancel</button>
               <button class="primary-button" type="button" [disabled]="saving()" (click)="saveOwner()">
-                {{ saving() ? 'Saving…' : 'Save standing owner' }}
+                {{ saving() ? 'Saving…' : 'Save default owner' }}
               </button>
             </footer>
           </aside>
@@ -217,7 +231,7 @@ interface OwnerDraft {
 
         <section class="team-card team-accountability">
           <header>
-            <h2>Team Workload</h2>
+            <div><h2>Team workload</h2><p>Use this when you want a deeper view of how work is distributed.</p></div>
             <a routerLink="/organization/ctg/stand-up">Open stand-up →</a>
           </header>
 
@@ -256,14 +270,16 @@ interface OwnerDraft {
       --status-danger-border:#c56a63;
       --status-danger-text:#873832;
     }.team-page{width:min(1260px,calc(100% - 38px));margin:0 auto;padding:28px 0 60px;color:#17202b}
-    .team-heading{display:flex;justify-content:space-between;gap:24px;align-items:center;margin-bottom:18px;padding:4px 0 14px;border-bottom:1px solid #dde1df}.team-heading h1,.team-card h2,.owner-editor h2{margin:0;font:500 clamp(1.7rem,2.6vw,2.5rem)/1.1 Georgia,'Times New Roman',serif;color:#17243a}.team-heading>a,.team-card header>a{color:#315faf;font-size:.72rem;font-weight:850;text-decoration:none}
+    .team-heading{display:flex;justify-content:space-between;gap:24px;align-items:center;margin-bottom:18px;padding:4px 0 14px;border-bottom:1px solid #dde1df}.team-heading h1,.team-card h2,.owner-editor h2{margin:0;font:500 clamp(1.7rem,2.6vw,2.5rem)/1.1 Georgia,'Times New Roman',serif;color:#17243a}.team-heading p{margin:7px 0 0;color:#707975;font-size:.74rem;line-height:1.5}.team-heading>a,.team-card header>a{color:#315faf;font-size:.72rem;font-weight:850;text-decoration:none}
     .eyebrow{margin:0!important;color:#876f33!important;font:850 .65rem/1.2 system-ui,sans-serif!important;letter-spacing:.1em;text-transform:uppercase}
+    .team-setup-guide{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}.team-setup-guide article{display:flex;gap:11px;align-items:flex-start;padding:15px;border:1px solid #dfe3e0;border-radius:12px;background:#fffdfa}.team-setup-guide article>span{display:grid;flex:0 0 auto;width:28px;height:28px;place-items:center;border-radius:50%;background:#172a46;color:#fff;font-size:.68rem;font-weight:900}.team-setup-guide strong,.team-setup-guide small{display:block}.team-setup-guide strong{font-size:.76rem}.team-setup-guide small{margin-top:4px;color:#77807a;font-size:.64rem;line-height:1.45}
     .team-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}.team-summary article{padding:16px 18px;border:1px solid #dfe3e0;border-radius:12px;background:#fffdfa}.team-summary small{display:block;color:#77807a;font-size:.64rem;font-weight:850;text-transform:uppercase}.team-summary strong{display:block;margin:6px 0 2px;font-size:1.5rem}.team-summary span{font-size:.66rem;color:#858b87}
-    .team-card{margin-top:14px;border:1px solid #dfe3e0;border-radius:16px;background:#fffdfa;box-shadow:0 10px 28px rgba(18,26,44,.04);overflow:hidden}.team-card>header{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:18px 20px;border-bottom:1px solid #e5e7e5}.team-card>header h2{font-size:1.25rem}.team-card>header>span{max-width:480px;color:#7b827e;font-size:.68rem;text-align:right}
+    .team-card{margin-top:14px;border:1px solid #dfe3e0;border-radius:16px;background:#fffdfa;box-shadow:0 10px 28px rgba(18,26,44,.04);overflow:hidden}.team-card>header{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:18px 20px;border-bottom:1px solid #e5e7e5}.team-card>header h2{font-size:1.25rem}.team-card>header p{margin:5px 0 0;color:#737b78;font-size:.66rem;line-height:1.45}.team-card>header>span{max-width:480px;color:#7b827e;font-size:.68rem;text-align:right}
     .team-add-row{display:grid;grid-template-columns:minmax(280px,1fr) auto;gap:10px;align-items:end;padding:16px 18px;border-bottom:1px solid #e5e7e5;background:#faf9f5}
     .team-add-row label{display:grid;gap:6px}.team-add-row label>span{font-size:.64rem;font-weight:850}.team-add-row select{width:100%;padding:10px 11px;border:1px solid #d5dad6;border-radius:8px;background:#fff;font:inherit}
     .team-add-row>button{min-height:40px;padding:0 14px;border:1px solid #172a46;border-radius:8px;background:#172a46;color:#fff;font-size:.67rem;font-weight:850;cursor:pointer}.team-add-row>button:disabled{opacity:.5;cursor:default}
     .team-roster-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:14px}.team-roster-list article{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:9px;align-items:center;padding:11px 12px;border:1px solid #e1e4e1;border-radius:10px;background:#f9f8f4}.team-roster-list strong,.team-roster-list small{display:block}.team-roster-list strong{font-size:.74rem}.team-roster-list small{margin-top:2px;overflow:hidden;text-overflow:ellipsis;color:#7b827e;font-size:.56rem;white-space:nowrap}.team-roster-list button{border:1px solid #d8dcda;border-radius:7px;background:#fff;padding:7px 9px;color:#6b7470;font-size:.6rem;font-weight:800;cursor:pointer}
+    .one-engagement-assignment{margin-top:14px;border:1px solid #dfe3e0;border-radius:12px;background:#faf9f5}.one-engagement-assignment>summary{display:flex;justify-content:space-between;gap:18px;align-items:center;min-height:54px;padding:0 16px;cursor:pointer;list-style:none}.one-engagement-assignment>summary::-webkit-details-marker{display:none}.one-engagement-assignment>summary span{display:grid;gap:3px}.one-engagement-assignment>summary strong{font-size:.74rem;color:#17243a}.one-engagement-assignment>summary small{color:#7b827e;font-size:.62rem;font-weight:500}.one-engagement-assignment>summary b{padding:4px 8px;border-radius:999px;background:#ece9e0;color:#74643c;font-size:.56rem;text-transform:uppercase}.one-engagement-body{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;padding:14px 16px;border-top:1px solid #e5e7e5}.one-engagement-body label{display:grid;gap:6px}.one-engagement-body label>span{font-size:.64rem;font-weight:850}.one-engagement-body select{width:100%;padding:10px 11px;border:1px solid #d5dad6;border-radius:8px;background:#fff;font:inherit}.one-engagement-body a{display:inline-flex;min-height:40px;align-items:center;padding:0 13px;border-radius:8px;background:#172a46;color:#fff;font-size:.67rem;font-weight:850;text-decoration:none}
     .team-inline-error{margin:12px 18px 0;padding:9px 10px;border:1px solid var(--status-danger-border);border-radius:8px;background:var(--status-danger-bg);color:var(--status-danger-text);font-size:.66rem}
     .selected-account{display:flex;align-items:center;gap:9px;margin-top:14px;padding:11px;border:1px solid #dde1df;border-radius:9px;background:#f8f8f4}.selected-account strong,.selected-account small{display:block}.selected-account strong{font-size:.75rem}.selected-account small{margin-top:2px;color:#747c78;font-size:.6rem}
 
@@ -276,7 +292,7 @@ interface OwnerDraft {
     .editor-backdrop{position:fixed;inset:0;z-index:80;background:rgba(13,20,28,.38)}.owner-editor{position:fixed;z-index:81;top:0;right:0;width:min(480px,94vw);height:100vh;padding:22px;overflow:auto;background:#fffdfa;box-shadow:-20px 0 55px rgba(18,26,44,.18)}.owner-editor>header{display:flex;justify-content:space-between;gap:16px}.owner-editor>header h2{font-size:1.65rem}.owner-editor>header small{color:#8a7337;font-size:.62rem;font-weight:850;text-transform:uppercase}.owner-editor>header button{width:36px;height:36px;border:0;border-radius:50%;background:#f0eee8;font-size:1.2rem;cursor:pointer}.owner-editor>p{color:#69716d;font-size:.73rem;line-height:1.55}.owner-editor label{display:block;margin-top:16px}.owner-editor label>span{display:block;margin-bottom:6px;font-size:.67rem;font-weight:850}.owner-editor input,.owner-editor select{box-sizing:border-box;width:100%;padding:11px;border:1px solid #d4d9d6;border-radius:8px;background:#fff;font:inherit}.owner-editor label small{display:block;margin-top:5px;color:#828985;font-size:.61rem;line-height:1.4}.owner-editor footer{display:grid;grid-template-columns:auto 1fr auto auto;gap:7px;margin-top:24px;padding-top:16px;border-top:1px solid #e2e5e2}.owner-editor footer button{padding:10px 12px;border-radius:8px;font-size:.67rem;font-weight:850;cursor:pointer}.primary-button{border:1px solid #172a46;background:#172a46;color:#fff}.secondary-button{border:1px solid #d4d9d6;background:#fff;color:#172a46}.danger-button{border:1px solid var(--status-danger-border);background:var(--status-danger-bg);color:var(--status-danger-text)}.editor-error,.editor-message{margin-top:14px;padding:10px;border-radius:8px;font-size:.69rem}.editor-error{background:#fbefed;color:var(--status-danger-text)}.editor-message{background:#eef6f1;color:#2d6d52}
     .state{padding:30px;text-align:center;color:#747c78}.state.error{color:var(--status-danger-text)}
     @media(max-width:1000px){.lane-row{grid-template-columns:1fr 1fr}.lane-health{order:3}.lane-row>button{order:4}.team-accountability .member-grid{grid-template-columns:1fr 1fr}.team-roster-list{grid-template-columns:1fr 1fr}}
-    @media(max-width:700px){.team-page{width:min(100% - 24px,1260px)}.team-heading{flex-direction:column}.team-summary{grid-template-columns:1fr 1fr}.lane-row{grid-template-columns:1fr}.team-accountability .member-grid{grid-template-columns:1fr}.member-grid dl{grid-template-columns:repeat(3,1fr)}.team-add-row{grid-template-columns:1fr}.team-roster-list{grid-template-columns:1fr}}
+    @media(max-width:700px){.team-page{width:min(100% - 24px,1260px)}.team-heading{flex-direction:column;align-items:flex-start}.team-setup-guide{grid-template-columns:1fr}.team-summary{grid-template-columns:1fr 1fr}.lane-row{grid-template-columns:1fr}.team-accountability .member-grid{grid-template-columns:1fr}.member-grid dl{grid-template-columns:repeat(3,1fr)}.team-add-row,.one-engagement-body{grid-template-columns:1fr}.team-roster-list{grid-template-columns:1fr}}
   `],
 })
 export class CtgTeamResponsibilitiesComponent implements OnInit {

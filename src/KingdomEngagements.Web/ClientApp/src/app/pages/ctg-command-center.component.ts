@@ -25,7 +25,10 @@ interface HostActivityPreview {
   template: `
     <section class="director-page">
       <header class="director-heading">
-        <h1>Command Center</h1>
+        <div>
+          <h1>Command Center</h1>
+          <p>See what needs attention across every engagement, then jump directly into the next piece of work.</p>
+        </div>
         <div class="director-heading-actions">
           <a class="secondary-action" routerLink="/organization/ctg/team">Team</a>
           <a class="primary-action" routerLink="/organization/ctg/stand-up">Stand-up →</a>
@@ -330,7 +333,7 @@ interface HostActivityPreview {
     .director-page{width:min(1500px,calc(100% - 42px));margin:0 auto;padding:28px 0 60px;color:#17202b}
     .director-heading{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:18px;padding:4px 0 14px;border-bottom:1px solid #dde1df}
     .director-heading h1,.command-board h2,.director-panel h2{margin:0;font-family:Georgia,'Times New Roman',serif;font-weight:500;color:#17243a}
-    .director-heading h1{font-size:clamp(1.8rem,2.6vw,2.5rem)}
+    .director-heading h1{font-size:clamp(1.8rem,2.6vw,2.5rem)}.director-heading p{max-width:720px;margin:7px 0 0;color:#69736e;font-size:.74rem;line-height:1.5}
     .director-eyebrow{margin:0!important;color:#7c6b38!important;font:800 .67rem/1.2 system-ui,sans-serif!important;letter-spacing:.11em;text-transform:uppercase}
     .director-heading-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
     .primary-action,.secondary-action{display:inline-flex;min-height:38px;align-items:center;padding:0 13px;border-radius:8px;font-size:.72rem;font-weight:850;text-decoration:none}

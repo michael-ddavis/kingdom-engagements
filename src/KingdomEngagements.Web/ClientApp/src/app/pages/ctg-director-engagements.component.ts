@@ -169,7 +169,7 @@ type EngagementFilter = 'active' | 'attention' | 'upcoming' | 'completed';
     .eyebrow{margin:0!important;color:#7c6b38!important;font:800 .66rem/1.2 system-ui,sans-serif!important;letter-spacing:.11em;text-transform:uppercase}.heading-actions{display:flex;gap:8px;flex-wrap:wrap}.heading-actions a{display:inline-flex;min-height:40px;align-items:center;padding:0 14px;border-radius:9px;font-size:.72rem;font-weight:850;text-decoration:none}.heading-actions .primary{background:#172a46;color:#fff}.heading-actions .secondary{border:1px solid #d6dbe0;background:#fff;color:#172a46}
     .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}.summary button{appearance:none;padding:16px 18px;border:1px solid #dde1df;border-radius:12px;background:#fffdfa;color:inherit;text-align:left;cursor:pointer}.summary button.selected{border-color:#9d7438;box-shadow:0 0 0 2px rgba(157,116,56,.11)}.summary small,.summary strong,.summary span{display:block}.summary small{color:#7b827e;font-size:.62rem;font-weight:850;text-transform:uppercase}.summary strong{margin:5px 0 2px;font-size:1.5rem}.summary span{color:#858b87;font-size:.64rem}
     .engagement-list{overflow:hidden;border:1px solid #dde1df;border-radius:16px;background:#fffdfa}.engagement-list>header{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 20px;border-bottom:1px solid #e4e6e4}.engagement-list h2{margin:4px 0 0;font-size:1.3rem}.engagement-list>header>a{color:#315faf;font-size:.71rem;font-weight:850;text-decoration:none}
-    .rows{display:flex;flex-direction:column}.rows article{display:grid;grid-template-columns:minmax(280px,1.4fr) 105px minmax(210px,.95fr) minmax(130px,.6fr) auto;gap:15px;align-items:center;padding:16px 18px;border-bottom:1px solid #eceeeb}.rows article:last-child{border-bottom:0}.engagement-row{cursor:pointer}.engagement-row:hover{background:#fdfcf8}.engagement-row:focus-visible{outline:3px solid #315faf;outline-offset:-3px}
+    .rows{display:flex;flex-direction:column}.rows article{display:grid;grid-template-columns:minmax(280px,1.4fr) 105px minmax(210px,.95fr) minmax(130px,.6fr) auto;gap:15px;align-items:center;padding:16px 18px;border-bottom:1px solid #eceeeb}.rows article:last-child{border-bottom:0}.engagement-row{cursor:pointer}.engagement-row:hover{background:#fdfcf8}.engagement-row:focus-visible{outline:3px solid #315faf;outline-offset:-3px}.engagement-row{cursor:pointer}.engagement-row:hover{background:#fdfcf8}.engagement-row:focus-visible{outline:3px solid #315faf;outline-offset:-3px}
     .identity{display:flex;gap:12px;align-items:center}.date-block{display:grid;flex:0 0 50px;min-height:54px;place-items:center;border:1px solid #dfe2df;border-radius:9px;background:#f7f6f2}.date-block b{margin-top:5px;color:#8c7335;font-size:.55rem;text-transform:uppercase}.date-block strong{margin-top:-4px;font-size:1.12rem}.identity small{color:#7d847f;font-size:.6rem;font-weight:750}.identity h3{margin:2px 0;font-size:1rem}.identity p{margin:0;color:#7b827e;font-size:.65rem}
     .readiness{text-align:center}.readiness-ring{display:grid;width:58px;height:58px;margin:0 auto 4px;place-items:center;border:6px solid #e5e9e5;border-top-color:#5d7553;border-radius:50%;font-weight:900}.readiness span{font-size:.57rem;color:#828985}
     .lane-details>summary{display:inline-flex;min-height:34px;align-items:center;color:#53647a;font-size:.62rem;font-weight:850;cursor:pointer}.lane-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-top:6px}.lane-strip>span{padding:7px;border:1px solid #d6dad6;border-radius:7px;background:#f5f5f2}.lane-strip b,.lane-strip small{display:block}.lane-strip b{font-size:.56rem;text-transform:uppercase}.lane-strip small{margin-top:2px;color:#7e8581;font-size:.54rem}.lane-strip .complete{border-color:var(--status-complete-border);background:var(--status-complete-bg);color:var(--status-complete-text)}
@@ -244,6 +244,14 @@ export class CtgDirectorEngagementsComponent implements OnInit {
   }
 
   isDirector():boolean{return this.roles.canManageAssignments();}
+
+  openEngagement(id:string,event:Event):void{
+    const target=event.target as HTMLElement|null;
+    if(target?.closest('a,button,summary,details,input,select,textarea')) return;
+    event.preventDefault();
+    this.router.navigate(['/organization/ctg/engagements',id]);
+  }
+
 
   openEngagement(id: string, event: Event): void {
     const target = event.target as HTMLElement | null;

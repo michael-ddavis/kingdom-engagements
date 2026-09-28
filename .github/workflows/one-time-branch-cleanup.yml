@@ -43,12 +43,12 @@ jobs:
               if api('/pulls?state=open&head=' + urllib.parse.quote(repo.split('/')[0] + ':' + name, safe='')):
                   raise RuntimeError('Open work exists: ' + name)
               merge_sha = pr['merge_commit_sha']
-              if pr['base']['ref'] != 'main':
-                  # These six stacked Angular/UI branches were integrated by PR 33.
-                  parent_pr = api('/pulls/33')
-                  if not parent_pr['merged'] or parent_pr['head']['sha'] != '8e37d48d7624ebd81fd07685e008f7d53d9c9645':
+              chain = [(37, '216810cda7447b9b4ec4fda4926be968893671d5'), (33, '8e37d48d7624ebd81fd07685e008f7d53d9c9645')] if number == 36 else ([(33, '8e37d48d7624ebd81fd07685e008f7d53d9c9645')] if pr['base']['ref'] != 'main' else [])
+              for parent_number, parent_sha in chain:
+                  parent_pr = api('/pulls/' + str(parent_number))
+                  if not parent_pr['merged'] or parent_pr['head']['sha'] != parent_sha:
                       raise RuntimeError('Stacked merge proof changed: ' + name)
-                  nested = api('/compare/' + merge_sha + '...' + parent_pr['head']['sha'])
+                  nested = api('/compare/' + merge_sha + '...' + parent_sha)
                   if nested['status'] not in ('ahead', 'identical'):
                       raise RuntimeError('Branch is not included in merged stack: ' + name)
                   merge_sha = parent_pr['merge_commit_sha']

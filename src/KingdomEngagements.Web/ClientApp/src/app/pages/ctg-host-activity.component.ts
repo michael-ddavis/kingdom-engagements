@@ -140,13 +140,21 @@ export class CtgHostActivityComponent implements OnInit {
   }
 
   isUnread(item: HostThreadView): boolean {
-    const latest = this.lastMessage(item);
-    if (!latest || latest.senderType !== 'host') return false;
-    return this.readThrough()[item.snapshot.assignment.id] !== latest.id;
+    const latestHostMessage = this.latestHostMessage(item.thread);
+    if (!latestHostMessage) return false;
+    return this.readThrough()[item.snapshot.assignment.id] !== latestHostMessage.id;
   }
 
   lastMessage(item: HostThreadView): HostCoordinationMessage | null {
     return item.thread.messages[item.thread.messages.length - 1] ?? null;
+  }
+
+  private latestHostMessage(thread: HostCoordinationThread): HostCoordinationMessage | null {
+    for (let index = thread.messages.length - 1; index >= 0; index -= 1) {
+      const message = thread.messages[index];
+      if (message.senderType === 'host') return message;
+    }
+    return null;
   }
 
   dateLabel(value: string | null): string {
@@ -217,7 +225,7 @@ export class CtgHostActivityComponent implements OnInit {
   }
 
   private markReadThrough(id: string, thread: HostCoordinationThread): void {
-    const latest = thread.messages[thread.messages.length - 1];
+    const latest = this.latestHostMessage(thread);
     if (!latest) return;
 
     const next = { ...this.readThrough(), [id]: latest.id };

@@ -6,52 +6,45 @@ interface HostInvitation { invitationUrl: string; expiresAtUtc: string; hostName
 @Component({
   selector: 'app-host-access-link', standalone: true, imports: [DatePipe],
   template: `
-    <section class="host-link-panel" aria-labelledby="host-link-title">
-      <header>
-        <div>
-          <small>HOST PORTAL</small>
-          <h3 id="host-link-title">Private host link</h3>
-        </div>
-        @if (invitation()) { <span class="ready-state">Ready to share</span> }
-      </header>
+    <section class="host-link-bar" aria-label="Private host link">
+      <div class="link-status">
+        <small>HOST LINK</small>
+        @if (invitation(); as link) {
+          <strong>Ready to share with {{ link.hostName }}</strong>
+          <span>Expires {{ link.expiresAtUtc | date:'shortDate' }}</span>
+        } @else {
+          <strong>No private host link yet</strong>
+        }
+      </div>
 
-      @if (invitation(); as link) {
-        <p class="intro">Share this with {{ link.hostName }} so they can update travel, lodging, schedule, contacts, documents, and messages.</p>
-        <div class="link-row">
-          <input readonly [value]="link.invitationUrl" (click)="$any($event.target).select()" aria-label="Private host invitation link">
-          <button type="button" (click)="copy()">Copy</button>
+      <div class="link-actions">
+        @if (invitation(); as link) {
+          <button type="button" (click)="copy()">Copy link</button>
           <a [href]="link.invitationUrl" target="_blank" rel="noopener noreferrer">Open ↗</a>
-        </div>
-        <div class="link-meta">Expires {{ link.expiresAtUtc | date:'short' }}</div>
-
-        <details class="replace-link">
-          <summary>Replace this link</summary>
-          <p>Replacing it ends the earlier invitation and host session for this engagement.</p>
-          <button class="secondary" type="button" [disabled]="busy()" (click)="create()">
-            {{ busy() ? 'Creating…' : 'Create replacement link' }}
-          </button>
-        </details>
-      } @else {
-        <div class="create-row">
-          <p>Create one private link for the host. Their updates come back into this engagement automatically.</p>
+          <details>
+            <summary aria-label="More host link options">•••</summary>
+            <div class="more-menu">
+              <p>Replacing the link ends the earlier invitation and host session.</p>
+              <button class="secondary" type="button" [disabled]="busy()" (click)="create()">
+                {{ busy() ? 'Creating…' : 'Replace link' }}
+              </button>
+            </div>
+          </details>
+        } @else {
           <button type="button" [disabled]="busy()" (click)="create()">{{ busy() ? 'Creating…' : 'Create host link' }}</button>
-        </div>
-      }
+        }
+      </div>
 
-      @if (message()) { <p class="message" role="status">{{ message() }}</p> }
+      @if (message()) { <span class="message" role="status">{{ message() }}</span> }
     </section>
   `,
   styles: [`
-    .host-link-panel{margin-bottom:12px;padding:14px 16px;border:1px solid #dde3d9;border-radius:12px;background:#fff;color:#26362b}
-    header{display:flex;justify-content:space-between;gap:16px;align-items:center}.host-link-panel small{display:block;color:#677653;font-size:.58rem;font-weight:850;letter-spacing:.11em}.host-link-panel h3{margin:3px 0 0;font-size:1rem}
-    .ready-state{padding:5px 8px;border:1px solid #b9d8c1;border-radius:999px;background:#edf8ef;color:#2f6b3b;font-size:.61rem;font-weight:850;white-space:nowrap}
-    .intro,.create-row p,.replace-link p,.message{margin:8px 0 0;color:#657063;font-size:.68rem;line-height:1.45}
-    .create-row{display:flex;justify-content:space-between;gap:18px;align-items:center}.create-row p{max-width:720px;margin-top:5px}
-    .link-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;margin-top:10px}.link-row input{box-sizing:border-box;width:100%;min-width:0;padding:9px 10px;border:1px solid #ccd5c9;border-radius:7px;background:#f8faf6;font:inherit;font-size:.68rem}
-    button,.link-row a{display:inline-flex;min-height:36px;align-items:center;justify-content:center;border-radius:7px;font:inherit;font-size:.65rem;font-weight:800;white-space:nowrap}.host-link-panel button{border:0;padding:0 12px;background:#334f36;color:#fff;cursor:pointer}.host-link-panel button:disabled{opacity:.6;cursor:default}.link-row a{padding:0 10px;border:1px solid #cad5ca;color:#345838;text-decoration:none;background:#fff}
-    .link-meta{margin-top:6px;color:#7b837a;font-size:.58rem}.replace-link{margin-top:8px;border-top:1px solid #e8ece7;padding-top:7px}.replace-link summary{color:#6f786f;font-size:.61rem;font-weight:750;cursor:pointer}.replace-link p{margin:7px 0}.host-link-panel .secondary{border:1px solid #ccd5c9;background:#fff;color:#334f36}
-    .message{color:#345838;font-weight:750}
-    @media(max-width:700px){.create-row{align-items:stretch;flex-direction:column}.create-row button{width:100%}.link-row{grid-template-columns:1fr 1fr}.link-row input{grid-column:1/-1}}
+    .host-link-bar{position:relative;display:flex;flex:0 0 auto;align-items:center;justify-content:space-between;gap:14px;margin-bottom:8px;padding:9px 11px;border:1px solid #dde3d9;border-radius:10px;background:#fff;color:#26362b}
+    .link-status{display:flex;min-width:0;align-items:baseline;gap:8px}.link-status small{color:#677653;font-size:.55rem;font-weight:850;letter-spacing:.1em}.link-status strong{overflow:hidden;font-size:.68rem;text-overflow:ellipsis;white-space:nowrap}.link-status span{color:#7b837a;font-size:.57rem;white-space:nowrap}
+    .link-actions{display:flex;flex:0 0 auto;align-items:center;gap:6px}.link-actions button,.link-actions a,.link-actions summary{display:inline-flex;min-height:32px;align-items:center;justify-content:center;border-radius:7px;font:inherit;font-size:.61rem;font-weight:800;white-space:nowrap}.link-actions button{border:0;padding:0 10px;background:#334f36;color:#fff;cursor:pointer}.link-actions button:disabled{opacity:.6;cursor:default}.link-actions a{padding:0 9px;border:1px solid #cad5ca;background:#fff;color:#345838;text-decoration:none}.link-actions details{position:relative}.link-actions summary{width:34px;border:1px solid #d4dad4;background:#fff;color:#59655b;cursor:pointer;list-style:none}.link-actions summary::-webkit-details-marker{display:none}
+    .more-menu{position:absolute;z-index:10;top:38px;right:0;width:250px;padding:11px;border:1px solid #d9dfd8;border-radius:9px;background:#fff;box-shadow:0 12px 28px rgba(18,26,44,.12)}.more-menu p{margin:0 0 9px;color:#657063;font-size:.61rem;line-height:1.45}.link-actions .secondary{width:100%;border:1px solid #ccd5c9;background:#fff;color:#334f36}
+    .message{position:absolute;top:100%;right:10px;z-index:5;margin-top:4px;padding:5px 8px;border:1px solid #cfe0d2;border-radius:7px;background:#f3f8f4;color:#345838;font-size:.58rem;font-weight:750}
+    @media(max-width:700px){.host-link-bar{align-items:flex-start;flex-direction:column}.link-status{align-items:flex-start;flex-direction:column;gap:2px}.link-actions{width:100%}.link-actions>button:first-child{flex:1}.more-menu{right:auto;left:0}}
   `],
 
 })

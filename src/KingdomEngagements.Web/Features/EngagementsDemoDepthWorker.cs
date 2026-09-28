@@ -135,17 +135,32 @@ public sealed class EngagementsDemoDepthWorker(
                 await preparations.SaveChangesAsync(ct);
             }
 
-            // Keep host messaging available for every active/upcoming demo engagement.
-            // A submitted coordination form should not make the demo inbox look inactive;
-            // only completed historical engagements are intentionally closed.
+            // Conversation state is independent from form submission.
+            // Active/upcoming demo engagements remain open even after the host submits the form.
             var shouldBeClosed = assignment.Status == "complete";
-            var desiredCoordinationStatus = shouldBeClosed ? "submitted" : "in-progress";
-            if (!string.Equals(prep.CoordinationStatus, desiredCoordinationStatus, StringComparison.OrdinalIgnoreCase))
+            var preparationChanged = false;
+
+            if (shouldBeClosed && prep.ConversationClosedAtUtc is null)
             {
-                prep.CoordinationStatus = desiredCoordinationStatus;
-                prep.SubmittedAtUtc = shouldBeClosed ? prep.SubmittedAtUtc ?? now.AddDays(-5) : null;
-                if (!shouldBeClosed && (!prep.CoordinationTokenExpiresAtUtc.HasValue || prep.CoordinationTokenExpiresAtUtc <= now))
-                    prep.CoordinationTokenExpiresAtUtc = start.AddDays(30);
+                prep.ConversationClosedAtUtc = now.AddDays(-5);
+                prep.ConversationClosedByName = "Prophet Courtney Beecham";
+                preparationChanged = true;
+            }
+            else if (!shouldBeClosed && prep.ConversationClosedAtUtc is not null)
+            {
+                prep.ConversationClosedAtUtc = null;
+                prep.ConversationClosedByName = null;
+                preparationChanged = true;
+            }
+
+            if (!shouldBeClosed && (!prep.CoordinationTokenExpiresAtUtc.HasValue || prep.CoordinationTokenExpiresAtUtc <= now))
+            {
+                prep.CoordinationTokenExpiresAtUtc = start.AddDays(30);
+                preparationChanged = true;
+            }
+
+            if (preparationChanged)
+            {
                 prep.UpdatedAtUtc = now;
                 await preparations.SaveChangesAsync(ct);
             }

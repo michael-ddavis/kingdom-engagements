@@ -61,6 +61,7 @@ public sealed class EngagementPreparationDbContext(DbContextOptions<EngagementPr
         preparation.Property(x => x.MinistryPreparationNotes).HasColumnType("nvarchar(max)");
         preparation.Property(x => x.HospitalityNotes).HasColumnType("nvarchar(max)");
         preparation.Property(x => x.HostNotes).HasMaxLength(4000);
+        preparation.Property(x => x.HostCoordinationInternalNotes).HasColumnType("nvarchar(max)");
 
         var document = modelBuilder.Entity<HostCoordinationDocumentRecord>();
         document.ToTable("EngagementHostCoordinationDocuments");
@@ -154,6 +155,7 @@ BEGIN
         [MinistryPreparationNotes] nvarchar(max) NULL,
         [HospitalityNotes] nvarchar(max) NULL,
         [HostNotes] nvarchar(4000) NULL,
+        [HostCoordinationInternalNotes] nvarchar(max) NULL,
         [SubmittedAtUtc] datetimeoffset NULL,
         [CreatedAtUtc] datetimeoffset NOT NULL,
         [UpdatedAtUtc] datetimeoffset NOT NULL,
@@ -199,6 +201,9 @@ IF COL_LENGTH(N'dbo.EngagementPreparations', N'MinistryPreparationNotes') IS NUL
 
 IF COL_LENGTH(N'dbo.EngagementPreparations', N'HospitalityNotes') IS NULL
     ALTER TABLE [dbo].[EngagementPreparations] ADD [HospitalityNotes] nvarchar(max) NULL;
+
+IF COL_LENGTH(N'dbo.EngagementPreparations', N'HostCoordinationInternalNotes') IS NULL
+    ALTER TABLE [dbo].[EngagementPreparations] ADD [HostCoordinationInternalNotes] nvarchar(max) NULL;
 
 IF COL_LENGTH(N'dbo.EngagementHostCoordinationDocuments', N'Category') IS NULL
 BEGIN
@@ -302,6 +307,7 @@ public sealed class EngagementPreparationRecord
     public string? MinistryPreparationNotes { get; set; }
     public string? HospitalityNotes { get; set; }
     public string? HostNotes { get; set; }
+    public string? HostCoordinationInternalNotes { get; set; }
     public DateTimeOffset? SubmittedAtUtc { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }

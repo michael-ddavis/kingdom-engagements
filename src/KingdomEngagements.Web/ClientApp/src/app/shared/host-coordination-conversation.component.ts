@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, EventEmitter, Input, Output, OnDestroy, OnInit, signal } from '@angular/core';
+import { AfterViewChecked, Component, ElementRef, EventEmitter, Input, Output, OnDestroy, OnInit, ViewChild, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { EngagementsApiService } from '../core/engagements-api.service';
 import { EngagementRealtimeService } from '../core/engagement-realtime.service';
@@ -36,7 +36,7 @@ interface CoordinationUpdatedEvent {
       } @else if (error()) {
         <p class="error-state">{{ error() }}</p>
       } @else {
-        <div class="message-list" aria-live="polite">
+        <div #messageList class="message-list" aria-live="polite">
           @if (thread().messages.length === 0) {
             <p class="empty-state">No coordination messages yet.</p>
           } @else {
@@ -54,7 +54,7 @@ interface CoordinationUpdatedEvent {
 
         <form (submit)="send($event)">
           <textarea
-            rows="3"
+            rows="2"
             maxlength="4000"
             [disabled]="thread().isClosed || sending()"
             [value]="draft()"
@@ -68,22 +68,24 @@ interface CoordinationUpdatedEvent {
     </section>
   `,
   styles: [`
-    .conversation-card{margin-top:24px;border:1px solid #e1ddd4;border-radius:14px;background:#fff;padding:20px}
-    header{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;margin-bottom:18px}
+    .conversation-card{display:flex;height:min(600px,calc(100vh - 235px));min-height:430px;flex-direction:column;overflow:hidden;border:1px solid #e1ddd4;border-radius:14px;background:#fff}
+    header{display:flex;flex:0 0 auto;justify-content:space-between;gap:24px;align-items:flex-start;padding:18px 20px;border-bottom:1px solid #ece8df}
     h3{margin:3px 0 5px;font-size:1.1rem}.eyebrow{font-size:.68rem;font-weight:800;letter-spacing:.13em;color:#687387}
     header p,.empty-state,.error-state{margin:0;color:#687387;font-size:.84rem;line-height:1.5}
     .connection-state{border:1px solid #d9d3c7;border-radius:999px;padding:6px 10px;background:#f7f5ef;color:#687387;font-size:.72rem;font-weight:800;white-space:nowrap}
     .connection-state.is-live{border-color:#b9d8c1;background:#edf8ef;color:#2f6b3b}
-    .message-list{display:grid;gap:10px;max-height:320px;overflow:auto;padding:2px 2px 16px}
-    .message{max-width:80%;border:1px solid #e1ddd4;border-radius:12px;padding:11px 13px;background:#faf9f6}
+    .message-list{display:flex;min-height:0;flex:1 1 auto;flex-direction:column;gap:10px;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:16px 18px 20px;background:#fbfaf7}
+    .message-list>.empty-state{margin:auto;text-align:center}
+    .message{max-width:min(80%,720px);border:1px solid #e1ddd4;border-radius:12px;padding:11px 13px;background:#fff}
     .message.from-host{margin-left:auto;background:#f1f6fb}.message div{display:flex;justify-content:space-between;gap:12px}.message strong{font-size:.78rem}.message time{font-size:.68rem;color:#8a94a4}.message p{margin:5px 0 0;white-space:pre-wrap;font-size:.84rem;line-height:1.45}
-    form{display:flex;gap:10px;align-items:flex-end;border-top:1px solid #ece8df;padding-top:14px}textarea{flex:1;resize:vertical;border:1px solid #d9d3c7;border-radius:9px;padding:10px 12px;font:inherit}button{min-height:42px;border:0;border-radius:8px;padding:0 16px;background:#17365d;color:#fff;font-weight:800;cursor:pointer}button:disabled{opacity:.55;cursor:not-allowed}.error-state{color:#b42318}
-    @media(max-width:720px){header,form{flex-direction:column}.message{max-width:94%}button{width:100%}}
+    form{display:flex;flex:0 0 auto;gap:10px;align-items:flex-end;border-top:1px solid #ece8df;padding:12px 14px;background:#fff}textarea{flex:1;min-height:46px;max-height:120px;resize:vertical;border:1px solid #d9d3c7;border-radius:9px;padding:10px 12px;font:inherit}button{min-height:42px;border:0;border-radius:8px;padding:0 16px;background:#17365d;color:#fff;font-weight:800;cursor:pointer}button:disabled{opacity:.55;cursor:not-allowed}.error-state{padding:18px 20px;color:#b42318}
+    @media(max-width:720px){.conversation-card{height:65vh;min-height:430px}header{gap:12px;padding:15px 16px}.message-list{padding:14px}.message{max-width:94%}form{align-items:stretch;flex-direction:column}button{width:100%}}
   `],
 })
-export class HostCoordinationConversationComponent implements OnInit, OnDestroy {
+export class HostCoordinationConversationComponent implements OnInit, OnDestroy, AfterViewChecked {
   @Output() readonly threadChanged = new EventEmitter<HostCoordinationThread>();
   @Input({ required: true }) assignmentId = '';
+  @ViewChild('messageList') private messageList?: ElementRef<HTMLDivElement>;
 
   readonly thread = signal<HostCoordinationThread>({ isClosed: false, messages: [] });
   readonly loading = signal(true);
@@ -93,6 +95,7 @@ export class HostCoordinationConversationComponent implements OnInit, OnDestroy 
   readonly draft = signal('');
 
   private disconnectRealtime: (() => Promise<void>) | null = null;
+  private scrollLatestPending = false;
 
   constructor(
     private readonly api: EngagementsApiService,
@@ -106,6 +109,12 @@ export class HostCoordinationConversationComponent implements OnInit, OnDestroy 
 
   ngOnDestroy(): void {
     void this.disconnectRealtime?.();
+  }
+
+  ngAfterViewChecked(): void {
+    if (!this.scrollLatestPending) return;
+    this.scrollLatestPending = false;
+    this.scrollToLatest();
   }
 
   async send(event: Event): Promise<void> {
@@ -123,7 +132,9 @@ export class HostCoordinationConversationComponent implements OnInit, OnDestroy 
       );
       this.thread.set(thread);
       this.threadChanged.emit(thread);
+      this.requestScrollToLatest();
       this.draft.set('');
+      this.requestScrollToLatest();
     } catch {
       this.error.set('The coordination message could not be sent.');
     } finally {
@@ -172,10 +183,28 @@ export class HostCoordinationConversationComponent implements OnInit, OnDestroy 
     const current = this.thread();
     if (current.messages.some(message => message.id === event.message.id)) return;
 
+    const shouldFollowLatest = this.isNearLatest();
     this.thread.set({
       ...current,
       messages: [...current.messages, event.message],
     });
     this.threadChanged.emit(this.thread());
+    if (shouldFollowLatest) this.requestScrollToLatest();
+  }
+
+  private requestScrollToLatest(): void {
+    this.scrollLatestPending = true;
+  }
+
+  private scrollToLatest(): void {
+    const element = this.messageList?.nativeElement;
+    if (!element) return;
+    element.scrollTop = element.scrollHeight;
+  }
+
+  private isNearLatest(): boolean {
+    const element = this.messageList?.nativeElement;
+    if (!element) return true;
+    return element.scrollHeight - element.scrollTop - element.clientHeight < 96;
   }
 }

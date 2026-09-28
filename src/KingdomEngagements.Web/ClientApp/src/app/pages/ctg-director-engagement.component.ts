@@ -118,26 +118,50 @@ interface ResponsibilityDraft {
           }
         </section>
 
-        @if (tab() === 'overview') { <p class="workspace-help">{{ isDirector() ? 'Start with responsibilities below: choose who handles each area, then open a section to add details or follow up with the host.' : 'Your assigned responsibilities appear below. Open one to review its details and update your progress.' }}</p> }
-        <label class="workspace-section-picker">Go to section
+        @if (tab() === 'overview') {
+          <p class="workspace-help">{{ isDirector() ? 'Start with what needs attention, then move into a work area only when you need its details.' : 'Start with your assigned work below. The navigation only shows areas that belong to you.' }}</p>
+        }
+
+        <section class="workspace-navigation" aria-label="Engagement work areas">
+          <div class="workspace-navigation-copy">
+            <strong>Where do you want to work?</strong>
+            <span>Choose a work area first. Detailed sections appear underneath only when they apply.</span>
+          </div>
+
+          <nav class="workspace-primary-tabs" aria-label="Engagement work areas">
+            @for (group of visibleGroups(); track group.key) {
+              <button
+                type="button"
+                [class.active]="currentGroupKey() === group.key"
+                (click)="selectGroup(group.key)">
+                {{ group.label }}
+              </button>
+            }
+          </nav>
+
+          @if (visibleTabsInCurrentGroup().length > 1) {
+            <nav class="workspace-subtabs" aria-label="Sections in this work area">
+              @for (tabItem of visibleTabsInCurrentGroup(); track tabItem.key) {
+                <button
+                  type="button"
+                  [class.active]="tab() === tabItem.key"
+                  [attr.aria-current]="tab() === tabItem.key ? 'page' : null"
+                  (click)="tab.set(tabItem.key)">
+                  {{ tabItem.label }}
+                  @if (tabItem.lane && lane(tabItem.lane); as laneItem) {
+                    <span [class.alert]="laneItem.isOverdue || !laneItem.owner">{{ laneBadge(laneItem) }}</span>
+                  }
+                </button>
+              }
+            </nav>
+          }
+        </section>
+
+        <label class="workspace-section-picker">Go directly to a section
           <select [value]="tab()" (change)="selectSection($any($event.target).value)">
             @for (tabItem of visibleTabs(); track tabItem.key) { <option [value]="tabItem.key">{{ tabItem.label }}</option> }
           </select>
         </label>
-        <nav class="workspace-tabs" aria-label="Engagement director sections">
-          @for (tabItem of visibleTabs(); track tabItem.key) {
-            <button
-              type="button"
-              [class.active]="tab() === tabItem.key"
-              [attr.aria-current]="tab() === tabItem.key ? 'page' : null"
-              (click)="tab.set(tabItem.key)">
-              {{ tabItem.label }}
-              @if (tabItem.lane && lane(tabItem.lane); as laneItem) {
-                <span [class.alert]="laneItem.isOverdue || !laneItem.owner">{{ laneBadge(laneItem) }}</span>
-              }
-            </button>
-          }
-        </nav>
 
         <section class="workspace-body">
           @switch (tab()) {
@@ -551,7 +575,18 @@ interface ResponsibilityDraft {
     </section>
   `,
   styles: [`
-    .workspace-help{color:#536158;line-height:1.6;margin:18px 0 12px;font-size:.9rem}.workspace-section-picker{display:none}@media(max-width:900px){.workspace-section-picker{display:grid;gap:8px;font-size:.9rem;font-weight:700;margin:16px 0}.workspace-section-picker select{width:100%;min-height:44px;padding:10px;border:1px solid #c8d0c9;border-radius:8px;background:#fffdfa;color:#172a46;font:inherit}.workspace-tabs{display:none!important}}
+    .workspace-help{color:#536158;line-height:1.6;margin:18px 0 12px;font-size:.9rem}
+    .workspace-section-picker{display:none}
+    .workspace-navigation{margin:16px 0 14px;padding:14px;border:1px solid #dfe3e0;border-radius:13px;background:#fffdfa}
+    .workspace-navigation-copy{display:flex;justify-content:space-between;gap:18px;align-items:baseline;padding:2px 4px 11px}
+    .workspace-navigation-copy strong{color:#17243a;font-size:.78rem}.workspace-navigation-copy span{color:#77807a;font-size:.64rem;text-align:right}
+    .workspace-primary-tabs{display:flex;gap:6px;overflow:auto;padding-bottom:2px;scrollbar-width:thin}
+    .workspace-primary-tabs button{min-height:40px;padding:0 13px;border:1px solid #d8ddda;border-radius:8px;background:#faf9f5;color:#59635e;font-size:.68rem;font-weight:850;white-space:nowrap;cursor:pointer}
+    .workspace-primary-tabs button.active{border-color:#172a46;background:#172a46;color:#fff}
+    .workspace-subtabs{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid #ebece9}
+    .workspace-subtabs button{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:0 10px;border:0;border-radius:7px;background:transparent;color:#65706a;font-size:.64rem;font-weight:800;cursor:pointer}
+    .workspace-subtabs button.active{background:#eef1ed;color:#172a46}.workspace-subtabs button span{padding:2px 5px;border-radius:999px;background:#e9ece9;font-size:.52rem}.workspace-subtabs button span.alert{background:#f8e8e5;color:#a84642}
+    @media(max-width:900px){.workspace-navigation{display:none}.workspace-section-picker{display:grid;gap:8px;font-size:.9rem;font-weight:700;margin:16px 0}.workspace-section-picker select{width:100%;min-height:44px;padding:10px;border:1px solid #c8d0c9;border-radius:8px;background:#fffdfa;color:#172a46;font:inherit}}
 
     :host{
       display:block;
@@ -609,19 +644,28 @@ interface ResponsibilityDraft {
 export class CtgDirectorEngagementComponent implements OnInit {
   readonly tabs: readonly { key: DirectorTab; label: string; lane?: string }[] = [
     { key: 'overview', label: 'Overview' },
-    { key: 'responsibilities', label: 'Responsibilities' },
-    { key: 'host-coordination', label: 'Host', lane: 'host-coordination' },
-    { key: 'travel', label: 'Travel', lane: 'travel' },
-    { key: 'lodging', label: 'Lodging', lane: 'lodging' },
-    { key: 'transportation', label: 'Transportation', lane: 'transportation' },
-    { key: 'media', label: 'Media', lane: 'media' },
-    { key: 'program', label: 'Program', lane: 'program' },
+    { key: 'responsibilities', label: 'Team responsibilities' },
+    { key: 'host-coordination', label: 'Host coordination', lane: 'host-coordination' },
+    { key: 'travel', label: 'Flights', lane: 'travel' },
+    { key: 'lodging', label: 'Hotel', lane: 'lodging' },
+    { key: 'transportation', label: 'Local transportation', lane: 'transportation' },
+    { key: 'media', label: 'Media & promotion', lane: 'media' },
+    { key: 'program', label: 'Event schedule', lane: 'program' },
     { key: 'documents', label: 'Documents', lane: 'documents' },
     { key: 'finance', label: 'Finance', lane: 'finance' },
-    { key: 'ministry-preparation', label: 'Ministry', lane: 'ministry-preparation' },
+    { key: 'ministry-preparation', label: 'Ministry preparation', lane: 'ministry-preparation' },
     { key: 'hospitality', label: 'Hospitality', lane: 'hospitality' },
     { key: 'closeout', label: 'Closeout', lane: 'closeout' },
     { key: 'activity', label: 'Activity' },
+  ];
+
+  readonly tabGroups: readonly { key: string; label: string; tabs: readonly DirectorTab[] }[] = [
+    { key: 'overview', label: 'Overview', tabs: ['overview'] },
+    { key: 'people-host', label: 'People & host', tabs: ['responsibilities', 'host-coordination'] },
+    { key: 'travel-stay', label: 'Travel & stay', tabs: ['travel', 'lodging', 'transportation'] },
+    { key: 'event-prep', label: 'Event prep', tabs: ['media', 'program', 'ministry-preparation', 'hospitality'] },
+    { key: 'records', label: 'Records & closeout', tabs: ['documents', 'finance', 'closeout'] },
+    { key: 'activity', label: 'Activity', tabs: ['activity'] },
   ];
 
   readonly assignment = signal<EngagementDetails | null>(null);
@@ -798,6 +842,30 @@ export class CtgDirectorEngagementComponent implements OnInit {
   selectSection(key: string): void {
     const section = this.visibleTabs().find(item => item.key === key);
     if (section) this.tab.set(section.key);
+  }
+
+  visibleGroups(): readonly { key: string; label: string; tabs: readonly DirectorTab[] }[] {
+    const visible = new Set(this.visibleTabs().map(item => item.key));
+    return this.tabGroups.filter(group => group.tabs.some(key => visible.has(key)));
+  }
+
+  currentGroupKey(): string {
+    return this.visibleGroups().find(group => group.tabs.includes(this.tab()))?.key ?? 'overview';
+  }
+
+  visibleTabsInCurrentGroup(): readonly { key: DirectorTab; label: string; lane?: string }[] {
+    const group = this.visibleGroups().find(item => item.key === this.currentGroupKey());
+    if (!group) return [];
+    const allowed = new Set(group.tabs);
+    return this.visibleTabs().filter(item => allowed.has(item.key));
+  }
+
+  selectGroup(key: string): void {
+    const group = this.visibleGroups().find(item => item.key === key);
+    if (!group) return;
+    const tabs = this.visibleTabs().filter(item => group.tabs.includes(item.key));
+    if (tabs.length === 0) return;
+    if (!tabs.some(item => item.key === this.tab())) this.tab.set(tabs[0].key);
   }
 
   visibleTabs(): readonly { key: DirectorTab; label: string; lane?: string }[] {

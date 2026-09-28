@@ -22,7 +22,10 @@ interface HostThreadView {
   template: `
     <section class="host-page">
       <header class="host-heading">
-        <h1>Host Activity</h1>
+        <div>
+          <h1>Host Activity</h1>
+          <p>Use this page when you need to see what hosts recently said, who still needs a reply, or which conversation to open.</p>
+        </div>
         <a routerLink="/organization/ctg/command-center">← Command Center</a>
       </header>
 
@@ -31,12 +34,31 @@ interface HostThreadView {
       } @else if (error()) {
         <div class="state error">{{ error() }}</div>
       } @else {
-        <section class="host-summary">
-          <article><small>Active hosts</small><strong>{{ threads().length }}</strong><span>Upcoming engagements</span></article>
-          <article><small>Open conversations</small><strong>{{ openThreads() }}</strong><span>Coordination still active</span></article>
-          <article><small>Closed conversations</small><strong>{{ closedThreads() }}</strong><span>Coordination submitted</span></article>
-          <article><small>Messages</small><strong>{{ totalMessages() }}</strong><span>Retained in engagement history</span></article>
+        <section class="host-focus">
+          <article>
+            <small>Needs a reply</small>
+            <strong>{{ needsReply() }}</strong>
+            <span>Open conversations where the host sent the latest message.</span>
+          </article>
+          <article>
+            <small>Open conversations</small>
+            <strong>{{ openThreads() }}</strong>
+            <span>Host coordination that is still active.</span>
+          </article>
         </section>
+
+        <details class="host-summary-details">
+          <summary>
+            <span><strong>Conversation totals</strong><small>Optional operational detail</small></span>
+            <span>{{ threads().length }} hosts · {{ totalMessages() }} messages</span>
+          </summary>
+          <section class="host-summary">
+            <article><small>Active hosts</small><strong>{{ threads().length }}</strong><span>Upcoming engagements</span></article>
+            <article><small>Open conversations</small><strong>{{ openThreads() }}</strong><span>Coordination still active</span></article>
+            <article><small>Closed conversations</small><strong>{{ closedThreads() }}</strong><span>Coordination submitted</span></article>
+            <article><small>Messages</small><strong>{{ totalMessages() }}</strong><span>Retained in engagement history</span></article>
+          </section>
+        </details>
 
         <section class="host-grid">
           <aside class="host-list">
@@ -90,13 +112,15 @@ interface HostThreadView {
     </section>
   `,
   styles: [`
-    :host{display:block}.host-page{width:min(1240px,calc(100% - 38px));margin:0 auto;padding:28px 0 60px;color:#17202b}.host-heading{display:flex;justify-content:space-between;align-items:center;gap:22px;margin-bottom:18px;padding:4px 0 14px;border-bottom:1px solid #dde1df}.host-heading h1,.conversation h2{margin:0;font:500 clamp(1.8rem,2.6vw,2.5rem)/1.08 Georgia,'Times New Roman',serif;color:#17243a}.host-heading>a{color:#315faf;font-size:.72rem;font-weight:850;text-decoration:none}.eyebrow{margin:0!important;color:#876f33!important;font:850 .65rem/1.2 system-ui,sans-serif!important;letter-spacing:.1em;text-transform:uppercase}
-    .host-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}.host-summary article{padding:15px 17px;border:1px solid #dfe3e0;border-radius:12px;background:#fffdfa}.host-summary small{display:block;color:#7a827d;font-size:.62rem;font-weight:850;text-transform:uppercase}.host-summary strong{display:block;margin:5px 0 2px;font-size:1.45rem}.host-summary span{font-size:.64rem;color:#858b87}
+    :host{display:block}.host-page{width:min(1240px,calc(100% - 38px));margin:0 auto;padding:28px 0 60px;color:#17202b}.host-heading{display:flex;justify-content:space-between;align-items:center;gap:22px;margin-bottom:18px;padding:4px 0 14px;border-bottom:1px solid #dde1df}.host-heading h1,.conversation h2{margin:0;font:500 clamp(1.8rem,2.6vw,2.5rem)/1.08 Georgia,'Times New Roman',serif;color:#17243a}.host-heading p{max-width:720px;margin:7px 0 0;color:#69736e;font-size:.74rem;line-height:1.5}.host-heading>a{color:#315faf;font-size:.72rem;font-weight:850;text-decoration:none}.eyebrow{margin:0!important;color:#876f33!important;font:850 .65rem/1.2 system-ui,sans-serif!important;letter-spacing:.1em;text-transform:uppercase}
+    .host-focus{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:10px}.host-focus article{padding:16px 18px;border:1px solid #dfe3e0;border-radius:12px;background:#fffdfa}.host-focus small,.host-focus strong,.host-focus span{display:block}.host-focus small{color:#7a827d;font-size:.62rem;font-weight:850;text-transform:uppercase}.host-focus strong{margin:5px 0 3px;font-size:1.5rem}.host-focus span{max-width:520px;color:#747d78;font-size:.66rem;line-height:1.45}
+    .host-summary-details{margin-bottom:14px;border:1px solid #e0e4e1;border-radius:11px;background:#faf9f5;overflow:hidden}.host-summary-details>summary{display:flex;justify-content:space-between;gap:18px;align-items:center;min-height:48px;padding:0 14px;cursor:pointer;list-style:none}.host-summary-details>summary::-webkit-details-marker{display:none}.host-summary-details>summary span:first-child{display:grid;gap:2px}.host-summary-details>summary strong{color:#17243a;font-size:.72rem}.host-summary-details>summary small{color:#7b827e;font-size:.61rem;font-weight:500}.host-summary-details>summary span:last-child{color:#68716d;font-size:.65rem;font-weight:750}
+    .host-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:0;padding:12px;border-top:1px solid #e4e7e4}.host-summary article{padding:15px 17px;border:1px solid #dfe3e0;border-radius:12px;background:#fffdfa}.host-summary small{display:block;color:#7a827d;font-size:.62rem;font-weight:850;text-transform:uppercase}.host-summary strong{display:block;margin:5px 0 2px;font-size:1.45rem}.host-summary span{font-size:.64rem;color:#858b87}
     .host-grid{display:grid;grid-template-columns:330px 1fr;min-height:650px;border:1px solid #dfe3e0;border-radius:16px;background:#fffdfa;overflow:hidden;box-shadow:0 10px 30px rgba(18,26,44,.04)}.host-list{border-right:1px solid #e2e5e2;background:#f8f7f3}.host-list>header{display:flex;justify-content:space-between;padding:16px;border-bottom:1px solid #e2e5e2;font-size:.74rem}.host-list button{display:grid;width:100%;grid-template-columns:1fr auto;gap:4px;padding:14px 15px;border:0;border-bottom:1px solid #e5e7e5;background:transparent;text-align:left;color:inherit;cursor:pointer}.host-list button.selected{background:#fffdfa;box-shadow:inset 3px 0 #9d7438}.host-list button strong,.host-list button span{display:block}.host-list button strong{font-size:.75rem}.host-list button span{margin-top:2px;color:#777f7a;font-size:.62rem}.host-list button>small{align-self:start;padding:4px 6px;border-radius:999px;background:#eef6f1;color:#2d6d52;font-size:.57rem;font-weight:900}.host-list button p{grid-column:1/-1;margin:4px 0 0;color:#858b87;font-size:.59rem}
     .conversation{display:flex;min-width:0;flex-direction:column}.conversation>header{display:flex;justify-content:space-between;gap:18px;padding:20px 22px;border-bottom:1px solid #e3e6e3}.conversation>header small{color:#8a7337;font-size:.61rem;font-weight:850;text-transform:uppercase}.conversation h2{font-size:1.55rem}.conversation>header p{margin:0;color:#78807b;font-size:.68rem}.coordination-status{text-align:right}.coordination-status strong,.coordination-status span,.coordination-status a{display:block}.coordination-status strong{font-size:1.35rem}.coordination-status span{color:#75807a;font-size:.61rem}.coordination-status a{margin-top:7px;color:#315faf;font-size:.65rem;font-weight:850;text-decoration:none}
     .message-thread{display:flex;flex:1;flex-direction:column;gap:10px;overflow:auto;padding:20px;background:#fbfaf7}.message-thread article{max-width:78%;padding:11px 13px;border:1px solid #dde2df;border-radius:12px;background:#fff}.message-thread article.ministry{align-self:flex-end;background:#eef3f8;border-color:#d3dce8}.message-thread article.host{align-self:flex-start}.message-thread article header{display:flex;justify-content:space-between;gap:14px}.message-thread article header strong{font-size:.66rem}.message-thread article header span{color:#8a918d;font-size:.57rem}.message-thread article p{margin:6px 0 0;color:#4f5954;font-size:.72rem;line-height:1.5}.thread-empty{margin:auto;color:#7a827d;text-align:center;font-size:.72rem}
     .message-composer{padding:15px 18px;border-top:1px solid #e1e4e1;background:#fffdfa}.message-composer label>span{display:block;margin-bottom:5px;font-size:.65rem;font-weight:850}.message-composer textarea{box-sizing:border-box;width:100%;padding:10px;border:1px solid #d5dad7;border-radius:9px;resize:vertical;font:inherit}.message-composer>div{display:flex;justify-content:flex-end;align-items:center;gap:9px;margin-top:8px}.message-composer button{padding:9px 14px;border:0;border-radius:8px;background:#172a46;color:#fff;font-size:.66rem;font-weight:850;cursor:pointer}.message-composer button:disabled{opacity:.4}.send-error{color:#a84642;font-size:.64rem}.send-success{color:#2d6d52;font-size:.64rem}.closed-thread{padding:16px 18px;border-top:1px solid #d8e5dc;background:#eef6f1;color:#2d6d52}.closed-thread strong,.closed-thread span{display:block}.closed-thread span{margin-top:3px;font-size:.65rem}.state{padding:40px;text-align:center;color:#747c78}.state.error{color:#a84642}
-    @media(max-width:800px){.host-summary{grid-template-columns:1fr 1fr}.host-grid{grid-template-columns:1fr}.host-list{max-height:290px;overflow:auto;border-right:0;border-bottom:1px solid #e2e5e2}.host-heading{flex-direction:column}.message-thread{min-height:400px}}
+    @media(max-width:800px){.host-heading{align-items:flex-start;flex-direction:column}.host-focus,.host-summary{grid-template-columns:1fr 1fr}.host-summary-details>summary{align-items:flex-start;flex-direction:column;padding:12px 14px}.host-grid{grid-template-columns:1fr}.host-list{max-height:290px;overflow:auto;border-right:0;border-bottom:1px solid #e2e5e2}.message-thread{min-height:400px}}
   `],
 })
 export class CtgHostActivityComponent implements OnInit {
@@ -115,6 +139,10 @@ export class CtgHostActivityComponent implements OnInit {
   readonly openThreads = computed(() => this.threads().filter(item => !item.thread.isClosed).length);
   readonly closedThreads = computed(() => this.threads().filter(item => item.thread.isClosed).length);
   readonly totalMessages = computed(() => this.threads().reduce((sum, item) => sum + item.thread.messages.length, 0));
+  readonly needsReply = computed(() => this.threads().filter(item => {
+    if (item.thread.isClosed || item.thread.messages.length === 0) return false;
+    return this.lastMessage(item)?.senderType === 'host';
+  }).length);
 
   constructor(private readonly api: EngagementsApiService) {}
 

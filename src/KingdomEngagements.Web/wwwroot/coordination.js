@@ -321,6 +321,7 @@ function renderMessages() {
     ? messages.map(message => `
         <article class="coordination-message ${message.senderType === 'host' ? 'is-host' : ''}">
           <strong>${escapeHtml(message.senderName)}</strong>
+          <small class="message-role">${message.senderType === 'host' ? 'You · Host' : 'Ministry team'}</small>
           <p>${escapeHtml(message.message)}</p>
           <time>${new Date(message.createdAtUtc).toLocaleString()}</time>
         </article>`).join('')
@@ -365,9 +366,14 @@ function applyRealtimeMessage(event) {
 }
 
 async function connectRealtime() {
-  if (stopRealtime || !coordination?.assignmentId) return;
-
   if (legacyToken) {
+    setRealtimeState('Messages available', false, 'Messages are saved with this engagement. Refresh the page to see new replies.');
+    return;
+  }
+
+  if (stopRealtime) return;
+
+  if (!coordination?.assignmentId) {
     setRealtimeState('Messages available', false, 'Messages are saved with this engagement. Refresh the page to see new replies.');
     return;
   }
@@ -488,6 +494,7 @@ async function save(submit, options = {}) {
   try {
     if (submit) showState('Submitting for ministry review…');
     coordination = await api(coordinationApiUrl, { method:'PUT', body:JSON.stringify(payload(submit)) });
+    if (!submit) showState('');
     const unchangedSinceSaveStarted = changeVersion === versionAtStart;
     if (unchangedSinceSaveStarted) formDirty = false;
     broadcastCollaborationUpdate('host');

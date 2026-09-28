@@ -270,27 +270,44 @@ function setField(name, value) {
   if (field) field.value = value ?? '';
 }
 function read(name) { return String(form.elements.namedItem(name)?.value || '').trim() || null; }
-function input(label, name, value = '', type = 'text') {
-  return `<label class="field"><span>${escapeHtml(label)}</span><input data-name="${escapeHtml(name)}" type="${type}" value="${escapeHtml(value || '')}" /></label>`;
+function fieldLabel(label, qualifier = '') {
+  return `<span>${escapeHtml(label)}${qualifier ? ` <small class="field-qualifier">${escapeHtml(qualifier)}</small>` : ''}</span>`;
+}
+function input(label, name, value = '', type = 'text', qualifier = '') {
+  return `<label class="field">${fieldLabel(label, qualifier)}<input data-name="${escapeHtml(name)}" type="${type}" value="${escapeHtml(value || '')}" /></label>`;
+}
+function renderRepeatEmptyState(container, message) {
+  if (container.querySelector('.repeat-row')) return;
+  container.innerHTML = `<div class="repeat-empty"><strong>Nothing added yet</strong><span>${escapeHtml(message)}</span></div>`;
 }
 function addSchedule(item = {}) {
+  scheduleList.querySelector('.repeat-empty')?.remove();
   const row = document.createElement('article');
   row.className = 'repeat-row schedule';
   row.style.gridTemplateColumns = '1.2fr .9fr .65fr .65fr 1fr auto';
-  row.innerHTML = `${input('Session / responsibility','title',item.title)}${input('Date','date',item.date,'date')}${input('Starts','startsAt',item.startsAt,'time')}${input('Ends','endsAt',item.endsAt,'time')}${input('Location','location',item.location)}<button type="button" class="remove-button">Remove</button><label class="field" style="grid-column:1/-1"><span>Notes</span><textarea data-name="notes" rows="2">${escapeHtml(item.notes || '')}</textarea></label>`;
-  row.querySelector('.remove-button').addEventListener('click', () => { row.remove(); markDirty(); });
+  row.innerHTML = `${input('Session / responsibility','title',item.title,'text','Recommended')}${input('Date','date',item.date,'date','Recommended')}${input('Starts','startsAt',item.startsAt,'time','Recommended')}${input('Ends','endsAt',item.endsAt,'time','Helpful')}${input('Location','location',item.location,'text','Recommended')}<button type="button" class="remove-button">Remove</button><label class="field" style="grid-column:1/-1">${fieldLabel('Notes','Optional')}<textarea data-name="notes" rows="2">${escapeHtml(item.notes || '')}</textarea></label>`;
+  row.querySelector('.remove-button').addEventListener('click', () => {
+    row.remove();
+    renderRepeatEmptyState(scheduleList, 'Add a session when a ministry time is confirmed.');
+    markDirty();
+  });
   scheduleList.append(row);
 }
 function addContact(item = {}) {
+  contactList.querySelector('.repeat-empty')?.remove();
   const row = document.createElement('article');
   row.className = 'repeat-row contacts';
-  row.innerHTML = `<label class="field"><span>Type</span><select data-name="type"><option value="primary">Primary host</option><option value="travel">Travel</option><option value="media">Media</option><option value="emergency">Emergency</option><option value="other">Other</option></select></label>${input('Name','name',item.name)}${input('Email','email',item.email,'email')}${input('Phone','phone',item.phone,'tel')}<button type="button" class="remove-button">Remove</button>`;
+  row.innerHTML = `<label class="field">${fieldLabel('Contact type','Helpful')}<select data-name="type"><option value="primary">Primary host</option><option value="travel">Travel</option><option value="media">Media</option><option value="emergency">Emergency</option><option value="other">Other</option></select></label>${input('Name','name',item.name,'text','Recommended')}${input('Email','email',item.email,'email','Email or phone')}${input('Phone','phone',item.phone,'tel','Email or phone')}<button type="button" class="remove-button">Remove</button>`;
   row.querySelector('[data-name="type"]').value = item.type || 'other';
-  row.querySelector('.remove-button').addEventListener('click', () => { row.remove(); markDirty(); });
+  row.querySelector('.remove-button').addEventListener('click', () => {
+    row.remove();
+    renderRepeatEmptyState(contactList, 'Add a primary local contact when you know who the team should reach.');
+    markDirty();
+  });
   contactList.append(row);
 }
 function collectRows(container) {
-  return [...container.children].map(row => {
+  return [...container.querySelectorAll('.repeat-row')].map(row => {
     const value = name => String(row.querySelector(`[data-name="${name}"]`)?.value || '').trim() || null;
     return row.classList.contains('contacts')
       ? { type:value('type') || 'other', name:value('name') || '', email:value('email'), phone:value('phone') }
@@ -434,11 +451,15 @@ function render() {
   ['outboundDepartsAtUtc','outboundArrivesAtUtc','returnDepartsAtUtc','returnArrivesAtUtc','hotelCheckInAtUtc','hotelCheckOutAtUtc'].forEach(name => setField(name, toInputDateTime(coordination[name])));
   scheduleList.innerHTML = '';
   (coordination.schedule || []).forEach(addSchedule);
-  if (!coordination.schedule?.length) addSchedule({ date: coordination.eventStartDate });
+  if (!coordination.schedule?.length) renderRepeatEmptyState(scheduleList, 'Add a session when a ministry time is confirmed.');
   contactList.innerHTML = '';
   (coordination.contacts || []).forEach(addContact);
-  if (!coordination.contacts?.length) addContact({ type:'primary' });
+  if (!coordination.contacts?.length) renderRepeatEmptyState(contactList, 'Add a primary local contact when you know who the team should reach.');
   renderDocuments();
+  document.querySelectorAll('.optional-details').forEach(details => {
+    const hasValue = [...details.querySelectorAll('input, textarea')].some(field => String(field.value || '').trim());
+    details.open = hasValue;
+  });
   view.hidden = false;
   formDirty = false;
   window.clearTimeout(autosaveTimer);

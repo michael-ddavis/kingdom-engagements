@@ -751,7 +751,7 @@ export class CtgDirectorEngagementComponent implements OnInit {
   readonly saveMessage = signal<string | null>(null);
   readonly saveError = signal<string | null>(null);
   readonly saveState = signal<'saved' | 'dirty' | 'saving' | 'error'>('saved');
-  private autosaveTimer: number | null = null;
+  private readonly autosaveTimers = new Map<DirectorTab, number>();
   readonly unavailableSections = signal<readonly string[]>([]);
   readonly responsibilityDraft = signal<ResponsibilityDraft | null>(null);
   readonly team = signal<readonly EngagementTeamMember[]>([]);
@@ -1061,14 +1061,19 @@ export class CtgDirectorEngagementComponent implements OnInit {
   queueAutosave(event?: Event): void {
     const target = event?.target as HTMLElement | null;
     if (target?.closest('.asset-editor, .document-editor, .composer, .responsibility-drawer')) return;
-    if (!this.autosaveSupported(this.tab())) return;
+
+    const tab = this.tab();
+    if (!this.autosaveSupported(tab)) return;
 
     this.saveState.set('dirty');
-    if (this.autosaveTimer !== null) window.clearTimeout(this.autosaveTimer);
-    this.autosaveTimer = window.setTimeout(() => {
-      this.autosaveTimer = null;
-      this.saveCurrentSection();
+    const existing = this.autosaveTimers.get(tab);
+    if (existing !== undefined) window.clearTimeout(existing);
+
+    const timer = window.setTimeout(() => {
+      this.autosaveTimers.delete(tab);
+      this.saveCurrentSection(tab);
     }, 1400);
+    this.autosaveTimers.set(tab, timer);
   }
 
   attentionLanes(): readonly ResponsibilityLaneState[] {
@@ -1555,13 +1560,19 @@ export class CtgDirectorEngagementComponent implements OnInit {
     window.setTimeout(() => this.saveError.set(null), 3000);
   }
 
-  private saveCurrentSection(): void {
+  private saveCurrentSection(tab: DirectorTab): void {
     if (this.saving()) {
-      this.queueAutosave();
+      const existing = this.autosaveTimers.get(tab);
+      if (existing !== undefined) window.clearTimeout(existing);
+      const timer = window.setTimeout(() => {
+        this.autosaveTimers.delete(tab);
+        this.saveCurrentSection(tab);
+      }, 700);
+      this.autosaveTimers.set(tab, timer);
       return;
     }
 
-    switch (this.tab()) {
+    switch (tab) {
       case 'host-coordination': this.saveHost(true); break;
       case 'travel': this.saveTravel(true); break;
       case 'lodging': this.saveLodging(true); break;

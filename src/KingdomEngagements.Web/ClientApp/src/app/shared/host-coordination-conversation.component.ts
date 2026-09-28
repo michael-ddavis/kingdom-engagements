@@ -103,7 +103,7 @@ export class HostCoordinationConversationComponent implements OnInit, OnDestroy,
   ) {}
 
   async ngOnInit(): Promise<void> {
-    await this.load();
+    await this.load(true);
     await this.connectRealtime();
   }
 
@@ -141,7 +141,7 @@ export class HostCoordinationConversationComponent implements OnInit, OnDestroy,
     }
   }
 
-  private async load(): Promise<void> {
+  private async load(scrollToLatest = false): Promise<void> {
     this.loading.set(true);
     this.error.set('');
 
@@ -151,7 +151,7 @@ export class HostCoordinationConversationComponent implements OnInit, OnDestroy,
       );
       this.thread.set(thread);
       this.threadChanged.emit(thread);
-      this.requestScrollToLatest();
+      if (scrollToLatest) this.requestScrollToLatest();
     } catch {
       this.error.set('The host coordination conversation is not available.');
     } finally {
@@ -167,7 +167,7 @@ export class HostCoordinationConversationComponent implements OnInit, OnDestroy,
           messageCreated: payload => this.applyMessage(payload as MessageCreatedEvent),
           coordinationUpdated: payload => {
             const event = payload as CoordinationUpdatedEvent;
-            if (event.assignmentId === this.assignmentId) void this.load();
+            if (event.assignmentId === this.assignmentId) void this.load(false);
           },
           connectionChanged: connected => this.live.set(connected),
         },

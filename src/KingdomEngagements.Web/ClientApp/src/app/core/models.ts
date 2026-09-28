@@ -498,6 +498,7 @@ export interface HostCoordinationLaneDetails {
   coordinationStatus: string;
   submittedAtUtc: string | null;
   hostNotes: string | null;
+  internalNotes: string | null;
   contacts: readonly LaneContactView[];
   documents: readonly LaneDocument[];
 }

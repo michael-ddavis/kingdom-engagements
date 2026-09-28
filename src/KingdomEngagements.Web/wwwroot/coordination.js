@@ -15,6 +15,17 @@ const messageList = document.querySelector('#message-list');
 const messageForm = document.querySelector('#message-form');
 const messageInput = document.querySelector('#message-input');
 const realtimeStatus = document.querySelector('#realtime-status');
+const messageDeliveryCopy = document.querySelector('#message-delivery-copy');
+const messageDrawer = document.querySelector('#message-drawer');
+const messageDrawerBackdrop = document.querySelector('#message-drawer-backdrop');
+const closeMessageDrawerButton = document.querySelector('#close-message-drawer');
+const messageOpenButtons = [...document.querySelectorAll('[data-open-messages]')];
+const messageBadges = [...document.querySelectorAll('[data-message-badge]')];
+const coordinationSections = [...document.querySelectorAll('.coordination-section')];
+const saveState = document.querySelector('#save-state');
+const saveStateCopy = document.querySelector('#save-state-copy');
+const progressCopy = document.querySelector('#progress-copy');
+const progressBar = document.querySelector('#progress-bar');
 const collaborationSyncKey = 'apostolos.engagement-collaboration-sync';
 let coordination = null;
 let saveInFlight = false;
@@ -23,6 +34,12 @@ let saveResetTimer = null;
 let confirmationTimer = null;
 let messageThread = { isClosed: false, messages: [] };
 let stopRealtime = null;
+let autosaveTimer = null;
+let changeVersion = 0;
+let unseenMessageCount = 0;
+let activeMessageTrigger = null;
+let initialSectionOpened = false;
+const autosaveDelayMs = 1600;
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>'"]/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[char]));
@@ -70,6 +87,156 @@ function showConfirmation(message, kind = 'success') {
   window.clearTimeout(confirmationTimer);
   confirmationTimer = window.setTimeout(() => toast?.remove(), kind === 'error' ? 7000 : 4600);
 }
+function setSaveState(kind, message) {
+  if (!saveState || !saveStateCopy) return;
+  saveState.className = `save-state is-${kind}`;
+  saveStateCopy.textContent = message;
+}
+function setSaveControlsDisabled(disabled) {
+  form.querySelectorAll('#save-progress, button[type="submit"], [data-save-continue]').forEach(button => {
+    button.disabled = disabled;
+  });
+}
+function updateMessageBadges() {
+  messageBadges.forEach(badge => {
+    badge.hidden = unseenMessageCount === 0;
+    badge.textContent = unseenMessageCount > 9 ? '9+' : String(unseenMessageCount);
+  });
+}
+function openMessages(trigger = null) {
+  if (!messageDrawer || !messageDrawerBackdrop) return;
+  activeMessageTrigger = trigger || document.activeElement;
+  messageDrawer.hidden = false;
+  messageDrawerBackdrop.hidden = false;
+  document.body.classList.add('message-drawer-open');
+  messageOpenButtons.forEach(button => button.setAttribute('aria-expanded', 'true'));
+  unseenMessageCount = 0;
+  updateMessageBadges();
+  closeMessageDrawerButton?.focus();
+}
+function closeMessages() {
+  if (!messageDrawer || !messageDrawerBackdrop) return;
+  messageDrawer.hidden = true;
+  messageDrawerBackdrop.hidden = true;
+  document.body.classList.remove('message-drawer-open');
+  messageOpenButtons.forEach(button => button.setAttribute('aria-expanded', 'false'));
+  if (activeMessageTrigger?.focus) activeMessageTrigger.focus();
+}
+function setRealtimeState(label, isLive, copy) {
+  if (realtimeStatus) {
+    realtimeStatus.textContent = label;
+    realtimeStatus.classList.toggle('is-live', isLive);
+  }
+  if (messageDeliveryCopy) messageDeliveryCopy.textContent = copy;
+}
+function sectionHasData(section) {
+  const key = section?.dataset.sectionKey;
+  if (key === 'schedule') return collectRows(scheduleList).length > 0;
+  if (key === 'contacts') return collectRows(contactList).length > 0;
+  if (key === 'documents') return Boolean(coordination?.documents?.length);
+  return [...section.querySelectorAll('input, textarea')].some(field => field.type !== 'file' && String(field.value || '').trim());
+}
+function updateProgress() {
+  if (!coordinationSections.length) return;
+  let sectionsWithInformation = 0;
+  coordinationSections.forEach(section => {
+    const hasData = sectionHasData(section);
+    if (hasData) sectionsWithInformation += 1;
+    const state = section.querySelector('[data-section-state]');
+    if (state) {
+      state.textContent = hasData ? 'Has details' : 'Not started';
+      state.classList.toggle('has-details', hasData);
+    }
+  });
+  if (progressCopy) {
+    if (sectionsWithInformation === 0) {
+      progressCopy.textContent = 'No sections have information yet. Start wherever you have confirmed details.';
+    } else if (sectionsWithInformation === coordinationSections.length) {
+      progressCopy.textContent = 'All 6 sections have information. Review anything you want to change before submitting.';
+    } else {
+      progressCopy.textContent = `${sectionsWithInformation} of ${coordinationSections.length} sections have information.`;
+    }
+  }
+  if (progressBar) progressBar.style.width = `${Math.round((sectionsWithInformation / coordinationSections.length) * 100)}%`;
+}
+function openSuggestedSection() {
+  if (initialSectionOpened || !coordinationSections.length) return;
+  const target = coordinationSections.find(section => !sectionHasData(section)) || coordinationSections[0];
+  target.open = true;
+  initialSectionOpened = true;
+}
+function renderCoordinationStatus() {
+  const submitted = coordination?.coordinationStatus === 'submitted';
+  const status = document.querySelector('#coordination-status');
+  const statusCopy = document.querySelector('#coordination-status-copy');
+  const submittedBanner = document.querySelector('#submitted-banner');
+  const submittedHeading = submittedBanner?.querySelector('strong');
+  const submittedCopy = document.querySelector('#submitted-copy');
+
+  if (status) status.textContent = submitted ? 'Submitted for ministry review' : "You're still working on this";
+  if (statusCopy) {
+    statusCopy.textContent = submitted
+      ? 'The ministry team has received your information. You can still update details while this link remains active.'
+      : 'Your saved information is available to the ministry team. You can leave and return using this link.';
+  }
+  if (submittedBanner) submittedBanner.hidden = !submitted;
+  if (submittedHeading) submittedHeading.textContent = 'Submitted for ministry review';
+  if (submitted && submittedCopy) {
+    const submittedAt = coordination.submittedAtUtc ? new Date(coordination.submittedAtUtc).toLocaleString() : '';
+    submittedCopy.textContent = `${submittedAt ? `Submitted ${submittedAt}. ` : ''}Need to correct something? Message the ministry team.`;
+  }
+}
+function markDirty() {
+  changeVersion += 1;
+  formDirty = true;
+  window.clearTimeout(saveResetTimer);
+  setSaveState('dirty', 'Unsaved changes');
+  updateProgress();
+  scheduleAutosave();
+}
+function scheduleAutosave() {
+  window.clearTimeout(autosaveTimer);
+  autosaveTimer = window.setTimeout(async () => {
+    if (!formDirty) return;
+    if (saveInFlight) {
+      scheduleAutosave();
+      return;
+    }
+    if (form.querySelector(':invalid')) return;
+    await save(false, { automatic: true, quiet: true });
+  }, autosaveDelayMs);
+}
+function initializeSectionNavigation() {
+  coordinationSections.forEach((section, index) => {
+    section.addEventListener('toggle', () => {
+      if (!section.open) return;
+      coordinationSections.forEach(other => {
+        if (other !== section) other.open = false;
+      });
+    });
+
+    section.querySelector('[data-save-continue]')?.addEventListener('click', async () => {
+      const saved = await save(false, { quiet: true });
+      if (!saved) return;
+      const nextSection = coordinationSections[index + 1];
+      if (!nextSection) {
+        showConfirmation('Your progress is saved. Review anything you want to change, then submit when you are ready.', 'info');
+        return;
+      }
+      section.open = false;
+      nextSection.open = true;
+      nextSection.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+    });
+  });
+}
+function initializeMessageDrawer() {
+  messageOpenButtons.forEach(button => button.addEventListener('click', () => openMessages(button)));
+  closeMessageDrawerButton?.addEventListener('click', closeMessages);
+  messageDrawerBackdrop?.addEventListener('click', closeMessages);
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && messageDrawer && !messageDrawer.hidden) closeMessages();
+  });
+}
 function broadcastCollaborationUpdate(source) {
   if (!coordination?.assignmentId) return;
   try {
@@ -111,7 +278,7 @@ function addSchedule(item = {}) {
   row.className = 'repeat-row schedule';
   row.style.gridTemplateColumns = '1.2fr .9fr .65fr .65fr 1fr auto';
   row.innerHTML = `${input('Session / responsibility','title',item.title)}${input('Date','date',item.date,'date')}${input('Starts','startsAt',item.startsAt,'time')}${input('Ends','endsAt',item.endsAt,'time')}${input('Location','location',item.location)}<button type="button" class="remove-button">Remove</button><label class="field" style="grid-column:1/-1"><span>Notes</span><textarea data-name="notes" rows="2">${escapeHtml(item.notes || '')}</textarea></label>`;
-  row.querySelector('.remove-button').addEventListener('click', () => { row.remove(); formDirty = true; });
+  row.querySelector('.remove-button').addEventListener('click', () => { row.remove(); markDirty(); });
   scheduleList.append(row);
 }
 function addContact(item = {}) {
@@ -119,7 +286,7 @@ function addContact(item = {}) {
   row.className = 'repeat-row contacts';
   row.innerHTML = `<label class="field"><span>Type</span><select data-name="type"><option value="primary">Primary host</option><option value="travel">Travel</option><option value="media">Media</option><option value="emergency">Emergency</option><option value="other">Other</option></select></label>${input('Name','name',item.name)}${input('Email','email',item.email,'email')}${input('Phone','phone',item.phone,'tel')}<button type="button" class="remove-button">Remove</button>`;
   row.querySelector('[data-name="type"]').value = item.type || 'other';
-  row.querySelector('.remove-button').addEventListener('click', () => { row.remove(); formDirty = true; });
+  row.querySelector('.remove-button').addEventListener('click', () => { row.remove(); markDirty(); });
   contactList.append(row);
 }
 function collectRows(container) {
@@ -190,14 +357,23 @@ function applyRealtimeMessage(event) {
     ...messageThread,
     messages: [...messages, event.message]
   };
+  if (messageDrawer?.hidden && event.message.senderType !== 'host') {
+    unseenMessageCount += 1;
+    updateMessageBadges();
+  }
   renderMessages();
 }
 
 async function connectRealtime() {
-  if (legacyToken || stopRealtime || !coordination?.assignmentId) return;
+  if (stopRealtime || !coordination?.assignmentId) return;
+
+  if (legacyToken) {
+    setRealtimeState('Messages available', false, 'Messages are saved with this engagement. Refresh the page to see new replies.');
+    return;
+  }
 
   if (!window.ApostolOSRealtime) {
-    if (realtimeStatus) realtimeStatus.textContent = 'Live updates unavailable';
+    setRealtimeState('Messages available', false, 'Messages still work. Refresh the page to see new replies from the ministry team.');
     return;
   }
 
@@ -223,6 +399,7 @@ async function connectRealtime() {
           if (!documents.some(document => document.id === event.document.id)) {
             coordination.documents = [event.document, ...documents];
             renderDocuments();
+            updateProgress();
             showConfirmation('The ministry team added a document to this engagement.', 'info');
           }
         },
@@ -232,25 +409,17 @@ async function connectRealtime() {
       }
     );
 
-    if (realtimeStatus) {
-      realtimeStatus.textContent = 'Live';
-      realtimeStatus.classList.add('is-live');
-    }
+    setRealtimeState('Live replies on', true, 'New replies appear automatically while this page is open.');
   } catch {
-    if (realtimeStatus) {
-      realtimeStatus.textContent = 'Saved updates only';
-      realtimeStatus.classList.remove('is-live');
-    }
+    setRealtimeState('Messages available', false, 'Messages still work. Refresh the page to see new replies from the ministry team.');
   }
 }
+
 function render() {
   document.querySelector('#reference').textContent = coordination.referenceNumber;
   document.querySelector('#event-name').textContent = coordination.eventName;
   document.querySelector('#event-copy').textContent = `${coordination.hostOrganization} · ${formatDate(coordination.eventStartDate)}${coordination.eventEndDate !== coordination.eventStartDate ? ` – ${formatDate(coordination.eventEndDate)}` : ''}`;
-  document.querySelector('#coordination-status').textContent = formatStatus(coordination.coordinationStatus);
-  const submitted = coordination.coordinationStatus === 'submitted';
-  document.querySelector('#submitted-banner').hidden = !submitted;
-  if (submitted) document.querySelector('#submitted-copy').textContent = `Submitted ${coordination.submittedAtUtc ? new Date(coordination.submittedAtUtc).toLocaleString() : ''}. You can continue to update details while this secure link remains active.`;
+  renderCoordinationStatus();
   [
     'outboundAirline','outboundFlightNumber','outboundConfirmationNumber','outboundDepartureAirport','outboundArrivalAirport',
     'returnAirline','returnFlightNumber','returnConfirmationNumber','returnDepartureAirport','returnArrivalAirport',
@@ -266,6 +435,10 @@ function render() {
   renderDocuments();
   view.hidden = false;
   formDirty = false;
+  window.clearTimeout(autosaveTimer);
+  setSaveState('saved', 'All changes saved');
+  updateProgress();
+  openSuggestedSection();
 }
 async function load(syncMessage = '') {
   try {
@@ -281,54 +454,88 @@ async function load(syncMessage = '') {
     showState(error.message, 'error');
   }
 }
-async function save(submit) {
-  if (saveInFlight) return;
-  saveInFlight = true;
-  if (!submit && saveProgressButton) {
-    window.clearTimeout(saveResetTimer);
-    saveProgressButton.disabled = true;
-    saveProgressButton.textContent = 'Saving…';
+async function save(submit, options = {}) {
+  const { automatic = false, quiet = false } = options;
+  if (saveInFlight) {
+    if (!submit) scheduleAutosave();
+    return false;
   }
-  try {
-    if (submit) showState('Submitting host coordination…');
-    coordination = await api(coordinationApiUrl, { method:'PUT', body:JSON.stringify(payload(submit)) });
-    formDirty = false;
-    broadcastCollaborationUpdate('host');
-    if (submit) {
-      showState('Host coordination submitted to Cynthia Thompson Global.', 'success');
-      showConfirmation('Host coordination submitted. CTG now sees these details on the engagement.');
-    } else {
-      showState('');
-      if (saveProgressButton) {
-        saveProgressButton.textContent = 'Saved ✓';
-        saveProgressButton.disabled = false;
-        saveResetTimer = window.setTimeout(() => { saveProgressButton.textContent = 'Save progress'; }, 2200);
+
+  if (!submit) {
+    const invalidField = form.querySelector(':invalid');
+    if (invalidField) {
+      invalidField.closest('details')?.setAttribute('open', '');
+      if (!automatic) {
+        invalidField.reportValidity?.();
+        showConfirmation('Check the highlighted field before saving.', 'error');
       }
-      showConfirmation('Progress saved to this engagement. CTG can now see the update.');
+      return false;
     }
-    render();
-    if (submit) window.scrollTo({ top:0, behavior:'smooth' });
+    if (!formDirty) {
+      setSaveState('saved', 'All changes saved');
+      if (!automatic && !quiet) showConfirmation('Everything is already saved.');
+      return true;
+    }
+  }
+
+  saveInFlight = true;
+  window.clearTimeout(autosaveTimer);
+  window.clearTimeout(saveResetTimer);
+  const versionAtStart = changeVersion;
+  setSaveControlsDisabled(true);
+  setSaveState('saving', submit ? 'Submitting…' : 'Saving…');
+
+  try {
+    if (submit) showState('Submitting for ministry review…');
+    coordination = await api(coordinationApiUrl, { method:'PUT', body:JSON.stringify(payload(submit)) });
+    const unchangedSinceSaveStarted = changeVersion === versionAtStart;
+    if (unchangedSinceSaveStarted) formDirty = false;
+    broadcastCollaborationUpdate('host');
+    renderCoordinationStatus();
+    updateProgress();
+
+    if (submit) {
+      showState('Submitted for ministry review.', 'success');
+      setSaveState('saved', unchangedSinceSaveStarted ? 'Submitted and saved' : 'Submitted · newer changes not saved');
+      showConfirmation('Submitted for ministry review. The ministry team can now review these details.');
+      window.scrollTo({ top:0, behavior:'smooth' });
+    } else if (unchangedSinceSaveStarted) {
+      setSaveState('saved', 'Saved just now');
+      saveResetTimer = window.setTimeout(() => setSaveState('saved', 'All changes saved'), 3200);
+      if (!automatic && !quiet) showConfirmation('Progress saved. The ministry team can see your updates.');
+    } else {
+      setSaveState('dirty', 'Unsaved changes');
+      scheduleAutosave();
+    }
+    return true;
   } catch (error) {
-    if (!submit && saveProgressButton) {
-      saveProgressButton.disabled = false;
-      saveProgressButton.textContent = 'Save progress';
-    }
+    setSaveState('error', 'Could not save');
     showState(submit ? error.message : '', submit ? 'error' : '');
-    showConfirmation(error.message || 'The coordination update could not be saved.', 'error');
+    if (!automatic || !quiet) showConfirmation(error.message || 'The coordination update could not be saved.', 'error');
+    return false;
   } finally {
     saveInFlight = false;
+    setSaveControlsDisabled(false);
   }
 }
+
 form.addEventListener('invalid', event => {
   const section = event.target.closest('details');
   if (section) section.open = true;
 }, true);
-form.addEventListener('input', () => { formDirty = true; });
-form.addEventListener('change', () => { formDirty = true; });
-document.querySelector('#add-schedule').addEventListener('click', () => { addSchedule({ date: coordination?.eventStartDate }); formDirty = true; });
-document.querySelector('#add-contact').addEventListener('click', () => { addContact(); formDirty = true; });
+form.addEventListener('input', event => {
+  if (event.target?.type === 'file') return;
+  markDirty();
+});
+form.addEventListener('change', event => {
+  if (event.target?.type === 'file' || !event.target?.matches('select')) return;
+  markDirty();
+});
+document.querySelector('#add-schedule').addEventListener('click', () => { addSchedule({ date: coordination?.eventStartDate }); markDirty(); });
+document.querySelector('#add-contact').addEventListener('click', () => { addContact(); markDirty(); });
 saveProgressButton.addEventListener('click', () => save(false));
 form.addEventListener('submit', event => { event.preventDefault(); save(true); });
+
 
 messageForm?.addEventListener('submit', async event => {
   event.preventDefault();
@@ -373,6 +580,7 @@ document.querySelector('#upload-document').addEventListener('click', async () =>
     coordination.documents = [result, ...(coordination.documents || [])];
     input.value = '';
     renderDocuments();
+    updateProgress();
     broadcastCollaborationUpdate('host');
     showConfirmation('Document uploaded and attached to the same engagement.');
   } catch (error) { showConfirmation(error.message, 'error'); }
@@ -391,4 +599,7 @@ window.addEventListener('storage', event => {
     // Ignore malformed cross-tab collaboration signals.
   }
 });
+initializeSectionNavigation();
+initializeMessageDrawer();
+updateMessageBadges();
 load();

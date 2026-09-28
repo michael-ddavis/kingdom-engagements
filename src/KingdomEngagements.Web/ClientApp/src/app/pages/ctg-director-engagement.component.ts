@@ -1214,7 +1214,7 @@ export class CtgDirectorEngagementComponent implements OnInit {
 
   saveHost(quiet = false): void {
     this.saveLane(
-      this.api.updateHostCoordinationLane(this.assignmentId, this.hostDraft),
+      this.api.updateHostCoordinationLane(this.assignmentId, this.hostDraft, quiet),
       value => this.host.set(value),
       'Host coordination saved.',
       quiet,
@@ -1236,7 +1236,7 @@ export class CtgDirectorEngagementComponent implements OnInit {
 
   saveTravel(quiet = false): void {
     const input = { ...this.travelDraft, ...this.normalizeTravelDates(this.travelDraft) };
-    this.saveLane(this.api.updateTravelLane(this.assignmentId, input), value => this.travel.set(value), 'Travel saved.', quiet);
+    this.saveLane(this.api.updateTravelLane(this.assignmentId, input, quiet), value => this.travel.set(value), 'Travel saved.', quiet);
   }
 
   saveLodging(quiet = false): void {
@@ -1245,15 +1245,15 @@ export class CtgDirectorEngagementComponent implements OnInit {
       hotelCheckInAtUtc: this.toIso(this.lodgingDraft.hotelCheckInAtUtc),
       hotelCheckOutAtUtc: this.toIso(this.lodgingDraft.hotelCheckOutAtUtc),
     };
-    this.saveLane(this.api.updateLodgingLane(this.assignmentId, input), value => this.lodging.set(value), 'Lodging saved.', quiet);
+    this.saveLane(this.api.updateLodgingLane(this.assignmentId, input, quiet), value => this.lodging.set(value), 'Lodging saved.', quiet);
   }
 
   saveTransportation(quiet = false): void {
-    this.saveLane(this.api.updateTransportationLane(this.assignmentId, this.transportDraft), value => this.transportation.set(value), 'Transportation saved.', quiet);
+    this.saveLane(this.api.updateTransportationLane(this.assignmentId, this.transportDraft, quiet), value => this.transportation.set(value), 'Transportation saved.', quiet);
   }
 
   saveMedia(quiet = false): void {
-    this.saveLane(this.api.updateMediaLane(this.assignmentId, this.mediaDraft), value => this.media.set(value), 'Media preparation saved.', quiet);
+    this.saveLane(this.api.updateMediaLane(this.assignmentId, this.mediaDraft, quiet), value => this.media.set(value), 'Media preparation saved.', quiet);
   }
 
   addAsset(): void {
@@ -1297,7 +1297,7 @@ export class CtgDirectorEngagementComponent implements OnInit {
   }
 
   saveProgram(quiet = false): void {
-    this.saveLane(this.api.updateProgramLane(this.assignmentId, this.programDraft), value => this.program.set(value), 'Program saved.', quiet);
+    this.saveLane(this.api.updateProgramLane(this.assignmentId, this.programDraft, quiet), value => this.program.set(value), 'Program saved.', quiet);
   }
 
   addDocument(): void {
@@ -1324,15 +1324,15 @@ export class CtgDirectorEngagementComponent implements OnInit {
   }
 
   saveFinance(quiet = false): void {
-    this.saveLane(this.api.updateFinanceLane(this.assignmentId, this.financeDraft), value => this.finance.set(value), 'Finance saved.', quiet);
+    this.saveLane(this.api.updateFinanceLane(this.assignmentId, this.financeDraft, quiet), value => this.finance.set(value), 'Finance saved.', quiet);
   }
 
   saveMinistry(quiet = false): void {
-    this.saveLane(this.api.updateMinistryPreparationLane(this.assignmentId, this.ministryDraft), value => this.ministry.set(value), 'Ministry preparation saved.', quiet);
+    this.saveLane(this.api.updateMinistryPreparationLane(this.assignmentId, this.ministryDraft, quiet), value => this.ministry.set(value), 'Ministry preparation saved.', quiet);
   }
 
   saveHospitality(quiet = false): void {
-    this.saveLane(this.api.updateHospitalityLane(this.assignmentId, this.hospitalityDraft), value => this.hospitality.set(value), 'Hospitality saved.', quiet);
+    this.saveLane(this.api.updateHospitalityLane(this.assignmentId, this.hospitalityDraft, quiet), value => this.hospitality.set(value), 'Hospitality saved.', quiet);
   }
 
   saveCloseout(complete: boolean, quiet = false): void {
@@ -1550,10 +1550,7 @@ export class CtgDirectorEngagementComponent implements OnInit {
   private finishSave(message: string, quiet = false): void {
     this.saving.set(false);
     this.saveState.set('saved');
-    if (!quiet) {
-      this.saveMessage.set(message);
-      window.setTimeout(() => this.saveMessage.set(null), 2200);
-    }
+    if (!quiet && !message) this.saveMessage.set(null);
   }
 
   private failSave(message: string): void {

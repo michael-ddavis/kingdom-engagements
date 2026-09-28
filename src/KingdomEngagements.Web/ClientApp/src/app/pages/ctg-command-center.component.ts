@@ -1,5 +1,5 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { catchError, forkJoin, of } from 'rxjs';
 import { EngagementsApiService } from '../core/engagements-api.service';
 import {
@@ -124,7 +124,12 @@ interface HostActivityPreview {
           } @else {
             <div class="brief-list">
               @for (snapshot of boardSnapshots(); track snapshot.assignment.id) {
-                <article class="brief-row">
+                <article
+                  class="brief-row"
+                  role="link"
+                  tabindex="0"
+                  (click)="openEngagement(snapshot.assignment.id, $event)"
+                  (keydown.enter)="openEngagement(snapshot.assignment.id, $event)">
                   <a class="brief-identity" [routerLink]="['/organization/ctg/engagements', snapshot.assignment.id]">
                     <strong>{{ snapshot.assignment.title }}</strong>
                     <span>{{ snapshot.assignment.hostOrganization }}</span>
@@ -361,7 +366,7 @@ interface HostActivityPreview {
     .command-board h2,.director-panel h2{font-size:1.12rem}.command-board>header>span{display:grid;min-width:28px;height:28px;place-items:center;border-radius:999px;background:#f0f2f0;color:#5f6763;font-size:.68rem;font-weight:900}.director-panel header>a{color:#315faf;font-size:.7rem;font-weight:800;text-decoration:none}
     .brief-list{display:flex;flex-direction:column}
     .brief-row{display:grid;grid-template-columns:minmax(245px,1.1fr) minmax(360px,1.55fr) minmax(220px,.9fr) 62px;gap:22px;align-items:center;padding:16px 18px;border-bottom:1px solid #eceeeb}
-    .brief-row:last-child{border-bottom:0}.brief-row:hover{background:#fdfcf8}
+    .brief-row:last-child{border-bottom:0}.brief-row{cursor:pointer}.brief-row:hover{background:#fdfcf8}.brief-row:focus-visible{outline:3px solid #315faf;outline-offset:-3px}
     .brief-identity{display:flex;min-width:0;flex-direction:column;gap:3px;color:inherit;text-decoration:none}
     .brief-identity strong{overflow:hidden;text-overflow:ellipsis;color:#17243a;font-size:.82rem;white-space:nowrap}.brief-identity span,.brief-identity small{overflow:hidden;text-overflow:ellipsis;color:#747c78;font-size:.64rem;white-space:nowrap}
     .brief-readiness{display:grid;grid-template-columns:auto 1fr;gap:7px 12px;align-items:center;min-width:0}.brief-readiness-copy{display:flex;min-width:86px;flex-direction:column}.brief-readiness-copy strong{font-size:1.28rem;color:#17243a}.brief-readiness-copy span{color:#7a817d;font-size:.59rem}
@@ -506,7 +511,7 @@ export class CtgCommandCenterComponent implements OnInit {
       .sort((a, b) => b.overdue - a.overdue || b.active - a.active || a.name.localeCompare(b.name));
   });
 
-  constructor(private readonly api: EngagementsApiService) {}
+  constructor(private readonly api: EngagementsApiService, private readonly router: Router) {}
 
   ngOnInit(): void {
     this.api.getCommandCenter().subscribe({
@@ -524,12 +529,25 @@ export class CtgCommandCenterComponent implements OnInit {
     this.attentionOnly.set(false);
   }
 
+  openEngagement(id: string, event: Event): void {
+    const target = event.target as HTMLElement | null;
+    if (target?.closest('a, button, details, summary, input, select, textarea')) return;
+    void this.router.navigate(['/organization/ctg/engagements', id]);
+  }
+
   lane(snapshot: EngagementResponsibilitySnapshot, key: string): ResponsibilityLaneState | null {
     return snapshot.lanes.find(item => item.key === key && item.isApplicable) ?? null;
   }
 
   laneStatusLabel(lane: ResponsibilityLaneState): string {
-    if (lane.isOverdue) return 'Overdue';
+    if (!lane.owner) return 'Needs an owner';
+    if (lane.isOverdue || lane.status === 'overdue') return 'Overdue';
+    if (lane.status === 'blocked') return 'Needs help';
+    if (lane.status === 'ready-for-review') return 'Ready to review';
+    if (lane.status === 'waiting-on-host') return 'Waiting for host';
+    if (lane.status === 'not-started') return 'Not started yet';
+    if (lane.status === 'in-progress') return 'In progress';
+    if (lane.status === 'complete') return 'Complete';
     return this.statusLabel(lane.status);
   }
 

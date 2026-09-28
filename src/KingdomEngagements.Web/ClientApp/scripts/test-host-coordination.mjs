@@ -11,6 +11,7 @@ async function setup(t, failSave = false) {
   t.after(() => dom.window.close());
   const { window } = dom;
   window.scrollTo = () => {};
+  window.HTMLElement.prototype.scrollIntoView = () => {};
   const calls = [];
   let record = {
     referenceNumber: 'TEST-1', eventName: 'Test gathering', hostOrganization: 'Test host',
@@ -44,7 +45,7 @@ test('saving retains values from closed sections and keeps the current section o
   assert.equal(calls[0].prayerFocus, 'Unity');
   assert.equal(calls[0].submit, false);
   assert.equal(prayer.closest('details').open, true);
-  assert.equal(document.querySelector('#save-progress').textContent, 'Saved ✓');
+  assert.equal(document.querySelector('#save-state-copy').textContent, 'Saved just now');
 });
 
 test('invalid email in a closed section reveals the field and prevents submission', async t => {
@@ -76,4 +77,31 @@ test('failed save keeps entered values and allows retry', async t => {
   assert.equal(hotel.value, 'Updated hotel');
   assert.equal(document.querySelector('#save-progress').disabled, false);
   assert.match(document.querySelector('#coordination-save-toast').textContent, /Could not save/);
+});
+
+
+test('message team is available without scrolling to the bottom', async t => {
+  const { document } = await setup(t);
+  const drawer = document.querySelector('#message-drawer');
+  assert.equal(drawer.hidden, true);
+
+  document.querySelector('[data-open-messages]').click();
+
+  assert.equal(drawer.hidden, false);
+  assert.equal(document.querySelector('#message-drawer-backdrop').hidden, false);
+  assert.equal(document.querySelector('[data-open-messages]').getAttribute('aria-expanded'), 'true');
+
+  document.querySelector('#close-message-drawer').click();
+  assert.equal(drawer.hidden, true);
+});
+
+test('editing makes save state and section progress obvious', async t => {
+  const { window, document } = await setup(t);
+  const prayer = document.querySelector('[name="prayerFocus"]');
+  prayer.value = 'Unity and healing';
+  prayer.dispatchEvent(new window.Event('input', { bubbles: true }));
+
+  assert.equal(document.querySelector('#save-state-copy').textContent, 'Unsaved changes');
+  assert.equal(prayer.closest('details').querySelector('[data-section-state]').textContent, 'Has details');
+  assert.match(document.querySelector('#progress-copy').textContent, /sections have information/);
 });

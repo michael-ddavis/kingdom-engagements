@@ -85,7 +85,7 @@ interface ResponsibilityDraft {
             <span>{{ dateRange(item.summary.startsAtUtc, item.endsAtUtc) }}</span>
           </div>
           <div class="heading-actions">
-            @if (isDirector()) { <button type="button" (click)="tab.set('responsibilities')">Assign team for this engagement</button> }
+            @if (isDirector()) { <button class="team-action" type="button" (click)="tab.set('responsibilities')">Team & owners</button> }
             <div class="readiness">
               <strong>{{ readinessPercent() }}%</strong>
               <span>responsibilities complete</span>
@@ -101,22 +101,13 @@ interface ResponsibilityDraft {
           </div>
         }
 
-        <div class="workspace-status-legend" aria-label="Status color legend">
-          <span><i class="complete"></i>Complete</span>
-          <span><i class="progress"></i>In Progress</span>
-          <span><i class="waiting"></i>Waiting on Host</span>
-          <span><i class="danger"></i>Blocked / Overdue</span>
-          <span><i class="neutral"></i>Not Started</span>
-        </div>
-
-        <section class="engagement-alerts">
-          <article><small>Overdue</small><strong>{{ overdueCount() }}</strong></article>
-          <article><small>Unassigned</small><strong>{{ unassignedCount() }}</strong></article>
-          <article><small>Waiting on host</small><strong>{{ waitingHostCount() }}</strong></article>
-          @if (isDirector()) {
-            <article><small>Host preparation</small><strong>{{ workspace()?.readiness?.overallPercent ?? 0 }}%</strong></article>
-          }
-        </section>
+        @if (overdueCount() > 0 || unassignedCount() > 0 || waitingHostCount() > 0) {
+          <section class="attention-strip" aria-label="Engagement attention summary">
+            @if (overdueCount() > 0) { <span class="danger"><strong>{{ overdueCount() }}</strong> overdue</span> }
+            @if (unassignedCount() > 0) { <span class="warning"><strong>{{ unassignedCount() }}</strong> need an owner</span> }
+            @if (waitingHostCount() > 0) { <span><strong>{{ waitingHostCount() }}</strong> waiting for host</span> }
+          </section>
+        }
 
         @if (nextAction(); as action) {
           <section class="next-action-card" [class.is-clear]="action.kind === 'clear'">
@@ -131,16 +122,7 @@ interface ResponsibilityDraft {
           </section>
         }
 
-        @if (tab() === 'overview') {
-          <p class="workspace-help">{{ isDirector() ? 'Start with what needs attention, then move into a work area only when you need its details.' : 'Start with your assigned work below. The navigation only shows areas that belong to you.' }}</p>
-        }
-
         <section class="workspace-navigation" aria-label="Engagement work areas">
-          <div class="workspace-navigation-copy">
-            <strong>Where do you want to work?</strong>
-            <span>Choose a work area first. Detailed sections appear underneath only when they apply.</span>
-          </div>
-
           <nav class="workspace-primary-tabs" aria-label="Engagement work areas">
             @for (group of visibleGroups(); track group.key) {
               <button
@@ -176,11 +158,13 @@ interface ResponsibilityDraft {
           </select>
         </label>
 
-        <div class="workspace-save-state" [class]="'workspace-save-state ' + saveState()">
-          <i aria-hidden="true"></i>
-          <span>{{ saveStatusCopy() }}</span>
-          <small>{{ tab() === 'closeout' ? 'Closeout uses explicit Save progress and Complete engagement actions.' : 'Editable section changes save automatically after you pause.' }}</small>
-        </div>
+        @if (showSaveState()) {
+          <div class="workspace-save-state" [class]="'workspace-save-state ' + saveState()">
+            <i aria-hidden="true"></i>
+            <span>{{ saveStatusCopy() }}</span>
+            <small>{{ tab() === 'closeout' ? 'Closeout saves only when you choose Save progress or Complete engagement.' : 'Changes save automatically after you pause.' }}</small>
+          </div>
+        }
 
         <section class="workspace-body" (input)="queueAutosave($event)" (change)="queueAutosave($event)">
           @switch (tab()) {
@@ -208,29 +192,6 @@ interface ResponsibilityDraft {
                   </div>
                 </article>
 
-                <article class="overview-card overview-card--wide">
-                  <header><div><h2>Responsibilities</h2><p>Open an area to work on its details. Ownership and status stay visible here for quick review.</p></div><button type="button" (click)="tab.set('responsibilities')">Manage owners →</button></header>
-                  <div class="responsibility-grid">
-                    @for (laneItem of responsibilities(); track laneItem.key) {
-                      <button
-                        type="button"
-                        [class.complete]="laneItem.status === 'complete'"
-                        [class.progress]="laneItem.status === 'in-progress' || laneItem.status === 'ready-for-review'"
-                        [class.waiting]="laneItem.status === 'waiting-on-host'"
-                        [class.danger]="laneItem.isOverdue || laneItem.status === 'blocked'"
-                        [class.na]="!laneItem.isApplicable"
-                        (click)="openLane(laneItem.key)">
-                        <span><strong>{{ laneItem.label }}</strong><small>{{ laneItem.owner?.displayName || 'Unassigned' }}</small></span>
-                        <b>{{ laneStatus(laneItem) }}</b>
-                        <small>{{ laneItem.dueAtUtc ? 'Due ' + dateLabel(laneItem.dueAtUtc) : laneItem.detail || 'No due date' }}</small>
-                      </button>
-                    }
-                    @if (!isDirector() && responsibilities().length === 0) {
-                      <p class="empty-copy team-empty">You have no assigned responsibilities for this engagement yet. Ask your coordinator what you should handle.</p>
-                    }
-                  </div>
-                </article>
-
                 @if (isDirector()) {
                   <article class="overview-card">
                     <header><div><h2>Host Coordination</h2></div><button type="button" (click)="tab.set('host-coordination')">Open →</button></header>
@@ -242,19 +203,17 @@ interface ResponsibilityDraft {
                   </article>
                 }
 
-                <article class="overview-card">
-                  <header><div><h2>Attention items</h2></div></header>
-                  @if ((workspace()?.readiness?.attentionItems?.length ?? 0) === 0 && attentionLanes().length === 0) {
-                    <p class="empty-copy">Nothing is currently blocked.</p>
-                  } @else {
+                @if ((workspace()?.readiness?.attentionItems?.length ?? 0) > 0 || attentionLanes().length > 0) {
+                  <article class="overview-card">
+                    <header><div><h2>Needs attention</h2></div></header>
                     <ul class="attention-items">
                       @for (text of workspace()?.readiness?.attentionItems ?? []; track text) { <li>{{ text }}</li> }
                       @for (laneItem of attentionLanes(); track laneItem.key) {
                         <li><strong>{{ laneItem.label }}:</strong> {{ laneAttention(laneItem) }}</li>
                       }
                     </ul>
-                  }
-                </article>
+                  </article>
+                }
 
                 @if (isDirector()) {
                   <article class="overview-card overview-card--wide">
@@ -635,13 +594,10 @@ interface ResponsibilityDraft {
     </section>
   `,
   styles: [`
-    .workspace-help{color:#536158;line-height:1.6;margin:18px 0 12px;font-size:.9rem}
     .next-action-card{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:12px 0;padding:16px 18px;border:1px solid #d7c38f;border-left:4px solid #9d7438;border-radius:12px;background:#fffaf0}.next-action-card.is-clear{border-color:#bfd6c7;border-left-color:#4f8064;background:#f3f8f4}.next-action-card>div{display:grid;gap:4px}.next-action-card small{color:#8a7034;font-size:.59rem;font-weight:850;text-transform:uppercase;letter-spacing:.07em}.next-action-card strong{color:#17243a;font-size:.88rem}.next-action-card span{color:#66706d;font-size:.68rem;line-height:1.45}.next-action-card button{min-height:40px;padding:0 13px;border:0;border-radius:8px;background:#172a46;color:#fff;font-size:.66rem;font-weight:850;cursor:pointer;white-space:nowrap}
     .workspace-save-state{display:flex;align-items:center;gap:8px;margin:0 0 12px;padding:9px 12px;border:1px solid #dfe3e0;border-radius:9px;background:#faf9f5;color:#63706a;font-size:.64rem}.workspace-save-state i{width:9px;height:9px;border-radius:50%;background:#4f8064}.workspace-save-state span{font-weight:850;color:#35423d}.workspace-save-state small{margin-left:auto;color:#7c837f}.workspace-save-state.dirty i{background:#a77b2e}.workspace-save-state.saving i{background:#56718e}.workspace-save-state.error i{background:#a84642}.workspace-save-state.error span{color:#a84642}
     .workspace-section-picker{display:none}
-    .workspace-navigation{margin:16px 0 14px;padding:14px;border:1px solid #dfe3e0;border-radius:13px;background:#fffdfa}
-    .workspace-navigation-copy{display:flex;justify-content:space-between;gap:18px;align-items:baseline;padding:2px 4px 11px}
-    .workspace-navigation-copy strong{color:#17243a;font-size:.78rem}.workspace-navigation-copy span{color:#77807a;font-size:.64rem;text-align:right}
+    .workspace-navigation{margin:12px 0;padding:8px;border:1px solid #dfe3e0;border-radius:11px;background:#fffdfa}
     .workspace-primary-tabs{display:flex;gap:6px;overflow:auto;padding-bottom:2px;scrollbar-width:thin}
     .workspace-primary-tabs button{min-height:40px;padding:0 13px;border:1px solid #d8ddda;border-radius:8px;background:#faf9f5;color:#59635e;font-size:.68rem;font-weight:850;white-space:nowrap;cursor:pointer}
     .workspace-primary-tabs button.active{border-color:#172a46;background:#172a46;color:#fff}
@@ -668,20 +624,11 @@ interface ResponsibilityDraft {
       --status-neutral-border:#d6dad6;
       --status-neutral-text:#69716d;
     }.director-engagement{width:min(1320px,calc(100% - 40px));margin:0 auto;padding:20px 0 60px;color:#17202b}.back-link{display:inline-block;margin:0 0 12px;color:#52647f;font-size:.7rem;font-weight:800;text-decoration:none}
-    .engagement-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:26px;padding:22px 24px;border:1px solid #dfe3e0;border-radius:16px;background:#fffdfa}.engagement-heading h1,.panel h2,.overview-card h2,.responsibility-drawer h2{margin:4px 0 6px;font:500 clamp(1.8rem,3vw,2.7rem)/1.08 Georgia,'Times New Roman',serif;color:#17243a}.engagement-heading p{margin:0;color:#68716d}.engagement-heading>div>span{display:block;margin-top:6px;color:#858b87;font-size:.66rem}.eyebrow{margin:0!important;color:#876f33!important;font:850 .64rem/1.2 system-ui,sans-serif!important;letter-spacing:.1em;text-transform:uppercase}.heading-actions{display:flex;align-items:center;gap:12px}.heading-actions>a{padding:9px 12px;border:1px solid #d9ddda;border-radius:8px;color:#172a46;font-size:.65rem;font-weight:850;text-decoration:none}.readiness{text-align:right}.readiness strong{display:block;font-size:2rem}.readiness span{font-size:.62rem;color:#7b827e}
-    .workspace-status-legend{display:flex;align-items:center;justify-content:flex-end;gap:9px 13px;flex-wrap:wrap;margin:0 2px 9px;color:#6f7773;font-size:.55rem;font-weight:750}
-    .workspace-status-legend>span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
-    .workspace-status-legend i{display:inline-block;width:9px;height:9px;border:1px solid var(--status-neutral-border);border-radius:3px;background:var(--status-neutral-bg)}
-    .workspace-status-legend i.complete{border-color:var(--status-complete-border);background:var(--status-complete-bg)}
-    .workspace-status-legend i.progress{border-color:var(--status-progress-border);background:var(--status-progress-bg)}
-    .workspace-status-legend i.waiting{border-color:var(--status-waiting-border);background:var(--status-waiting-bg)}
-    .workspace-status-legend i.danger{border-color:var(--status-danger-border);background:var(--status-danger-bg)}
-    .workspace-status-legend i.neutral{border-color:var(--status-neutral-border);background:var(--status-neutral-bg)}
-
-    .engagement-alerts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:10px 0}.engagement-alerts article{padding:11px 14px;border:1px solid #e1e4e1;border-radius:10px;background:#fff}.engagement-alerts small{display:block;color:#808783;font-size:.56rem;font-weight:850;text-transform:uppercase}.engagement-alerts strong{display:block;margin-top:3px;font-size:1.05rem}
+    .engagement-heading{display:flex;justify-content:space-between;align-items:center;gap:26px;padding:16px 20px;border:1px solid #dfe3e0;border-radius:14px;background:#fffdfa}.engagement-heading h1,.panel h2,.overview-card h2,.responsibility-drawer h2{margin:2px 0 5px;font:500 clamp(1.7rem,2vw,2.25rem)/1.08 Georgia,'Times New Roman',serif;color:#17243a}.engagement-heading p{margin:0;color:#68716d;font-size:.8rem}.engagement-heading>div>span{display:block;margin-top:5px;color:#858b87;font-size:.64rem}.eyebrow{margin:0!important;color:#876f33!important;font:850 .64rem/1.2 system-ui,sans-serif!important;letter-spacing:.1em;text-transform:uppercase}.heading-actions{display:flex;align-items:center;gap:12px}.team-action{min-height:38px;padding:0 12px;border:1px solid #d6dbd8;border-radius:8px;background:#fff;color:#172a46;font-size:.66rem;font-weight:850;cursor:pointer}.readiness{text-align:right}.readiness strong{display:block;font-size:1.55rem}.readiness span{font-size:.59rem;color:#7b827e}
+    .attention-strip{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:9px 0}.attention-strip span{display:inline-flex;gap:4px;align-items:center;padding:6px 9px;border:1px solid #e0d4b2;border-radius:999px;background:#fff8e8;color:#7a5d1b;font-size:.61rem}.attention-strip span.danger{border-color:#e4c3bf;background:#fff0ee;color:#9b4039}.attention-strip span.warning{border-color:#ead9ab;background:#fff8e8;color:#7a5d1b}
     .workspace-tabs{display:flex;gap:3px;margin:16px 0 12px;overflow:auto;padding:4px;border:1px solid #dfe3e0;border-radius:11px;background:#f7f5f0;scrollbar-width:thin}.workspace-tabs button{display:flex;align-items:center;gap:6px;min-height:36px;padding:0 10px;border:0;border-radius:7px;background:transparent;color:#66706a;font-size:.65rem;font-weight:850;white-space:nowrap;cursor:pointer}.workspace-tabs button.active{background:#172a46;color:#fff}.workspace-tabs button span{padding:2px 5px;border-radius:999px;background:rgba(255,255,255,.18);font-size:.52rem}.workspace-tabs button:not(.active) span.alert{background:#f8e8e5;color:#a84642}
     .workspace-body{position:relative}.overview-grid,.two-column{display:grid;grid-template-columns:1fr 1fr;gap:12px}.overview-card,.panel{border:1px solid #dfe3e0;border-radius:14px;background:#fffdfa;box-shadow:0 8px 25px rgba(18,26,44,.035)}.overview-card{padding:17px}.overview-card--wide{grid-column:1/-1}.overview-card>header,.panel>header{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.overview-card h2,.panel h2{font-size:1.2rem}.overview-card header button,.panel header button{border:0;background:transparent;color:#315faf;font-size:.64rem;font-weight:850;cursor:pointer}
-    .overview-card header p:not(.eyebrow){margin:4px 0 0;color:#747c78;font-size:.67rem;line-height:1.45}.readiness-review>header{padding-bottom:12px;border-bottom:1px solid #e7e9e6}.review-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:12px}.review-list button{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:center;padding:10px;border:1px solid #e0e3e0;border-radius:9px;background:#faf9f5;color:#17243a;text-align:left;cursor:pointer}.review-icon{display:grid;width:26px;height:26px;place-items:center;border-radius:50%;background:#edf0ed;color:#68716d;font-weight:900}.review-icon.complete{background:#e4f1e8;color:#2d6d52}.review-list strong,.review-list small{display:block}.review-list strong{font-size:.7rem}.review-list small{margin-top:2px;color:#7a827d;font-size:.59rem}.review-list b{color:#315faf;font-size:.6rem}
+    .overview-card header p:not(.eyebrow){margin:4px 0 0;color:#747c78;font-size:.67rem;line-height:1.45}.readiness-review>header{padding-bottom:12px;border-bottom:1px solid #e7e9e6}.review-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:12px}.review-list button{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:center;padding:10px;border:1px solid #e0e3e0;border-radius:9px;background:#faf9f5;color:#17243a;text-align:left;cursor:pointer}.review-icon{display:grid;width:26px;height:26px;place-items:center;border-radius:50%;background:#edf0ed;color:#68716d;font-weight:900}.review-icon.complete{background:#e4f1e8;color:#2d6d52}.review-list strong,.review-list small{display:block}.review-list strong{font-size:.7rem}.review-list small{margin-top:2px;color:#7a827d;font-size:.59rem}.review-list b{color:#315faf;font-size:.6rem}
     .responsibility-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}.responsibility-grid>button{min-height:105px;padding:11px;border:1px solid var(--status-neutral-border);border-left-width:4px;border-radius:9px;background:var(--status-neutral-bg);text-align:left;color:var(--status-neutral-text);cursor:pointer}.responsibility-grid button>span{display:flex;justify-content:space-between;gap:7px}.responsibility-grid button strong{font-size:.7rem}.responsibility-grid button span small{color:#79817d;font-size:.55rem;text-align:right}.responsibility-grid button b{display:block;margin:11px 0 4px;font-size:.67rem}.responsibility-grid button>small{color:#808783;font-size:.57rem}.responsibility-grid button.complete{background:var(--status-complete-bg);border-color:var(--status-complete-border);color:var(--status-complete-text)}
     .responsibility-grid button.progress{background:var(--status-progress-bg);border-color:var(--status-progress-border);color:var(--status-progress-text)}
     .responsibility-grid button.waiting{background:var(--status-waiting-bg);border-color:var(--status-waiting-border);color:var(--status-waiting-text)}
@@ -702,7 +649,7 @@ interface ResponsibilityDraft {
     .drawer-backdrop{position:fixed;inset:0;z-index:90;background:rgba(16,24,35,.38)}.responsibility-drawer{position:fixed;z-index:91;top:0;right:0;width:min(460px,94vw);height:100vh;box-sizing:border-box;padding:20px;overflow:auto;background:#fffdfa;box-shadow:-20px 0 50px rgba(18,26,44,.17)}.responsibility-drawer>header{display:flex;justify-content:space-between}.responsibility-drawer>header small{color:#876f33;font-size:.59rem;font-weight:850;text-transform:uppercase}.responsibility-drawer h2{font-size:1.5rem}.responsibility-drawer>header button{width:34px;height:34px;border:0;border-radius:50%;background:#f0eee8;cursor:pointer}.toggle{display:flex;gap:8px;align-items:center;margin:13px 0;padding:10px;border-radius:8px;background:#f5f3ed;font-size:.67rem;font-weight:800}.responsibility-drawer footer{display:flex;justify-content:flex-end;gap:7px;margin-top:18px;padding-top:14px;border-top:1px solid #e4e6e4}
     .state{padding:40px;border:1px solid #dfe3e0;border-radius:14px;background:#fff;text-align:center;color:#747c78}.state.error{color:#a84642}.partial-load-warning{display:grid;gap:3px;margin:10px 0;padding:12px 14px;border:1px solid #ead9ab;border-radius:9px;background:#fff8e8;color:#725b24}.partial-load-warning strong{font-size:.7rem}.partial-load-warning span,.partial-load-warning small{font-size:.61rem}
     @media(max-width:1000px){.responsibility-grid{grid-template-columns:repeat(3,1fr)}.responsibility-list article{grid-template-columns:1fr 1fr}.responsibility-list article>button{justify-self:start}.schedule-row{grid-template-columns:1fr 1fr 1fr}.document-editor{grid-template-columns:1fr 1fr}.document-editor button{grid-column:1/-1}}
-    @media(max-width:760px){.director-engagement{width:min(100% - 24px,1320px)}.engagement-heading{flex-direction:column}.engagement-alerts{grid-template-columns:1fr 1fr}.next-action-card{align-items:flex-start;flex-direction:column}.next-action-card button{width:100%}.workspace-save-state{align-items:flex-start;flex-wrap:wrap}.workspace-save-state small{width:100%;margin-left:17px}.overview-grid,.two-column{grid-template-columns:1fr}.overview-card--wide{grid-column:auto}.review-list{grid-template-columns:1fr}.responsibility-grid{grid-template-columns:1fr 1fr}.form-grid{grid-template-columns:1fr}.form-grid .full{grid-column:auto}.schedule-row{grid-template-columns:1fr 1fr}.asset-editor{grid-template-columns:1fr}.asset-editor .wide{grid-column:auto}}
+    @media(max-width:760px){.director-engagement{width:min(100% - 24px,1320px)}.engagement-heading{align-items:flex-start;flex-direction:column}.heading-actions{width:100%;justify-content:space-between}.next-action-card{align-items:flex-start;flex-direction:column}.next-action-card button{width:100%}.workspace-save-state{align-items:flex-start;flex-wrap:wrap}.workspace-save-state small{width:100%;margin-left:17px}.overview-grid,.two-column{grid-template-columns:1fr}.overview-card--wide{grid-column:auto}.review-list{grid-template-columns:1fr}.responsibility-grid{grid-template-columns:1fr 1fr}.form-grid{grid-template-columns:1fr}.form-grid .full{grid-column:auto}.schedule-row{grid-template-columns:1fr 1fr}.asset-editor{grid-template-columns:1fr}.asset-editor .wide{grid-column:auto}}
   `],
 })
 export class CtgDirectorEngagementComponent implements OnInit {
@@ -1031,11 +978,20 @@ export class CtgDirectorEngagementComponent implements OnInit {
   reviewLanes(): readonly ResponsibilityLaneState[] {
     const visible = this.responsibilities().filter(item => item.isApplicable);
     const preferred = ['host-coordination', 'travel', 'lodging', 'transportation', 'program', 'media', 'documents', 'finance'];
+    const statusPriority = (item: ResponsibilityLaneState): number => {
+      if (item.isOverdue || item.status === 'blocked' || !item.owner) return 0;
+      if (item.status === 'waiting-on-host') return 1;
+      if (item.status !== 'complete') return 2;
+      return 3;
+    };
+
     return [...visible].sort((a, b) => {
+      const byStatus = statusPriority(a) - statusPriority(b);
+      if (byStatus !== 0) return byStatus;
       const ai = preferred.indexOf(a.key);
       const bi = preferred.indexOf(b.key);
       return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi);
-    }).slice(0, 8);
+    }).slice(0, 6);
   }
 
   reviewHeading(): string {
@@ -1059,6 +1015,10 @@ export class CtgDirectorEngagementComponent implements OnInit {
       case 'error': return 'Could not save';
       default: return 'All changes saved';
     }
+  }
+
+  showSaveState(): boolean {
+    return this.autosaveSupported(this.tab()) || this.tab() === 'closeout';
   }
 
   queueAutosave(event?: Event): void {

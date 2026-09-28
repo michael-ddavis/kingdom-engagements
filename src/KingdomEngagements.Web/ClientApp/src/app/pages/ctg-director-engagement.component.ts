@@ -307,7 +307,7 @@ interface ResponsibilityDraft {
                   <article class="panel">
                     <header><div><h2>Host Coordination</h2><p>Keep internal notes here while host messages remain in the conversation panel.</p></div><span>{{ friendlyStatus(record.coordinationStatus) }}</span></header>
                     <div class="shared-record-note"><strong>One shared engagement record</strong><span>Host-submitted contacts and preparation details appear throughout this workspace automatically.</span></div>
-                    <label class="field"><span>Internal host coordination notes <small class="field-hint">Team only</small></span><textarea rows="8" [(ngModel)]="hostDraft.hostNotes"></textarea></label>
+                    <label class="field"><span>Internal host coordination notes <small class="field-hint">Team only</small></span><textarea rows="8" [(ngModel)]="hostDraft.internalNotes"></textarea></label>
                     <details class="field-help"><summary>What belongs in internal notes?</summary><p>Record team-only context, follow-up reminders, or coordination details that should not be sent as a host message.</p></details>
                     <div class="contact-list">
                       <h3>Relevant contacts</h3>
@@ -776,7 +776,7 @@ export class CtgDirectorEngagementComponent implements OnInit {
   };
   ministryDraft: UpdateMinistryPreparationLaneInput = { prayerFocus: null, ministryPreparationNotes: null };
   hospitalityDraft: UpdateHospitalityLaneInput = { hospitalityNotes: null, contacts: [] };
-  hostDraft: UpdateHostCoordinationLaneInput = { hostNotes: null, contacts: [] };
+  hostDraft: UpdateHostCoordinationLaneInput = { internalNotes: null, contacts: [] };
   closeoutDraft = {
     eventNotes: null as string | null,
     testimonySummary: null as string | null,
@@ -1485,7 +1485,7 @@ export class CtgDirectorEngagementComponent implements OnInit {
     if (this.host()) {
       const record = this.host()!;
       this.hostDraft = {
-        hostNotes: record.hostNotes,
+        internalNotes: record.internalNotes,
         contacts: record.contacts.filter(item => item.editable).map(item => ({ type: item.type, name: item.name, email: item.email, phone: item.phone })),
       };
     }

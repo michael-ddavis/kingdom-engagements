@@ -118,6 +118,19 @@ interface ResponsibilityDraft {
           }
         </section>
 
+        @if (nextAction(); as action) {
+          <section class="next-action-card" [class.is-clear]="action.kind === 'clear'">
+            <div>
+              <small>Next action</small>
+              <strong>{{ action.title }}</strong>
+              <span>{{ action.detail }}</span>
+            </div>
+            @if (action.tab !== 'overview' || action.kind !== 'clear') {
+              <button type="button" (click)="tab.set(action.tab)">{{ action.actionLabel }} →</button>
+            }
+          </section>
+        }
+
         @if (tab() === 'overview') {
           <p class="workspace-help">{{ isDirector() ? 'Start with what needs attention, then move into a work area only when you need its details.' : 'Start with your assigned work below. The navigation only shows areas that belong to you.' }}</p>
         }
@@ -163,12 +176,40 @@ interface ResponsibilityDraft {
           </select>
         </label>
 
-        <section class="workspace-body">
+        <div class="workspace-save-state" [class]="'workspace-save-state ' + saveState()">
+          <i aria-hidden="true"></i>
+          <span>{{ saveStatusCopy() }}</span>
+          <small>Editable section changes save automatically after you pause.</small>
+        </div>
+
+        <section class="workspace-body" (input)="queueAutosave($event)" (change)="queueAutosave($event)">
           @switch (tab()) {
             @case ('overview') {
               <section class="overview-grid">
+                <article class="overview-card overview-card--wide readiness-review">
+                  <header>
+                    <div>
+                      <p class="eyebrow">Readiness review</p>
+                      <h2>{{ reviewHeading() }}</h2>
+                      <p>{{ reviewSummary() }}</p>
+                    </div>
+                  </header>
+                  <div class="review-list">
+                    @for (laneItem of reviewLanes(); track laneItem.key) {
+                      <button type="button" (click)="openLane(laneItem.key)">
+                        <span class="review-icon" [class.complete]="laneItem.status === 'complete'">{{ laneItem.status === 'complete' ? '✓' : '•' }}</span>
+                        <span><strong>{{ laneItem.label }}</strong><small>{{ laneStatus(laneItem) }}</small></span>
+                        <b>Open →</b>
+                      </button>
+                    }
+                    @if (reviewLanes().length === 0) {
+                      <p class="empty-copy">No applicable responsibilities are available for this engagement yet.</p>
+                    }
+                  </div>
+                </article>
+
                 <article class="overview-card overview-card--wide">
-                  <header><div><h2>Responsibilities</h2></div><button type="button" (click)="tab.set('responsibilities')">Manage owners →</button></header>
+                  <header><div><h2>Responsibilities</h2><p>Open an area to work on its details. Ownership and status stay visible here for quick review.</p></div><button type="button" (click)="tab.set('responsibilities')">Manage owners →</button></header>
                   <div class="responsibility-grid">
                     @for (laneItem of responsibilities(); track laneItem.key) {
                       <button
@@ -241,7 +282,7 @@ interface ResponsibilityDraft {
                       <div class="responsibility-owner">
                         <small>Owner</small>
                         <strong>{{ laneItem.owner?.displayName || 'Unassigned' }}</strong>
-                        <span>{{ laneItem.owner?.source === 'engagement' ? 'Engagement override' : laneItem.owner ? 'Standing assignment' : 'Needs assignment' }}</span>
+                        <span>{{ laneItem.owner?.source === 'engagement' ? 'Assigned for this event' : laneItem.owner ? 'Default owner' : 'Needs an owner' }}</span>
                       </div>
                       <div class="responsibility-state">
                         <small>Status</small>
@@ -264,8 +305,10 @@ interface ResponsibilityDraft {
               @if (host(); as record) {
                 <section class="two-column">
                   <article class="panel">
-                    <header><div><h2>Host Coordination</h2></div><span>{{ label(record.coordinationStatus) }}</span></header>
-                    <label class="field"><span>Internal host coordination notes</span><textarea rows="8" [(ngModel)]="hostDraft.hostNotes"></textarea></label>
+                    <header><div><h2>Host Coordination</h2><p>Keep internal notes here while host messages remain in the conversation panel.</p></div><span>{{ friendlyStatus(record.coordinationStatus) }}</span></header>
+                    <div class="shared-record-note"><strong>One shared engagement record</strong><span>Host-submitted contacts and preparation details appear throughout this workspace automatically.</span></div>
+                    <label class="field"><span>Internal host coordination notes <small class="field-hint">Team only</small></span><textarea rows="8" [(ngModel)]="hostDraft.hostNotes"></textarea></label>
+                    <details class="field-help"><summary>What belongs in internal notes?</summary><p>Record team-only context, follow-up reminders, or coordination details that should not be sent as a host message.</p></details>
                     <div class="contact-list">
                       <h3>Relevant contacts</h3>
                       @for (contact of record.contacts; track contact.type + contact.name) {
@@ -288,7 +331,9 @@ interface ResponsibilityDraft {
             @case ('travel') {
               @if (travel(); as record) {
                 <section class="panel">
-                  <header><div><h2>Flights & itinerary</h2></div><span>{{ ownerLabel(record.lane) }}</span></header>
+                  <header><div><h2>Flights & itinerary</h2><p>Use the confirmed itinerary the team needs for travel-day coordination.</p></div><span>{{ ownerLabel(record.lane) }}</span></header>
+                  <div class="shared-record-note"><strong>Shared with the host portal</strong><span>If the host already entered flight details, they appear here automatically. Changes here update the same engagement record.</span></div>
+                  <details class="field-help"><summary>Not sure what belongs here?</summary><p>Airline, flight number, airports, and departure/arrival times are the most useful details. Confirmation numbers are helpful but secondary.</p></details>
                   <div class="form-grid">
                     <h3 class="full">Outbound</h3>
                     <label class="field"><span>Airline</span><input [(ngModel)]="travelDraft.outboundAirline"></label>
@@ -315,7 +360,9 @@ interface ResponsibilityDraft {
             @case ('lodging') {
               @if (lodging(); as record) {
                 <section class="panel">
-                  <header><div><h2>Hotel & stay</h2></div><span>{{ ownerLabel(record.lane) }}</span></header>
+                  <header><div><h2>Hotel & stay</h2><p>Keep the lodging location and check-in details the ministry team needs.</p></div><span>{{ ownerLabel(record.lane) }}</span></header>
+                  <div class="shared-record-note"><strong>Shared with the host portal</strong><span>Host-provided hotel information is already reused here, so it does not need to be entered twice.</span></div>
+                  <details class="field-help"><summary>Not sure what belongs here?</summary><p>The hotel name, address, and check-in/check-out times are the important pieces. Add a confirmation number when it is useful.</p></details>
                   <div class="form-grid">
                     <label class="field"><span>Hotel name</span><input [(ngModel)]="lodgingDraft.hotelName"></label>
                     <label class="field"><span>Confirmation</span><input [(ngModel)]="lodgingDraft.hotelConfirmationNumber"></label>
@@ -331,7 +378,9 @@ interface ResponsibilityDraft {
             @case ('transportation') {
               @if (transportation(); as record) {
                 <section class="panel">
-                  <header><div><h2>Local movement & pickup</h2></div><span>{{ ownerLabel(record.lane) }}</span></header>
+                  <header><div><h2>Local transportation</h2><p>Answer one practical question: how will the ministry team move between the airport, hotel, and venue?</p></div><span>{{ ownerLabel(record.lane) }}</span></header>
+                  <div class="shared-record-note"><strong>Shared with the host portal</strong><span>Pickup details supplied by the host appear here automatically.</span></div>
+                  <details class="field-help"><summary>See an example</summary><p>“Naomi will meet the team at baggage claim, drive them to the hotel, and return at 5:30 PM for the evening service.”</p></details>
                   <div class="form-grid">
                     <label class="field full"><span>Transportation plan</span><textarea rows="6" [(ngModel)]="transportDraft.transportationPlan"></textarea></label>
                     <label class="field"><span>Pickup contact</span><input [(ngModel)]="transportDraft.pickupContactName"></label>
@@ -346,8 +395,10 @@ interface ResponsibilityDraft {
               @if (media(); as record) {
                 <section class="two-column">
                   <article class="panel">
-                    <header><div><h2>Media preparation</h2></div><span>{{ ownerLabel(record.lane) }}</span></header>
+                    <header><div><h2>Media & promotion</h2><p>Capture what must be prepared, approved, or received before promotion goes live.</p></div><span>{{ ownerLabel(record.lane) }}</span></header>
+                    <div class="shared-record-note"><strong>Reuse host information</strong><span>Promotion expectations entered by the host are already available here.</span></div>
                     <label class="field"><span>Promotion / media requirements</span><textarea rows="8" [(ngModel)]="mediaDraft.promotionRequirements"></textarea></label>
+                    <details class="field-help"><summary>See an example</summary><p>Include required graphics, interview requests, approved titles, social-media expectations, or deadlines for creative assets.</p></details>
                     <div class="contact-list">
                       <h3>Media contacts</h3>
                       @for (contact of record.contacts; track contact.type + contact.name) {
@@ -389,7 +440,9 @@ interface ResponsibilityDraft {
             @case ('program') {
               @if (program(); as record) {
                 <section class="panel">
-                  <header><div><h2>Engagement itinerary</h2></div><span>{{ ownerLabel(record.lane) }}</span></header>
+                  <header><div><h2>Event schedule</h2><p>Track only the sessions and moments the ministry team needs to know about.</p></div><span>{{ ownerLabel(record.lane) }}</span></header>
+                  <div class="shared-record-note"><strong>Shared schedule</strong><span>Sessions entered by the host appear here automatically. Add or refine details here without rebuilding the schedule.</span></div>
+                  <details class="field-help"><summary>What should I add?</summary><p>Include arrival windows, soundcheck, ministry sessions, meals that affect timing, and departure times. You do not need every item from the host’s full event agenda.</p></details>
                   <div class="schedule-list">
                     @for (scheduleItem of programDraft.schedule; track $index) {
                       <div class="schedule-row">
@@ -430,7 +483,8 @@ interface ResponsibilityDraft {
             @case ('finance') {
               @if (finance(); as record) {
                 <section class="panel">
-                  <header><div><h2>Terms and payment preparation</h2></div><span>{{ ownerLabel(record.lane) }}</span></header>
+                  <header><div><h2>Terms & payment</h2><p>Track who is covering travel and lodging, honorarium status, and whether payment has been completed.</p></div><span>{{ ownerLabel(record.lane) }}</span></header>
+                  <details class="field-help"><summary>What matters most here?</summary><p>Make sure coverage responsibilities and payment status are clear. Leave secondary fields alone until the terms are actually known.</p></details>
                   <div class="form-grid">
                     <label class="field"><span>Travel coverage</span><input [(ngModel)]="financeDraft.travelCoverageStatus"></label>
                     <label class="field"><span>Lodging coverage</span><input [(ngModel)]="financeDraft.lodgingCoverageStatus"></label>
@@ -448,8 +502,10 @@ interface ResponsibilityDraft {
             @case ('ministry-preparation') {
               @if (ministry(); as record) {
                 <section class="panel">
-                  <header><div><h2>Spiritual & ministry brief</h2></div><span>{{ ownerLabel(record.lane) }}</span></header>
+                  <header><div><h2>Ministry preparation</h2><p>Keep the prayer burden and internal ministry context in one place before the engagement.</p></div><span>{{ ownerLabel(record.lane) }}</span></header>
+                  <div class="shared-record-note"><strong>Reuse the host’s prayer focus</strong><span>If the host shared a prayer focus, it is already carried into this section for the team.</span></div>
                   <label class="field"><span>Prayer focus</span><textarea rows="5" [(ngModel)]="ministryDraft.prayerFocus"></textarea></label>
+                  <details class="field-help"><summary>What belongs here?</summary><p>Use Prayer focus for what the gathering is carrying spiritually. Use Ministry preparation notes for internal briefing, discernment, or preparation that the host does not need to see.</p></details>
                   <label class="field"><span>Ministry preparation notes</span><textarea rows="9" [(ngModel)]="ministryDraft.ministryPreparationNotes"></textarea></label>
                   <footer class="panel-actions"><button type="button" [disabled]="saving()" (click)="saveMinistry()">Save ministry preparation</button></footer>
                 </section>
@@ -459,7 +515,8 @@ interface ResponsibilityDraft {
             @case ('hospitality') {
               @if (hospitality(); as record) {
                 <section class="panel">
-                  <header><div><h2>Meals, green room & care</h2></div><span>{{ ownerLabel(record.lane) }}</span></header>
+                  <header><div><h2>Hospitality & care</h2><p>Keep practical care details here without turning the section into another event plan.</p></div><span>{{ ownerLabel(record.lane) }}</span></header>
+                  <details class="field-help"><summary>See an example</summary><p>Meals, dietary needs, green room location, water, quiet space, host contact, or anything else that helps the team care for the minister well.</p></details>
                   <label class="field"><span>Hospitality notes</span><textarea rows="10" [(ngModel)]="hospitalityDraft.hospitalityNotes"></textarea></label>
                   <div class="contact-list">
                     <h3>Hospitality contacts</h3>
@@ -576,6 +633,8 @@ interface ResponsibilityDraft {
   `,
   styles: [`
     .workspace-help{color:#536158;line-height:1.6;margin:18px 0 12px;font-size:.9rem}
+    .next-action-card{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:12px 0;padding:16px 18px;border:1px solid #d7c38f;border-left:4px solid #9d7438;border-radius:12px;background:#fffaf0}.next-action-card.is-clear{border-color:#bfd6c7;border-left-color:#4f8064;background:#f3f8f4}.next-action-card>div{display:grid;gap:4px}.next-action-card small{color:#8a7034;font-size:.59rem;font-weight:850;text-transform:uppercase;letter-spacing:.07em}.next-action-card strong{color:#17243a;font-size:.88rem}.next-action-card span{color:#66706d;font-size:.68rem;line-height:1.45}.next-action-card button{min-height:40px;padding:0 13px;border:0;border-radius:8px;background:#172a46;color:#fff;font-size:.66rem;font-weight:850;cursor:pointer;white-space:nowrap}
+    .workspace-save-state{display:flex;align-items:center;gap:8px;margin:0 0 12px;padding:9px 12px;border:1px solid #dfe3e0;border-radius:9px;background:#faf9f5;color:#63706a;font-size:.64rem}.workspace-save-state i{width:9px;height:9px;border-radius:50%;background:#4f8064}.workspace-save-state span{font-weight:850;color:#35423d}.workspace-save-state small{margin-left:auto;color:#7c837f}.workspace-save-state.dirty i{background:#a77b2e}.workspace-save-state.saving i{background:#56718e}.workspace-save-state.error i{background:#a84642}.workspace-save-state.error span{color:#a84642}
     .workspace-section-picker{display:none}
     .workspace-navigation{margin:16px 0 14px;padding:14px;border:1px solid #dfe3e0;border-radius:13px;background:#fffdfa}
     .workspace-navigation-copy{display:flex;justify-content:space-between;gap:18px;align-items:baseline;padding:2px 4px 11px}
@@ -619,6 +678,7 @@ interface ResponsibilityDraft {
     .engagement-alerts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:10px 0}.engagement-alerts article{padding:11px 14px;border:1px solid #e1e4e1;border-radius:10px;background:#fff}.engagement-alerts small{display:block;color:#808783;font-size:.56rem;font-weight:850;text-transform:uppercase}.engagement-alerts strong{display:block;margin-top:3px;font-size:1.05rem}
     .workspace-tabs{display:flex;gap:3px;margin:16px 0 12px;overflow:auto;padding:4px;border:1px solid #dfe3e0;border-radius:11px;background:#f7f5f0;scrollbar-width:thin}.workspace-tabs button{display:flex;align-items:center;gap:6px;min-height:36px;padding:0 10px;border:0;border-radius:7px;background:transparent;color:#66706a;font-size:.65rem;font-weight:850;white-space:nowrap;cursor:pointer}.workspace-tabs button.active{background:#172a46;color:#fff}.workspace-tabs button span{padding:2px 5px;border-radius:999px;background:rgba(255,255,255,.18);font-size:.52rem}.workspace-tabs button:not(.active) span.alert{background:#f8e8e5;color:#a84642}
     .workspace-body{position:relative}.overview-grid,.two-column{display:grid;grid-template-columns:1fr 1fr;gap:12px}.overview-card,.panel{border:1px solid #dfe3e0;border-radius:14px;background:#fffdfa;box-shadow:0 8px 25px rgba(18,26,44,.035)}.overview-card{padding:17px}.overview-card--wide{grid-column:1/-1}.overview-card>header,.panel>header{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.overview-card h2,.panel h2{font-size:1.2rem}.overview-card header button,.panel header button{border:0;background:transparent;color:#315faf;font-size:.64rem;font-weight:850;cursor:pointer}
+    .overview-card header p:not(.eyebrow){margin:4px 0 0;color:#747c78;font-size:.67rem;line-height:1.45}.readiness-review>header{padding-bottom:12px;border-bottom:1px solid #e7e9e6}.review-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:12px}.review-list button{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:center;padding:10px;border:1px solid #e0e3e0;border-radius:9px;background:#faf9f5;color:#17243a;text-align:left;cursor:pointer}.review-icon{display:grid;width:26px;height:26px;place-items:center;border-radius:50%;background:#edf0ed;color:#68716d;font-weight:900}.review-icon.complete{background:#e4f1e8;color:#2d6d52}.review-list strong,.review-list small{display:block}.review-list strong{font-size:.7rem}.review-list small{margin-top:2px;color:#7a827d;font-size:.59rem}.review-list b{color:#315faf;font-size:.6rem}
     .responsibility-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}.responsibility-grid>button{min-height:105px;padding:11px;border:1px solid var(--status-neutral-border);border-left-width:4px;border-radius:9px;background:var(--status-neutral-bg);text-align:left;color:var(--status-neutral-text);cursor:pointer}.responsibility-grid button>span{display:flex;justify-content:space-between;gap:7px}.responsibility-grid button strong{font-size:.7rem}.responsibility-grid button span small{color:#79817d;font-size:.55rem;text-align:right}.responsibility-grid button b{display:block;margin:11px 0 4px;font-size:.67rem}.responsibility-grid button>small{color:#808783;font-size:.57rem}.responsibility-grid button.complete{background:var(--status-complete-bg);border-color:var(--status-complete-border);color:var(--status-complete-text)}
     .responsibility-grid button.progress{background:var(--status-progress-bg);border-color:var(--status-progress-border);color:var(--status-progress-text)}
     .responsibility-grid button.waiting{background:var(--status-waiting-bg);border-color:var(--status-waiting-border);color:var(--status-waiting-text)}
@@ -628,6 +688,7 @@ interface ResponsibilityDraft {
     .activity-list{display:flex;flex-direction:column;margin-top:10px}.activity-list>div{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:flex-start;padding:9px 0;border-top:1px solid #eceeec}.activity-list>div:first-child{border-top:0}.activity-list>div>span{width:8px;height:8px;margin-top:5px;border-radius:50%;background:#9d7438}.activity-list p{margin:0}.activity-list p strong,.activity-list p small{display:block}.activity-list p strong{font-size:.68rem}.activity-list p small{margin-top:2px;color:#79817d;font-size:.6rem}.activity-list b{color:#7d8480;font-size:.58rem;font-weight:700}.activity-list--full{padding:0 18px 14px}
     .panel{padding:18px}.panel>header{padding-bottom:14px;border-bottom:1px solid #e6e8e6}.panel>header>span{color:#747c78;font-size:.63rem;font-weight:800}.panel>header p:not(.eyebrow){margin:4px 0 0;color:#727a76;font-size:.68rem}.panel-actions{display:flex;justify-content:flex-end;margin-top:16px;padding-top:13px;border-top:1px solid #e5e7e5}.panel-actions.split{justify-content:space-between}.panel-actions button,.responsibility-drawer footer button,.asset-editor button,.document-editor button,.composer button{padding:9px 13px;border:0;border-radius:8px;background:#172a46;color:#fff;font-size:.65rem;font-weight:850;cursor:pointer}.panel-actions .secondary,.responsibility-drawer .secondary{border:1px solid #d6dbd8;background:#fff;color:#172a46}
     .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}.form-grid .full,.field.full{grid-column:1/-1}.form-grid h3{margin:5px 0 0;color:#5e6863;font-size:.72rem}.field{display:block;margin-top:12px}.field>span{display:block;margin-bottom:5px;font-size:.62rem;font-weight:850;color:#59635e}.field input,.field textarea,.field select,.asset-editor input,.asset-editor textarea,.asset-editor select,.document-editor input,.document-editor select,.composer textarea,.schedule-row input{box-sizing:border-box;width:100%;padding:9px 10px;border:1px solid #d5dad7;border-radius:8px;background:#fff;font:inherit;font-size:.72rem}.field textarea{resize:vertical}
+    .field-hint{margin-left:5px;color:#8a918d;font-size:.54rem;font-weight:750}.shared-record-note{display:grid;gap:3px;margin:12px 0 4px;padding:10px 12px;border:1px solid #dce5de;border-radius:8px;background:#f3f8f4}.shared-record-note strong{color:#315c43;font-size:.67rem}.shared-record-note span{color:#68746d;font-size:.61rem;line-height:1.45}.field-help{margin:10px 0 4px;border:1px solid #e3e5e2;border-radius:8px;background:#faf9f5}.field-help>summary{display:flex;min-height:38px;align-items:center;padding:0 11px;color:#52647f;font-size:.62rem;font-weight:800;cursor:pointer}.field-help p{margin:0;padding:0 11px 11px;color:#69726e;font-size:.62rem;line-height:1.5}
     .responsibility-list{display:flex;flex-direction:column;margin-top:8px}.responsibility-list article{display:grid;grid-template-columns:1.3fr .9fr .7fr .8fr auto;gap:14px;align-items:center;padding:13px 2px;border-top:1px solid #eceeec}.responsibility-list article.na{opacity:.58}.responsibility-list article>div:first-child strong{font-size:.72rem}.responsibility-list article>div:first-child p{margin:3px 0 0;color:#7b827e;font-size:.61rem}.responsibility-owner small,.responsibility-state small,.responsibility-audit small{display:block;color:#858b87;font-size:.53rem;text-transform:uppercase}.responsibility-owner strong,.responsibility-state strong,.responsibility-audit strong{display:block;margin-top:2px;font-size:.66rem}.responsibility-owner span,.responsibility-state span,.responsibility-audit span{font-size:.57rem;color:#858b87}.responsibility-list article>button{padding:8px 10px;border:1px solid #d6dbd8;border-radius:7px;background:#fff;color:#172a46;font-size:.6rem;font-weight:850;cursor:pointer}
     .contact-list{margin-top:17px}.contact-list h3,.asset-editor h3{font-size:.7rem}.contact-list>div{display:grid;grid-template-columns:1fr auto;gap:3px;padding:8px 0;border-top:1px solid #eceeec}.contact-list strong{font-size:.68rem}.contact-list span{font-size:.56rem;color:#876f33;text-transform:uppercase}.contact-list small{grid-column:1/-1;color:#7d8480;font-size:.58rem}
     .conversation-panel{display:flex;flex-direction:column}.thread{display:flex;flex:1;flex-direction:column;gap:8px;min-height:340px;max-height:520px;overflow:auto;padding:12px 0}.thread>div{max-width:80%;padding:9px 11px;border-radius:10px;background:#f4f2ed}.thread>div.team-message{align-self:flex-end;background:#eef3f8}.thread>div.host-message{align-self:flex-start}.thread header{display:flex;justify-content:space-between;gap:12px}.thread header strong{font-size:.61rem}.thread header span{color:#8a918d;font-size:.54rem}.thread p{margin:5px 0 0;font-size:.67rem;line-height:1.45}.composer{border-top:1px solid #e4e6e4;padding-top:12px}.composer button{float:right;margin-top:7px}
@@ -638,7 +699,7 @@ interface ResponsibilityDraft {
     .drawer-backdrop{position:fixed;inset:0;z-index:90;background:rgba(16,24,35,.38)}.responsibility-drawer{position:fixed;z-index:91;top:0;right:0;width:min(460px,94vw);height:100vh;box-sizing:border-box;padding:20px;overflow:auto;background:#fffdfa;box-shadow:-20px 0 50px rgba(18,26,44,.17)}.responsibility-drawer>header{display:flex;justify-content:space-between}.responsibility-drawer>header small{color:#876f33;font-size:.59rem;font-weight:850;text-transform:uppercase}.responsibility-drawer h2{font-size:1.5rem}.responsibility-drawer>header button{width:34px;height:34px;border:0;border-radius:50%;background:#f0eee8;cursor:pointer}.toggle{display:flex;gap:8px;align-items:center;margin:13px 0;padding:10px;border-radius:8px;background:#f5f3ed;font-size:.67rem;font-weight:800}.responsibility-drawer footer{display:flex;justify-content:flex-end;gap:7px;margin-top:18px;padding-top:14px;border-top:1px solid #e4e6e4}
     .state{padding:40px;border:1px solid #dfe3e0;border-radius:14px;background:#fff;text-align:center;color:#747c78}.state.error{color:#a84642}.partial-load-warning{display:grid;gap:3px;margin:10px 0;padding:12px 14px;border:1px solid #ead9ab;border-radius:9px;background:#fff8e8;color:#725b24}.partial-load-warning strong{font-size:.7rem}.partial-load-warning span,.partial-load-warning small{font-size:.61rem}
     @media(max-width:1000px){.responsibility-grid{grid-template-columns:repeat(3,1fr)}.responsibility-list article{grid-template-columns:1fr 1fr}.responsibility-list article>button{justify-self:start}.schedule-row{grid-template-columns:1fr 1fr 1fr}.document-editor{grid-template-columns:1fr 1fr}.document-editor button{grid-column:1/-1}}
-    @media(max-width:760px){.director-engagement{width:min(100% - 24px,1320px)}.engagement-heading{flex-direction:column}.engagement-alerts{grid-template-columns:1fr 1fr}.overview-grid,.two-column{grid-template-columns:1fr}.overview-card--wide{grid-column:auto}.responsibility-grid{grid-template-columns:1fr 1fr}.form-grid{grid-template-columns:1fr}.form-grid .full{grid-column:auto}.schedule-row{grid-template-columns:1fr 1fr}.asset-editor{grid-template-columns:1fr}.asset-editor .wide{grid-column:auto}}
+    @media(max-width:760px){.director-engagement{width:min(100% - 24px,1320px)}.engagement-heading{flex-direction:column}.engagement-alerts{grid-template-columns:1fr 1fr}.next-action-card{align-items:flex-start;flex-direction:column}.next-action-card button{width:100%}.workspace-save-state{align-items:flex-start;flex-wrap:wrap}.workspace-save-state small{width:100%;margin-left:17px}.overview-grid,.two-column{grid-template-columns:1fr}.overview-card--wide{grid-column:auto}.review-list{grid-template-columns:1fr}.responsibility-grid{grid-template-columns:1fr 1fr}.form-grid{grid-template-columns:1fr}.form-grid .full{grid-column:auto}.schedule-row{grid-template-columns:1fr 1fr}.asset-editor{grid-template-columns:1fr}.asset-editor .wide{grid-column:auto}}
   `],
 })
 export class CtgDirectorEngagementComponent implements OnInit {
@@ -689,6 +750,8 @@ export class CtgDirectorEngagementComponent implements OnInit {
   readonly saving = signal(false);
   readonly saveMessage = signal<string | null>(null);
   readonly saveError = signal<string | null>(null);
+  readonly saveState = signal<'saved' | 'dirty' | 'saving' | 'error'>('saved');
+  private autosaveTimer: number | null = null;
   readonly unavailableSections = signal<readonly string[]>([]);
   readonly responsibilityDraft = signal<ResponsibilityDraft | null>(null);
   readonly team = signal<readonly EngagementTeamMember[]>([]);
@@ -817,6 +880,7 @@ export class CtgDirectorEngagementComponent implements OnInit {
         this.hospitality.set(result.hospitality);
         this.completion.set(result.completion);
         this.syncDrafts();
+        this.saveState.set('saved');
 
         if (!this.visibleTabs().some(item => item.key === this.tab())) {
           this.tab.set('overview');
@@ -905,6 +969,108 @@ export class CtgDirectorEngagementComponent implements OnInit {
     return this.responsibilities().filter(item => item.isApplicable && item.status === 'waiting-on-host').length;
   }
 
+  nextAction(): { kind: 'action' | 'clear'; title: string; detail: string; tab: DirectorTab; actionLabel: string } {
+    const applicable = this.responsibilities().filter(item => item.isApplicable);
+    const overdue = applicable.find(item => item.isOverdue || item.status === 'overdue');
+    if (overdue) return {
+      kind: 'action',
+      title: `${overdue.label} is overdue`,
+      detail: overdue.owner ? `${overdue.owner.displayName} owns this area. Open it to resolve the overdue work.` : 'Assign an owner and resolve the overdue work.',
+      tab: overdue.owner ? this.tabForLane(overdue.key) : 'responsibilities',
+      actionLabel: overdue.owner ? 'Open area' : 'Assign owner',
+    };
+
+    const blocked = applicable.find(item => item.status === 'blocked');
+    if (blocked) return {
+      kind: 'action',
+      title: `${blocked.label} needs help`,
+      detail: blocked.detail || 'This area is blocked. Open it to see what is preventing progress.',
+      tab: this.tabForLane(blocked.key),
+      actionLabel: 'Open area',
+    };
+
+    const unassigned = applicable.find(item => !item.owner);
+    if (unassigned && this.isDirector()) return {
+      kind: 'action',
+      title: `Assign someone to ${unassigned.label}`,
+      detail: 'This work applies to the engagement but does not have an owner yet.',
+      tab: 'responsibilities',
+      actionLabel: 'Assign owner',
+    };
+
+    const waiting = applicable.find(item => item.status === 'waiting-on-host');
+    if (waiting) return {
+      kind: 'action',
+      title: `Waiting on the host for ${waiting.label}`,
+      detail: waiting.detail || 'Review what is missing and follow up with the host if needed.',
+      tab: this.tabForLane(waiting.key),
+      actionLabel: 'Review details',
+    };
+
+    const incomplete = applicable.find(item => item.status !== 'complete');
+    if (incomplete) return {
+      kind: 'action',
+      title: `Continue ${incomplete.label}`,
+      detail: incomplete.detail || 'This is the next preparation area that is still open.',
+      tab: this.tabForLane(incomplete.key),
+      actionLabel: 'Continue',
+    };
+
+    return {
+      kind: 'clear',
+      title: applicable.length ? 'Everything assigned to you is ready' : 'Nothing needs your attention right now',
+      detail: applicable.length ? 'All applicable responsibilities are complete. Review the engagement overview whenever you need it.' : 'There is no assigned work to act on at the moment.',
+      tab: 'overview',
+      actionLabel: 'Review overview',
+    };
+  }
+
+  reviewLanes(): readonly ResponsibilityLaneState[] {
+    const visible = this.responsibilities().filter(item => item.isApplicable);
+    const preferred = ['host-coordination', 'travel', 'lodging', 'transportation', 'program', 'media', 'documents', 'finance'];
+    return [...visible].sort((a, b) => {
+      const ai = preferred.indexOf(a.key);
+      const bi = preferred.indexOf(b.key);
+      return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi);
+    }).slice(0, 8);
+  }
+
+  reviewHeading(): string {
+    const items = this.responsibilities().filter(item => item.isApplicable);
+    if (items.length > 0 && items.every(item => item.status === 'complete')) return 'Ready for ministry';
+    if (this.attentionLanes().length > 0) return 'A few things still need attention';
+    return 'Preparation is moving';
+  }
+
+  reviewSummary(): string {
+    const items = this.responsibilities().filter(item => item.isApplicable);
+    const complete = items.filter(item => item.status === 'complete').length;
+    if (items.length === 0) return 'Applicable preparation areas will appear here as the engagement is configured.';
+    return `${complete} of ${items.length} applicable areas are complete. Open any area below to review or update it.`;
+  }
+
+  saveStatusCopy(): string {
+    switch (this.saveState()) {
+      case 'dirty': return 'Unsaved changes';
+      case 'saving': return 'Saving…';
+      case 'error': return 'Could not save';
+      default: return 'All changes saved';
+    }
+  }
+
+  queueAutosave(event?: Event): void {
+    const target = event?.target as HTMLElement | null;
+    if (target?.closest('.asset-editor, .document-editor, .composer, .responsibility-drawer')) return;
+    if (!this.autosaveSupported(this.tab())) return;
+
+    this.saveState.set('dirty');
+    if (this.autosaveTimer !== null) window.clearTimeout(this.autosaveTimer);
+    this.autosaveTimer = window.setTimeout(() => {
+      this.autosaveTimer = null;
+      this.saveCurrentSection();
+    }, 1400);
+  }
+
   attentionLanes(): readonly ResponsibilityLaneState[] {
     return this.responsibilities().filter(item =>
       item.isApplicable && (!item.owner || item.isOverdue || ['blocked', 'overdue'].includes(item.status)),
@@ -919,8 +1085,25 @@ export class CtgDirectorEngagementComponent implements OnInit {
 
   laneStatus(item: ResponsibilityLaneState): string {
     if (!item.isApplicable) return 'Not applicable';
-    if (item.isOverdue) return 'Overdue';
+    if (!item.owner) return 'Needs an owner';
+    if (item.isOverdue || item.status === 'overdue') return 'Overdue';
+    if (item.status === 'blocked') return 'Needs help';
+    if (item.status === 'ready-for-review') return 'Ready to review';
+    if (item.status === 'waiting-on-host') return 'Waiting for host';
+    if (item.status === 'not-started') return 'Not started yet';
+    if (item.status === 'in-progress') return 'In progress';
+    if (item.status === 'complete') return 'Complete';
     return this.label(item.status);
+  }
+
+  friendlyStatus(value: string): string {
+    if (value === 'ready-for-review') return 'Ready to review';
+    if (value === 'waiting-on-host') return 'Waiting for host';
+    if (value === 'not-started') return 'Not started yet';
+    if (value === 'in-progress') return 'In progress';
+    if (value === 'submitted') return 'Submitted';
+    if (value === 'blocked') return 'Needs help';
+    return this.label(value);
   }
 
   laneBadge(item: ResponsibilityLaneState): string {
@@ -1021,11 +1204,12 @@ export class CtgDirectorEngagementComponent implements OnInit {
     });
   }
 
-  saveHost(): void {
+  saveHost(quiet = false): void {
     this.saveLane(
       this.api.updateHostCoordinationLane(this.assignmentId, this.hostDraft),
       value => this.host.set(value),
       'Host coordination saved.',
+      quiet,
     );
   }
 
@@ -1042,26 +1226,26 @@ export class CtgDirectorEngagementComponent implements OnInit {
     );
   }
 
-  saveTravel(): void {
+  saveTravel(quiet = false): void {
     this.travelDraft = { ...this.travelDraft, ...this.normalizeTravelDates(this.travelDraft) };
-    this.saveLane(this.api.updateTravelLane(this.assignmentId, this.travelDraft), value => this.travel.set(value), 'Travel saved.');
+    this.saveLane(this.api.updateTravelLane(this.assignmentId, this.travelDraft), value => this.travel.set(value), 'Travel saved.', quiet);
   }
 
-  saveLodging(): void {
+  saveLodging(quiet = false): void {
     const input = {
       ...this.lodgingDraft,
       hotelCheckInAtUtc: this.toIso(this.lodgingDraft.hotelCheckInAtUtc),
       hotelCheckOutAtUtc: this.toIso(this.lodgingDraft.hotelCheckOutAtUtc),
     };
-    this.saveLane(this.api.updateLodgingLane(this.assignmentId, input), value => this.lodging.set(value), 'Lodging saved.');
+    this.saveLane(this.api.updateLodgingLane(this.assignmentId, input), value => this.lodging.set(value), 'Lodging saved.', quiet);
   }
 
-  saveTransportation(): void {
-    this.saveLane(this.api.updateTransportationLane(this.assignmentId, this.transportDraft), value => this.transportation.set(value), 'Transportation saved.');
+  saveTransportation(quiet = false): void {
+    this.saveLane(this.api.updateTransportationLane(this.assignmentId, this.transportDraft), value => this.transportation.set(value), 'Transportation saved.', quiet);
   }
 
-  saveMedia(): void {
-    this.saveLane(this.api.updateMediaLane(this.assignmentId, this.mediaDraft), value => this.media.set(value), 'Media preparation saved.');
+  saveMedia(quiet = false): void {
+    this.saveLane(this.api.updateMediaLane(this.assignmentId, this.mediaDraft), value => this.media.set(value), 'Media preparation saved.', quiet);
   }
 
   addAsset(): void {
@@ -1096,14 +1280,16 @@ export class CtgDirectorEngagementComponent implements OnInit {
       ...this.programDraft.schedule,
       { title: '', date: '', startsAt: null, endsAt: null, location: null, notes: null },
     ];
+    this.queueAutosave();
   }
 
   removeSchedule(index: number): void {
     this.programDraft.schedule = this.programDraft.schedule.filter((_, itemIndex) => itemIndex !== index);
+    this.queueAutosave();
   }
 
-  saveProgram(): void {
-    this.saveLane(this.api.updateProgramLane(this.assignmentId, this.programDraft), value => this.program.set(value), 'Program saved.');
+  saveProgram(quiet = false): void {
+    this.saveLane(this.api.updateProgramLane(this.assignmentId, this.programDraft), value => this.program.set(value), 'Program saved.', quiet);
   }
 
   addDocument(): void {
@@ -1129,19 +1315,19 @@ export class CtgDirectorEngagementComponent implements OnInit {
     });
   }
 
-  saveFinance(): void {
-    this.saveLane(this.api.updateFinanceLane(this.assignmentId, this.financeDraft), value => this.finance.set(value), 'Finance saved.');
+  saveFinance(quiet = false): void {
+    this.saveLane(this.api.updateFinanceLane(this.assignmentId, this.financeDraft), value => this.finance.set(value), 'Finance saved.', quiet);
   }
 
-  saveMinistry(): void {
-    this.saveLane(this.api.updateMinistryPreparationLane(this.assignmentId, this.ministryDraft), value => this.ministry.set(value), 'Ministry preparation saved.');
+  saveMinistry(quiet = false): void {
+    this.saveLane(this.api.updateMinistryPreparationLane(this.assignmentId, this.ministryDraft), value => this.ministry.set(value), 'Ministry preparation saved.', quiet);
   }
 
-  saveHospitality(): void {
-    this.saveLane(this.api.updateHospitalityLane(this.assignmentId, this.hospitalityDraft), value => this.hospitality.set(value), 'Hospitality saved.');
+  saveHospitality(quiet = false): void {
+    this.saveLane(this.api.updateHospitalityLane(this.assignmentId, this.hospitalityDraft), value => this.hospitality.set(value), 'Hospitality saved.', quiet);
   }
 
-  saveCloseout(complete: boolean): void {
+  saveCloseout(complete: boolean, quiet = false): void {
     const current = this.completion();
     if (!current) return;
 
@@ -1160,6 +1346,7 @@ export class CtgDirectorEngagementComponent implements OnInit {
         this.syncCloseoutDraft(value);
       },
       complete ? 'Engagement completed.' : 'Closeout progress saved.',
+      quiet,
     );
   }
 
@@ -1334,12 +1521,12 @@ export class CtgDirectorEngagementComponent implements OnInit {
     });
   }
 
-  private saveLane<T>(observable: Observable<T>, apply: (value: T) => void, message: string): void {
+  private saveLane<T>(observable: Observable<T>, apply: (value: T) => void, message: string, quiet = false): void {
     this.beginSave();
     observable.subscribe({
       next: (value: T) => {
         apply(value);
-        this.finishSave(message);
+        this.finishSave(message, quiet);
       },
       error: () => this.failSave('The change could not be saved.'),
     });
@@ -1347,20 +1534,54 @@ export class CtgDirectorEngagementComponent implements OnInit {
 
   private beginSave(): void {
     this.saving.set(true);
+    this.saveState.set('saving');
     this.saveMessage.set(null);
     this.saveError.set(null);
   }
 
-  private finishSave(message: string): void {
+  private finishSave(message: string, quiet = false): void {
     this.saving.set(false);
-    this.saveMessage.set(message);
-    window.setTimeout(() => this.saveMessage.set(null), 2200);
+    this.saveState.set('saved');
+    if (!quiet) {
+      this.saveMessage.set(message);
+      window.setTimeout(() => this.saveMessage.set(null), 2200);
+    }
   }
 
   private failSave(message: string): void {
     this.saving.set(false);
+    this.saveState.set('error');
     this.saveError.set(message);
     window.setTimeout(() => this.saveError.set(null), 3000);
+  }
+
+  private saveCurrentSection(): void {
+    if (this.saving()) {
+      this.queueAutosave();
+      return;
+    }
+
+    switch (this.tab()) {
+      case 'host-coordination': this.saveHost(true); break;
+      case 'travel': this.saveTravel(true); break;
+      case 'lodging': this.saveLodging(true); break;
+      case 'transportation': this.saveTransportation(true); break;
+      case 'media': this.saveMedia(true); break;
+      case 'program': this.saveProgram(true); break;
+      case 'finance': this.saveFinance(true); break;
+      case 'ministry-preparation': this.saveMinistry(true); break;
+      case 'hospitality': this.saveHospitality(true); break;
+      case 'closeout': this.saveCloseout(false, true); break;
+      default: this.saveState.set('saved'); break;
+    }
+  }
+
+  private autosaveSupported(tab: DirectorTab): boolean {
+    return ['host-coordination', 'travel', 'lodging', 'transportation', 'media', 'program', 'finance', 'ministry-preparation', 'hospitality', 'closeout'].includes(tab);
+  }
+
+  private tabForLane(key: string): DirectorTab {
+    return this.tabs.find(item => item.lane === key)?.key ?? 'responsibilities';
   }
 
   private isTab(value: string): boolean {

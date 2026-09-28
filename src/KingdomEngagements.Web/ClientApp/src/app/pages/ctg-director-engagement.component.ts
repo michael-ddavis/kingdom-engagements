@@ -179,7 +179,7 @@ interface ResponsibilityDraft {
         <div class="workspace-save-state" [class]="'workspace-save-state ' + saveState()">
           <i aria-hidden="true"></i>
           <span>{{ saveStatusCopy() }}</span>
-          <small>Editable section changes save automatically after you pause.</small>
+          <small>{{ tab() === 'closeout' ? 'Closeout uses explicit Save progress and Complete engagement actions.' : 'Editable section changes save automatically after you pause.' }}</small>
         </div>
 
         <section class="workspace-body" (input)="queueAutosave($event)" (change)="queueAutosave($event)">
@@ -1547,10 +1547,9 @@ export class CtgDirectorEngagementComponent implements OnInit {
     this.saveError.set(null);
   }
 
-  private finishSave(message: string, quiet = false): void {
+  private finishSave(_message: string, _quiet = false): void {
     this.saving.set(false);
     this.saveState.set('saved');
-    if (!quiet && !message) this.saveMessage.set(null);
   }
 
   private failSave(message: string): void {
@@ -1582,13 +1581,12 @@ export class CtgDirectorEngagementComponent implements OnInit {
       case 'finance': this.saveFinance(true); break;
       case 'ministry-preparation': this.saveMinistry(true); break;
       case 'hospitality': this.saveHospitality(true); break;
-      case 'closeout': this.saveCloseout(false, true); break;
       default: this.saveState.set('saved'); break;
     }
   }
 
   private autosaveSupported(tab: DirectorTab): boolean {
-    return ['host-coordination', 'travel', 'lodging', 'transportation', 'media', 'program', 'finance', 'ministry-preparation', 'hospitality', 'closeout'].includes(tab);
+    return ['host-coordination', 'travel', 'lodging', 'transportation', 'media', 'program', 'finance', 'ministry-preparation', 'hospitality'].includes(tab);
   }
 
   private tabForLane(key: string): DirectorTab {

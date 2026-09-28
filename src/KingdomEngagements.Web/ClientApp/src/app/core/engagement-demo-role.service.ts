@@ -74,6 +74,7 @@ export class EngagementDemoRoleService {
   readonly isMinister = computed(() => this.role() === 'minister');
   readonly canManageBookings = computed(() => this.sessionState()?.canManageBookings ?? false);
   readonly canManageAssignments = computed(() => this.sessionState()?.canManageAssignments ?? false);
+  readonly canDirectEngagements = computed(() => this.sessionState()?.canDirectEngagements ?? false);
   readonly canViewFinancials = computed(() => this.sessionState()?.canViewFinancials ?? false);
   readonly canViewInternalNotes = computed(() => this.sessionState()?.canViewInternalNotes ?? false);
   readonly canCompleteEngagements = computed(() => this.sessionState()?.canCompleteEngagements ?? false);

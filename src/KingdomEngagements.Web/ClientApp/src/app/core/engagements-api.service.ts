@@ -378,6 +378,16 @@ export class EngagementsApiService {
     );
   }
 
+  setHostConversationClosed(
+    assignmentId: string,
+    isClosed: boolean,
+  ): Observable<HostCoordinationThread> {
+    return this.http.put<HostCoordinationThread>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/preparation/messages/state`,
+      { isClosed },
+    );
+  }
+
   uploadWorkspaceDocument(
     assignmentId: string,
     file: File,

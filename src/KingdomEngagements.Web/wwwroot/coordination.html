@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Host coordination · Cynthia Thompson Global</title>
-  <link rel="stylesheet" href="/host-portal.css?v=20260928-host-flow-3" />
+  <link rel="stylesheet" href="/host-portal.css?v=20260928-host-flow-4" />
 </head>
 <body class="coordination-page">
   <main class="host-shell">
@@ -48,6 +48,18 @@
             Message the ministry team <span class="message-badge" data-message-badge hidden></span>
           </button>
         </section>
+        <section class="form-priority-guide" aria-labelledby="form-priority-title">
+          <div>
+            <strong id="form-priority-title">What should I fill out?</strong>
+            <p>Nothing on this page is required just to save your progress. Add what applies now and return later for anything that is still being confirmed.</p>
+          </div>
+          <div class="priority-list">
+            <span><b class="priority-chip recommended">Recommended</b> Event schedule and a local contact before the event</span>
+            <span><b class="priority-chip applicable">If applicable</b> Travel, hotel and local transportation</span>
+            <span><b class="priority-chip helpful">Helpful</b> Promotion details and prayer focus</span>
+            <span><b class="priority-chip optional">Optional</b> Confirmation numbers, extra notes and documents</span>
+          </div>
+        </section>
         <form id="coordination-form">
           <div class="coordination-action-bar" aria-label="Form actions">
             <div class="save-state is-saved" id="save-state" role="status" aria-live="polite">
@@ -64,82 +76,105 @@
           </div>
           <div class="section-stack">
             <details class="portal-section coordination-section" data-section-key="travel">
-              <summary><span class="section-number">1</span><span class="section-summary-copy"><strong>Travel</strong><small>Flight itinerary and arrival details</small></span><span class="section-summary-state" data-section-state>Not started</span><span class="section-chevron" aria-hidden="true">⌄</span></summary>
+              <summary><span class="section-number">1</span><span class="section-summary-copy"><span class="section-title-row"><strong>Travel</strong><b class="priority-chip applicable">If applicable</b></span><small>Flight itinerary and arrival details</small></span><span class="section-summary-state" data-section-state>Not started</span><span class="section-chevron" aria-hidden="true">⌄</span></summary>
 
-              <header><div><p class="eyebrow">01 · Travel</p><h3>Outbound and return itinerary</h3><p>Provide the confirmed itinerary when available. Not confirmed yet? Leave this section blank and continue.</p></div></header>
-              <div class="field-grid three">
-                <label class="field"><span>Outbound airline</span><input name="outboundAirline" /></label>
-                <label class="field"><span>Flight number</span><input name="outboundFlightNumber" /></label>
-                <label class="field"><span>Confirmation number</span><input name="outboundConfirmationNumber" /></label>
-                <label class="field"><span>Departure airport</span><input name="outboundDepartureAirport" placeholder="RIC" /></label>
-                <label class="field"><span>Arrival airport</span><input name="outboundArrivalAirport" placeholder="ATL" /></label>
-                <label class="field"><span>Departs</span><input name="outboundDepartsAtUtc" type="datetime-local" /></label>
-                <label class="field"><span>Arrives</span><input name="outboundArrivesAtUtc" type="datetime-local" /></label>
+              <header><div><p class="eyebrow">01 · Travel</p><h3>Outbound and return itinerary</h3><p>Only fill this out if travel is part of the engagement and the details are known. You can come back later.</p></div></header>
+              <div class="input-group">
+                <div class="input-group-heading"><strong>Outbound flight</strong><span>Enter the details the team needs to follow the itinerary.</span></div>
+                <div class="field-grid three">
+                  <label class="field"><span>Airline</span><input name="outboundAirline" autocomplete="organization" /></label>
+                  <label class="field"><span>Flight number</span><input name="outboundFlightNumber" /></label>
+                  <label class="field"><span>Departure airport</span><input name="outboundDepartureAirport" placeholder="RIC" /></label>
+                  <label class="field"><span>Arrival airport</span><input name="outboundArrivalAirport" placeholder="ATL" /></label>
+                  <label class="field"><span>Departs</span><input name="outboundDepartsAtUtc" type="datetime-local" /></label>
+                  <label class="field"><span>Arrives</span><input name="outboundArrivesAtUtc" type="datetime-local" /></label>
+                </div>
+                <details class="optional-details">
+                  <summary>Add booking confirmation number <span>Optional</span></summary>
+                  <label class="field"><span>Outbound confirmation number <small class="field-qualifier">Optional</small></span><input name="outboundConfirmationNumber" /></label>
+                </details>
               </div>
-              <div class="field-grid three" style="margin-top:18px">
-                <label class="field"><span>Return airline</span><input name="returnAirline" /></label>
-                <label class="field"><span>Flight number</span><input name="returnFlightNumber" /></label>
-                <label class="field"><span>Confirmation number</span><input name="returnConfirmationNumber" /></label>
-                <label class="field"><span>Departure airport</span><input name="returnDepartureAirport" /></label>
-                <label class="field"><span>Arrival airport</span><input name="returnArrivalAirport" /></label>
-                <label class="field"><span>Departs</span><input name="returnDepartsAtUtc" type="datetime-local" /></label>
-                <label class="field"><span>Arrives</span><input name="returnArrivesAtUtc" type="datetime-local" /></label>
+              <div class="input-group">
+                <div class="input-group-heading"><strong>Return flight</strong><span>Leave blank until the return itinerary is confirmed.</span></div>
+                <div class="field-grid three">
+                  <label class="field"><span>Airline</span><input name="returnAirline" /></label>
+                  <label class="field"><span>Flight number</span><input name="returnFlightNumber" /></label>
+                  <label class="field"><span>Departure airport</span><input name="returnDepartureAirport" /></label>
+                  <label class="field"><span>Arrival airport</span><input name="returnArrivalAirport" /></label>
+                  <label class="field"><span>Departs</span><input name="returnDepartsAtUtc" type="datetime-local" /></label>
+                  <label class="field"><span>Arrives</span><input name="returnArrivesAtUtc" type="datetime-local" /></label>
+                </div>
+                <details class="optional-details">
+                  <summary>Add booking confirmation number <span>Optional</span></summary>
+                  <label class="field"><span>Return confirmation number <small class="field-qualifier">Optional</small></span><input name="returnConfirmationNumber" /></label>
+                </details>
               </div>
               <div class="section-actions"><span>Save what you have and keep going when you're ready.</span><button class="secondary-button" type="button" data-save-continue>Save &amp; continue</button></div>
 
             </details>
 
             <details class="portal-section coordination-section" data-section-key="hotel">
-              <summary><span class="section-number">2</span><span class="section-summary-copy"><strong>Hotel &amp; transportation</strong><small>Lodging, pickup and local travel</small></span><span class="section-summary-state" data-section-state>Not started</span><span class="section-chevron" aria-hidden="true">⌄</span></summary>
+              <summary><span class="section-number">2</span><span class="section-summary-copy"><span class="section-title-row"><strong>Hotel &amp; transportation</strong><b class="priority-chip applicable">If applicable</b></span><small>Lodging, pickup and local travel</small></span><span class="section-summary-state" data-section-state>Not started</span><span class="section-chevron" aria-hidden="true">⌄</span></summary>
 
-              <header><div><p class="eyebrow">02 · Lodging and local transportation</p><h3>Hotel and transportation</h3><p>Add what is confirmed. If lodging or transportation is still being arranged, you can return to this section later.</p></div></header>
-              <div class="field-grid">
-                <label class="field"><span>Hotel name</span><input name="hotelName" /></label>
-                <label class="field"><span>Hotel confirmation</span><input name="hotelConfirmationNumber" /></label>
-                <label class="field wide"><span>Hotel address</span><input name="hotelAddress" /></label>
-                <label class="field"><span>Check in</span><input name="hotelCheckInAtUtc" type="datetime-local" /></label>
-                <label class="field"><span>Check out</span><input name="hotelCheckOutAtUtc" type="datetime-local" /></label>
-                <label class="field"><span>Pickup / transportation contact</span><input name="pickupContactName" /></label>
-                <label class="field"><span>Contact phone</span><input name="pickupContactPhone" /></label>
-                <label class="field wide"><span>Transportation plan</span><textarea name="transportationPlan" rows="4" placeholder="Airport pickup, local driver, vehicle arrangements, venue transfers…"></textarea></label>
+              <header><div><p class="eyebrow">02 · Lodging and local transportation</p><h3>Hotel and transportation</h3><p>Only add lodging or transportation details that apply to this engagement. It is fine to leave this section blank while arrangements are pending.</p></div></header>
+              <div class="input-group">
+                <div class="input-group-heading"><strong>Hotel</strong><span>Where the ministry team is staying, if lodging is being provided.</span></div>
+                <div class="field-grid">
+                  <label class="field"><span>Hotel name</span><input name="hotelName" autocomplete="organization" /></label>
+                  <label class="field"><span>Check in</span><input name="hotelCheckInAtUtc" type="datetime-local" /></label>
+                  <label class="field"><span>Check out</span><input name="hotelCheckOutAtUtc" type="datetime-local" /></label>
+                  <label class="field wide"><span>Hotel address <small class="field-qualifier">Helpful</small></span><input name="hotelAddress" autocomplete="street-address" /></label>
+                </div>
+                <details class="optional-details">
+                  <summary>Add hotel confirmation number <span>Optional</span></summary>
+                  <label class="field"><span>Hotel confirmation number <small class="field-qualifier">Optional</small></span><input name="hotelConfirmationNumber" /></label>
+                </details>
+              </div>
+              <div class="input-group">
+                <div class="input-group-heading"><strong>Local transportation</strong><span>Who is handling pickup and how the team will move between locations.</span></div>
+                <div class="field-grid">
+                  <label class="field"><span>Pickup / transportation contact</span><input name="pickupContactName" autocomplete="name" /></label>
+                  <label class="field"><span>Contact phone</span><input name="pickupContactPhone" type="tel" autocomplete="tel" /></label>
+                  <label class="field wide"><span>Transportation plan <small class="field-qualifier">Helpful</small></span><textarea name="transportationPlan" rows="4" placeholder="Airport pickup, local driver, vehicle arrangements, venue transfers…"></textarea></label>
+                </div>
               </div>
               <div class="section-actions"><span>Save what you have and keep going when you're ready.</span><button class="secondary-button" type="button" data-save-continue>Save &amp; continue</button></div>
 
             </details>
 
             <details class="portal-section coordination-section" data-section-key="schedule">
-              <summary><span class="section-number">3</span><span class="section-summary-copy"><strong>Event schedule</strong><small>Sessions, times and ministry moments</small></span><span class="section-summary-state" data-section-state>Not started</span><span class="section-chevron" aria-hidden="true">⌄</span></summary>
+              <summary><span class="section-number">3</span><span class="section-summary-copy"><span class="section-title-row"><strong>Event schedule</strong><b class="priority-chip recommended">Recommended</b></span><small>Sessions, times and ministry moments</small></span><span class="section-summary-state" data-section-state>Not started</span><span class="section-chevron" aria-hidden="true">⌄</span></summary>
 
-              <header><div><p class="eyebrow">03 · Event schedule</p><h3>Sessions and ministry moments</h3><p>Add the sessions Cynthia Thompson is expected to attend or lead. Still being planned? You can come back when the schedule is ready.</p></div><button class="secondary-button" type="button" id="add-schedule">Add session</button></header>
+              <header><div><p class="eyebrow">03 · Event schedule</p><h3>Sessions and ministry moments</h3><p>This is one of the most useful sections for the ministry team. Add confirmed sessions when you have them; you do not need the entire event schedule.</p></div><button class="secondary-button" type="button" id="add-schedule">Add session</button></header>
               <div id="schedule-list" class="repeat-list"></div>
               <div class="section-actions"><span>Save what you have and keep going when you're ready.</span><button class="secondary-button" type="button" data-save-continue>Save &amp; continue</button></div>
 
             </details>
 
             <details class="portal-section coordination-section" data-section-key="contacts">
-              <summary><span class="section-number">4</span><span class="section-summary-copy"><strong>Contacts</strong><small>People the ministry team may need to reach</small></span><span class="section-summary-state" data-section-state>Not started</span><span class="section-chevron" aria-hidden="true">⌄</span></summary>
+              <summary><span class="section-number">4</span><span class="section-summary-copy"><span class="section-title-row"><strong>Contacts</strong><b class="priority-chip recommended">Recommended</b></span><small>People the ministry team may need to reach</small></span><span class="section-summary-state" data-section-state>Not started</span><span class="section-chevron" aria-hidden="true">⌄</span></summary>
 
-              <header><div><p class="eyebrow">04 · Local contacts</p><h3>Host, travel and media contacts</h3><p>Add the people the ministry team may need to reach before or during the assignment. If those contacts are not confirmed yet, keep going.</p></div><button class="secondary-button" type="button" id="add-contact">Add contact</button></header>
+              <header><div><p class="eyebrow">04 · Local contacts</p><h3>Who should the team contact?</h3><p>A primary local contact is recommended before the event. Add travel, media or emergency contacts only when they are useful.</p></div><button class="secondary-button" type="button" id="add-contact">Add contact</button></header>
               <div id="contact-list" class="repeat-list"></div>
               <div class="section-actions"><span>Save what you have and keep going when you're ready.</span><button class="secondary-button" type="button" data-save-continue>Save &amp; continue</button></div>
 
             </details>
 
             <details class="portal-section coordination-section" data-section-key="preparation">
-              <summary><span class="section-number">5</span><span class="section-summary-copy"><strong>Promotion &amp; prayer</strong><small>Publicity, expectations and prayer focus</small></span><span class="section-summary-state" data-section-state>Not started</span><span class="section-chevron" aria-hidden="true">⌄</span></summary>
+              <summary><span class="section-number">5</span><span class="section-summary-copy"><span class="section-title-row"><strong>Promotion &amp; prayer</strong><b class="priority-chip helpful">Helpful</b></span><small>Publicity, expectations and prayer focus</small></span><span class="section-summary-state" data-section-state>Not started</span><span class="section-chevron" aria-hidden="true">⌄</span></summary>
 
               <header><div><p class="eyebrow">05 · Ministry preparation</p><h3>Promotion and prayer focus</h3><p>Tell the team what is being communicated publicly and what the host is carrying in prayer for this gathering.</p></div></header>
               <div class="field-grid">
-                <label class="field wide"><span>Promotional requirements or expectations</span><textarea name="promotionRequirements" rows="5"></textarea></label>
-                <label class="field wide"><span>Prayer focus</span><textarea name="prayerFocus" rows="5" placeholder="What is the spiritual burden, need or focus for this gathering?"></textarea></label>
-                <label class="field wide"><span>Additional host notes</span><textarea name="hostNotes" rows="4"></textarea></label>
+                <label class="field wide"><span>Promotional requirements or expectations <small class="field-qualifier">Helpful</small></span><textarea name="promotionRequirements" rows="4" placeholder="Anything the ministry team should know about publicity, graphics, interviews or promotion."></textarea></label>
+                <label class="field wide"><span>Prayer focus <small class="field-qualifier">Helpful</small></span><textarea name="prayerFocus" rows="4" placeholder="What is the spiritual burden, need or focus for this gathering?"></textarea></label>
+                <label class="field wide"><span>Anything else the team should know? <small class="field-qualifier">Optional</small></span><textarea name="hostNotes" rows="3" placeholder="Use this only for details that did not fit above."></textarea></label>
               </div>
               <div class="section-actions"><span>Save what you have and keep going when you're ready.</span><button class="secondary-button" type="button" data-save-continue>Save &amp; continue</button></div>
 
             </details>
 
             <details class="portal-section coordination-section" data-section-key="documents">
-              <summary><span class="section-number">6</span><span class="section-summary-copy"><strong>Documents</strong><small>Schedules, confirmations and other files</small></span><span class="section-summary-state" data-section-state>Not started</span><span class="section-chevron" aria-hidden="true">⌄</span></summary>
+              <summary><span class="section-number">6</span><span class="section-summary-copy"><span class="section-title-row"><strong>Documents</strong><b class="priority-chip optional">Optional</b></span><small>Schedules, confirmations and other files</small></span><span class="section-summary-state" data-section-state>Not started</span><span class="section-chevron" aria-hidden="true">⌄</span></summary>
 
               <header><div><p class="eyebrow">06 · Documents</p><h3>Schedules, confirmations and host files</h3><p>Upload schedules, hotel or flight confirmations, venue documents or other files when they are ready. You can return later. Maximum 10 MB per file.</p></div></header>
               <div class="upload-panel"><input id="document-file" type="file" aria-label="Choose a document to upload" /><button class="secondary-button" type="button" id="upload-document">Upload document</button></div>
@@ -173,8 +208,8 @@
       </section>
     </section>
   </main>
-  <script src="/host-realtime.js?v=20260928-host-flow-3" defer></script>
-  <script src="/coordination.js?v=20260928-host-flow-3" defer></script>
+  <script src="/host-realtime.js?v=20260928-host-flow-4" defer></script>
+  <script src="/coordination.js?v=20260928-host-flow-4" defer></script>
 </body>
 </html>
 

@@ -182,7 +182,7 @@ export class CtgHostActivityComponent implements OnInit {
 
     const requests = snapshots.map(snapshot =>
       this.api.getHostCoordinationMessages(snapshot.assignment.id).pipe(
-        catchError(() => of({ isClosed: false, messages: [] as const })),
+        catchError(() => of({ isClosed: false, closedAtUtc: null, closedByName: null, messages: [] as const })),
       ),
     );
 

@@ -1227,8 +1227,8 @@ export class CtgDirectorEngagementComponent implements OnInit {
   }
 
   saveTravel(quiet = false): void {
-    this.travelDraft = { ...this.travelDraft, ...this.normalizeTravelDates(this.travelDraft) };
-    this.saveLane(this.api.updateTravelLane(this.assignmentId, this.travelDraft), value => this.travel.set(value), 'Travel saved.', quiet);
+    const input = { ...this.travelDraft, ...this.normalizeTravelDates(this.travelDraft) };
+    this.saveLane(this.api.updateTravelLane(this.assignmentId, input), value => this.travel.set(value), 'Travel saved.', quiet);
   }
 
   saveLodging(quiet = false): void {

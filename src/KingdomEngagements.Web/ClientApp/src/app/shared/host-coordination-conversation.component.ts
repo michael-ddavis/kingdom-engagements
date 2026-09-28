@@ -68,7 +68,7 @@ interface CoordinationUpdatedEvent {
     </section>
   `,
   styles: [`
-    :host{display:block;min-height:0;--conversation-height:min(600px,calc(100vh - 235px))}.conversation-card{display:flex;height:var(--conversation-height);min-height:430px;flex-direction:column;overflow:hidden;border:1px solid #e1ddd4;border-radius:14px;background:#fff}
+    :host{display:block;min-height:0;--conversation-height:min(600px,calc(100vh - 235px));--conversation-min-height:430px}.conversation-card{display:flex;height:var(--conversation-height);min-height:var(--conversation-min-height);flex-direction:column;overflow:hidden;border:1px solid #e1ddd4;border-radius:14px;background:#fff}
     header{display:flex;flex:0 0 auto;justify-content:space-between;gap:24px;align-items:flex-start;padding:18px 20px;border-bottom:1px solid #ece8df}
     h3{margin:3px 0 5px;font-size:1.1rem}.eyebrow{font-size:.68rem;font-weight:800;letter-spacing:.13em;color:#687387}
     header p,.empty-state,.error-state{margin:0;color:#687387;font-size:.84rem;line-height:1.5}

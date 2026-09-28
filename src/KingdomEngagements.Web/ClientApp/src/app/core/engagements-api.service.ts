@@ -187,7 +187,7 @@ export interface UpdateHospitalityLaneInput {
 }
 
 export interface UpdateHostCoordinationLaneInput {
-  hostNotes: string | null;
+  internalNotes: string | null;
   contacts: readonly HostContact[];
 }
 

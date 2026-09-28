@@ -50,6 +50,7 @@ test('saving retains values from closed sections and keeps the current section o
 
 test('invalid email in a closed section reveals the field and prevents submission', async t => {
   const { document, calls } = await setup(t);
+  document.querySelector('#add-contact').click();
   const email = document.querySelector('#contact-list [data-name="email"]');
   email.value = 'not-an-email';
   assert.equal(email.closest('details').open, false);
@@ -104,4 +105,19 @@ test('editing makes save state and section progress obvious', async t => {
   assert.equal(document.querySelector('#save-state-copy').textContent, 'Unsaved changes');
   assert.equal(prayer.closest('details').querySelector('[data-section-state]').textContent, 'Has details');
   assert.match(document.querySelector('#progress-copy').textContent, /sections have information/);
+});
+
+
+test('empty schedule and contacts do not create blank rows', async t => {
+  const { document } = await setup(t);
+  assert.equal(document.querySelectorAll('#schedule-list .repeat-row').length, 0);
+  assert.equal(document.querySelectorAll('#contact-list .repeat-row').length, 0);
+  assert.match(document.querySelector('#schedule-list').textContent, /Nothing added yet/);
+  assert.match(document.querySelector('#contact-list').textContent, /Nothing added yet/);
+});
+
+test('secondary booking details stay tucked away until they contain a value', async t => {
+  const { document } = await setup(t);
+  const outboundConfirmation = document.querySelector('[name="outboundConfirmationNumber"]');
+  assert.equal(outboundConfirmation.closest('.optional-details').open, false);
 });

@@ -335,7 +335,9 @@ function renderMessages() {
 
   const messages = messageThread?.messages || [];
   messageList.innerHTML = messages.length
-    ? messages.map(message => `
+    ? messages.map(message => message.senderType === 'system'
+      ? `<div class="coordination-message-system"><span>${escapeHtml(message.message)}</span><time>${new Date(message.createdAtUtc).toLocaleString()}</time></div>`
+      : `
         <article class="coordination-message ${message.senderType === 'host' ? 'is-host' : ''}">
           <strong>${escapeHtml(message.senderName)}</strong>
           <small class="message-role">${message.senderType === 'host' ? 'You · Host' : 'Ministry team'}</small>
@@ -346,7 +348,17 @@ function renderMessages() {
 
   messageList.scrollTop = messageList.scrollHeight;
 
-  if (messageInput) messageInput.disabled = Boolean(messageThread?.isClosed);
+  if (messageInput) {
+    messageInput.disabled = Boolean(messageThread?.isClosed);
+    messageInput.placeholder = messageThread?.isClosed
+      ? 'This conversation has been closed by the ministry team.'
+      : 'Type your message to the ministry team…';
+  }
+
+  if (messageThread?.isClosed && messageDeliveryCopy) {
+    messageDeliveryCopy.textContent = 'This conversation has been closed by the ministry team. Previous messages are still available.';
+  }
+
   const sendButton = messageForm?.querySelector('button[type="submit"]');
   if (sendButton) {
     sendButton.disabled = Boolean(messageThread?.isClosed);

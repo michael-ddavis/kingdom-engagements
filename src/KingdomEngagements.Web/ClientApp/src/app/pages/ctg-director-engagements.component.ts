@@ -87,25 +87,28 @@ type EngagementFilter = 'active' | 'attention' | 'upcoming' | 'completed';
 
                   <div class="readiness">
                     <div class="readiness-ring">{{ item.snapshot?.responsibilityReadinessPercent ?? item.assignment.readinessPercent }}%</div>
-                    <span>Operational readiness</span>
+                    <span>Preparation complete</span>
                   </div>
 
-                  <div class="lane-strip">
-                    @for (laneKey of importantLaneKeys; track laneKey) {
-                      @if (lane(item.snapshot, laneKey); as laneItem) {
-                        <span
-                          [class.complete]="laneItem.status === 'complete'"
-                          [class.progress]="laneItem.status === 'in-progress' || laneItem.status === 'ready-for-review'"
-                          [class.waiting]="laneItem.status === 'waiting-on-host'"
-                          [class.danger]="laneItem.isOverdue || laneItem.status === 'blocked'"
-                          [class.unassigned]="!laneItem.owner"
-                          [title]="laneItem.label + ': ' + laneStatus(laneItem)">
-                          <b>{{ shortLane(laneKey) }}</b>
-                          <small>{{ laneStatus(laneItem) }}</small>
-                        </span>
+                  <details class="lane-details">
+                    <summary>View preparation areas</summary>
+                    <div class="lane-strip">
+                      @for (laneKey of importantLaneKeys; track laneKey) {
+                        @if (lane(item.snapshot, laneKey); as laneItem) {
+                          <span
+                            [class.complete]="laneItem.status === 'complete'"
+                            [class.progress]="laneItem.status === 'in-progress' || laneItem.status === 'ready-for-review'"
+                            [class.waiting]="laneItem.status === 'waiting-on-host'"
+                            [class.danger]="laneItem.isOverdue || laneItem.status === 'blocked'"
+                            [class.unassigned]="!laneItem.owner"
+                            [title]="laneItem.label + ': ' + laneStatus(laneItem)">
+                            <b>{{ shortLane(laneKey) }}</b>
+                            <small>{{ laneStatus(laneItem) }}</small>
+                          </span>
+                        }
                       }
-                    }
-                  </div>
+                    </div>
+                  </details>
 
                   <div class="exceptions">
                     @if (item.snapshot; as snapshot) {
@@ -161,16 +164,16 @@ type EngagementFilter = 'active' | 'attention' | 'upcoming' | 'completed';
     .eyebrow{margin:0!important;color:#7c6b38!important;font:800 .66rem/1.2 system-ui,sans-serif!important;letter-spacing:.11em;text-transform:uppercase}.heading-actions{display:flex;gap:8px;flex-wrap:wrap}.heading-actions a{display:inline-flex;min-height:40px;align-items:center;padding:0 14px;border-radius:9px;font-size:.72rem;font-weight:850;text-decoration:none}.heading-actions .primary{background:#172a46;color:#fff}.heading-actions .secondary{border:1px solid #d6dbe0;background:#fff;color:#172a46}
     .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}.summary button{appearance:none;padding:16px 18px;border:1px solid #dde1df;border-radius:12px;background:#fffdfa;color:inherit;text-align:left;cursor:pointer}.summary button.selected{border-color:#9d7438;box-shadow:0 0 0 2px rgba(157,116,56,.11)}.summary small,.summary strong,.summary span{display:block}.summary small{color:#7b827e;font-size:.62rem;font-weight:850;text-transform:uppercase}.summary strong{margin:5px 0 2px;font-size:1.5rem}.summary span{color:#858b87;font-size:.64rem}
     .engagement-list{overflow:hidden;border:1px solid #dde1df;border-radius:16px;background:#fffdfa}.engagement-list>header{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 20px;border-bottom:1px solid #e4e6e4}.engagement-list h2{margin:4px 0 0;font-size:1.3rem}.engagement-list>header>a{color:#315faf;font-size:.71rem;font-weight:850;text-decoration:none}
-    .rows{display:flex;flex-direction:column}.rows article{display:grid;grid-template-columns:minmax(280px,1.4fr) 105px minmax(360px,1.3fr) minmax(130px,.6fr) auto;gap:15px;align-items:center;padding:16px 18px;border-bottom:1px solid #eceeeb}.rows article:last-child{border-bottom:0}
+    .rows{display:flex;flex-direction:column}.rows article{display:grid;grid-template-columns:minmax(280px,1.4fr) 105px minmax(210px,.95fr) minmax(130px,.6fr) auto;gap:15px;align-items:center;padding:16px 18px;border-bottom:1px solid #eceeeb}.rows article:last-child{border-bottom:0}
     .identity{display:flex;gap:12px;align-items:center}.date-block{display:grid;flex:0 0 50px;min-height:54px;place-items:center;border:1px solid #dfe2df;border-radius:9px;background:#f7f6f2}.date-block b{margin-top:5px;color:#8c7335;font-size:.55rem;text-transform:uppercase}.date-block strong{margin-top:-4px;font-size:1.12rem}.identity small{color:#7d847f;font-size:.6rem;font-weight:750}.identity h3{margin:2px 0;font-size:1rem}.identity p{margin:0;color:#7b827e;font-size:.65rem}
     .readiness{text-align:center}.readiness-ring{display:grid;width:58px;height:58px;margin:0 auto 4px;place-items:center;border:6px solid #e5e9e5;border-top-color:#5d7553;border-radius:50%;font-weight:900}.readiness span{font-size:.57rem;color:#828985}
-    .lane-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}.lane-strip>span{padding:7px;border:1px solid #d6dad6;border-radius:7px;background:#f5f5f2}.lane-strip b,.lane-strip small{display:block}.lane-strip b{font-size:.56rem;text-transform:uppercase}.lane-strip small{margin-top:2px;color:#7e8581;font-size:.54rem}.lane-strip .complete{border-color:var(--status-complete-border);background:var(--status-complete-bg);color:var(--status-complete-text)}
+    .lane-details>summary{display:inline-flex;min-height:34px;align-items:center;color:#53647a;font-size:.62rem;font-weight:850;cursor:pointer}.lane-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-top:6px}.lane-strip>span{padding:7px;border:1px solid #d6dad6;border-radius:7px;background:#f5f5f2}.lane-strip b,.lane-strip small{display:block}.lane-strip b{font-size:.56rem;text-transform:uppercase}.lane-strip small{margin-top:2px;color:#7e8581;font-size:.54rem}.lane-strip .complete{border-color:var(--status-complete-border);background:var(--status-complete-bg);color:var(--status-complete-text)}
     .lane-strip .progress{border-color:var(--status-progress-border);background:var(--status-progress-bg);color:var(--status-progress-text)}
     .lane-strip .waiting{border-color:var(--status-waiting-border);background:var(--status-waiting-bg);color:var(--status-waiting-text)}
     .lane-strip .danger{border-color:var(--status-danger-border);background:var(--status-danger-bg);color:var(--status-danger-text)}
     .lane-strip .unassigned:not(.danger):not(.complete):not(.progress):not(.waiting){border-color:var(--status-warning-border);background:var(--status-warning-bg);color:var(--status-warning-text)}
     .exceptions{display:flex;flex-direction:column;gap:3px}.exceptions span{font-size:.62rem;color:#707873}.exceptions .danger{color:#a84642;font-weight:850}.exceptions .warning{color:#956d25;font-weight:850}.exceptions .good{color:#2d6d52;font-weight:850}.open{white-space:nowrap;color:#315faf;font-size:.69rem;font-weight:850;text-decoration:none}.empty,.state{padding:34px;text-align:center;color:#747c78}.state{border:1px solid #dde1df;border-radius:14px;background:#fff}.state.error{color:#a84642}.state.warning{margin-bottom:12px;padding:14px 18px;color:#7b6227;background:#fff8e8;border-color:#ead9ab;text-align:left}
-    @media(max-width:1150px){.rows article{grid-template-columns:minmax(280px,1fr) 100px 1fr auto}.exceptions{display:none}.lane-strip{grid-template-columns:repeat(3,1fr)}}@media(max-width:820px){.page-heading{flex-direction:column}.summary{grid-template-columns:1fr 1fr}.rows article{grid-template-columns:1fr auto}.lane-strip{grid-column:1/-1}.readiness{grid-row:1;grid-column:2}.open{grid-column:1/-1}}@media(max-width:560px){.director-engagements{width:min(100% - 24px,1380px)}.summary{grid-template-columns:1fr}.lane-strip{grid-template-columns:1fr 1fr}}
+    @media(max-width:1150px){.rows article{grid-template-columns:minmax(280px,1fr) 100px 1fr auto}.exceptions{display:none}.lane-strip{grid-template-columns:repeat(3,1fr)}}@media(max-width:820px){.page-heading{flex-direction:column;align-items:flex-start}.summary{grid-template-columns:1fr 1fr}.rows article{grid-template-columns:1fr auto}.lane-details{grid-column:1/-1}.readiness{grid-row:1;grid-column:2}.open{grid-column:1/-1}}@media(max-width:560px){.director-engagements{width:min(100% - 24px,1380px)}.summary{grid-template-columns:1fr}.lane-strip{grid-template-columns:1fr 1fr}}
   `],
 })
 export class CtgDirectorEngagementsComponent implements OnInit {

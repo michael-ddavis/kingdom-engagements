@@ -268,8 +268,14 @@ export class CtgDirectorEngagementsComponent implements OnInit {
     return snapshot.lanes.filter(item=>item.isApplicable&&item.status==='waiting-on-host').length;
   }
   laneStatus(lane:ResponsibilityLaneState):string{
-    if(!lane.owner) return 'Unassigned';
-    if(lane.isOverdue) return 'Overdue';
+    if(!lane.owner) return 'Needs owner';
+    if(lane.isOverdue || lane.status==='overdue') return 'Overdue';
+    if(lane.status==='blocked') return 'Needs help';
+    if(lane.status==='ready-for-review') return 'Ready to review';
+    if(lane.status==='waiting-on-host') return 'Waiting for host';
+    if(lane.status==='not-started') return 'Not started yet';
+    if(lane.status==='in-progress') return 'In progress';
+    if(lane.status==='complete') return 'Complete';
     return this.label(lane.status);
   }
   shortLane(key:string):string{

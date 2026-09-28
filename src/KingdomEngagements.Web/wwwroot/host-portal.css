@@ -92,6 +92,77 @@
 .coordination-guide p { margin: 7px 0 0; line-height: 1.6; color: #495466; }
 .coordination-guide .message-team-button { flex: 0 0 auto; min-height: 46px; }
 
+.form-priority-guide {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255,253,249,.68);
+}
+.form-priority-guide > div:first-child {
+  display: grid;
+  gap: 5px;
+}
+.form-priority-guide > div:first-child > strong {
+  font-size: .98rem;
+}
+.form-priority-guide p {
+  margin: 0;
+  color: #596579;
+  font-size: .86rem;
+  line-height: 1.55;
+}
+.priority-list {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 10px 16px;
+}
+.priority-list > span {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  color: #536073;
+  font-size: .8rem;
+  line-height: 1.4;
+}
+.priority-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 8px;
+  border: 1px solid #d9d3c7;
+  border-radius: 999px;
+  background: #faf8f2;
+  color: #596579;
+  font-size: .67rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+.priority-chip.recommended {
+  border-color: #b9cec1;
+  background: #eff7f1;
+  color: #2f6b49;
+}
+.priority-chip.applicable {
+  border-color: #d8caab;
+  background: #fbf6e9;
+  color: #785f26;
+}
+.priority-chip.helpful {
+  border-color: #cfd4de;
+  background: #f3f5f8;
+  color: #4d5d73;
+}
+.priority-chip.optional {
+  border-color: #ddd7cc;
+  background: #faf9f6;
+  color: #6b7280;
+}
+
 .status-line {
   align-items: stretch;
   padding: 0;
@@ -240,6 +311,14 @@
   gap: 4px;
   min-width: 0;
 }
+
+.section-title-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
 .section-summary-copy strong {
   font-size: 1.03rem;
   line-height: 1.25;
@@ -282,6 +361,7 @@
 
 .coordination-section > header,
 .coordination-section > .field-grid,
+.coordination-section > .input-group,
 .coordination-section > .repeat-list,
 .coordination-section > .upload-panel,
 .coordination-section > .document-list,
@@ -290,6 +370,78 @@
   margin-right: 24px;
 }
 .coordination-section > header { margin-top: 24px; }
+
+.input-group {
+  display: grid;
+  gap: 16px;
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid #e3ded4;
+  border-radius: 9px;
+  background: #fffdfa;
+}
+.input-group-heading {
+  display: grid;
+  gap: 4px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #ece7dd;
+}
+.input-group-heading strong {
+  font-size: .95rem;
+}
+.input-group-heading span {
+  color: #687386;
+  font-size: .8rem;
+  line-height: 1.45;
+}
+.optional-details {
+  border-top: 1px solid #ece7dd;
+  padding-top: 12px;
+}
+.optional-details > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  color: #445166;
+  cursor: pointer;
+  font-size: .8rem;
+  font-weight: 750;
+}
+.optional-details > summary span {
+  padding: 2px 7px;
+  border: 1px solid #ddd7cc;
+  border-radius: 999px;
+  color: #6b7280;
+  font-size: .66rem;
+  font-weight: 800;
+}
+.optional-details > .field {
+  margin-top: 12px;
+  max-width: 420px;
+}
+.field-qualifier {
+  margin-left: 5px;
+  color: #7a8494;
+  font-size: .68rem;
+  font-weight: 700;
+}
+.repeat-empty {
+  display: grid;
+  gap: 5px;
+  padding: 18px;
+  border: 1px dashed #d8d2c7;
+  border-radius: 9px;
+  background: #faf9f6;
+}
+.repeat-empty strong {
+  font-size: .86rem;
+}
+.repeat-empty span {
+  color: #687386;
+  font-size: .8rem;
+  line-height: 1.5;
+}
 .coordination-section > .section-actions {
   display: flex;
   align-items: center;
@@ -382,6 +534,7 @@ body.message-drawer-open { overflow: hidden; }
   .coordination-action-buttons { max-width: 520px; }
 }
 @media(max-width:760px) {
+  .priority-list { grid-template-columns: 1fr; }
   .status-line { display: grid; }
   .progress-summary {
     width: auto;
@@ -421,6 +574,7 @@ body.message-drawer-open { overflow: hidden; }
   }
   .coordination-section > header,
   .coordination-section > .field-grid,
+  .coordination-section > .input-group,
   .coordination-section > .repeat-list,
   .coordination-section > .upload-panel,
   .coordination-section > .document-list,

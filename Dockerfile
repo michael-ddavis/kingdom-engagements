@@ -1,7 +1,7 @@
 FROM node:24-bookworm-slim AS client
 WORKDIR /client
-COPY src/KingdomEngagements.Web/ClientApp/package.json ./
-RUN npm install
+COPY src/KingdomEngagements.Web/ClientApp/package.json src/KingdomEngagements.Web/ClientApp/package-lock.json ./
+RUN npm ci
 COPY src/KingdomEngagements.Web/ClientApp/ ./
 RUN npm run build:production
 
@@ -23,6 +23,7 @@ RUN apt-get update \
 WORKDIR /app
 COPY --from=build /app/publish .
 COPY --from=client /client/dist/ClientApp/browser ./wwwroot
+COPY --from=client /wwwroot/host-realtime.js ./wwwroot/host-realtime.js
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=18 \

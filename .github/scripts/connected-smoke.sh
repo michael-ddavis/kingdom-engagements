@@ -52,7 +52,7 @@ docker run --detach --name "$redis_name" --network "$network" \
 
 redis_ready=false
 for attempt in {1..30}; do
-  if docker exec "$redis_name" redis-cli ping 2>/dev/null | grep --quiet PONG; then
+  if docker exec "$redis_name" redis-cli ping 2>/dev/null | grep PONG >/dev/null; then
     redis_ready=true
     break
   fi
@@ -64,10 +64,12 @@ if [ "$redis_ready" != true ]; then
   exit 1
 fi
 
+docker build --tag engagements-minio:ci --file .github/docker/minio.Dockerfile .
+
 docker run --detach --name "$minio_name" --network "$network" \
   -e MINIO_ROOT_USER=minioadmin \
   -e MINIO_ROOT_PASSWORD=minioadmin \
-  quay.io/minio/minio:latest server /data >/dev/null
+  engagements-minio:ci server /data >/dev/null
 
 minio_ready=false
 for attempt in {1..30}; do
@@ -169,7 +171,7 @@ wait_for_app() {
 
   for attempt in {1..60}; do
     if docker exec "$container_name" curl --fail --silent http://localhost:8080/health \
-      | grep --quiet '"platformEntitlement":"enabled"'; then
+      | grep '"platformEntitlement":"enabled"' >/dev/null; then
       return 0
     fi
     sleep 2
@@ -185,7 +187,7 @@ run_engagements_app "$app_name"
 wait_for_app "$app_name"
 
 docker exec "$app_name" curl --fail --silent http://localhost:8080/invite/apostle-cynthia \
-  | grep --quiet 'Invite Cynthia Thompson'
+  | grep 'Invite Cynthia Thompson' >/dev/null
 
 request_json="$(docker exec -i "$app_name" curl --fail --silent \
   -X POST http://localhost:8080/api/public/engagements/requests \
@@ -223,7 +225,7 @@ JSON
 request_id="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])' <<<"$request_json")"
 
 docker exec "$app_name" curl --fail --silent http://localhost:8080/api/engagements/requests \
-  | grep --quiet 'CI Kingdom Leadership Gathering'
+  | grep 'CI Kingdom Leadership Gathering' >/dev/null
 
 rfi_json="$(docker exec "$app_name" curl --fail --silent \
   -X POST "http://localhost:8080/api/engagements/requests/$request_id/request-information" \
@@ -273,7 +275,7 @@ approval_json="$(docker exec "$app_name" curl --fail --silent \
 assignment_id="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["assignmentId"])' <<<"$approval_json")"
 
 docker exec "$app_name" curl --fail --silent "http://localhost:8080/api/engagements/assignments/$assignment_id" \
-  | grep --quiet 'CI Kingdom Leadership Gathering'
+  | grep 'CI Kingdom Leadership Gathering' >/dev/null
 
 preparation_json="$(docker exec "$app_name" curl --fail --silent \
   "http://localhost:8080/api/engagements/assignments/$assignment_id/preparation")"
@@ -312,7 +314,7 @@ docker exec "$app_name" cat /tmp/host-cookies.txt \
 docker exec "$second_app_name" curl --fail --silent \
   -b /tmp/host-cookies.txt \
   http://localhost:8080/api/host/engagement/terms \
-  | grep --quiet '"termsStatus":"pending"'
+  | grep '"termsStatus":"pending"' >/dev/null
 
 host_terms_json="$(docker exec "$app_name" curl --fail --silent \
   -b /tmp/host-cookies.txt \
@@ -322,7 +324,7 @@ grep --quiet '"termsStatus":"pending"' <<<"$host_terms_json"
 docker exec "$app_name" curl --fail --silent \
   -b /tmp/host-cookies.txt \
   http://localhost:8080/host/terms \
-  | grep --quiet 'Accepted engagement terms'
+  | grep 'Accepted engagement terms' >/dev/null
 
 accepted_json="$(docker exec "$app_name" curl --fail --silent \
   -b /tmp/host-cookies.txt \
@@ -333,12 +335,12 @@ grep --quiet '"coordinationUrl":"/host/coordination"' <<<"$accepted_json"
 
 docker exec "$app_name" curl --fail --silent \
   "http://localhost:8080/api/engagements/requests/$request_id" \
-  | grep --quiet '"agreementStatus":"signed"'
+  | grep '"agreementStatus":"signed"' >/dev/null
 
 docker exec "$app_name" curl --fail --silent \
   -b /tmp/host-cookies.txt \
   http://localhost:8080/host/coordination \
-  | grep --quiet 'Host coordination'
+  | grep 'Host coordination' >/dev/null
 
 docker exec -i "$app_name" curl --fail --silent \
   -b /tmp/host-cookies.txt \
@@ -394,11 +396,11 @@ test "$storage_provider" = "s3"
 test "$stored_content_length" = "0"
 
 docker exec "$minio_name" mc ls --recursive local/engagements-ci \
-  | grep --quiet "$document_id_compact"
+  | grep "$document_id_compact" >/dev/null
 
 docker exec "$app_name" curl --fail --silent \
   "http://localhost:8080/api/engagements/assignments/$assignment_id/preparation/documents/$document_id" \
-  | grep --quiet 'final host schedule'
+  | grep 'final host schedule' >/dev/null
 
 assignment_json="$(docker exec "$app_name" curl --fail --silent \
   "http://localhost:8080/api/engagements/assignments/$assignment_id")"
@@ -466,7 +468,7 @@ ministry_document_id="$(python3 -c 'import json,sys; print(json.load(sys.stdin)[
 
 docker exec "$app_name" curl --fail --silent \
   "http://localhost:8080/api/engagements/assignments/$assignment_id/preparation/documents/$ministry_document_id" \
-  | grep --quiet 'ministry team packet'
+  | grep 'ministry team packet' >/dev/null
 
 workspace_json="$(docker exec "$app_name" curl --fail --silent \
   "http://localhost:8080/api/engagements/assignments/$assignment_id/workspace")"
@@ -482,4 +484,4 @@ grep --quiet 'Assignment document removed' <<<"$workspace_json"
 grep --quiet '"overallPercent":100' <<<"$workspace_json"
 
 docker exec "$app_name" curl --fail --silent http://localhost:8080/api/engagements/assignments \
-  | grep --quiet 'Kingdom Leadership Gathering'
+  | grep 'Kingdom Leadership Gathering' >/dev/null

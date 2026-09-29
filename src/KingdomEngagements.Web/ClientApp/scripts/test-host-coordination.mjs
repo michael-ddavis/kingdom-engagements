@@ -29,16 +29,19 @@ async function setup(t, failSave = false) {
   };
   window.eval(script);
   await new Promise(resolve => setImmediate(resolve));
+  // Let initial native details toggle events settle before simulating user input.
+  await new Promise(resolve => window.setTimeout(resolve, 0));
   return { window, document: window.document, calls };
 }
 
 test('saving retains values from closed sections and keeps the current section open', async t => {
-  const { document, calls } = await setup(t);
+  const { window, document, calls } = await setup(t);
   const hotel = document.querySelector('[name="hotelName"]');
   const prayer = document.querySelector('[name="prayerFocus"]');
   assert.equal(hotel.closest('details').open, false);
   prayer.closest('details').open = true;
   prayer.value = 'Unity';
+  prayer.dispatchEvent(new window.Event('input', { bubbles: true }));
   document.querySelector('#save-progress').click();
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(calls[0].hotelName, 'Existing hotel');
@@ -70,9 +73,10 @@ test('submission includes closed-section values and shows confirmation', async t
 });
 
 test('failed save keeps entered values and allows retry', async t => {
-  const { document } = await setup(t, true);
+  const { window, document } = await setup(t, true);
   const hotel = document.querySelector('[name="hotelName"]');
   hotel.value = 'Updated hotel';
+  hotel.dispatchEvent(new window.Event('input', { bubbles: true }));
   document.querySelector('#save-progress').click();
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(hotel.value, 'Updated hotel');

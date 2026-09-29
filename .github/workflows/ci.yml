@@ -48,6 +48,7 @@ jobs:
         run: |
           npm ci
           npm run test:ci
+          npm run test:host-ui
           npm run build:production
           grep -R --quiet "Executive engagement brief" dist
           grep -R --quiet "Back to my overview" dist

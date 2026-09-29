@@ -16,6 +16,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22.x
+          cache: npm
+          cache-dependency-path: src/KingdomEngagements.Web/ClientApp/package-lock.json
 
       - name: Validate Wednesday PowerShell verifier syntax
         shell: pwsh
@@ -44,7 +46,8 @@ jobs:
       - name: Build Angular Engagements client
         working-directory: src/KingdomEngagements.Web/ClientApp
         run: |
-          npm install
+          npm ci
+          npm run test:ci
           npm run build:production
           grep -R --quiet "Executive engagement brief" dist
           grep -R --quiet "Back to my overview" dist
@@ -92,6 +95,11 @@ jobs:
                 if grep --quiet '<base href="/app/">' <<<"$index_payload"; then exit 1; fi
                 if grep --quiet '/legacy18-product.js' <<<"$index_payload"; then exit 1; fi
                 if grep --quiet 'engagement-nav-root' <<<"$index_payload"; then exit 1; fi
+
+                realtime_status="$(docker exec "$container_id" curl --silent --output /tmp/host-realtime.js --write-out '%{http_code}' http://localhost:8080/host-realtime.js)"
+                test "$realtime_status" = "200"
+                docker exec "$container_id" test -s /tmp/host-realtime.js
+                if docker exec "$container_id" grep --quiet '<app-root' /tmp/host-realtime.js; then exit 1; fi
 
                 invitations_payload="$(docker exec "$container_id" curl --fail --silent http://localhost:8080/invitations)"
                 grep --quiet '<app-root' <<<"$invitations_payload"

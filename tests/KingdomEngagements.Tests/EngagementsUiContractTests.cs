@@ -8,7 +8,7 @@ public sealed class EngagementsUiContractTests
         var wwwroot = FindWwwroot();
         var javascript = Directory
             .EnumerateFiles(wwwroot, "*.js", SearchOption.TopDirectoryOnly)
-            .ToDictionary(Path.GetFileName, File.ReadAllText);
+            .ToDictionary(path => Path.GetFileName(path)!, File.ReadAllText);
 
         Assert.All(javascript.Values, source =>
             Assert.DoesNotContain("window.confirm(", source, StringComparison.Ordinal));

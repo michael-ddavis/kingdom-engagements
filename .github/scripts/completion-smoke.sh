@@ -38,7 +38,7 @@ docker run --detach --name "$app_name" --network "$network" \
   kingdom-engagements:ci >/dev/null
 
 for attempt in {1..60}; do
-  docker exec "$app_name" curl --fail --silent http://localhost:8080/health | grep --quiet '"platformEntitlement":"enabled"' && break
+  docker exec "$app_name" curl --fail --silent http://localhost:8080/health | grep '"platformEntitlement":"enabled"' >/dev/null && break
   sleep 2
 done
 
@@ -49,11 +49,11 @@ response_json="$(docker exec "$app_name" curl --fail --silent -X POST "http://lo
 response_id="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["responses"][0]["id"])' <<<"$response_json")"
 grep --quiet '"followUpsOpen":1' <<<"$response_json"
 
-docker exec "$app_name" curl --fail --silent -X PUT "http://localhost:8080/api/engagements/assignments/$assignment_id/responses/$response_id/follow-up" -H 'Content-Type: application/json' -d '{"status":"completed","owner":"Engagement Coordinator","dueAtUtc":"2026-09-03T17:00:00Z","notes":"Connected with local ministry leader."}' | grep --quiet '"followUpsOpen":0'
+docker exec "$app_name" curl --fail --silent -X PUT "http://localhost:8080/api/engagements/assignments/$assignment_id/responses/$response_id/follow-up" -H 'Content-Type: application/json' -d '{"status":"completed","owner":"Engagement Coordinator","dueAtUtc":"2026-09-03T17:00:00Z","notes":"Connected with local ministry leader."}' | grep '"followUpsOpen":0' >/dev/null
 
 closeout_json="$(docker exec "$app_name" curl --fail --silent -X PUT "http://localhost:8080/api/engagements/assignments/$assignment_id/closeout" -H 'Content-Type: application/json' -d '{"eventNotes":"Leadership gathering completed as scheduled.","testimonySummary":"One person requested intentional discipleship follow-up.","hostFollowUpComplete":true,"hostFollowUpNotes":"Thank-you and debrief completed.","finalDocumentsComplete":true,"paymentComplete":true,"administrativeFollowUpComplete":true,"outcomesRecorded":true,"complete":true}')"
 grep --quiet '"canComplete":true' <<<"$closeout_json"
 grep --quiet '"completedAtUtc"' <<<"$closeout_json"
 
-docker exec "$app_name" curl --fail --silent "http://localhost:8080/api/engagements/assignments/$assignment_id" | grep --quiet '"closeoutStatus":"complete"'
-docker exec "$app_name" curl --fail --silent "http://localhost:8080/api/engagements/assignments/$assignment_id" | grep --quiet '"status":"complete"'
+docker exec "$app_name" curl --fail --silent "http://localhost:8080/api/engagements/assignments/$assignment_id" | grep '"closeoutStatus":"complete"' >/dev/null
+docker exec "$app_name" curl --fail --silent "http://localhost:8080/api/engagements/assignments/$assignment_id" | grep '"status":"complete"' >/dev/null

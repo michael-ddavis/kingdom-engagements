@@ -209,11 +209,12 @@ public sealed record HostCoordinationLaneDetails(
     string CoordinationStatus,
     DateTimeOffset? SubmittedAtUtc,
     string? HostNotes,
+    string? InternalNotes,
     IReadOnlyList<LaneContactView> Contacts,
     IReadOnlyList<LaneDocumentDto> Documents);
 
 public sealed record UpdateHostCoordinationLaneRequest(
-    string? HostNotes,
+    string? InternalNotes,
     IReadOnlyList<HostContactInput>? Contacts);
 
 public sealed record ExecutiveTravelSnapshot(
@@ -942,6 +943,7 @@ public sealed class EngagementLaneWorkspaceService(
             preparation.CoordinationStatus,
             preparation.SubmittedAtUtc,
             preparation.HostNotes,
+            preparation.HostCoordinationInternalNotes,
             ContactsForLane(preparation, "host-coordination", includeAll: true),
             await DocumentsForLaneAsync(tenantId, assignmentId, "host-coordination", ct));
     }
@@ -956,7 +958,7 @@ public sealed class EngagementLaneWorkspaceService(
         var preparation = await GetPreparationForUpdateAsync(tenantId, assignmentId, ct);
         if (preparation is null) return null;
 
-        preparation.HostNotes = Trim(request.HostNotes);
+        preparation.HostCoordinationInternalNotes = Trim(request.InternalNotes);
         ReplaceLaneContacts(preparation, "host-coordination", request.Contacts, replaceAll: false);
         Touch(preparation);
         await preparationDatabase.SaveChangesAsync(ct);

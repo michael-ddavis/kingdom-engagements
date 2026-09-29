@@ -139,6 +139,7 @@ export const mutationToastInterceptor: HttpInterceptorFn = (
   if (!shouldNotify(request)) return next(request);
 
   const toasts = inject(MutationToastService);
+  const silent = request.headers.has('X-ApostolOS-Silent-Mutation');
   let completed = false;
 
   return next(request).pipe(
@@ -147,12 +148,12 @@ export const mutationToastInterceptor: HttpInterceptorFn = (
         if (completed || !(event instanceof HttpResponse)) return;
         completed = true;
         signalCollaborationMutation(request);
-        toasts.success(successMessage(request.method));
+        if (!silent) toasts.success(successMessage(request.method));
       },
       error: (error: unknown) => {
         if (completed) return;
         completed = true;
-        toasts.error(errorMessage(request.method, error));
+        if (!silent) toasts.error(errorMessage(request.method, error));
       },
     }),
   );

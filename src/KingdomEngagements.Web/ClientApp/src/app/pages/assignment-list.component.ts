@@ -14,38 +14,48 @@ type EngagementView = 'upcoming' | 'review' | 'attention' | 'completed';
   template: `
     <section class="eng-page legacy-assignment-index">
       <header class="legacy-assignment-hero">
-        <h1>Engagements</h1>
+        <div>
+          <h1>Engagements</h1>
+          <p class="assignment-intro">Start with the work assigned to you. Open an engagement to see your next action and the details you need.</p>
+        </div>
         <div class="invitation-actions">
           <a href="/invite/apostle-cynthia" target="_blank" rel="noopener">Open fresh invitation ↗</a>
           <button type="button" (click)="copyInvitationLink()">{{ invitationCopied() ? 'Link copied' : 'Copy invitation link' }}</button>
         </div>
       </header>
 
-      <section class="legacy-assignment-summary" aria-label="Engagement summary">
-        <article>
-          <span class="legacy-summary-icon legacy-summary-icon--navy">ACT</span>
-          <div><strong>{{ activeAssignments().length }}</strong><span>Active assignments</span><small>Upcoming ministry work</small></div>
-        </article>
-        <article>
-          <span class="legacy-summary-icon legacy-summary-icon--gold">30</span>
-          <div><strong>{{ withinThirtyDays() }}</strong><span>Next 30 days</span><small>Assignments approaching</small></div>
-        </article>
-        <article>
-          <span class="legacy-summary-icon legacy-summary-icon--violet">!</span>
-          <div><strong>{{ attentionAssignments().length }}</strong><span>Need attention</span><small>Readiness work still open</small></div>
-        </article>
-        <article>
-          <span class="legacy-summary-icon legacy-summary-icon--green">%</span>
-          <div><strong>{{ averageReadiness() }}%</strong><span>Average readiness</span><small>Across active assignments</small></div>
-        </article>
-      </section>
+      <details class="assignment-summary-details">
+        <summary>
+          <span><strong>Engagement overview</strong><small>Optional totals and readiness details</small></span>
+          <span>{{ activeAssignments().length }} active · {{ attentionAssignments().length }} need attention</span>
+        </summary>
+        <section class="legacy-assignment-summary" aria-label="Engagement summary">
+          <article>
+            <span class="legacy-summary-icon legacy-summary-icon--navy">ACT</span>
+            <div><strong>{{ activeAssignments().length }}</strong><span>Active assignments</span><small>Upcoming ministry work</small></div>
+          </article>
+          <article>
+            <span class="legacy-summary-icon legacy-summary-icon--gold">30</span>
+            <div><strong>{{ withinThirtyDays() }}</strong><span>Next 30 days</span><small>Assignments approaching</small></div>
+          </article>
+          <article>
+            <span class="legacy-summary-icon legacy-summary-icon--violet">!</span>
+            <div><strong>{{ attentionAssignments().length }}</strong><span>Need attention</span><small>Readiness work still open</small></div>
+          </article>
+          <article>
+            <span class="legacy-summary-icon legacy-summary-icon--green">%</span>
+            <div><strong>{{ averageReadiness() }}%</strong><span>Average readiness</span><small>Across active assignments</small></div>
+          </article>
+        </section>
+      </details>
 
       @if (attentionAssignments().length > 0) {
         <section class="legacy-attention-banner" aria-live="polite">
           <span aria-hidden="true">!</span>
           <div>
-            <strong>{{ attentionAssignments().length }} assignment{{ attentionAssignments().length === 1 ? '' : 's' }} need movement.</strong>
-            
+            <strong>{{ attentionAssignments().length }} assignment{{ attentionAssignments().length === 1 ? '' : 's' }} need attention.</strong>
+            <small>Open the Needs attention view to see what still needs to move.</small>
+
           </div>
         </section>
       }
@@ -179,6 +189,16 @@ type EngagementView = 'upcoming' | 'review' | 'attention' | 'completed';
       </section>
     </section>
   `,
+  styles: [`
+    .assignment-intro{max-width:680px;margin:8px 0 0;color:#66706d;font-size:.86rem;line-height:1.55}
+    .assignment-summary-details{margin:12px 0 16px;border:1px solid #dde1df;border-radius:12px;background:#faf9f5;overflow:hidden}
+    .assignment-summary-details>summary{display:flex;justify-content:space-between;gap:18px;align-items:center;min-height:50px;padding:0 15px;cursor:pointer;list-style:none;color:#5e6863}
+    .assignment-summary-details>summary::-webkit-details-marker{display:none}
+    .assignment-summary-details>summary span:first-child{display:grid;gap:2px}.assignment-summary-details>summary strong{color:#17243a;font-size:.74rem}.assignment-summary-details>summary small{color:#7b827e;font-size:.62rem;font-weight:500}.assignment-summary-details>summary span:last-child{font-size:.66rem;font-weight:750;text-align:right}
+    .assignment-summary-details .legacy-assignment-summary{margin:0;padding:12px;border-top:1px solid #e3e6e3}
+    .legacy-attention-banner small{display:block;margin-top:3px;color:inherit;opacity:.8}
+    @media(max-width:700px){.assignment-summary-details>summary{align-items:flex-start;flex-direction:column;padding:12px 15px}.assignment-summary-details>summary span:last-child{text-align:left}}
+  `],
 })
 export class AssignmentListComponent implements OnInit {
   readonly invitationCopied = signal(false);

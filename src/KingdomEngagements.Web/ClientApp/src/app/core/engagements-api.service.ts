@@ -187,7 +187,7 @@ export interface UpdateHospitalityLaneInput {
 }
 
 export interface UpdateHostCoordinationLaneInput {
-  hostNotes: string | null;
+  internalNotes: string | null;
   contacts: readonly HostContact[];
 }
 
@@ -205,6 +205,10 @@ export interface UpdateLaneDocumentInput {
 @Injectable({ providedIn: 'root' })
 export class EngagementsApiService {
   constructor(private readonly http: HttpClient) {}
+
+  private mutationOptions(silent: boolean): { headers?: Record<string, string> } {
+    return silent ? { headers: { 'X-ApostolOS-Silent-Mutation': 'true' } } : {};
+  }
 
   getProduct(): Observable<ProductInfo> {
     return this.http.get<ProductInfo>('/api/product');
@@ -374,6 +378,16 @@ export class EngagementsApiService {
     );
   }
 
+  setHostConversationClosed(
+    assignmentId: string,
+    isClosed: boolean,
+  ): Observable<HostCoordinationThread> {
+    return this.http.put<HostCoordinationThread>(
+      `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/preparation/messages/state`,
+      { isClosed },
+    );
+  }
+
   uploadWorkspaceDocument(
     assignmentId: string,
     file: File,
@@ -507,10 +521,11 @@ export class EngagementsApiService {
     );
   }
 
-  updateTravelLane(assignmentId: string, input: UpdateTravelLaneInput): Observable<TravelLaneDetails> {
+  updateTravelLane(assignmentId: string, input: UpdateTravelLaneInput, silent = false): Observable<TravelLaneDetails> {
     return this.http.put<TravelLaneDetails>(
       `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/travel`,
       input,
+      this.mutationOptions(silent),
     );
   }
 
@@ -520,10 +535,11 @@ export class EngagementsApiService {
     );
   }
 
-  updateLodgingLane(assignmentId: string, input: UpdateLodgingLaneInput): Observable<LodgingLaneDetails> {
+  updateLodgingLane(assignmentId: string, input: UpdateLodgingLaneInput, silent = false): Observable<LodgingLaneDetails> {
     return this.http.put<LodgingLaneDetails>(
       `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/lodging`,
       input,
+      this.mutationOptions(silent),
     );
   }
 
@@ -536,10 +552,12 @@ export class EngagementsApiService {
   updateTransportationLane(
     assignmentId: string,
     input: UpdateTransportationLaneInput,
+    silent = false,
   ): Observable<TransportationLaneDetails> {
     return this.http.put<TransportationLaneDetails>(
       `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/transportation`,
       input,
+      this.mutationOptions(silent),
     );
   }
 
@@ -549,10 +567,11 @@ export class EngagementsApiService {
     );
   }
 
-  updateProgramLane(assignmentId: string, input: UpdateProgramLaneInput): Observable<ProgramLaneDetails> {
+  updateProgramLane(assignmentId: string, input: UpdateProgramLaneInput, silent = false): Observable<ProgramLaneDetails> {
     return this.http.put<ProgramLaneDetails>(
       `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/program`,
       input,
+      this.mutationOptions(silent),
     );
   }
 
@@ -562,10 +581,11 @@ export class EngagementsApiService {
     );
   }
 
-  updateMediaLane(assignmentId: string, input: UpdateMediaLaneInput): Observable<MediaLaneDetails> {
+  updateMediaLane(assignmentId: string, input: UpdateMediaLaneInput, silent = false): Observable<MediaLaneDetails> {
     return this.http.put<MediaLaneDetails>(
       `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/media`,
       input,
+      this.mutationOptions(silent),
     );
   }
 
@@ -630,10 +650,11 @@ export class EngagementsApiService {
     );
   }
 
-  updateFinanceLane(assignmentId: string, input: UpdateFinanceLaneInput): Observable<FinanceLaneDetails> {
+  updateFinanceLane(assignmentId: string, input: UpdateFinanceLaneInput, silent = false): Observable<FinanceLaneDetails> {
     return this.http.put<FinanceLaneDetails>(
       `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/finance`,
       input,
+      this.mutationOptions(silent),
     );
   }
 
@@ -646,10 +667,12 @@ export class EngagementsApiService {
   updateMinistryPreparationLane(
     assignmentId: string,
     input: UpdateMinistryPreparationLaneInput,
+    silent = false,
   ): Observable<MinistryPreparationLaneDetails> {
     return this.http.put<MinistryPreparationLaneDetails>(
       `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/ministry-preparation`,
       input,
+      this.mutationOptions(silent),
     );
   }
 
@@ -662,10 +685,12 @@ export class EngagementsApiService {
   updateHospitalityLane(
     assignmentId: string,
     input: UpdateHospitalityLaneInput,
+    silent = false,
   ): Observable<HospitalityLaneDetails> {
     return this.http.put<HospitalityLaneDetails>(
       `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/hospitality`,
       input,
+      this.mutationOptions(silent),
     );
   }
 
@@ -678,10 +703,12 @@ export class EngagementsApiService {
   updateHostCoordinationLane(
     assignmentId: string,
     input: UpdateHostCoordinationLaneInput,
+    silent = false,
   ): Observable<HostCoordinationLaneDetails> {
     return this.http.put<HostCoordinationLaneDetails>(
       `/api/engagements/assignments/${encodeURIComponent(assignmentId)}/lanes/host-coordination`,
       input,
+      this.mutationOptions(silent),
     );
   }
 

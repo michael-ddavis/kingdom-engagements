@@ -11,7 +11,10 @@ import { EngagementResponsibilitySnapshot, ResponsibilityLaneState } from '../co
   template: `
     <section class="standup-page">
       <header class="standup-header">
-        <h1>Stand-Up</h1>
+        <div>
+          <h1>Stand-Up</h1>
+          <p>Use this during the team huddle: what is ready, what is blocked, who owns the next move, and what needs follow-up.</p>
+        </div>
         <div>
           <a routerLink="/organization/ctg/command-center">← Command Center</a>
           <button type="button" (click)="showAll.set(!showAll())">{{ showAll() ? 'Focus one at a time' : 'Show all engagements' }}</button>
@@ -57,12 +60,12 @@ import { EngagementResponsibilitySnapshot, ResponsibilityLaneState } from '../co
             </div>
             <div class="readiness">
               <strong>{{ snapshot.responsibilityReadinessPercent }}%</strong>
-              <span>Operational readiness</span>
+              <span>Preparation complete</span>
             </div>
           </header>
 
           <section class="standup-summary">
-            <article><strong>{{ snapshot.completedLaneCount }}/{{ snapshot.applicableLaneCount }}</strong><span>Lanes complete</span></article>
+            <article><strong>{{ snapshot.completedLaneCount }}/{{ snapshot.applicableLaneCount }}</strong><span>Responsibilities complete</span></article>
             <article><strong>{{ snapshot.hostCoordinationPercent }}%</strong><span>Host coordination</span></article>
             <article [class.danger]="snapshot.overdueLaneCount > 0"><strong>{{ snapshot.overdueLaneCount }}</strong><span>Overdue</span></article>
             <article [class.warning]="snapshot.unassignedLaneCount > 0"><strong>{{ snapshot.unassignedLaneCount }}</strong><span>Unassigned</span></article>
@@ -109,7 +112,7 @@ import { EngagementResponsibilitySnapshot, ResponsibilityLaneState } from '../co
     :host{display:block;background:#f5f3ee;min-height:calc(100vh - 72px)}
     .standup-page{width:min(1180px,calc(100% - 36px));margin:0 auto;padding:28px 0 60px}
     .standup-header{display:flex;justify-content:space-between;align-items:center;gap:24px;margin-bottom:20px;padding:4px 0 14px;border-bottom:1px solid #dce0dd}
-    .standup-header h1{margin:0;font:500 clamp(1.8rem,2.8vw,2.6rem)/1 Georgia,'Times New Roman',serif;color:#17243a}
+    .standup-header h1{margin:0;font:500 clamp(1.8rem,2.8vw,2.6rem)/1 Georgia,'Times New Roman',serif;color:#17243a}.standup-header>div:first-child p{max-width:720px;margin:7px 0 0;color:#69736e;font-size:.74rem;line-height:1.5}
     .standup-header>div:last-child{display:flex;gap:8px;flex-wrap:wrap}
     .standup-header a,.standup-header button,.standup-controls a,.standup-controls button{min-height:40px;padding:0 13px;border:1px solid #d8ddda;border-radius:9px;background:#fff;color:#172a46;font:800 .72rem system-ui,sans-serif;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
     .standup-header button,.standup-controls button:last-child{color:#fff;background:#172a46;border-color:#172a46}.standup-controls button:disabled{opacity:.35;cursor:not-allowed}
@@ -192,7 +195,14 @@ export class CtgStandUpComponent implements OnInit {
   }
 
   laneStatus(lane: ResponsibilityLaneState): string {
-    if (lane.isOverdue) return 'Overdue';
+    if (!lane.owner) return 'Needs an owner';
+    if (lane.isOverdue || lane.status === 'overdue') return 'Overdue';
+    if (lane.status === 'blocked') return 'Needs help';
+    if (lane.status === 'ready-for-review') return 'Ready to review';
+    if (lane.status === 'waiting-on-host') return 'Waiting for host';
+    if (lane.status === 'not-started') return 'Not started yet';
+    if (lane.status === 'in-progress') return 'In progress';
+    if (lane.status === 'complete') return 'Complete';
     return this.label(lane.status);
   }
 

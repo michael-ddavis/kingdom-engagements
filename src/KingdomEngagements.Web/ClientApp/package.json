@@ -12,6 +12,7 @@
     "build:production": "ng build --configuration production && npm run build:host-realtime",
     "test": "ng test",
     "test:ci": "ng test --watch=false",
+    "test:host-ui": "node --test scripts/test-host-coordination.mjs",
     "build:host-realtime": "node scripts/build-host-realtime.mjs"
   },
   "dependencies": {

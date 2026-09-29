@@ -4,9 +4,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Host coordination · Cynthia Thompson Global</title>
-  <link rel="stylesheet" href="/host-portal.css" />
+  <link rel="stylesheet" href="/host-portal.css?v=20260928-host-flow-6" />
 </head>
-<body>
+<body class="coordination-page">
   <main class="host-shell">
     <aside class="host-brand">
       <img src="https://raw.githubusercontent.com/michael-ddavis/kingdomsolutionz/9f776af8d697aeeda2c9253a7b41ac4e25bc299c/KingdomSolutionz.Web/ClientApp/src/assets/images/apostle-cynthia/booking-portrait.avif" alt="Cynthia Thompson Global" />
@@ -14,7 +14,7 @@
       <div class="host-brand-copy">
         <p class="eyebrow">Host coordination</p>
         <h1>Prepare every<br />detail with clarity.</h1>
-        <p>Share the final travel plan, lodging, local transportation, event schedule, ministry contacts, promotional expectations, prayer focus and documents in one secure place.</p>
+        <p>Help the ministry team prepare for your event. Add what you know now and return to this link when more details are ready.</p>
       </div>
     </aside>
     <section class="host-content">
@@ -27,88 +27,189 @@
           <p id="event-copy"></p>
         </header>
         <div id="submitted-banner" class="submitted-banner" hidden><strong>Host coordination submitted</strong><span id="submitted-copy"></span></div>
-        <div class="status-line"><span>Coordination status</span><strong id="coordination-status"></strong></div>
+        <section class="status-line" aria-label="Coordination progress">
+          <div class="status-copy">
+            <span class="status-kicker">Your progress</span>
+            <strong id="coordination-status"></strong>
+            <small id="coordination-status-copy"></small>
+          </div>
+          <div class="progress-summary">
+            <strong id="progress-copy">Getting your form ready…</strong>
+            <div class="progress-track" aria-hidden="true"><span id="progress-bar"></span></div>
+          </div>
+        </section>
+        <section class="coordination-guide" aria-labelledby="coordination-guide-title">
+          <div>
+            <h3 id="coordination-guide-title">Start with what you know</h3>
+            <p>Fill in the details you have today. If something is not confirmed yet, leave it blank and come back later.</p>
+            <p>Your changes save automatically after you pause typing. You can also use <strong>Save progress</strong> anytime. Saving is not the same as submitting.</p>
+          </div>
+          <button class="secondary-button message-team-button" type="button" data-open-messages aria-controls="message-drawer" aria-expanded="false">
+            Message the ministry team <span class="message-badge" data-message-badge hidden></span>
+          </button>
+        </section>
+        <section class="form-priority-guide" aria-labelledby="form-priority-title">
+          <div>
+            <strong id="form-priority-title">What should I fill out?</strong>
+            <p>Nothing on this page is required just to save your progress. Add what applies now and return later for anything that is still being confirmed.</p>
+          </div>
+          <div class="priority-list">
+            <span><b class="priority-chip recommended">Recommended</b> Event schedule and a local contact before the event</span>
+            <span><b class="priority-chip applicable">If applicable</b> Travel, hotel and local transportation</span>
+            <span><b class="priority-chip helpful">Helpful</b> Promotion details and prayer focus</span>
+            <span><b class="priority-chip optional">Optional</b> Confirmation numbers, extra notes and documents</span>
+          </div>
+        </section>
         <form id="coordination-form">
+          <div class="coordination-action-bar" aria-label="Form actions">
+            <div class="save-state is-saved" id="save-state" role="status" aria-live="polite">
+              <span class="save-state-dot" aria-hidden="true"></span>
+              <span id="save-state-copy">All changes saved</span>
+            </div>
+            <div class="coordination-action-buttons">
+              <button class="secondary-button" type="button" id="save-progress">Save progress</button>
+              <button class="secondary-button" type="button" data-open-messages aria-controls="message-drawer" aria-expanded="false">
+                Message team <span class="message-badge" data-message-badge hidden></span>
+              </button>
+              <button class="primary-button" type="submit">Submit for ministry review →</button>
+            </div>
+          </div>
           <div class="section-stack">
-            <section class="portal-section">
-              <header><div><p class="eyebrow">01 · Travel</p><h3>Outbound and return itinerary</h3><p>Provide the confirmed itinerary when available. Save progress at any time.</p></div></header>
-              <div class="field-grid three">
-                <label class="field"><span>Outbound airline</span><input name="outboundAirline" /></label>
-                <label class="field"><span>Flight number</span><input name="outboundFlightNumber" /></label>
-                <label class="field"><span>Confirmation number</span><input name="outboundConfirmationNumber" /></label>
-                <label class="field"><span>Departure airport</span><input name="outboundDepartureAirport" placeholder="RIC" /></label>
-                <label class="field"><span>Arrival airport</span><input name="outboundArrivalAirport" placeholder="ATL" /></label>
-                <label class="field"><span>Departs</span><input name="outboundDepartsAtUtc" type="datetime-local" /></label>
-                <label class="field"><span>Arrives</span><input name="outboundArrivesAtUtc" type="datetime-local" /></label>
-              </div>
-              <div class="field-grid three" style="margin-top:18px">
-                <label class="field"><span>Return airline</span><input name="returnAirline" /></label>
-                <label class="field"><span>Flight number</span><input name="returnFlightNumber" /></label>
-                <label class="field"><span>Confirmation number</span><input name="returnConfirmationNumber" /></label>
-                <label class="field"><span>Departure airport</span><input name="returnDepartureAirport" /></label>
-                <label class="field"><span>Arrival airport</span><input name="returnArrivalAirport" /></label>
-                <label class="field"><span>Departs</span><input name="returnDepartsAtUtc" type="datetime-local" /></label>
-                <label class="field"><span>Arrives</span><input name="returnArrivesAtUtc" type="datetime-local" /></label>
-              </div>
-            </section>
+            <details class="portal-section coordination-section" data-section-key="travel">
+              <summary><span class="section-number">1</span><span class="section-summary-copy"><span class="section-title-row"><strong>Travel</strong><b class="priority-chip applicable">If applicable</b></span><small>Flight itinerary and arrival details</small></span><span class="section-summary-state" data-section-state>Not started</span><span class="section-chevron" aria-hidden="true">⌄</span></summary>
 
-            <section class="portal-section">
-              <header><div><p class="eyebrow">02 · Lodging and local movement</p><h3>Hotel and transportation</h3><p>Include the hotel confirmation and the person responsible for local pickup or transportation.</p></div></header>
-              <div class="field-grid">
-                <label class="field"><span>Hotel name</span><input name="hotelName" /></label>
-                <label class="field"><span>Hotel confirmation</span><input name="hotelConfirmationNumber" /></label>
-                <label class="field wide"><span>Hotel address</span><input name="hotelAddress" /></label>
-                <label class="field"><span>Check in</span><input name="hotelCheckInAtUtc" type="datetime-local" /></label>
-                <label class="field"><span>Check out</span><input name="hotelCheckOutAtUtc" type="datetime-local" /></label>
-                <label class="field"><span>Pickup / transportation contact</span><input name="pickupContactName" /></label>
-                <label class="field"><span>Contact phone</span><input name="pickupContactPhone" /></label>
-                <label class="field wide"><span>Transportation plan</span><textarea name="transportationPlan" rows="4" placeholder="Airport pickup, local driver, vehicle arrangements, venue transfers…"></textarea></label>
+              <header><div><p class="eyebrow">01 · Travel</p><h3>Outbound and return itinerary</h3><p>Only fill this out if travel is part of the engagement and the details are known. You can come back later.</p></div></header>
+              <div class="input-group">
+                <div class="input-group-heading"><strong>Outbound flight</strong><span>Enter the details the team needs to follow the itinerary.</span></div>
+                <div class="field-grid three">
+                  <label class="field"><span>Airline</span><input name="outboundAirline" autocomplete="organization" /></label>
+                  <label class="field"><span>Flight number</span><input name="outboundFlightNumber" /></label>
+                  <label class="field"><span>Departure airport</span><input name="outboundDepartureAirport" placeholder="RIC" /></label>
+                  <label class="field"><span>Arrival airport</span><input name="outboundArrivalAirport" placeholder="ATL" /></label>
+                  <label class="field"><span>Departs</span><input name="outboundDepartsAtUtc" type="datetime-local" /></label>
+                  <label class="field"><span>Arrives</span><input name="outboundArrivesAtUtc" type="datetime-local" /></label>
+                </div>
+                <details class="optional-details">
+                  <summary>Add booking confirmation number <span>Optional</span></summary>
+                  <label class="field"><span>Outbound confirmation number <small class="field-qualifier">Optional</small></span><input name="outboundConfirmationNumber" /></label>
+                </details>
               </div>
-            </section>
+              <div class="input-group">
+                <div class="input-group-heading"><strong>Return flight</strong><span>Leave blank until the return itinerary is confirmed.</span></div>
+                <div class="field-grid three">
+                  <label class="field"><span>Airline</span><input name="returnAirline" /></label>
+                  <label class="field"><span>Flight number</span><input name="returnFlightNumber" /></label>
+                  <label class="field"><span>Departure airport</span><input name="returnDepartureAirport" /></label>
+                  <label class="field"><span>Arrival airport</span><input name="returnArrivalAirport" /></label>
+                  <label class="field"><span>Departs</span><input name="returnDepartsAtUtc" type="datetime-local" /></label>
+                  <label class="field"><span>Arrives</span><input name="returnArrivesAtUtc" type="datetime-local" /></label>
+                </div>
+                <details class="optional-details">
+                  <summary>Add booking confirmation number <span>Optional</span></summary>
+                  <label class="field"><span>Return confirmation number <small class="field-qualifier">Optional</small></span><input name="returnConfirmationNumber" /></label>
+                </details>
+              </div>
+              <div class="section-actions"><span>Save what you have and keep going when you're ready.</span><button class="secondary-button" type="button" data-save-continue>Save &amp; continue</button></div>
 
-            <section class="portal-section">
-              <header><div><p class="eyebrow">03 · Event schedule</p><h3>Sessions and ministry moments</h3><p>Add the sessions Cynthia Thompson is expected to attend or lead.</p></div><button class="secondary-button" type="button" id="add-schedule">Add session</button></header>
+            </details>
+
+            <details class="portal-section coordination-section" data-section-key="hotel">
+              <summary><span class="section-number">2</span><span class="section-summary-copy"><span class="section-title-row"><strong>Hotel &amp; transportation</strong><b class="priority-chip applicable">If applicable</b></span><small>Lodging, pickup and local travel</small></span><span class="section-summary-state" data-section-state>Not started</span><span class="section-chevron" aria-hidden="true">⌄</span></summary>
+
+              <header><div><p class="eyebrow">02 · Lodging and local transportation</p><h3>Hotel and transportation</h3><p>Only add lodging or transportation details that apply to this engagement. It is fine to leave this section blank while arrangements are pending.</p></div></header>
+              <div class="input-group">
+                <div class="input-group-heading"><strong>Hotel</strong><span>Where the ministry team is staying, if lodging is being provided.</span></div>
+                <div class="field-grid">
+                  <label class="field"><span>Hotel name</span><input name="hotelName" autocomplete="organization" /></label>
+                  <label class="field"><span>Check in</span><input name="hotelCheckInAtUtc" type="datetime-local" /></label>
+                  <label class="field"><span>Check out</span><input name="hotelCheckOutAtUtc" type="datetime-local" /></label>
+                  <label class="field wide"><span>Hotel address <small class="field-qualifier">Helpful</small></span><input name="hotelAddress" autocomplete="street-address" /></label>
+                </div>
+                <details class="optional-details">
+                  <summary>Add hotel confirmation number <span>Optional</span></summary>
+                  <label class="field"><span>Hotel confirmation number <small class="field-qualifier">Optional</small></span><input name="hotelConfirmationNumber" /></label>
+                </details>
+              </div>
+              <div class="input-group">
+                <div class="input-group-heading"><strong>Local transportation</strong><span>Who is handling pickup and how the team will move between locations.</span></div>
+                <div class="field-grid">
+                  <label class="field"><span>Pickup / transportation contact</span><input name="pickupContactName" autocomplete="name" /></label>
+                  <label class="field"><span>Contact phone</span><input name="pickupContactPhone" type="tel" autocomplete="tel" /></label>
+                  <label class="field wide"><span>Transportation plan <small class="field-qualifier">Helpful</small></span><textarea name="transportationPlan" rows="4" placeholder="Airport pickup, local driver, vehicle arrangements, venue transfers…"></textarea></label>
+                </div>
+              </div>
+              <div class="section-actions"><span>Save what you have and keep going when you're ready.</span><button class="secondary-button" type="button" data-save-continue>Save &amp; continue</button></div>
+
+            </details>
+
+            <details class="portal-section coordination-section" data-section-key="schedule">
+              <summary><span class="section-number">3</span><span class="section-summary-copy"><span class="section-title-row"><strong>Event schedule</strong><b class="priority-chip recommended">Recommended</b></span><small>Sessions, times and ministry moments</small></span><span class="section-summary-state" data-section-state>Not started</span><span class="section-chevron" aria-hidden="true">⌄</span></summary>
+
+              <header><div><p class="eyebrow">03 · Event schedule</p><h3>Sessions and ministry moments</h3><p>This is one of the most useful sections for the ministry team. Add confirmed sessions when you have them; you do not need the entire event schedule.</p></div><button class="secondary-button" type="button" id="add-schedule">Add session</button></header>
               <div id="schedule-list" class="repeat-list"></div>
-            </section>
+              <div class="section-actions"><span>Save what you have and keep going when you're ready.</span><button class="secondary-button" type="button" data-save-continue>Save &amp; continue</button></div>
 
-            <section class="portal-section">
-              <header><div><p class="eyebrow">04 · Local contacts</p><h3>Host, travel and media contacts</h3><p>Add the people the ministry team may need to reach before or during the assignment.</p></div><button class="secondary-button" type="button" id="add-contact">Add contact</button></header>
+            </details>
+
+            <details class="portal-section coordination-section" data-section-key="contacts">
+              <summary><span class="section-number">4</span><span class="section-summary-copy"><span class="section-title-row"><strong>Contacts</strong><b class="priority-chip recommended">Recommended</b></span><small>People the ministry team may need to reach</small></span><span class="section-summary-state" data-section-state>Not started</span><span class="section-chevron" aria-hidden="true">⌄</span></summary>
+
+              <header><div><p class="eyebrow">04 · Local contacts</p><h3>Who should the team contact?</h3><p>A primary local contact is recommended before the event. Add travel, media or emergency contacts only when they are useful.</p></div><button class="secondary-button" type="button" id="add-contact">Add contact</button></header>
               <div id="contact-list" class="repeat-list"></div>
-            </section>
+              <div class="section-actions"><span>Save what you have and keep going when you're ready.</span><button class="secondary-button" type="button" data-save-continue>Save &amp; continue</button></div>
 
-            <section class="portal-section">
+            </details>
+
+            <details class="portal-section coordination-section" data-section-key="preparation">
+              <summary><span class="section-number">5</span><span class="section-summary-copy"><span class="section-title-row"><strong>Promotion &amp; prayer</strong><b class="priority-chip helpful">Helpful</b></span><small>Publicity, expectations and prayer focus</small></span><span class="section-summary-state" data-section-state>Not started</span><span class="section-chevron" aria-hidden="true">⌄</span></summary>
+
               <header><div><p class="eyebrow">05 · Ministry preparation</p><h3>Promotion and prayer focus</h3><p>Tell the team what is being communicated publicly and what the host is carrying in prayer for this gathering.</p></div></header>
               <div class="field-grid">
-                <label class="field wide"><span>Promotional requirements or expectations</span><textarea name="promotionRequirements" rows="5"></textarea></label>
-                <label class="field wide"><span>Prayer focus</span><textarea name="prayerFocus" rows="5" placeholder="What is the spiritual burden, need or focus for this gathering?"></textarea></label>
-                <label class="field wide"><span>Additional host notes</span><textarea name="hostNotes" rows="4"></textarea></label>
+                <label class="field wide"><span>Promotional requirements or expectations <small class="field-qualifier">Helpful</small></span><textarea name="promotionRequirements" rows="4" placeholder="Anything the ministry team should know about publicity, graphics, interviews or promotion."></textarea></label>
+                <label class="field wide"><span>Prayer focus <small class="field-qualifier">Helpful</small></span><textarea name="prayerFocus" rows="4" placeholder="What is the spiritual burden, need or focus for this gathering?"></textarea></label>
+                <label class="field wide"><span>Anything else the team should know? <small class="field-qualifier">Optional</small></span><textarea name="hostNotes" rows="3" placeholder="Use this only for details that did not fit above."></textarea></label>
               </div>
-            </section>
+              <div class="section-actions"><span>Save what you have and keep going when you're ready.</span><button class="secondary-button" type="button" data-save-continue>Save &amp; continue</button></div>
 
-            <section class="portal-section">
-              <header><div><p class="eyebrow">06 · Documents</p><h3>Schedules, confirmations and host files</h3><p>Upload final schedules, hotel or flight confirmations, venue documents or other files the ministry team needs. Maximum 10 MB per file.</p></div></header>
-              <div class="upload-panel"><input id="document-file" type="file" /><button class="secondary-button" type="button" id="upload-document">Upload document</button></div>
+            </details>
+
+            <details class="portal-section coordination-section" data-section-key="documents">
+              <summary><span class="section-number">6</span><span class="section-summary-copy"><span class="section-title-row"><strong>Documents</strong><b class="priority-chip optional">Optional</b></span><small>Schedules, confirmations and other files</small></span><span class="section-summary-state" data-section-state>Not started</span><span class="section-chevron" aria-hidden="true">⌄</span></summary>
+
+              <header><div><p class="eyebrow">06 · Documents</p><h3>Schedules, confirmations and host files</h3><p>Upload schedules, hotel or flight confirmations, venue documents or other files when they are ready. You can return later. Maximum 10 MB per file.</p></div></header>
+              <div class="upload-panel"><input id="document-file" type="file" aria-label="Choose a document to upload" /><button class="secondary-button" type="button" id="upload-document">Upload document</button></div>
               <div id="document-list" class="document-list"></div>
-            </section>
+              <div class="section-actions"><span>Save what you have, then review the form before submitting.</span><button class="secondary-button" type="button" data-save-continue>Save &amp; review</button></div>
+
+            </details>
 
 
           </div>
-          <div class="button-row"><button class="secondary-button" type="button" id="save-progress">Save progress</button><button class="primary-button" type="submit">Submit host coordination →</button></div>
         </form>
-            <section class="portal-section">
-              <header><div><p class="eyebrow">07 · Messages</p><h3>Coordinate with the ministry team</h3><p>Messages are saved to this engagement and delivered to the ministry team in real time.</p></div><span id="realtime-status" class="realtime-status">Connecting…</span></header>
-              <div id="message-list" class="coordination-messages" aria-live="polite"></div>
-              <form id="message-form" class="coordination-message-form">
-                <label class="field wide"><span>Message</span><textarea id="message-input" rows="3" maxlength="4000" placeholder="Send a coordination update…"></textarea></label>
-                <button class="secondary-button" type="submit">Send message</button>
-              </form>
-            </section>
+
+        <div id="message-drawer-backdrop" class="message-drawer-backdrop" hidden></div>
+        <aside id="message-drawer" class="message-drawer" role="dialog" aria-modal="true" aria-labelledby="message-drawer-title" hidden>
+          <header class="message-drawer-header">
+            <div>
+              <p class="eyebrow">Messages</p>
+              <h3 id="message-drawer-title">Message the ministry team</h3>
+              <p id="message-delivery-copy">Messages are saved with this engagement.</p>
+            </div>
+            <button class="message-drawer-close" type="button" id="close-message-drawer" aria-label="Close messages">Close</button>
+          </header>
+          <div class="message-connection-row"><span id="realtime-status" class="realtime-status">Checking updates…</span></div>
+          <div id="message-list" class="coordination-messages" aria-live="polite"></div>
+          <form id="message-form" class="coordination-message-form">
+            <label class="field wide"><span>Message</span><textarea id="message-input" rows="3" maxlength="4000" placeholder="Type your message to the ministry team…"></textarea></label>
+            <button class="primary-button" type="submit">Send message</button>
+          </form>
+        </aside>
         <p class="powered">Powered by <strong>ApostolOS · Engagements</strong></p>
       </section>
     </section>
   </main>
-  <script src="/host-realtime.js" defer></script>
-  <script src="/coordination.js" defer></script>
+  <script src="/host-realtime.js?v=20260928-host-flow-6" defer></script>
+  <script src="/coordination.js?v=20260928-host-flow-6" defer></script>
 </body>
 </html>
 

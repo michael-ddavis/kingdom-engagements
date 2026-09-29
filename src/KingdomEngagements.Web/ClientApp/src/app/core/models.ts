@@ -97,6 +97,8 @@ export interface HostCoordinationMessage {
 
 export interface HostCoordinationThread {
   isClosed: boolean;
+  closedAtUtc: string | null;
+  closedByName: string | null;
   messages: readonly HostCoordinationMessage[];
 }
 
@@ -498,6 +500,7 @@ export interface HostCoordinationLaneDetails {
   coordinationStatus: string;
   submittedAtUtc: string | null;
   hostNotes: string | null;
+  internalNotes: string | null;
   contacts: readonly LaneContactView[];
   documents: readonly LaneDocument[];
 }

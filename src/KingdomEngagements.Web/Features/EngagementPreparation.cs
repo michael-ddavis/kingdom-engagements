@@ -61,6 +61,8 @@ public sealed class EngagementPreparationDbContext(DbContextOptions<EngagementPr
         preparation.Property(x => x.MinistryPreparationNotes).HasColumnType("nvarchar(max)");
         preparation.Property(x => x.HospitalityNotes).HasColumnType("nvarchar(max)");
         preparation.Property(x => x.HostNotes).HasMaxLength(4000);
+        preparation.Property(x => x.HostCoordinationInternalNotes).HasColumnType("nvarchar(max)");
+        preparation.Property(x => x.ConversationClosedByName).HasMaxLength(180);
 
         var document = modelBuilder.Entity<HostCoordinationDocumentRecord>();
         document.ToTable("EngagementHostCoordinationDocuments");
@@ -154,6 +156,9 @@ BEGIN
         [MinistryPreparationNotes] nvarchar(max) NULL,
         [HospitalityNotes] nvarchar(max) NULL,
         [HostNotes] nvarchar(4000) NULL,
+        [HostCoordinationInternalNotes] nvarchar(max) NULL,
+        [ConversationClosedAtUtc] datetimeoffset NULL,
+        [ConversationClosedByName] nvarchar(180) NULL,
         [SubmittedAtUtc] datetimeoffset NULL,
         [CreatedAtUtc] datetimeoffset NOT NULL,
         [UpdatedAtUtc] datetimeoffset NOT NULL,
@@ -199,6 +204,15 @@ IF COL_LENGTH(N'dbo.EngagementPreparations', N'MinistryPreparationNotes') IS NUL
 
 IF COL_LENGTH(N'dbo.EngagementPreparations', N'HospitalityNotes') IS NULL
     ALTER TABLE [dbo].[EngagementPreparations] ADD [HospitalityNotes] nvarchar(max) NULL;
+
+IF COL_LENGTH(N'dbo.EngagementPreparations', N'HostCoordinationInternalNotes') IS NULL
+    ALTER TABLE [dbo].[EngagementPreparations] ADD [HostCoordinationInternalNotes] nvarchar(max) NULL;
+
+IF COL_LENGTH(N'dbo.EngagementPreparations', N'ConversationClosedAtUtc') IS NULL
+    ALTER TABLE [dbo].[EngagementPreparations] ADD [ConversationClosedAtUtc] datetimeoffset NULL;
+
+IF COL_LENGTH(N'dbo.EngagementPreparations', N'ConversationClosedByName') IS NULL
+    ALTER TABLE [dbo].[EngagementPreparations] ADD [ConversationClosedByName] nvarchar(180) NULL;
 
 IF COL_LENGTH(N'dbo.EngagementHostCoordinationDocuments', N'Category') IS NULL
 BEGIN
@@ -302,6 +316,9 @@ public sealed class EngagementPreparationRecord
     public string? MinistryPreparationNotes { get; set; }
     public string? HospitalityNotes { get; set; }
     public string? HostNotes { get; set; }
+    public string? HostCoordinationInternalNotes { get; set; }
+    public DateTimeOffset? ConversationClosedAtUtc { get; set; }
+    public string? ConversationClosedByName { get; set; }
     public DateTimeOffset? SubmittedAtUtc { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
@@ -341,10 +358,17 @@ public sealed record HostCoordinationMessageDto(
 
 public sealed record HostCoordinationThread(
     bool IsClosed,
+    DateTimeOffset? ClosedAtUtc,
+    string? ClosedByName,
     IReadOnlyList<HostCoordinationMessageDto> Messages);
 
 public sealed record PostHostCoordinationMessageRequest(string SenderName, string Message);
 public sealed record PostMinistryCoordinationMessageRequest(string Message);
+public sealed record UpdateHostConversationStateRequest(bool IsClosed);
+public sealed record HostConversationStateChange(
+    HostCoordinationThread Thread,
+    bool Changed,
+    HostCoordinationMessageDto? SystemMessage);
 
 public sealed record AcceptEngagementTermsRequest(bool Accepted, string SignatoryName, string SignatoryEmail, string? Note);
 public sealed record HostScheduleItemInput(string Title, DateOnly Date, string? StartsAt, string? EndsAt, string? Location, string? Notes);
@@ -708,8 +732,8 @@ public sealed class EngagementPreparationService(
         var preparation = await database.Preparations
             .SingleOrDefaultAsync(x => x.CoordinationToken == token, cancellationToken);
         if (!CoordinationLinkValid(preparation)) return null;
-        if (string.Equals(preparation!.CoordinationStatus, "submitted", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException("Host coordination is complete and this conversation is closed.");
+        if (preparation!.ConversationClosedAtUtc is not null)
+            throw new InvalidOperationException("This conversation has been closed by the ministry team.");
 
         AddMessage(
             preparation,
@@ -749,8 +773,8 @@ public sealed class EngagementPreparationService(
                 x => x.TenantId == tenantId && x.AssignmentId == assignmentId,
                 cancellationToken);
         if (preparation is null) return null;
-        if (string.Equals(preparation.CoordinationStatus, "submitted", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException("Host coordination is complete and this conversation is closed.");
+        if (preparation.ConversationClosedAtUtc is not null)
+            throw new InvalidOperationException("This conversation has been closed by the ministry team.");
 
         AddMessage(
             preparation,
@@ -760,6 +784,54 @@ public sealed class EngagementPreparationService(
 
         await database.SaveChangesAsync(cancellationToken);
         return await MapMessageThreadAsync(preparation, cancellationToken);
+    }
+
+    public async Task<HostConversationStateChange?> SetConversationStateAsync(
+        Guid tenantId,
+        Guid assignmentId,
+        bool isClosed,
+        string actorName,
+        CancellationToken cancellationToken)
+    {
+        await database.EnsureSchemaAsync(cancellationToken);
+        var preparation = await database.Preparations
+            .SingleOrDefaultAsync(
+                x => x.TenantId == tenantId && x.AssignmentId == assignmentId,
+                cancellationToken);
+        if (preparation is null) return null;
+
+        var currentlyClosed = preparation.ConversationClosedAtUtc is not null;
+        if (currentlyClosed == isClosed)
+        {
+            return new HostConversationStateChange(
+                await MapMessageThreadAsync(preparation, cancellationToken),
+                false,
+                null);
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        var normalizedActor = Required(actorName, nameof(actorName));
+
+        preparation.ConversationClosedAtUtc = isClosed ? now : null;
+        preparation.ConversationClosedByName = isClosed ? normalizedActor : null;
+        preparation.UpdatedAtUtc = now;
+
+        var systemText = isClosed
+            ? $"{normalizedActor} closed this conversation."
+            : $"{normalizedActor} reopened this conversation.";
+
+        var systemMessage = AddMessage(
+            preparation,
+            "system",
+            normalizedActor,
+            systemText);
+
+        await database.SaveChangesAsync(cancellationToken);
+
+        return new HostConversationStateChange(
+            await MapMessageThreadAsync(preparation, cancellationToken),
+            true,
+            systemMessage);
     }
 
     public Task<HostCoordinationDocumentDto?> AddDocumentAsync(
@@ -1007,18 +1079,20 @@ public sealed class EngagementPreparationService(
             .ToListAsync(cancellationToken);
 
         return new HostCoordinationThread(
-            string.Equals(preparation.CoordinationStatus, "submitted", StringComparison.OrdinalIgnoreCase),
+            preparation.ConversationClosedAtUtc is not null,
+            preparation.ConversationClosedAtUtc,
+            preparation.ConversationClosedByName,
             messages);
     }
 
-    private void AddMessage(
+    private HostCoordinationMessageDto AddMessage(
         EngagementPreparationRecord preparation,
         string senderType,
         string senderName,
         string message)
     {
         var now = DateTimeOffset.UtcNow;
-        database.Messages.Add(new HostCoordinationMessageRecord
+        var record = new HostCoordinationMessageRecord
         {
             Id = Guid.NewGuid(),
             PreparationId = preparation.Id,
@@ -1026,8 +1100,16 @@ public sealed class EngagementPreparationService(
             SenderName = senderName,
             Message = message,
             CreatedAtUtc = now
-        });
+        };
+        database.Messages.Add(record);
         preparation.UpdatedAtUtc = now;
+
+        return new HostCoordinationMessageDto(
+            record.Id,
+            record.SenderType,
+            record.SenderName,
+            record.Message,
+            record.CreatedAtUtc);
     }
 
     private static string RequiredMessage(string? value)
@@ -1290,6 +1372,50 @@ public static class EngagementPreparationEndpoints
             {
                 return Results.Conflict(new { message = exception.Message });
             }
+        });
+
+        internalGroup.MapPut("/{id:guid}/preparation/messages/state", async (
+            Guid id,
+            UpdateHostConversationStateRequest request,
+            HttpContext context,
+            EngagementPreparationService service,
+            EngagementRealtimePublisher realtime,
+            CancellationToken ct) =>
+        {
+            if (!KingdomIdentity.CanDirectEngagements(context.User))
+                return Results.Forbid();
+
+            var tenantId = KingdomIdentity.TenantId(context.User, context.Request);
+            var actorName = context.User.Identity?.Name ?? "Engagement coordinator";
+            var result = await service.SetConversationStateAsync(
+                tenantId,
+                id,
+                request.IsClosed,
+                actorName,
+                ct);
+
+            if (result is null) return Results.NotFound();
+
+            if (result.Changed)
+            {
+                if (result.SystemMessage is not null)
+                {
+                    await realtime.MessageCreatedAsync(
+                        tenantId,
+                        id,
+                        result.SystemMessage,
+                        ct);
+                }
+
+                await realtime.CoordinationUpdatedAsync(
+                    tenantId,
+                    id,
+                    "ministry",
+                    request.IsClosed ? "conversation-closed" : "conversation-open",
+                    ct);
+            }
+
+            return Results.Ok(result.Thread);
         });
 
         internalGroup.MapGet("/{id:guid}/preparation/documents/{documentId:guid}", async (Guid id, Guid documentId, bool? download, HttpContext context, EngagementPreparationService service, CancellationToken ct) =>

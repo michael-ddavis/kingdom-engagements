@@ -97,6 +97,42 @@ public sealed class EngagementLaneWorkspaceTests
     }
 
     [Fact]
+    public async Task Internal_host_notes_do_not_overwrite_notes_submitted_by_the_host()
+    {
+        await using var fixture = CreateFixture();
+        var assignment = await fixture.CreateAssignmentAsync();
+
+        await fixture.Lanes.GetHostCoordinationAsync(
+            fixture.TenantId,
+            assignment.Id,
+            CancellationToken.None);
+
+        var preparation = await fixture.Preparations.Preparations
+            .SingleAsync(item => item.AssignmentId == assignment.Id);
+        preparation.HostNotes = "Host asks the team to arrive through the south entrance.";
+        await fixture.Preparations.SaveChangesAsync();
+        fixture.Preparations.ChangeTracker.Clear();
+
+        var updated = await fixture.Lanes.UpdateHostCoordinationAsync(
+            fixture.TenantId,
+            assignment.Id,
+            new UpdateHostCoordinationLaneRequest(
+                "Team should confirm the arrival contact the day before.",
+                []),
+            "Coordinator",
+            CancellationToken.None);
+
+        Assert.NotNull(updated);
+        Assert.Equal("Host asks the team to arrive through the south entrance.", updated.HostNotes);
+        Assert.Equal("Team should confirm the arrival contact the day before.", updated.InternalNotes);
+
+        var stored = await fixture.Preparations.Preparations.AsNoTracking()
+            .SingleAsync(item => item.AssignmentId == assignment.Id);
+        Assert.Equal("Host asks the team to arrive through the south entrance.", stored.HostNotes);
+        Assert.Equal("Team should confirm the arrival contact the day before.", stored.HostCoordinationInternalNotes);
+    }
+
+    [Fact]
     public async Task Media_assets_store_operational_metadata_without_embedding_video_payloads()
     {
         await using var fixture = CreateFixture();

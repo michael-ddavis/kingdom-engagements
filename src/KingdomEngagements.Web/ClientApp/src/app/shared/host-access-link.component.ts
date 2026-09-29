@@ -6,20 +6,47 @@ interface HostInvitation { invitationUrl: string; expiresAtUtc: string; hostName
 @Component({
   selector: 'app-host-access-link', standalone: true, imports: [DatePipe],
   template: `
-    <section aria-labelledby="host-link-title">
-      <small>PRIVATE HOST PORTAL</small><h3 id="host-link-title">Host coordination link</h3>
-      <p>Hosts can add travel, lodging, schedule and contact details, upload documents, and chat with your team. Updates return to this engagement.</p>
-      @if (invitation(); as link) {
-        <label>Private invitation for {{ link.hostName }}<input readonly [value]="link.invitationUrl" (click)="$any($event.target).select()"></label>
-        <div class="actions"><button type="button" (click)="copy()">Copy link</button><a [href]="link.invitationUrl" target="_blank" rel="noopener noreferrer">Open host portal ↗</a></div>
-        <p class="detail">One-time invitation · expires {{ link.expiresAtUtc | date:'short' }}. Opening it starts a private host session.</p>
-      }
-      <button type="button" [disabled]="busy()" (click)="create()">{{ busy() ? 'Creating…' : invitation() ? 'Create replacement link' : 'Create secure host link' }}</button>
-      <p class="detail">Creating a link replaces any earlier invitation and host session for this engagement.</p>
-      @if (message()) { <p role="status">{{ message() }}</p> }
+    <section class="host-link-bar" aria-label="Private host link">
+      <div class="link-status">
+        <small>HOST LINK</small>
+        @if (invitation(); as link) {
+          <strong>Ready to share with {{ link.hostName }}</strong>
+          <span>Expires {{ link.expiresAtUtc | date:'shortDate' }}</span>
+        } @else {
+          <strong>No private host link yet</strong>
+        }
+      </div>
+
+      <div class="link-actions">
+        @if (invitation(); as link) {
+          <button type="button" (click)="copy()">Copy link</button>
+          <a [href]="link.invitationUrl" target="_blank" rel="noopener noreferrer">Open ↗</a>
+          <details>
+            <summary aria-label="More host link options">•••</summary>
+            <div class="more-menu">
+              <p>Replacing the link ends the earlier invitation and host session.</p>
+              <button class="secondary" type="button" [disabled]="busy()" (click)="create()">
+                {{ busy() ? 'Creating…' : 'Replace link' }}
+              </button>
+            </div>
+          </details>
+        } @else {
+          <button type="button" [disabled]="busy()" (click)="create()">{{ busy() ? 'Creating…' : 'Create host link' }}</button>
+        }
+      </div>
+
+      @if (message()) { <span class="message" role="status">{{ message() }}</span> }
     </section>
   `,
-  styles: [`section{background:#fff;border:1px solid #dde3d9;border-radius:14px;padding:22px;margin-bottom:18px;color:#26362b}small{font-size:10px;letter-spacing:.12em;color:#677653}h3{margin:7px 0;font-size:20px}p{font-size:13px;line-height:1.5;color:#657063}label{display:block;font-size:12px;font-weight:600}input{display:block;box-sizing:border-box;width:100%;padding:10px;border:1px solid #ccd5c9;border-radius:7px;margin-top:7px;background:#f8faf6}.actions{display:flex;align-items:center;gap:16px;margin:12px 0}button{border:0;border-radius:7px;background:#334f36;color:white;padding:10px 14px;font:inherit;font-size:13px;cursor:pointer}button:disabled{opacity:.6}a{color:#345838;font-weight:600;font-size:13px}.detail{font-size:11px}`],
+  styles: [`
+    .host-link-bar{position:relative;display:flex;flex:0 0 auto;align-items:center;justify-content:space-between;gap:14px;margin-bottom:8px;padding:9px 11px;border:1px solid #dde3d9;border-radius:10px;background:#fff;color:#26362b}
+    .link-status{display:flex;min-width:0;align-items:baseline;gap:8px}.link-status small{color:#677653;font-size:.55rem;font-weight:850;letter-spacing:.1em}.link-status strong{overflow:hidden;font-size:.68rem;text-overflow:ellipsis;white-space:nowrap}.link-status span{color:#7b837a;font-size:.57rem;white-space:nowrap}
+    .link-actions{display:flex;flex:0 0 auto;align-items:center;gap:6px}.link-actions button,.link-actions a,.link-actions summary{display:inline-flex;min-height:32px;align-items:center;justify-content:center;border-radius:7px;font:inherit;font-size:.61rem;font-weight:800;white-space:nowrap}.link-actions button{border:0;padding:0 10px;background:#334f36;color:#fff;cursor:pointer}.link-actions button:disabled{opacity:.6;cursor:default}.link-actions a{padding:0 9px;border:1px solid #cad5ca;background:#fff;color:#345838;text-decoration:none}.link-actions details{position:relative}.link-actions summary{width:34px;border:1px solid #d4dad4;background:#fff;color:#59655b;cursor:pointer;list-style:none}.link-actions summary::-webkit-details-marker{display:none}
+    .more-menu{position:absolute;z-index:10;top:38px;right:0;width:250px;padding:11px;border:1px solid #d9dfd8;border-radius:9px;background:#fff;box-shadow:0 12px 28px rgba(18,26,44,.12)}.more-menu p{margin:0 0 9px;color:#657063;font-size:.61rem;line-height:1.45}.link-actions .secondary{width:100%;border:1px solid #ccd5c9;background:#fff;color:#334f36}
+    .message{position:absolute;top:100%;right:10px;z-index:5;margin-top:4px;padding:5px 8px;border:1px solid #cfe0d2;border-radius:7px;background:#f3f8f4;color:#345838;font-size:.58rem;font-weight:750}
+    @media(max-width:700px){.host-link-bar{align-items:flex-start;flex-direction:column}.link-status{align-items:flex-start;flex-direction:column;gap:2px}.link-actions{width:100%}.link-actions>button:first-child{flex:1}.more-menu{right:auto;left:0}}
+  `],
+
 })
 export class HostAccessLinkComponent {
   @Input({ required: true }) assignmentId = '';

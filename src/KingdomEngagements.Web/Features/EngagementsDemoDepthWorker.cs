@@ -86,7 +86,7 @@ public sealed class EngagementsDemoDepthWorker(
             if (prep is null)
             {
                 var travel = TravelFor(assignment);
-                var submitted = assignment.Status == "complete" || assignment.ExternalAssignmentId is "assignment-demo-001" or "assignment-demo-002" or "assignment-demo-004";
+                var submitted = assignment.Status == "complete";
                 prep = new EngagementPreparationRecord
                 {
                     Id = Guid.NewGuid(), TenantId = KingdomIdentity.DemoTenantId, AssignmentId = assignment.Id,
@@ -132,6 +132,36 @@ public sealed class EngagementsDemoDepthWorker(
                     SubmittedAtUtc = submitted ? now.AddDays(-5) : null, CreatedAtUtc = now.AddDays(-14), UpdatedAtUtc = now.AddHours(-6)
                 };
                 preparations.Preparations.Add(prep);
+                await preparations.SaveChangesAsync(ct);
+            }
+
+            // Conversation state is independent from form submission.
+            // Active/upcoming demo engagements remain open even after the host submits the form.
+            var shouldBeClosed = assignment.Status == "complete";
+            var preparationChanged = false;
+
+            if (shouldBeClosed && prep.ConversationClosedAtUtc is null)
+            {
+                prep.ConversationClosedAtUtc = now.AddDays(-5);
+                prep.ConversationClosedByName = "Prophet Courtney Beecham";
+                preparationChanged = true;
+            }
+            else if (!shouldBeClosed && prep.ConversationClosedAtUtc is not null)
+            {
+                prep.ConversationClosedAtUtc = null;
+                prep.ConversationClosedByName = null;
+                preparationChanged = true;
+            }
+
+            if (!shouldBeClosed && (!prep.CoordinationTokenExpiresAtUtc.HasValue || prep.CoordinationTokenExpiresAtUtc <= now))
+            {
+                prep.CoordinationTokenExpiresAtUtc = start.AddDays(30);
+                preparationChanged = true;
+            }
+
+            if (preparationChanged)
+            {
+                prep.UpdatedAtUtc = now;
                 await preparations.SaveChangesAsync(ct);
             }
 

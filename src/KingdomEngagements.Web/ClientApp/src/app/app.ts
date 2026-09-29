@@ -57,10 +57,10 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
               } @else if (isCtg()) {
                 @if (roles.canManageAssignments()) {
                   <a class="eng-nav-link" [class.current]="isCurrent('/organization/ctg/command-center')" href="/organization/ctg/command-center">Command Center</a>
-                  <a class="eng-nav-link" [class.current]="isBookingDeskCurrent()" href="/organization/ctg/bookings">Booking Desk</a>
+                  <a class="eng-nav-link" [class.current]="isBookingDeskCurrent()" href="/organization/ctg/bookings">Invitations</a>
                   <a class="eng-nav-link" [class.current]="isCurrentPrefix('/organization/ctg/engagements')" href="/organization/ctg/engagements">Engagements</a>
-                  <a class="eng-nav-link" [class.current]="isCurrent('/organization/ctg/team')" href="/organization/ctg/team">Team</a>
-                  <a class="eng-nav-link" [class.current]="isCurrent('/organization/ctg/hosts')" href="/organization/ctg/hosts">Hosts</a>
+                  <a class="eng-nav-link" [class.current]="isCurrent('/organization/ctg/team')" href="/organization/ctg/team">Team Setup</a>
+                  <a class="eng-nav-link" [class.current]="isCurrent('/organization/ctg/hosts')" href="/organization/ctg/hosts">Host Messages</a>
                   <a class="eng-nav-link" [class.current]="isCurrent('/organization/ctg/programs')" href="/organization/ctg/programs">Programs</a>
                 } @else {
                   <a class="eng-nav-link" [class.current]="isCurrentPrefix('/organization/ctg/engagements')" href="/organization/ctg/engagements">Engagements</a>

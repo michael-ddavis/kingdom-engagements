@@ -1,5 +1,5 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { catchError, forkJoin, of } from 'rxjs';
 import { EngagementsApiService } from '../core/engagements-api.service';
 import {
@@ -25,45 +25,73 @@ interface HostActivityPreview {
   template: `
     <section class="director-page">
       <header class="director-heading">
-        <h1>Command Center</h1>
+        <div>
+          <h1>Command Center</h1>
+          <p>See what needs attention across every engagement, then jump directly into the next piece of work.</p>
+        </div>
         <div class="director-heading-actions">
           <a class="secondary-action" routerLink="/organization/ctg/team">Team</a>
           <a class="primary-action" routerLink="/organization/ctg/stand-up">Stand-up →</a>
         </div>
       </header>
 
+      <nav class="start-actions" aria-label="Start here">
+        <div><strong>What do you need to do?</strong><p>Start an invitation, review requests, or prepare an approved engagement.</p></div>
+        <a routerLink="/organization/ctg/start-invitation">Start an invitation <span>Enter a name and email, then share the host link.</span></a>
+        <a routerLink="/organization/ctg/bookings">Review invitations <span>Follow up with hosts and review incoming requests.</span></a>
+        <a routerLink="/organization/ctg/engagements">Prepare an engagement <span>Find the team, travel plans, and host details.</span></a>
+      </nav>
+
       @if (loading()) {
         <div class="director-state">Loading the engagement operation…</div>
       } @else if (error()) {
         <div class="director-state director-state--error">{{ error() }}</div>
       } @else {
-        <section class="director-summary" aria-label="Operational summary">
+        <section class="command-focus" aria-label="At a glance">
           <button type="button" (click)="attentionOnly.set(false)">
             <small>Active engagements</small>
             <strong>{{ visibleSnapshots().length }}</strong>
             <span>{{ windowLabel() }}</span>
           </button>
           <button type="button" [class.selected]="attentionOnly()" (click)="attentionOnly.set(true)">
-            <small>Need attention</small>
+            <small>Need your attention</small>
             <strong>{{ needsAttention().length }}</strong>
-            <span>Blocked, overdue or unassigned</span>
+            <span>Open the work that is blocked, overdue, or missing an owner.</span>
           </button>
-          <article>
-            <small>Overdue responsibilities</small>
-            <strong>{{ overdueCount() }}</strong>
-            <span>Across visible engagements</span>
-          </article>
-          <article>
-            <small>Unassigned lanes</small>
-            <strong>{{ unassignedCount() }}</strong>
-            <span>Need an owner</span>
-          </article>
-          <article>
-            <small>Waiting on host</small>
-            <strong>{{ waitingOnHostCount() }}</strong>
-            <span>External dependencies</span>
-          </article>
         </section>
+
+        <details class="operational-details">
+          <summary>
+            <span><strong>Operational details</strong><small>For a deeper look at workload and statuses.</small></span>
+            <span>{{ overdueCount() }} overdue · {{ unassignedCount() }} unassigned · {{ waitingOnHostCount() }} waiting on host</span>
+          </summary>
+          <section class="director-summary director-summary--secondary" aria-label="Operational detail">
+            <article>
+              <small>Overdue responsibilities</small>
+              <strong>{{ overdueCount() }}</strong>
+              <span>Across visible engagements</span>
+            </article>
+            <article>
+              <small>Unassigned responsibilities</small>
+              <strong>{{ unassignedCount() }}</strong>
+              <span>Need an owner</span>
+            </article>
+            <article>
+              <small>Waiting on host</small>
+              <strong>{{ waitingOnHostCount() }}</strong>
+              <span>External dependencies</span>
+            </article>
+          </section>
+
+          <div class="status-legend" aria-label="Status color legend">
+            <span><i class="legend-swatch complete"></i>Complete</span>
+            <span><i class="legend-swatch progress"></i>In Progress</span>
+            <span><i class="legend-swatch waiting"></i>Waiting on Host</span>
+            <span><i class="legend-swatch warning"></i>Unassigned</span>
+            <span><i class="legend-swatch danger"></i>Blocked / Overdue</span>
+            <span><i class="legend-swatch neutral"></i>Not Started</span>
+          </div>
+        </details>
 
         <div class="director-toolbar">
           <div class="window-switcher" aria-label="Command Center time window">
@@ -83,19 +111,10 @@ interface HostActivityPreview {
 
         @if (responsibilityDataUnavailable()) {
           <div class="director-state director-state--warning">
-            <strong>Responsibility details are temporarily unavailable.</strong>
-            <span>The engagement list is still shown below. Rebuild the Engagements Docker container after pulling the latest code.</span>
+            <strong>Some responsibility details are temporarily unavailable.</strong>
+            <span>You can still open engagements and continue working. Refresh later to try loading the missing details again.</span>
           </div>
         }
-
-        <div class="status-legend" aria-label="Status color legend">
-          <span><i class="legend-swatch complete"></i>Complete</span>
-          <span><i class="legend-swatch progress"></i>In Progress</span>
-          <span><i class="legend-swatch waiting"></i>Waiting on Host</span>
-          <span><i class="legend-swatch warning"></i>Unassigned</span>
-          <span><i class="legend-swatch danger"></i>Blocked / Overdue</span>
-          <span><i class="legend-swatch neutral"></i>Not Started</span>
-        </div>
 
         <section class="command-board">
           <header>
@@ -108,7 +127,12 @@ interface HostActivityPreview {
           } @else {
             <div class="brief-list">
               @for (snapshot of boardSnapshots(); track snapshot.assignment.id) {
-                <article class="brief-row">
+                <article
+                  class="brief-row"
+                  role="link"
+                  tabindex="0"
+                  (click)="openEngagement(snapshot.assignment.id, $event)"
+                  (keydown.enter)="openEngagement(snapshot.assignment.id, $event)">
                   <a class="brief-identity" [routerLink]="['/organization/ctg/engagements', snapshot.assignment.id]">
                     <strong>{{ snapshot.assignment.title }}</strong>
                     <span>{{ snapshot.assignment.hostOrganization }}</span>
@@ -123,25 +147,28 @@ interface HostActivityPreview {
                     <div class="brief-progress" aria-hidden="true">
                       <i [style.width.%]="snapshot.responsibilityReadinessPercent"></i>
                     </div>
-                    <div class="lane-strip" aria-label="Responsibility lane status">
-                      @for (column of laneColumns; track column.key) {
-                        @if (lane(snapshot, column.key); as laneItem) {
-                          <a
-                            [routerLink]="['/organization/ctg/engagements', snapshot.assignment.id]"
-                            [queryParams]="{ lane: column.key }"
-                            [class.complete]="laneItem.status === 'complete'"
-                            [class.progress]="laneItem.status === 'in-progress' || laneItem.status === 'ready-for-review'"
-                            [class.waiting]="laneItem.status === 'waiting-on-host'"
-                            [class.danger]="laneItem.isOverdue || laneItem.status === 'blocked'"
-                            [class.unassigned]="!laneItem.owner"
-                            [title]="column.shortLabel + ': ' + laneStatusLabel(laneItem)">
-                            <span>{{ column.shortLabel }}</span>
-                          </a>
-                        } @else {
-                          <span class="na" [title]="column.shortLabel + ': not applicable'">{{ column.shortLabel }}</span>
+                    <details class="lane-details">
+                      <summary>View preparation areas</summary>
+                      <div class="lane-strip" aria-label="Responsibility status by preparation area">
+                        @for (column of laneColumns; track column.key) {
+                          @if (lane(snapshot, column.key); as laneItem) {
+                            <a
+                              [routerLink]="['/organization/ctg/engagements', snapshot.assignment.id]"
+                              [queryParams]="{ lane: column.key }"
+                              [class.complete]="laneItem.status === 'complete'"
+                              [class.progress]="laneItem.status === 'in-progress' || laneItem.status === 'ready-for-review'"
+                              [class.waiting]="laneItem.status === 'waiting-on-host'"
+                              [class.danger]="laneItem.isOverdue || laneItem.status === 'blocked'"
+                              [class.unassigned]="!laneItem.owner"
+                              [title]="column.shortLabel + ': ' + laneStatusLabel(laneItem)">
+                              <span>{{ column.shortLabel }}</span>
+                            </a>
+                          } @else {
+                            <span class="na" [title]="column.shortLabel + ': not applicable'">{{ column.shortLabel }}</span>
+                          }
                         }
-                      }
-                    </div>
+                      </div>
+                    </details>
                   </div>
 
                   <div class="brief-attention">
@@ -280,6 +307,8 @@ interface HostActivityPreview {
     </section>
   `,
   styles: [`
+    .start-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:18px 0 24px}.start-actions>div{grid-column:1/-1}.start-actions p{margin:6px 0;color:#59665f;line-height:1.5}.start-actions>a{display:grid;gap:8px;padding:16px;border:1px solid #d8ded9;border-radius:10px;background:#fffdfa;color:#234b78;text-decoration:none;font-weight:750}.start-actions a span{font-size:.85rem;font-weight:400;line-height:1.5;color:#59665f}.start-actions a:hover{border-color:#315faf}.start-actions a:focus-visible{outline:3px solid #315faf;outline-offset:3px}@media(max-width:700px){.start-actions{grid-template-columns:1fr}}
+
     :host{
       display:block;
       --status-complete-bg:#e9f5ed;
@@ -304,12 +333,19 @@ interface HostActivityPreview {
     .director-page{width:min(1500px,calc(100% - 42px));margin:0 auto;padding:28px 0 60px;color:#17202b}
     .director-heading{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:18px;padding:4px 0 14px;border-bottom:1px solid #dde1df}
     .director-heading h1,.command-board h2,.director-panel h2{margin:0;font-family:Georgia,'Times New Roman',serif;font-weight:500;color:#17243a}
-    .director-heading h1{font-size:clamp(1.8rem,2.6vw,2.5rem)}
+    .director-heading h1{font-size:clamp(1.8rem,2.6vw,2.5rem)}.director-heading p{max-width:720px;margin:7px 0 0;color:#69736e;font-size:.74rem;line-height:1.5}
     .director-eyebrow{margin:0!important;color:#7c6b38!important;font:800 .67rem/1.2 system-ui,sans-serif!important;letter-spacing:.11em;text-transform:uppercase}
     .director-heading-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
     .primary-action,.secondary-action{display:inline-flex;min-height:38px;align-items:center;padding:0 13px;border-radius:8px;font-size:.72rem;font-weight:850;text-decoration:none}
     .primary-action{color:#fff;background:#172a46}.secondary-action{color:#172a46;border:1px solid #d6dbe0;background:#fff}
-    .director-summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:14px}
+    .command-focus{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:10px}
+    .command-focus button{appearance:none;text-align:left;padding:17px 18px;border:1px solid #dde1df;border-radius:12px;background:#fffdfa;color:inherit;font:inherit;cursor:pointer}
+    .command-focus button.selected{border-color:#9d7438;box-shadow:0 0 0 2px rgba(157,116,56,.12)}
+    .command-focus small{display:block;color:#737b78;font-size:.64rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+    .command-focus strong{display:block;margin:5px 0 3px;font-size:1.55rem;color:#17243a}.command-focus span{display:block;max-width:520px;color:#6f7773;font-size:.68rem;line-height:1.45}
+    .operational-details{margin:0 0 14px;border:1px solid #e0e4e1;border-radius:11px;background:#faf9f5}
+    .operational-details>summary{display:flex;justify-content:space-between;gap:18px;align-items:center;min-height:46px;padding:0 14px;cursor:pointer;color:#56615c;font-size:.66rem;list-style:none}.operational-details>summary::-webkit-details-marker{display:none}.operational-details>summary span:first-child{display:grid;gap:2px}.operational-details>summary strong{color:#17243a;font-size:.72rem}.operational-details>summary small{color:#7b827e;font-size:.61rem;font-weight:500}.operational-details>summary span:last-child{font-weight:750;text-align:right}
+    .director-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0;padding:12px 14px 8px;border-top:1px solid #e4e7e4}
     .director-summary article,.director-summary button{appearance:none;text-align:left;padding:15px 16px;border:1px solid #dde1df;border-radius:11px;background:#fffdfa;color:inherit;font:inherit;cursor:default}
     .director-summary button{cursor:pointer}.director-summary button.selected{border-color:#9d7438;box-shadow:0 0 0 2px rgba(157,116,56,.12)}
     .director-summary small{display:block;color:#737b78;font-size:.64rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
@@ -318,7 +354,7 @@ interface HostActivityPreview {
     .window-switcher{display:flex;gap:4px;padding:4px;border:1px solid #dde1df;border-radius:9px;background:#fff}
     .window-switcher button,.clear-filter{border:0;border-radius:6px;padding:7px 10px;background:transparent;color:#68716d;font-weight:800;font-size:.68rem;cursor:pointer}
     .window-switcher button.selected{color:#fff;background:#172a46}.clear-filter{border:1px solid #dde1df;background:#fff}
-    .status-legend{display:flex;align-items:center;justify-content:flex-end;gap:10px 14px;flex-wrap:wrap;margin:2px 2px 10px;color:#6e7672;font-size:.56rem;font-weight:750}
+    .status-legend{display:flex;align-items:center;justify-content:flex-end;gap:10px 14px;flex-wrap:wrap;margin:0;padding:4px 14px 12px;color:#6e7672;font-size:.56rem;font-weight:750}
     .status-legend>span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
     .legend-swatch{display:inline-block;width:9px;height:9px;border:1px solid var(--status-neutral-border);border-radius:3px;background:var(--status-neutral-bg)}
     .legend-swatch.complete{border-color:var(--status-complete-border);background:var(--status-complete-bg)}
@@ -333,12 +369,12 @@ interface HostActivityPreview {
     .command-board h2,.director-panel h2{font-size:1.12rem}.command-board>header>span{display:grid;min-width:28px;height:28px;place-items:center;border-radius:999px;background:#f0f2f0;color:#5f6763;font-size:.68rem;font-weight:900}.director-panel header>a{color:#315faf;font-size:.7rem;font-weight:800;text-decoration:none}
     .brief-list{display:flex;flex-direction:column}
     .brief-row{display:grid;grid-template-columns:minmax(245px,1.1fr) minmax(360px,1.55fr) minmax(220px,.9fr) 62px;gap:22px;align-items:center;padding:16px 18px;border-bottom:1px solid #eceeeb}
-    .brief-row:last-child{border-bottom:0}.brief-row:hover{background:#fdfcf8}
+    .brief-row:last-child{border-bottom:0}.brief-row{cursor:pointer}.brief-row:hover{background:#fdfcf8}.brief-row:focus-visible{outline:3px solid #315faf;outline-offset:-3px}
     .brief-identity{display:flex;min-width:0;flex-direction:column;gap:3px;color:inherit;text-decoration:none}
     .brief-identity strong{overflow:hidden;text-overflow:ellipsis;color:#17243a;font-size:.82rem;white-space:nowrap}.brief-identity span,.brief-identity small{overflow:hidden;text-overflow:ellipsis;color:#747c78;font-size:.64rem;white-space:nowrap}
     .brief-readiness{display:grid;grid-template-columns:auto 1fr;gap:7px 12px;align-items:center;min-width:0}.brief-readiness-copy{display:flex;min-width:86px;flex-direction:column}.brief-readiness-copy strong{font-size:1.28rem;color:#17243a}.brief-readiness-copy span{color:#7a817d;font-size:.59rem}
     .brief-progress{height:6px;border-radius:999px;background:#e8ebe8;overflow:hidden}.brief-progress i{display:block;height:100%;border-radius:inherit;background:#5f8f73}
-    .lane-strip{grid-column:1/-1;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px}.lane-strip>a,.lane-strip>span{display:grid;min-height:27px;place-items:center;border:1px solid var(--status-neutral-border);border-radius:6px;background:var(--status-neutral-bg);color:var(--status-neutral-text);font-size:.49rem;font-weight:900;letter-spacing:.04em;text-decoration:none;text-transform:uppercase}
+    .lane-details{grid-column:1/-1}.lane-details>summary{display:inline-flex;min-height:30px;align-items:center;color:#53647a;font-size:.58rem;font-weight:800;cursor:pointer}.lane-strip{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px;margin-top:4px}.lane-strip>a,.lane-strip>span{display:grid;min-height:27px;place-items:center;border:1px solid var(--status-neutral-border);border-radius:6px;background:var(--status-neutral-bg);color:var(--status-neutral-text);font-size:.49rem;font-weight:900;letter-spacing:.04em;text-decoration:none;text-transform:uppercase}
     .lane-strip>a.complete{border-color:var(--status-complete-border);background:var(--status-complete-bg);color:var(--status-complete-text)}
     .lane-strip>a.progress{border-color:var(--status-progress-border);background:var(--status-progress-bg);color:var(--status-progress-text)}
     .lane-strip>a.waiting{border-color:var(--status-waiting-border);background:var(--status-waiting-bg);color:var(--status-waiting-text)}
@@ -357,8 +393,8 @@ interface HostActivityPreview {
     .host-preview-list>a{grid-template-columns:1fr auto}.host-preview-list p{grid-column:1/-1;margin:0;color:#535e58;font-size:.73rem;line-height:1.45}.host-preview-list>a>span{font-size:.65rem;color:#7c827f}
     .team-accountability{margin-top:14px}.team-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:14px}.team-grid article{padding:15px;border:1px solid #e2e5e2;border-radius:11px;background:#f9f8f4}.team-grid article>strong{display:block}.team-grid article>span{display:block;margin:3px 0 12px;color:#757c78;font-size:.65rem}.team-grid dl{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin:0}.team-grid dl div{padding:7px;border-radius:7px;background:#fff}.team-grid dt{font-size:.57rem;color:#858b87;text-transform:uppercase}.team-grid dd{margin:2px 0 0;font-weight:850}
     .panel-empty,.director-empty,.director-state{padding:28px;color:#747c78;text-align:center}.director-state{margin:40px auto;border:1px solid #dde1df;border-radius:14px;background:#fff}.director-state--error{color:#9a433f}.danger-text{color:#a84642!important}.warning-text{color:#956d25!important}
-    @media(max-width:1050px){.director-summary{grid-template-columns:repeat(3,1fr)}.director-lower-grid{grid-template-columns:1fr}.team-grid{grid-template-columns:repeat(2,1fr)}.brief-row{grid-template-columns:minmax(220px,1fr) minmax(330px,1.35fr) minmax(200px,.9fr) 54px;gap:14px}}
-    @media(max-width:720px){.director-page{width:min(100% - 24px,1500px)}.director-heading{flex-direction:column;align-items:flex-start}.director-summary{grid-template-columns:1fr 1fr}.team-grid{grid-template-columns:1fr}.director-toolbar{align-items:flex-start;flex-direction:column}.brief-row{grid-template-columns:1fr}.brief-readiness{grid-template-columns:auto 1fr}.brief-open{justify-content:flex-start}.brief-attention{margin-top:-4px}}
+    @media(max-width:1050px){.director-lower-grid{grid-template-columns:1fr}.team-grid{grid-template-columns:repeat(2,1fr)}.brief-row{grid-template-columns:minmax(220px,1fr) minmax(330px,1.35fr) minmax(200px,.9fr) 54px;gap:14px}}
+    @media(max-width:720px){.director-page{width:min(100% - 24px,1500px)}.director-heading{flex-direction:column;align-items:flex-start}.command-focus,.director-summary{grid-template-columns:1fr}.operational-details>summary{align-items:flex-start;flex-direction:column;padding:12px 14px}.operational-details>summary span:last-child{text-align:left}.team-grid{grid-template-columns:1fr}.director-toolbar{align-items:flex-start;flex-direction:column}.brief-row{grid-template-columns:1fr}.brief-readiness{grid-template-columns:auto 1fr}.brief-open{justify-content:flex-start}.brief-attention{margin-top:-4px}}
   `],
 })
 export class CtgCommandCenterComponent implements OnInit {
@@ -478,7 +514,7 @@ export class CtgCommandCenterComponent implements OnInit {
       .sort((a, b) => b.overdue - a.overdue || b.active - a.active || a.name.localeCompare(b.name));
   });
 
-  constructor(private readonly api: EngagementsApiService) {}
+  constructor(private readonly api: EngagementsApiService, private readonly router: Router) {}
 
   ngOnInit(): void {
     this.api.getCommandCenter().subscribe({
@@ -496,12 +532,25 @@ export class CtgCommandCenterComponent implements OnInit {
     this.attentionOnly.set(false);
   }
 
+  openEngagement(id: string, event: Event): void {
+    const target = event.target as HTMLElement | null;
+    if (target?.closest('a, button, details, summary, input, select, textarea')) return;
+    void this.router.navigate(['/organization/ctg/engagements', id]);
+  }
+
   lane(snapshot: EngagementResponsibilitySnapshot, key: string): ResponsibilityLaneState | null {
     return snapshot.lanes.find(item => item.key === key && item.isApplicable) ?? null;
   }
 
   laneStatusLabel(lane: ResponsibilityLaneState): string {
-    if (lane.isOverdue) return 'Overdue';
+    if (!lane.owner) return 'Needs an owner';
+    if (lane.isOverdue || lane.status === 'overdue') return 'Overdue';
+    if (lane.status === 'blocked') return 'Needs help';
+    if (lane.status === 'ready-for-review') return 'Ready to review';
+    if (lane.status === 'waiting-on-host') return 'Waiting for host';
+    if (lane.status === 'not-started') return 'Not started yet';
+    if (lane.status === 'in-progress') return 'In progress';
+    if (lane.status === 'complete') return 'Complete';
     return this.statusLabel(lane.status);
   }
 

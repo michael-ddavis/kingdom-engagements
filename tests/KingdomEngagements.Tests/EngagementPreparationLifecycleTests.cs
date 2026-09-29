@@ -182,7 +182,7 @@ public sealed class EngagementPreparationLifecycleTests
     }
 
     [Fact]
-    public async Task Host_coordination_conversation_is_shared_and_closes_with_coordination()
+    public async Task Host_coordination_submission_does_not_close_conversation_and_admin_can_close_and_reopen_it()
     {
         await using var fixture = CreateFixture();
         var tenantId = Guid.NewGuid();
@@ -223,6 +223,7 @@ public sealed class EngagementPreparationLifecycleTests
             CancellationToken.None);
 
         Assert.NotNull(hostThread);
+        Assert.False(hostThread.IsClosed);
         Assert.Single(hostThread.Messages);
         Assert.Equal("host", hostThread.Messages[0].SenderType);
 
@@ -243,25 +244,77 @@ public sealed class EngagementPreparationLifecycleTests
         var preparationRecord = await fixture.Preparations.Preparations
             .SingleAsync(x => x.AssignmentId == assignmentId);
         preparationRecord.CoordinationStatus = "submitted";
+        preparationRecord.SubmittedAtUtc = DateTimeOffset.UtcNow;
         preparationRecord.UpdatedAtUtc = DateTimeOffset.UtcNow;
         await fixture.Preparations.SaveChangesAsync();
         fixture.Preparations.ChangeTracker.Clear();
 
-        var closedThread = await fixture.PreparationService.GetMessagesForHostAsync(
+        var submittedThread = await fixture.PreparationService.GetMessagesForHostAsync(
             accepted.CoordinationToken!,
             CancellationToken.None);
 
-        Assert.NotNull(closedThread);
-        Assert.True(closedThread.IsClosed);
-        Assert.Equal(2, closedThread.Messages.Count);
+        Assert.NotNull(submittedThread);
+        Assert.False(submittedThread.IsClosed);
+
+        var afterSubmissionMessage = await fixture.PreparationService.AddHostMessageAsync(
+            accepted.CoordinationToken!,
+            new PostHostCoordinationMessageRequest(
+                "Pastor Jordan Ellis",
+                "One more update after submitting the form."),
+            CancellationToken.None);
+
+        Assert.NotNull(afterSubmissionMessage);
+        Assert.Equal(3, afterSubmissionMessage.Messages.Count);
+
+        fixture.Preparations.ChangeTracker.Clear();
+
+        var closeResult = await fixture.PreparationService.SetConversationStateAsync(
+            tenantId,
+            assignmentId,
+            true,
+            "Prophet Courtney Beecham",
+            CancellationToken.None);
+
+        Assert.NotNull(closeResult);
+        Assert.True(closeResult.Changed);
+        Assert.True(closeResult.Thread.IsClosed);
+        Assert.NotNull(closeResult.Thread.ClosedAtUtc);
+        Assert.Equal("Prophet Courtney Beecham", closeResult.Thread.ClosedByName);
+        Assert.Equal("system", closeResult.SystemMessage?.SenderType);
+        Assert.Contains("closed this conversation", closeResult.SystemMessage?.Message);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             fixture.PreparationService.AddHostMessageAsync(
                 accepted.CoordinationToken!,
                 new PostHostCoordinationMessageRequest(
                     "Pastor Jordan Ellis",
-                    "One more update."),
+                    "This should not send while closed."),
                 CancellationToken.None));
+
+        var reopenResult = await fixture.PreparationService.SetConversationStateAsync(
+            tenantId,
+            assignmentId,
+            false,
+            "Prophet Courtney Beecham",
+            CancellationToken.None);
+
+        Assert.NotNull(reopenResult);
+        Assert.True(reopenResult.Changed);
+        Assert.False(reopenResult.Thread.IsClosed);
+        Assert.Null(reopenResult.Thread.ClosedAtUtc);
+        Assert.Null(reopenResult.Thread.ClosedByName);
+        Assert.Equal("system", reopenResult.SystemMessage?.SenderType);
+        Assert.Contains("reopened this conversation", reopenResult.SystemMessage?.Message);
+
+        var reopenedMessage = await fixture.PreparationService.AddHostMessageAsync(
+            accepted.CoordinationToken!,
+            new PostHostCoordinationMessageRequest(
+                "Pastor Jordan Ellis",
+                "Thanks, messaging works again."),
+            CancellationToken.None);
+
+        Assert.NotNull(reopenedMessage);
+        Assert.False(reopenedMessage.IsClosed);
     }
 
     private static SpeakingRequestInput ValidRequest() => new(

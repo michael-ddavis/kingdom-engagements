@@ -161,6 +161,9 @@ builder.Services.AddAuthentication(KingdomIdentity.Scheme)
     {
         options.Cookie.Name = ".KingdomOS.Identity";
         options.Cookie.HttpOnly = true;
+        var cookieDomain = builder.Configuration["KingdomOS:Identity:CookieDomain"];
+        if (!string.IsNullOrWhiteSpace(cookieDomain))
+            options.Cookie.Domain = cookieDomain.Trim();
         options.Cookie.SameSite = SameSiteMode.Lax;
         options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
             ? CookieSecurePolicy.SameAsRequest

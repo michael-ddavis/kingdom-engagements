@@ -22,7 +22,8 @@ public sealed record StartedInvitationLinkResult(
 
 public sealed class StaffStartedInvitationsService(
     SpeakingRequestsDbContext requestsDatabase,
-    SpeakingRequestsService speakingRequests)
+    SpeakingRequestsService speakingRequests,
+    ICurrentTenant currentTenant)
 {
     private const string WaitingOnHostStatus = "host-completion-needed";
 
@@ -106,6 +107,7 @@ public sealed class StaffStartedInvitationsService(
         CancellationToken cancellationToken)
     {
         await requestsDatabase.EnsureSchemaAsync(cancellationToken);
+        using var tenantBypass = currentTenant.BeginBypass("Resolve staff-started invitation token.");
         var request = await requestsDatabase.Requests.AsNoTracking()
             .Include(item => item.Communications)
             .SingleOrDefaultAsync(item => item.EditToken == token, cancellationToken);
@@ -118,10 +120,13 @@ public sealed class StaffStartedInvitationsService(
         CancellationToken cancellationToken)
     {
         await requestsDatabase.EnsureSchemaAsync(cancellationToken);
+        using var tenantBypass = currentTenant.BeginBypass("Resolve staff-started invitation token.");
         var request = await requestsDatabase.Requests
             .Include(item => item.Communications)
             .SingleOrDefaultAsync(item => item.EditToken == token, cancellationToken);
         if (!HostCompletionLinkValid(request)) return null;
+        tenantBypass.Dispose();
+        using var tenantScope = currentTenant.UseTenant(request!.TenantId);
 
         // Reuse the established host-update path so the same validation, readiness
         // calculation, field mapping, and communication behavior applies. The state

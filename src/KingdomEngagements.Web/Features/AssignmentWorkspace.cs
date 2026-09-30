@@ -4,8 +4,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KingdomEngagements.Web.Features;
 
-public sealed class AssignmentWorkspaceDbContext(DbContextOptions<AssignmentWorkspaceDbContext> options) : DbContext(options)
+public sealed class AssignmentWorkspaceDbContext(
+    ICurrentTenant currentTenant,
+    DbContextOptions<AssignmentWorkspaceDbContext> options) : DbContext(options)
 {
+    private Guid? CurrentTenantId => currentTenant.TenantId;
+    private bool TenantBypass => currentTenant.BypassActive;
     public DbSet<AssignmentWorkspaceActivityRecord> Activities => Set<AssignmentWorkspaceActivityRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -19,6 +23,8 @@ public sealed class AssignmentWorkspaceDbContext(DbContextOptions<AssignmentWork
         activity.Property(x => x.Detail).HasMaxLength(3000).IsRequired();
         activity.Property(x => x.Actor).HasMaxLength(180).IsRequired();
         activity.HasIndex(x => new { x.TenantId, x.AssignmentId, x.OccurredAtUtc });
+        activity.HasQueryFilter(x =>
+            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.Value));
     }
 
     public async Task EnsureSchemaAsync(CancellationToken cancellationToken)

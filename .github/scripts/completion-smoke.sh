@@ -35,7 +35,7 @@ docker run --detach --name "$app_name" --network "$network" \
   -e KingdomOS__Identity__DemoProfilesEnabled=true \
   -e KingdomOS__Entitlements__BypassInDevelopment=false \
   -e KingdomOS__Entitlements__FailOpenInDevelopment=false \
-  kingdom-engagements:ci >/dev/null
+  kingdom-engagements:demo-ci >/dev/null
 
 for attempt in {1..60}; do
   docker exec "$app_name" curl --fail --silent http://localhost:8080/health | grep '"platformEntitlement":"enabled"' >/dev/null && break

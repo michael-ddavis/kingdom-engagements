@@ -79,9 +79,9 @@ public sealed class EngagementsAuthorizationTests
     }
 
     [Theory]
-    [InlineData("engagements:module-administrator", EngagementsDemoRoles.Coordinator)]
-    [InlineData("engagements:viewer", EngagementsDemoRoles.Apostle)]
-    [InlineData("engagements:module-member", EngagementsDemoRoles.Minister)]
+    [InlineData("engagements:module-administrator", EngagementAccessRoles.Coordinator)]
+    [InlineData("engagements:viewer", EngagementAccessRoles.Apostle)]
+    [InlineData("engagements:module-member", EngagementAccessRoles.Minister)]
     public void Platform_module_roles_map_to_the_correct_engagement_workspace(
         string productRole,
         string expectedRole)
@@ -89,9 +89,10 @@ public sealed class EngagementsAuthorizationTests
         var principal = Principal(
             new Claim(KingdomIdentity.ProductRoleClaim, productRole));
 
-        Assert.Equal(expectedRole, EngagementsDemoRoles.CurrentRole(principal));
+        Assert.Equal(expectedRole, EngagementAccessRoles.CurrentRole(principal));
     }
 
+#if ENGAGEMENTS_DEMO
     [Theory]
     [InlineData(null, "a1ab45e2-1746-4d91-9de0-9cf70ae75d3a")]
     [InlineData("ctg", "a1ab45e2-1746-4d91-9de0-9cf70ae75d3a")]
@@ -120,6 +121,7 @@ public sealed class EngagementsAuthorizationTests
             KingdomIdentity.CreateDevelopmentPrincipal("not-an-organization"));
     }
 
+#endif
     private static ClaimsPrincipal Principal(params Claim[] claims) =>
         new(new ClaimsIdentity(claims, KingdomIdentity.Scheme));
 }

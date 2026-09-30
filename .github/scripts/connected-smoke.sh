@@ -139,6 +139,12 @@ docker exec "$production_app_name" sh -c \
   "curl --fail --silent -D /tmp/health-headers.txt -o /tmp/health-body.json -H 'X-Correlation-ID: ci-production-correlation' http://localhost:8080/health/ready"
 docker exec "$production_app_name" grep --ignore-case --quiet \
   '^X-Correlation-ID: ci-production-correlation' /tmp/health-headers.txt
+# Real session/assignment routes must survive the demo-free production build.
+for route in session my-assignments; do
+  status="$(docker exec "$production_app_name" curl --silent --output /dev/null --write-out '%{http_code}' \
+    "http://localhost:8080/api/engagements/$route")"
+  test "$status" = 401 || { echo "Production $route returned $status instead of 401." >&2; exit 1; }
+done
 production_logs="$(docker logs "$production_app_name" 2>&1)"
 grep --quiet 'ci-production-correlation' <<<"$production_logs"
 
@@ -163,7 +169,7 @@ run_engagements_app() {
     -e KingdomOS__Identity__DemoProfilesEnabled=true \
     -e KingdomOS__Entitlements__BypassInDevelopment=false \
     -e KingdomOS__Entitlements__FailOpenInDevelopment=false \
-    kingdom-engagements:ci >/dev/null
+    kingdom-engagements:demo-ci >/dev/null
 }
 
 wait_for_app() {

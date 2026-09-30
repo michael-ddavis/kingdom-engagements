@@ -5,7 +5,7 @@ namespace KingdomEngagements.Web.Platform;
 
 public static class DistributedRuntimeRegistration
 {
-    private const string DefaultApplicationName = "ApostolOS";
+    private const string DefaultApplicationName = KingdomIdentity.Scheme;
     private const string DefaultChannelPrefix = "ApostolOS:Engagements";
     private const string DefaultDataProtectionKey = "ApostolOS:DataProtectionKeys";
 

@@ -121,6 +121,17 @@ public static class ApostolOSProductionConfiguration
             "AllowedHosts must name the production host(s); wildcard '*' is not allowed in Production.",
             problems);
 
+        var integrationServiceKey = configuration["KingdomOS:Integration:ServiceKey"];
+        Require(
+            !string.IsNullOrWhiteSpace(integrationServiceKey) &&
+            integrationServiceKey.Length >= 16 &&
+            !string.Equals(
+                integrationServiceKey,
+                "local-kingdomos-integration",
+                StringComparison.Ordinal),
+            "KingdomOS:Integration:ServiceKey must be a production service key.",
+            problems);
+
         var requireTelemetryExporter =
             configuration.GetValue("KingdomOS:Observability:RequireExporter", true);
         var otlpEndpoint =

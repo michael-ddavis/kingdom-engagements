@@ -177,7 +177,7 @@ public sealed class TenantIsolationTests
     public async Task Authenticated_staff_without_a_tenant_is_rejected_before_the_handler()
     {
         var invoked = false;
-        var middleware = new CurrentTenantMiddleware(_ => { invoked = true; return Task.CompletedTask; });
+        var middleware = new CurrentTenantMiddleware(_ => { invoked = true; return System.Threading.Tasks.Task.CompletedTask; });
         var context = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity(
             [new Claim(ClaimTypes.NameIdentifier, "missing-tenant")], KingdomIdentity.Scheme)) };
         await middleware.InvokeAsync(context, new TestCurrentTenant());

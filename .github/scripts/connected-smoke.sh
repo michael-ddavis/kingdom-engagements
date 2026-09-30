@@ -88,8 +88,8 @@ fi
 
 docker exec "$minio_name" mc mb --ignore-existing local/engagements-ci >/dev/null
 
-mkdir -p .ci-platform/api
-printf '%s\n' '[{"moduleKey":"engagements","enabled":true}]' > .ci-platform/api/modules
+mkdir -p .ci-platform/api/integration
+printf '%s\n' '[{"moduleKey":"engagements","enabled":true}]' > .ci-platform/api/integration/modules
 docker run --detach --name "$platform_name" --network "$network" \
   -v "$PWD/.ci-platform:/srv:ro" -w /srv \
   python:3.12-alpine python -m http.server 8080 >/dev/null
@@ -105,6 +105,7 @@ docker run --detach --name "$production_app_name" --network "$network" \
   -e ASPNETCORE_ENVIRONMENT=Production \
   -e AllowedHosts=localhost \
   -e KingdomOS__Identity__CookieDomain=.apostolos.test \
+  -e KingdomOS__Integration__ServiceKey=ci-production-integration-key-12345 \
   -e "KingdomOS__HostAccess__PublicBaseUrl=https://coordinate.apostolos.test" \
   -e KingdomOS__DocumentStorage__S3__BucketName=engagements-ci \
   -e KingdomOS__DocumentStorage__S3__Region=us-east-1 \

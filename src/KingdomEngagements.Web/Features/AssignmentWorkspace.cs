@@ -24,7 +24,7 @@ public sealed class AssignmentWorkspaceDbContext(
         activity.Property(x => x.Actor).HasMaxLength(180).IsRequired();
         activity.HasIndex(x => new { x.TenantId, x.AssignmentId, x.OccurredAtUtc });
         activity.HasQueryFilter(x =>
-            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.Value));
+            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.GetValueOrDefault()));
     }
 
     public async Task EnsureSchemaAsync(CancellationToken cancellationToken)

@@ -88,7 +88,7 @@ public sealed class HostAccessDbContext(
         invitation.HasIndex(x => x.TokenHash).IsUnique();
         invitation.HasIndex(x => new { x.TenantId, x.AssignmentId, x.CreatedAtUtc });
         invitation.HasQueryFilter(x =>
-            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.Value));
+            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.GetValueOrDefault()));
     }
 
     public async Task EnsureSchemaAsync(CancellationToken cancellationToken)

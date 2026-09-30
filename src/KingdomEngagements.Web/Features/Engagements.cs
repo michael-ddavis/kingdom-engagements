@@ -137,21 +137,21 @@ public sealed class EngagementsDbContext(
         receipt.Property(x => x.SourceModule).HasMaxLength(80).IsRequired();
 
         assignment.HasQueryFilter(x =>
-            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.Value));
+            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.GetValueOrDefault()));
         task.HasQueryFilter(x =>
-            TenantBypass || (CurrentTenantId.HasValue && x.Assignment != null && x.Assignment.TenantId == CurrentTenantId.Value));
+            TenantBypass || (CurrentTenantId.HasValue && x.Assignment != null && x.Assignment.TenantId == CurrentTenantId.GetValueOrDefault()));
         document.HasQueryFilter(x =>
-            TenantBypass || (CurrentTenantId.HasValue && x.Assignment != null && x.Assignment.TenantId == CurrentTenantId.Value));
+            TenantBypass || (CurrentTenantId.HasValue && x.Assignment != null && x.Assignment.TenantId == CurrentTenantId.GetValueOrDefault()));
         standingResponsibility.HasQueryFilter(x =>
-            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.Value));
+            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.GetValueOrDefault()));
         responsibilityOverride.HasQueryFilter(x =>
-            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.Value));
+            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.GetValueOrDefault()));
         laneProgress.HasQueryFilter(x =>
-            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.Value));
+            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.GetValueOrDefault()));
         teamMember.HasQueryFilter(x =>
-            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.Value));
+            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.GetValueOrDefault()));
         mediaAsset.HasQueryFilter(x =>
-            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.Value));
+            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.GetValueOrDefault()));
     }
 }
 

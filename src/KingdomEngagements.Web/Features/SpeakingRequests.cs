@@ -57,9 +57,9 @@ public sealed class SpeakingRequestsDbContext(
         communication.Property(x => x.Actor).HasMaxLength(180).IsRequired();
 
         request.HasQueryFilter(x =>
-            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.Value));
+            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.GetValueOrDefault()));
         communication.HasQueryFilter(x =>
-            TenantBypass || (CurrentTenantId.HasValue && x.Request != null && x.Request.TenantId == CurrentTenantId.Value));
+            TenantBypass || (CurrentTenantId.HasValue && x.Request != null && x.Request.TenantId == CurrentTenantId.GetValueOrDefault()));
     }
 
     public async Task EnsureSchemaAsync(CancellationToken cancellationToken)

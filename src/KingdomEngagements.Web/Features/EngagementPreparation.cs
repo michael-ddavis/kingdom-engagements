@@ -94,11 +94,11 @@ public sealed class EngagementPreparationDbContext(
             .HasForeignKey(x => x.PreparationId).OnDelete(DeleteBehavior.Cascade);
 
         preparation.HasQueryFilter(x =>
-            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.Value));
+            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.GetValueOrDefault()));
         document.HasQueryFilter(x =>
-            TenantBypass || (CurrentTenantId.HasValue && x.Preparation != null && x.Preparation.TenantId == CurrentTenantId.Value));
+            TenantBypass || (CurrentTenantId.HasValue && x.Preparation != null && x.Preparation.TenantId == CurrentTenantId.GetValueOrDefault()));
         message.HasQueryFilter(x =>
-            TenantBypass || (CurrentTenantId.HasValue && x.Preparation != null && x.Preparation.TenantId == CurrentTenantId.Value));
+            TenantBypass || (CurrentTenantId.HasValue && x.Preparation != null && x.Preparation.TenantId == CurrentTenantId.GetValueOrDefault()));
     }
 
     public async Task EnsureSchemaAsync(CancellationToken cancellationToken)

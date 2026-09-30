@@ -23,7 +23,7 @@ public sealed class GlobalBookingDbContext(
         booking.Property(x => x.Country).HasMaxLength(120).IsRequired();
         booking.Property(x => x.PayloadJson).HasColumnType("nvarchar(max)").IsRequired();
         booking.HasQueryFilter(x =>
-            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.Value));
+            TenantBypass || (CurrentTenantId.HasValue && x.TenantId == CurrentTenantId.GetValueOrDefault()));
     }
 
     public async Task EnsureSchemaAsync(CancellationToken cancellationToken)

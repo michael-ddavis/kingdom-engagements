@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using KingdomEngagements.Web.Features;
 using KingdomEngagements.Web.Platform;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -9,6 +10,16 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddApostolOSSecretSources();
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor |
+        ForwardedHeaders.XForwardedProto |
+        ForwardedHeaders.XForwardedHost;
+    options.ForwardLimit = 1;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 builder.ValidateApostolOSProductionConfiguration();
 builder.AddApostolOSObservability();
 builder.Services.AddProblemDetails();
@@ -250,6 +261,9 @@ builder.Services.AddHostedService<EngagementsDemoConnectedStoryWorker>();
 #endif
 
 var app = builder.Build();
+
+if (app.Configuration.GetValue<bool>("KingdomOS:ReverseProxy:TrustForwardedHeaders"))
+    app.UseForwardedHeaders();
 
 app.UseMiddleware<ApostolOSRequestObservabilityMiddleware>();
 app.UseExceptionHandler();

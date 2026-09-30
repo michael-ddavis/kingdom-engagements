@@ -188,12 +188,20 @@ public sealed class EngagementsEntitlementResolver(
         var platformUrl = (configuration["KingdomOS:PlatformInternalUrl"]
             ?? configuration["KingdomOS:PlatformUrl"]
             ?? "http://platform:8080").TrimEnd('/');
+        var serviceKey = configuration["KingdomOS:Integration:ServiceKey"];
+        if (string.IsNullOrWhiteSpace(serviceKey) && environment.IsDevelopment())
+            serviceKey = "local-kingdomos-integration";
+
+        if (string.IsNullOrWhiteSpace(serviceKey))
+            return ModuleEntitlementState.Unavailable;
+
         try
         {
-            using var request = new HttpRequestMessage(HttpMethod.Get, $"{platformUrl}/api/modules");
+            using var request = new HttpRequestMessage(
+                HttpMethod.Get,
+                $"{platformUrl}/api/integration/modules");
             request.Headers.TryAddWithoutValidation("X-Kingdom-Tenant", tenantId.ToString());
-            request.Headers.TryAddWithoutValidation("X-Kingdom-Subject", "engagements-service");
-            request.Headers.TryAddWithoutValidation("X-Kingdom-Role", "service");
+            request.Headers.TryAddWithoutValidation("X-Kingdom-Service-Key", serviceKey);
             using var response = await httpClient.SendAsync(request, cancellationToken);
             if (!response.IsSuccessStatusCode) return ModuleEntitlementState.Unavailable;
 

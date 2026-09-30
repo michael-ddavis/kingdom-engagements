@@ -1,0 +1,92 @@
+name: Deploy AWS
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Protected GitHub environment
+        type: choice
+        options:
+          - dev
+          - staging
+          - production
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: apostolos-engagements-aws-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment: aws-${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    env:
+      SERVICE_NAME: engagements
+      HOST_PREFIX: engagements
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_BASE_DOMAIN: ${{ vars.AWS_BASE_DOMAIN }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push immutable image
+        id: image
+        run: |
+          set -euo pipefail
+          ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+          REPOSITORY="apostolos-${{ inputs.environment }}-$SERVICE_NAME"
+          IMAGE="$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$REPOSITORY:${GITHUB_SHA}"
+          docker build --tag "$IMAGE" .
+          docker push "$IMAGE"
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+
+      - name: Register ECS task revision
+        id: task
+        env:
+          IMAGE: ${{ steps.image.outputs.image }}
+        run: |
+          set -euo pipefail
+          CLUSTER="apostolos-${{ inputs.environment }}"
+          SERVICE="apostolos-${{ inputs.environment }}-$SERVICE_NAME"
+          CURRENT_TASK="$(aws ecs describe-services --cluster "$CLUSTER" --services "$SERVICE" --query 'services[0].taskDefinition' --output text)"
+          test "$CURRENT_TASK" != "None"
+
+          aws ecs describe-task-definition --task-definition "$CURRENT_TASK" --query taskDefinition > task-definition.json
+          jq --arg image "$IMAGE" --arg name "$SERVICE_NAME" '
+            .containerDefinitions |= map(if .name == $name then .image = $image else . end)
+            | del(.taskDefinitionArn,.revision,.status,.requiresAttributes,.compatibilities,.registeredAt,.registeredBy)
+          ' task-definition.json > next-task-definition.json
+
+          NEXT_TASK="$(aws ecs register-task-definition --cli-input-json file://next-task-definition.json --query 'taskDefinition.taskDefinitionArn' --output text)"
+          echo "task=$NEXT_TASK" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy ECS revision
+        run: |
+          set -euo pipefail
+          CLUSTER="apostolos-${{ inputs.environment }}"
+          SERVICE="apostolos-${{ inputs.environment }}-$SERVICE_NAME"
+          aws ecs update-service \
+            --cluster "$CLUSTER" \
+            --service "$SERVICE" \
+            --task-definition "${{ steps.task.outputs.task }}" \
+            --desired-count 1 >/dev/null
+          aws ecs wait services-stable --cluster "$CLUSTER" --services "$SERVICE"
+
+      - name: Verify cloud readiness
+        run: |
+          set -euo pipefail
+          URL="https://$HOST_PREFIX.$AWS_BASE_DOMAIN/health/ready"
+          curl --fail --silent --show-error \
+            --retry 20 --retry-delay 10 --retry-all-errors \
+            "$URL" | tee readiness.json

@@ -110,10 +110,26 @@ public static class ApostolOSProductionConfiguration
             "KingdomOS:Entitlements:FailOpenInDevelopment must be false in Production.",
             problems);
 
+        RequireValue(
+            configuration["KingdomOS:Identity:CookieDomain"],
+            "KingdomOS:Identity:CookieDomain",
+            problems);
+
         var allowedHosts = configuration["AllowedHosts"];
         Require(
             !string.IsNullOrWhiteSpace(allowedHosts) && allowedHosts.Trim() != "*",
             "AllowedHosts must name the production host(s); wildcard '*' is not allowed in Production.",
+            problems);
+
+        var integrationServiceKey = configuration["KingdomOS:Integration:ServiceKey"];
+        Require(
+            !string.IsNullOrWhiteSpace(integrationServiceKey) &&
+            integrationServiceKey.Length >= 16 &&
+            !string.Equals(
+                integrationServiceKey,
+                "local-kingdomos-integration",
+                StringComparison.Ordinal),
+            "KingdomOS:Integration:ServiceKey must be a production service key.",
             problems);
 
         var requireTelemetryExporter =

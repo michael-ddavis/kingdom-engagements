@@ -104,6 +104,7 @@ docker run --detach --name "$production_app_name" --network "$network" \
   -v "$PWD/.ci-secrets:/run/secrets:ro" \
   -e ASPNETCORE_ENVIRONMENT=Production \
   -e AllowedHosts=localhost \
+  -e KingdomOS__Identity__CookieDomain=.apostolos.test \
   -e "KingdomOS__HostAccess__PublicBaseUrl=https://coordinate.apostolos.test" \
   -e KingdomOS__DocumentStorage__S3__BucketName=engagements-ci \
   -e KingdomOS__DocumentStorage__S3__Region=us-east-1 \

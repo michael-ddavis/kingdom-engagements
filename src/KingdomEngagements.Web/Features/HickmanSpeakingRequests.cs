@@ -365,7 +365,8 @@ public sealed class HickmanSpeakingRequestReviewMiddleware(RequestDelegate next)
         HickmanSpeakingRequestsService service)
     {
         if (!HttpMethods.IsPost(context.Request.Method) ||
-            KingdomIdentity.TenantId(context.User, context.Request) != service.TenantId)
+            !KingdomIdentity.TryTenantId(context.User, out var tenantId) ||
+            tenantId != service.TenantId)
         {
             await next(context);
             return;

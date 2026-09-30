@@ -14,7 +14,7 @@ public sealed class EngagementsMigrationConsistencyTests
             .UseSqlServer("Server=localhost;Database=KingdomEngagementsModelCheck;User ID=sa;Password=LocalKingdom0S!;TrustServerCertificate=True")
             .Options;
 
-        using var database = new EngagementsDbContext(options);
+        using var database = new EngagementsDbContext(TestTenants.Bypass, options);
 
         Assert.False(
             database.Database.HasPendingModelChanges(),

@@ -17,17 +17,28 @@ public static class KingdomIdentity
     public static readonly Guid DivineWorldChangersTenantId = Guid.Parse("d1c00000-0000-4000-8000-000000000001");
     public static readonly Guid HeyyKingTenantId = Guid.Parse("e1100000-0000-4000-8000-000000000001");
 
-    public static Guid TenantId(ClaimsPrincipal principal, HttpRequest request)
+    public static bool TryTenantId(ClaimsPrincipal principal, out Guid tenantId)
     {
-        var value = principal.FindFirstValue(TenantClaim)
-            ?? request.Headers["X-Kingdom-Tenant"].FirstOrDefault();
-        return Guid.TryParse(value, out var tenantId) ? tenantId : DemoTenantId;
+        tenantId = Guid.Empty;
+        var values = principal.Identities.Where(identity => identity.IsAuthenticated)
+            .SelectMany(identity => identity.FindAll(TenantClaim))
+            .Select(claim => claim.Value).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        return values.Length == 1 && Guid.TryParse(values[0], out tenantId) && tenantId != Guid.Empty;
     }
 
-    public static string Subject(ClaimsPrincipal principal, HttpRequest request) =>
-        principal.FindFirstValue(ClaimTypes.NameIdentifier)
-        ?? request.Headers["X-Kingdom-Subject"].FirstOrDefault()
-        ?? "unknown";
+    public static Guid TenantId(ClaimsPrincipal principal, HttpRequest request)
+    {
+        _ = request;
+        return TryTenantId(principal, out var tenantId)
+            ? tenantId
+            : throw new UnauthorizedAccessException("A valid tenant claim is required.");
+    }
+
+    public static string Subject(ClaimsPrincipal principal, HttpRequest request)
+    {
+        _ = request;
+        return principal.FindFirstValue(ClaimTypes.NameIdentifier) ?? "unknown";
+    }
 
     public static bool HasEngagementsAccess(ClaimsPrincipal principal)
     {
@@ -99,6 +110,7 @@ public static class KingdomIdentity
             claim.Type == ClaimTypes.Role && Matches(claim.Value, "Administrator", "EngagementDirector", "Coordinator", "OrganizationAdministrator", "Organization Administrator", "SuperAdmin", "Super Administrator"));
     }
 
+#if ENGAGEMENTS_DEMO
     public static ClaimsPrincipal CreateDevelopmentPrincipal(string? organizationKey = null)
     {
         if (!TryResolveDevelopmentOrganization(organizationKey, out var key, out var tenantId))
@@ -138,6 +150,7 @@ public static class KingdomIdentity
         };
         return tenantId != Guid.Empty;
     }
+#endif
 }
 
 public enum ModuleEntitlementState
@@ -259,7 +272,12 @@ public sealed class EngagementsEntitlementMiddleware(
             return;
         }
 
-        var tenantId = KingdomIdentity.TenantId(context.User, context.Request);
+        if (!KingdomIdentity.TryTenantId(context.User, out var tenantId))
+        {
+            await next(context);
+            return;
+        }
+
         var state = await entitlements.GetStateAsync(tenantId, context.RequestAborted);
         if (state == ModuleEntitlementState.Enabled ||
             (state == ModuleEntitlementState.Unavailable && environment.IsDevelopment() &&

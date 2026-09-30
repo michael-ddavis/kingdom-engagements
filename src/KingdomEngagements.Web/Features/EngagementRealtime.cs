@@ -38,7 +38,8 @@ public sealed record EngagementDocumentAddedEvent(
 
 public sealed class EngagementRealtimeHub(
     EngagementResponsibilityService responsibilities,
-    HostAccessDbContext hostAccessDatabase) : Hub
+    HostAccessDbContext hostAccessDatabase,
+    ICurrentTenant currentTenant) : Hub
 {
     public const string InternalRoute = "/hubs/engagements";
     public const string HostRoute = "/hubs/engagements/host";
@@ -69,6 +70,7 @@ public sealed class EngagementRealtimeHub(
         if (tenantId is null || assignedEngagementId != assignmentId)
             throw new HubException("This host session cannot access the requested engagement.");
 
+        using var tenantScope = currentTenant.UseTenant(tenantId.Value);
         var now = DateTimeOffset.UtcNow;
         var accessIsActive = await hostAccessDatabase.Invitations.AsNoTracking().AnyAsync(invitation =>
             invitation.Id == accessId &&
@@ -94,6 +96,7 @@ public sealed class EngagementRealtimeHub(
         if (!Guid.TryParse(tenantClaim, out var tenantId))
             throw new HubException("A tenant is required for realtime engagement access.");
 
+        using var tenantScope = currentTenant.UseTenant(tenantId);
         var subject = user.FindFirstValue(ClaimTypes.NameIdentifier) ?? "unknown";
         var allowed = KingdomIdentity.CanDirectEngagements(user) ||
                       await responsibilities.IsEffectiveOwnerAsync(
@@ -114,7 +117,8 @@ public sealed class EngagementRealtimeHub(
 
 public sealed class EngagementRealtimePublisher(
     IHubContext<EngagementRealtimeHub> hub,
-    HostAccessDbContext hostAccessDatabase)
+    HostAccessDbContext hostAccessDatabase,
+    ICurrentTenant currentTenant)
 {
     public Task MessageCreatedAsync(
         Guid tenantId,
@@ -165,6 +169,7 @@ public sealed class EngagementRealtimePublisher(
         object payload,
         CancellationToken cancellationToken)
     {
+        using var tenantScope = currentTenant.UseTenant(tenantId);
         await hostAccessDatabase.EnsureSchemaAsync(cancellationToken);
 
         await hub.Clients

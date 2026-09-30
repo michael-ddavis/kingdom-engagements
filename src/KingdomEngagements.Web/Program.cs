@@ -2,7 +2,6 @@ using System.Text.Json.Serialization;
 using KingdomEngagements.Web.Features;
 using KingdomEngagements.Web.Platform;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 
@@ -145,16 +144,6 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 
 builder.AddApostolOSDistributedRuntime();
 builder.AddEngagementDocumentStorage();
-
-var identityKeyPath = builder.Configuration["KingdomOS:Identity:KeyPath"];
-if (!string.IsNullOrWhiteSpace(identityKeyPath))
-{
-    Directory.CreateDirectory(identityKeyPath);
-    builder.Services
-        .AddDataProtection()
-        .PersistKeysToFileSystem(new DirectoryInfo(identityKeyPath))
-        .SetApplicationName(KingdomIdentity.Scheme);
-}
 
 builder.Services.AddAuthentication(KingdomIdentity.Scheme)
     .AddCookie(KingdomIdentity.Scheme, options =>

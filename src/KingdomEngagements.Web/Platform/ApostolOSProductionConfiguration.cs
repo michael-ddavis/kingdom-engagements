@@ -110,6 +110,11 @@ public static class ApostolOSProductionConfiguration
             "KingdomOS:Entitlements:FailOpenInDevelopment must be false in Production.",
             problems);
 
+        RequireValue(
+            configuration["KingdomOS:Identity:CookieDomain"],
+            "KingdomOS:Identity:CookieDomain",
+            problems);
+
         var allowedHosts = configuration["AllowedHosts"];
         Require(
             !string.IsNullOrWhiteSpace(allowedHosts) && allowedHosts.Trim() != "*",

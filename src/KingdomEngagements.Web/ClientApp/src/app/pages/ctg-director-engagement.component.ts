@@ -1031,9 +1031,14 @@ export class CtgDirectorEngagementComponent implements OnInit, OnDestroy {
 
   queueAutosave(event?: Event): void {
     const target = event?.target as HTMLElement | null;
-    if (target?.closest('.asset-editor, .document-editor, .composer, .responsibility-drawer')) return;
-
     const tab = this.tab();
+
+    if (target?.closest('.asset-editor, .document-editor, .composer, .responsibility-drawer') || tab === 'closeout') {
+      this.saveState.set('dirty');
+      this.setGlobalUnsavedState(true);
+      return;
+    }
+
     if (!this.autosaveSupported(tab)) return;
 
     this.saveState.set('dirty');

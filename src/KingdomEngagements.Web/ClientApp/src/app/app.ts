@@ -552,6 +552,43 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
     return `${path}?group=${encodeURIComponent(this.formationState.selectedGroupId())}`;
   }
 
+  platformHref(path: string): string {
+    const base = this.product()?.platformUrl || 'http://localhost:5100';
+    try {
+      return new URL(path, `${new URL(base).origin}/`).toString();
+    } catch {
+      return base;
+    }
+  }
+
+  globalModuleHref(moduleKey: 'academy' | 'missions'): string {
+    const product = this.product();
+    const base = moduleKey === 'academy'
+      ? product?.academyUrl || 'http://localhost:5102'
+      : product?.missionsUrl || 'http://localhost:5108';
+    const fallback = moduleKey === 'academy' ? '/app' : '/deployments';
+    const remembered = this.readCookie(`ApostolOS.LastRoute.${moduleKey}`);
+    const path = remembered?.startsWith('/') ? remembered : fallback;
+
+    try {
+      return new URL(path, `${new URL(base).origin}/`).toString();
+    } catch {
+      return base;
+    }
+  }
+
+  navigateGlobal(event: Event, url: string): void {
+    if (document.body.dataset['apostolosUnsaved'] === 'true') {
+      event.preventDefault();
+      globalThis.alert(
+        'Save your changes before leaving this screen. Once the save finishes, choose the module again.',
+      );
+      return;
+    }
+
+    globalThis.location.assign(url);
+  }
+
   private routePath(): string {
     return this.router.url.split('?')[0].replace(/\/$/, '');
   }

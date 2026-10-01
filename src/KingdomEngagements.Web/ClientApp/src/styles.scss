@@ -489,3 +489,503 @@ a { color: inherit; }
   .legacy-assignment-card,
   .legacy-card-action { transition: none; }
 }
+\n\n/* ==========================================================================
+   ApostolOS Engagements skin pass
+   Presentation only: existing components, routes, forms, messaging, lane
+   logic and responsibility workflows stay intact.
+   ========================================================================== */
+
+:root {
+  --eng-canvas: #f5f3ee;
+  --eng-surface: #fffdfa;
+  --eng-ink: #162331;
+  --eng-muted: #667780;
+  --eng-line: rgba(18, 45, 59, 0.11);
+  --eng-nav: #0a2d3e;
+  --eng-nav-soft: #123b4e;
+  --eng-blue: #2f7199;
+  --eng-green: #3f7c61;
+  --eng-amber: #9a712a;
+  --eng-danger: #a54e49;
+
+  --legacy-page: #f5f3ee;
+  --legacy-surface: #fffdfa;
+  --legacy-surface-soft: #faf8f4;
+  --legacy-surface-muted: #eeece7;
+  --legacy-ink: #162331;
+  --legacy-ink-2: #334854;
+  --legacy-muted: #6f7e85;
+  --legacy-border: #dce2df;
+  --legacy-border-strong: #cbd5d2;
+  --legacy-navy: #113a50;
+  --legacy-gold: #95702e;
+  --legacy-gold-light: #e4d3ab;
+  --legacy-gold-soft: #f8f0df;
+  --legacy-green: #3f7c61;
+  --legacy-green-soft: #e8f3ed;
+  --legacy-red: #a54e49;
+  --legacy-red-soft: #f9eae8;
+  --legacy-blue: #2f7199;
+  --legacy-blue-soft: #edf5f8;
+  --legacy-shadow: 0 8px 26px rgba(10, 45, 61, 0.055);
+  --legacy-shadow-lg: 0 18px 44px rgba(10, 45, 61, 0.10);
+}
+
+body {
+  background:
+    radial-gradient(circle at 96% 0%, rgba(47, 113, 153, 0.045), transparent 32rem),
+    var(--eng-canvas);
+}
+
+body .eng-modulebar {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+  color: #f7fbfc;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(78, 146, 175, 0.20), transparent 36%),
+    linear-gradient(165deg, #0b3042, #082737);
+  box-shadow: 0 8px 28px rgba(8, 39, 55, 0.10);
+}
+
+body .eng-modulebar .eng-brand small,
+body .eng-modulebar .eng-tenant,
+body .eng-modulebar .eng-tenant small,
+body .eng-modulebar .eng-tenant strong {
+  color: #bbcad1;
+}
+
+body .eng-modulebar .eng-modulebar__divider {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+body .eng-modulebar .eng-modulebar__actions a {
+  color: #d3e0e5;
+}
+
+body .eng-modulebar .eng-modulebar__actions a:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+body .eng-avatar {
+  background: #2f7199;
+}
+
+body .eng-main {
+  background:
+    radial-gradient(circle at 94% 0%, rgba(47, 113, 153, 0.05), transparent 32rem),
+    var(--legacy-page);
+}
+
+body .eng-section,
+body .legacy-assignment-card,
+body .legacy-overview-card,
+body .legacy-invitation-source-panel,
+body .legacy-readiness-panel,
+body .legacy-record-page {
+  border-color: var(--legacy-border);
+  background: var(--legacy-surface);
+  box-shadow: var(--legacy-shadow);
+}
+
+/* Keep the existing command-center information architecture, but make the
+   summary controls read as a compact status strip instead of KPI cards. */
+body .command-focus {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 8px !important;
+  margin: 10px 0 12px !important;
+}
+
+body .command-focus button {
+  display: grid !important;
+  min-width: 210px;
+  min-height: 54px;
+  padding: 9px 12px !important;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  column-gap: 14px;
+  align-items: center;
+  border-color: #dce2df !important;
+  border-radius: 12px !important;
+  background: #fffdfa !important;
+  box-shadow: 0 3px 12px rgba(10, 45, 61, 0.035);
+}
+
+body .command-focus button.selected {
+  border-color: rgba(47, 113, 153, 0.38) !important;
+  background: #f1f7fa !important;
+  box-shadow: inset 3px 0 0 #2f7199 !important;
+}
+
+body .command-focus small {
+  grid-column: 1;
+  margin: 0;
+  color: #6f7e85 !important;
+  font-size: .58rem !important;
+}
+
+body .command-focus strong {
+  grid-column: 2;
+  grid-row: 1;
+  margin: 0 !important;
+  color: #113a50 !important;
+  font-size: 1rem !important;
+}
+
+body .command-focus span {
+  grid-column: 1 / -1;
+  margin-top: 1px;
+  overflow: hidden;
+  color: #718087 !important;
+  font-size: .61rem !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body .operational-details {
+  border-color: #dde3e0 !important;
+  border-radius: 12px !important;
+  background: rgba(255, 253, 250, 0.72) !important;
+}
+
+body .director-summary {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 7px !important;
+  padding: 10px 12px !important;
+}
+
+body .director-summary article,
+body .director-summary button {
+  display: grid !important;
+  min-width: 180px;
+  min-height: 52px;
+  padding: 9px 11px !important;
+  flex: 1 1 190px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  column-gap: 12px;
+  border-color: #dce2df !important;
+  border-radius: 10px !important;
+  background: #fffdfa !important;
+}
+
+body .director-summary small {
+  grid-column: 1;
+  font-size: .56rem !important;
+}
+
+body .director-summary strong {
+  grid-column: 2;
+  grid-row: 1;
+  margin: 0 !important;
+  color: #113a50 !important;
+  font-size: .92rem !important;
+}
+
+body .director-summary span {
+  grid-column: 1 / -1;
+  color: #748188 !important;
+  font-size: .59rem !important;
+}
+
+body .director-page,
+body .director-engagement,
+body .team-page,
+body .director-engagements {
+  color: #1b2b35 !important;
+}
+
+body .director-heading,
+body .team-heading,
+body .page-heading {
+  border-bottom-color: #dce2df !important;
+}
+
+body .director-heading h1,
+body .command-board h2,
+body .director-panel h2,
+body .engagement-heading h1,
+body .panel h2,
+body .overview-card h2,
+body .team-heading h1,
+body .team-card h2 {
+  color: #173448 !important;
+}
+
+body .primary-action,
+body .workspace-primary-tabs button.active,
+body .primary-button,
+body .eng-button:not(.secondary) {
+  border-color: #113a50 !important;
+  background: #113a50 !important;
+}
+
+body .primary-action:hover,
+body .primary-button:hover {
+  background: #0d3144 !important;
+}
+
+body .secondary-action,
+body .secondary-button,
+body .eng-button.secondary {
+  border-color: #d6dfdc !important;
+  color: #173448 !important;
+  background: #fffdfa !important;
+}
+
+body .window-switcher {
+  border-color: #dce2df !important;
+  background: #fffdfa !important;
+}
+
+body .window-switcher button.selected {
+  background: #113a50 !important;
+}
+
+body .command-board,
+body .director-panel,
+body .panel,
+body .overview-card,
+body .engagement-heading,
+body .team-card {
+  border-color: #dce2df !important;
+  border-radius: 16px !important;
+  background: #fffdfa !important;
+  box-shadow: 0 8px 26px rgba(10, 45, 61, 0.045) !important;
+}
+
+body .brief-row:hover,
+body .engagement-row:hover {
+  background: #faf8f3 !important;
+}
+
+body .brief-progress,
+body .readiness .track,
+body .legacy-progress-bar,
+body .legacy-heading-progress {
+  background: #e6ebe8 !important;
+}
+
+body .brief-progress i,
+body .legacy-progress-bar i,
+body .legacy-heading-progress i {
+  background: #4d8468 !important;
+}
+
+body .attention-chip.good,
+body .eng-status[data-status='complete'],
+body .eng-status[data-status='accepted'],
+body .eng-status[data-status='connected'] {
+  color: #356a52 !important;
+  background: #e8f3ed !important;
+}
+
+body .attention-chip.warning {
+  color: #815f23 !important;
+  background: #faf1df !important;
+}
+
+body .attention-chip.danger {
+  color: #91413d !important;
+  background: #f9eae8 !important;
+}
+
+/* Individual engagement: keep the existing heading and tabs, but let progress
+   support the page instead of dominating it. */
+body .engagement-heading {
+  padding: 17px 20px !important;
+}
+
+body .engagement-heading .readiness {
+  display: inline-flex !important;
+  min-height: 34px;
+  padding: 6px 10px;
+  align-items: baseline;
+  gap: 6px;
+  border: 1px solid #dce2df;
+  border-radius: 999px;
+  text-align: left !important;
+  background: #f7f8f5;
+}
+
+body .engagement-heading .readiness strong {
+  display: inline !important;
+  color: #3f7c61;
+  font-size: 1rem !important;
+}
+
+body .engagement-heading .readiness span {
+  color: #718087 !important;
+  font-size: .58rem !important;
+}
+
+body .workspace-navigation {
+  border-color: #dce2df !important;
+  border-radius: 13px !important;
+  background: #fffdfa !important;
+  box-shadow: 0 4px 18px rgba(10, 45, 61, 0.035);
+}
+
+body .workspace-primary-tabs button,
+body .workspace-subtabs button {
+  border-radius: 9px !important;
+}
+
+body .workspace-subtabs button.active {
+  color: #173448 !important;
+  background: #edf3f1 !important;
+}
+
+body .workspace-save-state {
+  border-color: #dce2df !important;
+  background: #faf8f4 !important;
+}
+
+body .shared-record-note {
+  border-color: #cfe0e5 !important;
+  background: #eff6f8 !important;
+}
+
+body .host-provided-note,
+body .next-action-card {
+  border-color: #e3d3ac !important;
+  background: #fbf5e8 !important;
+}
+
+body input,
+body select,
+body textarea {
+  border-color: #d1d9d6 !important;
+  color: #1c2d37;
+  background: #fff !important;
+}
+
+body input:focus,
+body select:focus,
+body textarea:focus {
+  border-color: #6b9db5 !important;
+  outline: 3px solid rgba(47, 113, 153, 0.09);
+  outline-offset: 0;
+}
+
+/* Team setup stays the same workflow. The status strip is deliberately compact
+   rather than becoming another dashboard row of oversized metrics. */
+body .team-quick-status {
+  border-color: #dce2df !important;
+  border-radius: 12px !important;
+  background: #fffdfa !important;
+  box-shadow: 0 3px 14px rgba(10, 45, 61, 0.035);
+}
+
+body .team-quick-status > span {
+  min-height: 36px !important;
+  padding-block: 6px !important;
+}
+
+body .lane-row,
+body .team-roster-list article,
+body .member-grid article {
+  border-color: #e0e5e2 !important;
+  background: #faf9f5 !important;
+}
+
+body .owner-card {
+  border-color: #d9e0dd !important;
+  background: #fffdfa !important;
+}
+
+/* Host messaging keeps the inbox/chat mechanics exactly as they are. */
+body app-host-coordination-conversation .conversation-card {
+  border-color: #dce2df !important;
+  border-radius: 16px !important;
+  background: #fffdfa !important;
+  box-shadow: 0 8px 26px rgba(10, 45, 61, 0.045);
+}
+
+body app-host-coordination-conversation .message-list {
+  background: #f8f7f3 !important;
+}
+
+body app-host-coordination-conversation .message {
+  border-color: #cfe0e8 !important;
+  background: #edf5f8 !important;
+}
+
+body app-host-coordination-conversation .message.from-host {
+  border-color: #e1dfd8 !important;
+  background: #fffdfa !important;
+}
+
+body app-host-coordination-conversation form,
+body app-host-coordination-conversation header {
+  background: #fffdfa !important;
+}
+
+body app-host-coordination-conversation button {
+  background: #113a50 !important;
+}
+
+body app-host-access-link .host-link-bar {
+  border-color: #d9e3dd !important;
+  border-radius: 12px !important;
+  background: #fffdfa !important;
+}
+
+body app-host-access-link .link-actions button {
+  background: #3f6f52 !important;
+}
+
+/* Existing legacy/July-29 screens remain recognizable; only the visual skin
+   is softened and aligned to the same ApostolOS palette. */
+body .legacy-assignment-summary article {
+  min-height: 88px;
+  padding: 13px 15px;
+  border-color: var(--legacy-border);
+  background: var(--legacy-surface);
+  box-shadow: 0 4px 16px rgba(10, 45, 61, 0.035);
+}
+
+body .legacy-assignment-summary article > div > strong {
+  font-size: 1.08rem;
+}
+
+body .legacy-summary-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+}
+
+body .legacy-heading-summary article {
+  min-height: 76px;
+  padding: 11px 13px;
+  box-shadow: 0 4px 16px rgba(10, 45, 61, 0.035);
+}
+
+body .legacy-assignment-card:hover {
+  border-color: rgba(47, 113, 153, 0.32);
+  box-shadow: var(--legacy-shadow-lg);
+}
+
+body .legacy-filter-group button.selected,
+body .legacy-assignment-tab.is-active,
+body .legacy-form-save button,
+body .legacy-response-list article > button,
+body .legacy-card-action {
+  border-color: #113a50 !important;
+  background: #113a50 !important;
+}
+
+@media (max-width: 720px) {
+  body .command-focus button,
+  body .director-summary article,
+  body .director-summary button {
+    width: 100%;
+    min-width: 0;
+    flex-basis: 100%;
+  }
+
+  body .engagement-heading .readiness {
+    align-self: flex-start;
+  }
+}

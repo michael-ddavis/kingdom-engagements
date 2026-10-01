@@ -1,5 +1,5 @@
 import { AfterViewInit, Component, OnDestroy, OnInit, signal, ViewEncapsulation } from '@angular/core';
-import { Router, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { EngagementsApiService } from './core/engagements-api.service';
 import { EngagementDemoRoleService } from './core/engagement-demo-role.service';
 import { DwcFormationStateService } from './core/dwc-formation-state.service';
@@ -7,6 +7,7 @@ import { AccountPanelComponent } from './shared/account-panel.component';
 import { ProductInfo } from './core/models';
 import { HickmanItinerantPanelComponent } from './shared/hickman-itinerant-panel.component';
 import { OrganizationCommandCenterComponent } from './shared/organization-command-center.component';
+import { filter } from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -16,95 +17,247 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
   template: `
     <div class="eng-app">
       @if (!isPublicIntake()) {
-        <header class="eng-modulebar">
-          <div class="eng-modulebar__identity">
-            <a
-              class="eng-brand"
-              [href]="product()?.platformUrl || 'http://localhost:5100'"
-              aria-label="Return to ApostolOS"
-              title="Return to ApostolOS">
-              <span class="eng-brand__mark" aria-hidden="true">
-                <img src="/kingdomos-mark.svg" alt="" />
-              </span>
-              <span class="eng-brand__text">
-                <strong>ApostolOS</strong>
-                <small>Engagements</small>
-              </span>
+        <aside class="apostolos-global-sidebar" aria-label="ApostolOS navigation">
+          <a
+            class="apostolos-global-brand"
+            [href]="platformHref('/')"
+            (click)="navigateGlobal($event, platformHref('/'))"
+            aria-label="ApostolOS home">
+            <span class="apostolos-global-brand__mark" aria-hidden="true">
+              <img src="/kingdomos-mark.svg" alt="" />
+            </span>
+            <span>
+              <strong>ApostolOS</strong>
+              <small>{{ organizationName() }}</small>
+            </span>
+          </a>
+
+          <nav class="apostolos-global-nav" aria-label="Core navigation">
+            <span class="apostolos-global-label">Core</span>
+            <a [href]="platformHref('/')" (click)="navigateGlobal($event, platformHref('/'))">
+              <span class="apostolos-global-icon" aria-hidden="true">⌂</span>
+              <span>Home</span>
             </a>
+            <a [href]="platformHref('/agenda')" (click)="navigateGlobal($event, platformHref('/agenda'))">
+              <span class="apostolos-global-icon" aria-hidden="true">◷</span>
+              <span>Kingdom Agenda</span>
+            </a>
+          </nav>
 
-            <span class="eng-modulebar__divider" aria-hidden="true"></span>
+          <nav class="apostolos-global-nav apostolos-global-nav--modules" aria-label="ApostolOS modules">
+            <span class="apostolos-global-label">Ministry</span>
+            <a class="is-active" href="/" (click)="$event.preventDefault()">
+              <span class="apostolos-global-icon" aria-hidden="true">▣</span>
+              <span>Engagements</span>
+            </a>
+            <a [href]="globalModuleHref('academy')" (click)="navigateGlobal($event, globalModuleHref('academy'))">
+              <span class="apostolos-global-icon" aria-hidden="true">▤</span>
+              <span>Academy</span>
+            </a>
+            <a [href]="globalModuleHref('missions')" (click)="navigateGlobal($event, globalModuleHref('missions'))">
+              <span class="apostolos-global-icon" aria-hidden="true">◎</span>
+              <span>Missions</span>
+            </a>
+          </nav>
 
-            <div class="eng-tenant">
-              <span class="eng-presence" aria-hidden="true"></span>
-              <span>
-                <small>Organization</small>
+          <div class="apostolos-global-footer">
+            <span class="eng-avatar apostolos-global-avatar">{{ personaInitials() }}</span>
+            <span>
+              <strong>{{ roles.persona().person }}</strong>
+              <small>{{ roles.persona().label }}</small>
+            </span>
+          </div>
+        </aside>
+
+        <section class="eng-product-shell">
+          <header class="eng-modulebar">
+            <div class="eng-modulebar__identity">
+              <div class="eng-product-title">
+                <small>Kingdom Engagements</small>
                 <strong>{{ organizationName() }}</strong>
-              </span>
+              </div>
             </div>
-          </div>
 
-          <div class="eng-modulebar__right">
-            <nav class="eng-modulebar__primary" aria-label="Engagements navigation">
-              @if (isDwc()) {
-                @if (isDwcMemberView()) {
-                  <span class="eng-view-chip">Member view · {{ formationState.selectedGroup().name }}</span>
-                  <a class="eng-nav-link eng-nav-link--exit" [href]="groupHref('/organization/dwc/formation')">Exit preview</a>
+            <div class="eng-modulebar__right">
+              <nav class="eng-modulebar__primary" aria-label="Engagements navigation">
+                @if (isDwc()) {
+                  @if (isDwcMemberView()) {
+                    <span class="eng-view-chip">Member view · {{ formationState.selectedGroup().name }}</span>
+                    <a class="eng-nav-link eng-nav-link--exit" [href]="groupHref('/organization/dwc/formation')">Exit preview</a>
+                  } @else {
+                    <a class="eng-nav-link" [class.current]="isCurrent('/organization/dwc')" [href]="groupHref('/organization/dwc')">DEG Overview</a>
+                    <a class="eng-nav-link" [class.current]="isCurrentPrefix('/organization/dwc/formation')" [href]="groupHref('/organization/dwc/formation')">Formation</a>
+                    <a class="eng-nav-link" [class.current]="isCurrent('/organization/dwc/my-group')" [href]="groupHref('/organization/dwc/my-group')">Member Preview</a>
+                  }
+                } @else if (isCtg()) {
+                  @if (roles.canManageAssignments()) {
+                    <a class="eng-nav-link" [class.current]="isCurrent('/organization/ctg/command-center')" href="/organization/ctg/command-center">Command Center</a>
+                    <a class="eng-nav-link" [class.current]="isBookingDeskCurrent()" href="/organization/ctg/bookings">Invitations</a>
+                    <a class="eng-nav-link" [class.current]="isCurrentPrefix('/organization/ctg/engagements')" href="/organization/ctg/engagements">Engagements</a>
+                    <a class="eng-nav-link" [class.current]="isCurrent('/organization/ctg/team')" href="/organization/ctg/team">Team Setup</a>
+                    <a class="eng-nav-link" [class.current]="isCurrent('/organization/ctg/hosts')" href="/organization/ctg/hosts">Host Messages</a>
+                    <a class="eng-nav-link" [class.current]="isCurrent('/organization/ctg/programs')" href="/organization/ctg/programs">Programs</a>
+                  } @else {
+                    <a class="eng-nav-link" [class.current]="isCurrentPrefix('/organization/ctg/engagements')" href="/organization/ctg/engagements">Engagements</a>
+                  }
                 } @else {
-                  <a class="eng-nav-link" [class.current]="isCurrent('/organization/dwc')" [href]="groupHref('/organization/dwc')">DEG Overview</a>
-                  <a class="eng-nav-link" [class.current]="isCurrentPrefix('/organization/dwc/formation')" [href]="groupHref('/organization/dwc/formation')">Formation</a>
-                  <a class="eng-nav-link" [class.current]="isCurrent('/organization/dwc/my-group')" [href]="groupHref('/organization/dwc/my-group')">Member Preview</a>
+                  <a class="eng-nav-link current" href="/organization/hey-king">Overview</a>
                 }
-              } @else if (isCtg()) {
-                @if (roles.canManageAssignments()) {
-                  <a class="eng-nav-link" [class.current]="isCurrent('/organization/ctg/command-center')" href="/organization/ctg/command-center">Command Center</a>
-                  <a class="eng-nav-link" [class.current]="isBookingDeskCurrent()" href="/organization/ctg/bookings">Invitations</a>
-                  <a class="eng-nav-link" [class.current]="isCurrentPrefix('/organization/ctg/engagements')" href="/organization/ctg/engagements">Engagements</a>
-                  <a class="eng-nav-link" [class.current]="isCurrent('/organization/ctg/team')" href="/organization/ctg/team">Team Setup</a>
-                  <a class="eng-nav-link" [class.current]="isCurrent('/organization/ctg/hosts')" href="/organization/ctg/hosts">Host Messages</a>
-                  <a class="eng-nav-link" [class.current]="isCurrent('/organization/ctg/programs')" href="/organization/ctg/programs">Programs</a>
-                } @else {
-                  <a class="eng-nav-link" [class.current]="isCurrentPrefix('/organization/ctg/engagements')" href="/organization/ctg/engagements">Engagements</a>
-                }
-              } @else {
-                <a class="eng-nav-link current" href="/organization/hey-king">Overview</a>
-              }
-            </nav>
+              </nav>
 
-            <div class="eng-modulebar__utilities">
-              @if (isCtg() && roles.canManageBookings()) {
-                <a class="eng-start-action" [class.current]="isCurrent('/organization/ctg/start-invitation')" href="/organization/ctg/start-invitation">
-                  <span aria-hidden="true">＋</span>
-                  <span>Start Invitation</span>
-                </a>
-              }
-              @if (!isDwcMemberView()) {
-                <button type="button" class="eng-settings-link" (click)="accountPanel.open()">Settings</button>
-              }
-              <button type="button"
-                class="eng-avatar"
-                (click)="accountPanel.open()" aria-haspopup="dialog"
-                [attr.aria-label]="'Account for ' + roles.persona().person"
-                title="Account">
-                {{ personaInitials() }}
-              </button>
-              <app-account-panel #accountPanel [name]="roles.persona().person" [role]="roles.persona().label" />
+              <div class="eng-modulebar__utilities">
+                @if (isCtg() && roles.canManageBookings()) {
+                  <a class="eng-start-action" [class.current]="isCurrent('/organization/ctg/start-invitation')" href="/organization/ctg/start-invitation">
+                    <span aria-hidden="true">＋</span>
+                    <span>Start Invitation</span>
+                  </a>
+                }
+                @if (!isDwcMemberView()) {
+                  <button type="button" class="eng-settings-link" (click)="accountPanel.open()">Settings</button>
+                }
+                <button
+                  type="button"
+                  class="eng-avatar"
+                  (click)="accountPanel.open()"
+                  aria-haspopup="dialog"
+                  [attr.aria-label]="'Account for ' + roles.persona().person"
+                  title="Account">
+                  {{ personaInitials() }}
+                </button>
+                <app-account-panel #accountPanel [name]="roles.persona().person" [role]="roles.persona().label" />
+              </div>
             </div>
-          </div>
-        </header>
+          </header>
+
+          <main class="eng-main">
+            <router-outlet />
+            @if (showOrganizationCommandCenter()) {
+              <app-organization-command-center />
+            }
+            @if (showHickmanItinerantPanel()) {
+              <app-hickman-itinerant-panel />
+            }
+          </main>
+        </section>
+      } @else {
+        <main class="eng-main eng-main--public">
+          <router-outlet />
+        </main>
       }
-
-      <main class="eng-main" [class.eng-main--public]="isPublicIntake()">
-        <router-outlet />
-        @if (showOrganizationCommandCenter()) {
-          <app-organization-command-center />
-        }
-        @if (showHickmanItinerantPanel()) {
-          <app-hickman-itinerant-panel />
-        }
-      </main>
     </div>
   `,
   styles: [`
+    .apostolos-global-sidebar{
+      position:fixed;
+      inset:0 auto 0 0;
+      z-index:50;
+      display:flex;
+      width:224px;
+      box-sizing:border-box;
+      padding:22px 14px 16px;
+      flex-direction:column;
+      color:#f4f8f9;
+      background:
+        radial-gradient(circle at 92% 2%,rgba(74,139,167,.24),transparent 28%),
+        linear-gradient(165deg,#0b3042 0%,#082735 66%,#071f2b 100%);
+      box-shadow:12px 0 34px rgba(8,39,53,.08)
+    }
+    .apostolos-global-brand{
+      display:flex;
+      min-height:48px;
+      padding:0 8px 18px;
+      align-items:center;
+      gap:11px;
+      color:inherit;
+      text-decoration:none
+    }
+    .apostolos-global-brand__mark{
+      display:grid;
+      width:36px;
+      height:36px;
+      flex:0 0 auto;
+      place-items:center;
+      overflow:hidden
+    }
+    .apostolos-global-brand__mark img{width:100%;height:100%;object-fit:contain}
+    .apostolos-global-brand>span:last-child{display:grid;min-width:0;gap:2px}
+    .apostolos-global-brand strong{font-size:.92rem}
+    .apostolos-global-brand small{
+      overflow:hidden;
+      color:#9fb2bb;
+      font-size:.6rem;
+      text-overflow:ellipsis;
+      white-space:nowrap
+    }
+    .apostolos-global-nav{display:grid;gap:4px;padding-top:15px;border-top:1px solid rgba(255,255,255,.08)}
+    .apostolos-global-nav--modules{margin-top:17px}
+    .apostolos-global-label{
+      padding:0 10px 7px;
+      color:#78909b;
+      font-size:.56rem;
+      font-weight:800;
+      letter-spacing:.12em;
+      text-transform:uppercase
+    }
+    .apostolos-global-nav a{
+      display:flex;
+      min-height:40px;
+      align-items:center;
+      gap:9px;
+      padding:0 10px;
+      border:1px solid transparent;
+      border-radius:10px;
+      color:#bccbd1;
+      font-size:.72rem;
+      font-weight:680;
+      text-decoration:none
+    }
+    .apostolos-global-nav a:hover{color:#fff;background:rgba(255,255,255,.055)}
+    .apostolos-global-nav a.is-active{
+      border-color:rgba(91,159,189,.18);
+      color:#fff;
+      background:linear-gradient(90deg,rgba(55,111,141,.32),rgba(55,111,141,.10));
+      box-shadow:inset 3px 0 0 #6aa0ba
+    }
+    .apostolos-global-icon{
+      display:grid;
+      width:24px;
+      height:24px;
+      flex:0 0 auto;
+      place-items:center;
+      color:#9fb9c5;
+      font-size:.78rem
+    }
+    .apostolos-global-footer{
+      display:grid;
+      grid-template-columns:34px minmax(0,1fr);
+      align-items:center;
+      gap:9px;
+      margin-top:auto;
+      padding:14px 8px 0;
+      border-top:1px solid rgba(255,255,255,.08)
+    }
+    .apostolos-global-footer>span:last-child{display:grid;min-width:0;gap:2px}
+    .apostolos-global-footer strong{
+      overflow:hidden;
+      color:#f4f8f9;
+      font-size:.68rem;
+      text-overflow:ellipsis;
+      white-space:nowrap
+    }
+    .apostolos-global-footer small{color:#8fa4ad;font-size:.57rem}
+    .apostolos-global-avatar{width:32px!important;height:32px!important;margin:0!important}
+    .eng-product-shell{min-height:100vh;margin-left:224px}
+    .eng-product-title{display:grid;gap:2px}
+    .eng-product-title small{
+      color:#d0dde2;
+      font-size:.56rem;
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase
+    }
+    .eng-product-title strong{color:#fff;font-size:.76rem;font-weight:700}
+
     :root{
       --kos-action-primary:#172A46;
       --kos-action-secondary:#6D5BD0;
@@ -120,6 +273,9 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
       Programs, and legacy assignment filters do not bleed into one another.
     */
     .eng-modulebar{
+      position:sticky;
+      z-index:30;
+      top:0;
       min-height:72px;
       padding:0 28px;
       gap:24px;
@@ -268,6 +424,11 @@ import { OrganizationCommandCenterComponent } from './shared/organization-comman
       .eng-nav-link.current::after{bottom:-9px}
     }
 
+    @media(max-width:980px){
+      .apostolos-global-sidebar{display:none}
+      .eng-product-shell{margin-left:0}
+    }
+
     @media(max-width:760px){
       .eng-modulebar{padding-right:16px;padding-left:16px}
       .eng-modulebar__divider,.eng-presence{display:none}
@@ -295,7 +456,11 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
     private readonly router: Router,
     readonly formationState: DwcFormationStateService,
     readonly roles: EngagementDemoRoleService,
-  ) {}
+  ) {
+    this.router.events
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe((event) => this.rememberRoute(event.urlAfterRedirects));
+  }
 
   ngOnInit(): void {
     this.syncSavedAppearance();
@@ -387,9 +552,67 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
     return `${path}?group=${encodeURIComponent(this.formationState.selectedGroupId())}`;
   }
 
+  platformHref(path: string): string {
+    const base = this.product()?.platformUrl || 'http://localhost:5100';
+    try {
+      return new URL(path, `${new URL(base).origin}/`).toString();
+    } catch {
+      return base;
+    }
+  }
+
+  globalModuleHref(moduleKey: 'academy' | 'missions'): string {
+    const product = this.product();
+    const base = moduleKey === 'academy'
+      ? product?.academyUrl || 'http://localhost:5102'
+      : product?.missionsUrl || 'http://localhost:5108';
+    const fallback = moduleKey === 'academy' ? '/app' : '/deployments';
+    const remembered = this.readCookie(`ApostolOS.LastRoute.${moduleKey}`);
+    const path = remembered?.startsWith('/') ? remembered : fallback;
+
+    try {
+      return new URL(path, `${new URL(base).origin}/`).toString();
+    } catch {
+      return base;
+    }
+  }
+
+  navigateGlobal(event: Event, url: string): void {
+    if (document.body.dataset['apostolosUnsaved'] === 'true') {
+      event.preventDefault();
+      globalThis.alert(
+        'Save your changes before leaving this screen. Once the save finishes, choose the module again.',
+      );
+      return;
+    }
+
+    globalThis.location.assign(url);
+  }
+
   private routePath(): string {
     return this.router.url.split('?')[0].replace(/\/$/, '');
   }
+
+  private rememberRoute(url: string): void {
+    const path = url.startsWith('/') ? url : `/${url}`;
+    if (path.startsWith('/register/') || path === '/join-the-12') return;
+    document.cookie = `ApostolOS.LastRoute.engagements=${encodeURIComponent(path)}; Path=/; Max-Age=2592000; SameSite=Lax`;
+  }
+
+  private readCookie(name: string): string | null {
+    const prefix = `${name}=`;
+    const match = document.cookie
+      .split(';')
+      .map(value => value.trim())
+      .find(value => value.startsWith(prefix));
+    if (!match) return null;
+    try {
+      return decodeURIComponent(match.substring(prefix.length));
+    } catch {
+      return null;
+    }
+  }
+
 
   private syncSavedAppearance(): void {
     const readCookie = (name: string): string | null => {

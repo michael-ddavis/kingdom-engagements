@@ -4,6 +4,8 @@ export interface ProductInfo {
   name: string;
   tenantName: string;
   platformUrl: string;
+  academyUrl: string;
+  missionsUrl: string;
   careUrl: string;
   careEnabled: boolean;
   boundary: string;

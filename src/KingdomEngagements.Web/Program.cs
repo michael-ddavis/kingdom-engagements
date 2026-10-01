@@ -372,6 +372,8 @@ app.MapGet("/api/product", async (
         name = "Kingdom Engagements",
         tenantName = configuration["KingdomOS:TenantName"] ?? "Cynthia Thompson Global",
         platformUrl = configuration["KingdomOS:PlatformBrowserUrl"] ?? "http://localhost:5100",
+        academyUrl = configuration["KingdomOS:AcademyBrowserUrl"] ?? "http://localhost:5102",
+        missionsUrl = configuration["KingdomOS:MissionsBrowserUrl"] ?? "http://localhost:5108",
         careUrl = configuration["KingdomOS:CareBrowserUrl"] ?? "http://localhost:5104",
         careEnabled = careState == ModuleEntitlementState.Enabled,
         boundary = "Invitation intake, review, accepted terms, host coordination, travel, lodging, transportation, documents, readiness, event outcomes, follow-up, and closeout."

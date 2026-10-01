@@ -1420,3 +1420,69 @@ body .engagement-row:hover,
 body .director-summary button:hover {
   background: #eef0ed !important;
 }
+
+
+/* ==========================================================================
+   Persistent shell refinement
+   The ApostolOS sidebar now carries the dark global identity. Keep the local
+   Engagements bar lighter so the product workspace feels warmer and less heavy.
+   ========================================================================== */
+
+body .eng-product-shell .eng-modulebar {
+  border-bottom: 1px solid rgba(38,55,62,.10) !important;
+  background:
+    linear-gradient(180deg, rgba(251,251,248,.97), rgba(246,247,244,.96)) !important;
+  box-shadow: 0 4px 18px rgba(8,39,53,.035) !important;
+}
+
+body .eng-product-shell .eng-product-title small {
+  color: #8a7446 !important;
+}
+
+body .eng-product-shell .eng-product-title strong {
+  color: #29424d !important;
+}
+
+body .eng-product-shell .eng-nav-link {
+  color: #68777d !important;
+}
+
+body .eng-product-shell .eng-nav-link:hover {
+  color: #173f52 !important;
+  background: #ecefec !important;
+}
+
+body .eng-product-shell .eng-nav-link.current {
+  color: #173f52 !important;
+  background: #e9eeee !important;
+}
+
+body .eng-product-shell .eng-nav-link.current::after {
+  background: #a8894f !important;
+}
+
+body .eng-product-shell .eng-modulebar__utilities {
+  border-left-color: rgba(38,55,62,.10) !important;
+}
+
+body .eng-product-shell .eng-settings-link {
+  color: #68777d !important;
+}
+
+body .eng-product-shell .eng-settings-link:hover {
+  color: #173f52 !important;
+  background: #ecefec !important;
+}
+
+body .eng-product-shell .eng-start-action {
+  border-color: #173f52 !important;
+  color: #fff !important;
+  background: #173f52 !important;
+  box-shadow: 0 5px 14px rgba(8,39,53,.10) !important;
+}
+
+body .eng-product-shell .eng-avatar {
+  border-color: rgba(23,63,82,.14) !important;
+  color: #173f52 !important;
+  background: #e9eeee !important;
+}

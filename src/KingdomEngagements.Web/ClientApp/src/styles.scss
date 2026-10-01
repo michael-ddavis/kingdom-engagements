@@ -489,3 +489,934 @@ a { color: inherit; }
   .legacy-assignment-card,
   .legacy-card-action { transition: none; }
 }
+\n\n/* ==========================================================================
+   ApostolOS Engagements skin pass
+   Presentation only: existing components, routes, forms, messaging, lane
+   logic and responsibility workflows stay intact.
+   ========================================================================== */
+
+:root {
+  --eng-canvas: #f5f3ee;
+  --eng-surface: #fffdfa;
+  --eng-ink: #162331;
+  --eng-muted: #667780;
+  --eng-line: rgba(18, 45, 59, 0.11);
+  --eng-nav: #0a2d3e;
+  --eng-nav-soft: #123b4e;
+  --eng-blue: #2f7199;
+  --eng-green: #3f7c61;
+  --eng-amber: #9a712a;
+  --eng-danger: #a54e49;
+
+  --legacy-page: #f5f3ee;
+  --legacy-surface: #fffdfa;
+  --legacy-surface-soft: #faf8f4;
+  --legacy-surface-muted: #eeece7;
+  --legacy-ink: #162331;
+  --legacy-ink-2: #334854;
+  --legacy-muted: #6f7e85;
+  --legacy-border: #dce2df;
+  --legacy-border-strong: #cbd5d2;
+  --legacy-navy: #113a50;
+  --legacy-gold: #95702e;
+  --legacy-gold-light: #e4d3ab;
+  --legacy-gold-soft: #f8f0df;
+  --legacy-green: #3f7c61;
+  --legacy-green-soft: #e8f3ed;
+  --legacy-red: #a54e49;
+  --legacy-red-soft: #f9eae8;
+  --legacy-blue: #2f7199;
+  --legacy-blue-soft: #edf5f8;
+  --legacy-shadow: 0 8px 26px rgba(10, 45, 61, 0.055);
+  --legacy-shadow-lg: 0 18px 44px rgba(10, 45, 61, 0.10);
+}
+
+body {
+  background:
+    radial-gradient(circle at 96% 0%, rgba(47, 113, 153, 0.045), transparent 32rem),
+    var(--eng-canvas);
+}
+
+body .eng-modulebar {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+  color: #f7fbfc;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(78, 146, 175, 0.20), transparent 36%),
+    linear-gradient(165deg, #0b3042, #082737);
+  box-shadow: 0 8px 28px rgba(8, 39, 55, 0.10);
+}
+
+body .eng-modulebar .eng-brand small,
+body .eng-modulebar .eng-tenant,
+body .eng-modulebar .eng-tenant small,
+body .eng-modulebar .eng-tenant strong {
+  color: #bbcad1;
+}
+
+body .eng-modulebar .eng-modulebar__divider {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+body .eng-modulebar .eng-modulebar__actions a {
+  color: #d3e0e5;
+}
+
+body .eng-modulebar .eng-modulebar__actions a:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+body .eng-avatar {
+  background: #2f7199;
+}
+
+body .eng-main {
+  background:
+    radial-gradient(circle at 94% 0%, rgba(47, 113, 153, 0.05), transparent 32rem),
+    var(--legacy-page);
+}
+
+body .eng-section,
+body .legacy-assignment-card,
+body .legacy-overview-card,
+body .legacy-invitation-source-panel,
+body .legacy-readiness-panel,
+body .legacy-record-page {
+  border-color: var(--legacy-border);
+  background: var(--legacy-surface);
+  box-shadow: var(--legacy-shadow);
+}
+
+/* Keep the existing command-center information architecture, but make the
+   summary controls read as a compact status strip instead of KPI cards. */
+body .command-focus {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 8px !important;
+  margin: 10px 0 12px !important;
+}
+
+body .command-focus button {
+  display: grid !important;
+  min-width: 210px;
+  min-height: 54px;
+  padding: 9px 12px !important;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  column-gap: 14px;
+  align-items: center;
+  border-color: #dce2df !important;
+  border-radius: 12px !important;
+  background: #fffdfa !important;
+  box-shadow: 0 3px 12px rgba(10, 45, 61, 0.035);
+}
+
+body .command-focus button.selected {
+  border-color: rgba(47, 113, 153, 0.38) !important;
+  background: #f1f7fa !important;
+  box-shadow: inset 3px 0 0 #2f7199 !important;
+}
+
+body .command-focus small {
+  grid-column: 1;
+  margin: 0;
+  color: #6f7e85 !important;
+  font-size: .58rem !important;
+}
+
+body .command-focus strong {
+  grid-column: 2;
+  grid-row: 1;
+  margin: 0 !important;
+  color: #113a50 !important;
+  font-size: 1rem !important;
+}
+
+body .command-focus span {
+  grid-column: 1 / -1;
+  margin-top: 1px;
+  overflow: hidden;
+  color: #718087 !important;
+  font-size: .61rem !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body .operational-details {
+  border-color: #dde3e0 !important;
+  border-radius: 12px !important;
+  background: rgba(255, 253, 250, 0.72) !important;
+}
+
+body .director-summary {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 7px !important;
+  padding: 10px 12px !important;
+}
+
+body .director-summary article,
+body .director-summary button {
+  display: grid !important;
+  min-width: 180px;
+  min-height: 52px;
+  padding: 9px 11px !important;
+  flex: 1 1 190px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  column-gap: 12px;
+  border-color: #dce2df !important;
+  border-radius: 10px !important;
+  background: #fffdfa !important;
+}
+
+body .director-summary small {
+  grid-column: 1;
+  font-size: .56rem !important;
+}
+
+body .director-summary strong {
+  grid-column: 2;
+  grid-row: 1;
+  margin: 0 !important;
+  color: #113a50 !important;
+  font-size: .92rem !important;
+}
+
+body .director-summary span {
+  grid-column: 1 / -1;
+  color: #748188 !important;
+  font-size: .59rem !important;
+}
+
+body .director-page,
+body .director-engagement,
+body .team-page,
+body .director-engagements {
+  color: #1b2b35 !important;
+}
+
+body .director-heading,
+body .team-heading,
+body .page-heading {
+  border-bottom-color: #dce2df !important;
+}
+
+body .director-heading h1,
+body .command-board h2,
+body .director-panel h2,
+body .engagement-heading h1,
+body .panel h2,
+body .overview-card h2,
+body .team-heading h1,
+body .team-card h2 {
+  color: #173448 !important;
+}
+
+body .primary-action,
+body .workspace-primary-tabs button.active,
+body .primary-button,
+body .eng-button:not(.secondary) {
+  border-color: #113a50 !important;
+  background: #113a50 !important;
+}
+
+body .primary-action:hover,
+body .primary-button:hover {
+  background: #0d3144 !important;
+}
+
+body .secondary-action,
+body .secondary-button,
+body .eng-button.secondary {
+  border-color: #d6dfdc !important;
+  color: #173448 !important;
+  background: #fffdfa !important;
+}
+
+body .window-switcher {
+  border-color: #dce2df !important;
+  background: #fffdfa !important;
+}
+
+body .window-switcher button.selected {
+  background: #113a50 !important;
+}
+
+body .command-board,
+body .director-panel,
+body .panel,
+body .overview-card,
+body .engagement-heading,
+body .team-card {
+  border-color: #dce2df !important;
+  border-radius: 16px !important;
+  background: #fffdfa !important;
+  box-shadow: 0 8px 26px rgba(10, 45, 61, 0.045) !important;
+}
+
+body .brief-row:hover,
+body .engagement-row:hover {
+  background: #faf8f3 !important;
+}
+
+body .brief-progress,
+body .readiness .track,
+body .legacy-progress-bar,
+body .legacy-heading-progress {
+  background: #e6ebe8 !important;
+}
+
+body .brief-progress i,
+body .legacy-progress-bar i,
+body .legacy-heading-progress i {
+  background: #4d8468 !important;
+}
+
+body .attention-chip.good,
+body .eng-status[data-status='complete'],
+body .eng-status[data-status='accepted'],
+body .eng-status[data-status='connected'] {
+  color: #356a52 !important;
+  background: #e8f3ed !important;
+}
+
+body .attention-chip.warning {
+  color: #815f23 !important;
+  background: #faf1df !important;
+}
+
+body .attention-chip.danger {
+  color: #91413d !important;
+  background: #f9eae8 !important;
+}
+
+/* Individual engagement: keep the existing heading and tabs, but let progress
+   support the page instead of dominating it. */
+body .engagement-heading {
+  padding: 17px 20px !important;
+}
+
+body .engagement-heading .readiness {
+  display: inline-flex !important;
+  min-height: 34px;
+  padding: 6px 10px;
+  align-items: baseline;
+  gap: 6px;
+  border: 1px solid #dce2df;
+  border-radius: 999px;
+  text-align: left !important;
+  background: #f7f8f5;
+}
+
+body .engagement-heading .readiness strong {
+  display: inline !important;
+  color: #3f7c61;
+  font-size: 1rem !important;
+}
+
+body .engagement-heading .readiness span {
+  color: #718087 !important;
+  font-size: .58rem !important;
+}
+
+body .workspace-navigation {
+  border-color: #dce2df !important;
+  border-radius: 13px !important;
+  background: #fffdfa !important;
+  box-shadow: 0 4px 18px rgba(10, 45, 61, 0.035);
+}
+
+body .workspace-primary-tabs button,
+body .workspace-subtabs button {
+  border-radius: 9px !important;
+}
+
+body .workspace-subtabs button.active {
+  color: #173448 !important;
+  background: #edf3f1 !important;
+}
+
+body .workspace-save-state {
+  border-color: #dce2df !important;
+  background: #faf8f4 !important;
+}
+
+body .shared-record-note {
+  border-color: #cfe0e5 !important;
+  background: #eff6f8 !important;
+}
+
+body .host-provided-note,
+body .next-action-card {
+  border-color: #e3d3ac !important;
+  background: #fbf5e8 !important;
+}
+
+body input,
+body select,
+body textarea {
+  border-color: #d1d9d6 !important;
+  color: #1c2d37;
+  background: #fff !important;
+}
+
+body input:focus,
+body select:focus,
+body textarea:focus {
+  border-color: #6b9db5 !important;
+  outline: 3px solid rgba(47, 113, 153, 0.09);
+  outline-offset: 0;
+}
+
+/* Team setup stays the same workflow. The status strip is deliberately compact
+   rather than becoming another dashboard row of oversized metrics. */
+body .team-quick-status {
+  border-color: #dce2df !important;
+  border-radius: 12px !important;
+  background: #fffdfa !important;
+  box-shadow: 0 3px 14px rgba(10, 45, 61, 0.035);
+}
+
+body .team-quick-status > span {
+  min-height: 36px !important;
+  padding-block: 6px !important;
+}
+
+body .lane-row,
+body .team-roster-list article,
+body .member-grid article {
+  border-color: #e0e5e2 !important;
+  background: #faf9f5 !important;
+}
+
+body .owner-card {
+  border-color: #d9e0dd !important;
+  background: #fffdfa !important;
+}
+
+/* Host messaging keeps the inbox/chat mechanics exactly as they are. */
+body app-host-coordination-conversation .conversation-card {
+  border-color: #dce2df !important;
+  border-radius: 16px !important;
+  background: #fffdfa !important;
+  box-shadow: 0 8px 26px rgba(10, 45, 61, 0.045);
+}
+
+body app-host-coordination-conversation .message-list {
+  background: #f8f7f3 !important;
+}
+
+body app-host-coordination-conversation .message {
+  border-color: #cfe0e8 !important;
+  background: #edf5f8 !important;
+}
+
+body app-host-coordination-conversation .message.from-host {
+  border-color: #e1dfd8 !important;
+  background: #fffdfa !important;
+}
+
+body app-host-coordination-conversation form,
+body app-host-coordination-conversation header {
+  background: #fffdfa !important;
+}
+
+body app-host-coordination-conversation button {
+  background: #113a50 !important;
+}
+
+body app-host-access-link .host-link-bar {
+  border-color: #d9e3dd !important;
+  border-radius: 12px !important;
+  background: #fffdfa !important;
+}
+
+body app-host-access-link .link-actions button {
+  background: #3f6f52 !important;
+}
+
+/* Existing legacy/July-29 screens remain recognizable; only the visual skin
+   is softened and aligned to the same ApostolOS palette. */
+body .legacy-assignment-summary article {
+  min-height: 88px;
+  padding: 13px 15px;
+  border-color: var(--legacy-border);
+  background: var(--legacy-surface);
+  box-shadow: 0 4px 16px rgba(10, 45, 61, 0.035);
+}
+
+body .legacy-assignment-summary article > div > strong {
+  font-size: 1.08rem;
+}
+
+body .legacy-summary-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+}
+
+body .legacy-heading-summary article {
+  min-height: 76px;
+  padding: 11px 13px;
+  box-shadow: 0 4px 16px rgba(10, 45, 61, 0.035);
+}
+
+body .legacy-assignment-card:hover {
+  border-color: rgba(47, 113, 153, 0.32);
+  box-shadow: var(--legacy-shadow-lg);
+}
+
+body .legacy-filter-group button.selected,
+body .legacy-assignment-tab.is-active,
+body .legacy-form-save button,
+body .legacy-response-list article > button,
+body .legacy-card-action {
+  border-color: #113a50 !important;
+  background: #113a50 !important;
+}
+
+@media (max-width: 720px) {
+  body .command-focus button,
+  body .director-summary article,
+  body .director-summary button {
+    width: 100%;
+    min-width: 0;
+    flex-basis: 100%;
+  }
+
+  body .engagement-heading .readiness {
+    align-self: flex-start;
+  }
+}
+
+
+/* ==========================================================================
+   ApostolOS skin refinement — screenshot alignment
+   Still visual-only: no workflow, route, permission, API, or data changes.
+   ========================================================================== */
+
+:root {
+  --apos-navy: #0b2f40;
+  --apos-navy-deep: #082735;
+  --apos-blue: #376f8d;
+  --apos-blue-soft: #eaf3f6;
+  --apos-gold: #a98243;
+  --apos-gold-soft: #f7efe1;
+  --apos-cream: #f6f3ed;
+  --apos-paper: #fffdf9;
+  --apos-line: #dbe2df;
+  --apos-ink: #1c2f3a;
+  --apos-muted: #6d7b81;
+}
+
+body .eng-modulebar {
+  min-height: 76px !important;
+  padding-inline: 32px !important;
+  border-bottom: 1px solid rgba(255,255,255,.09) !important;
+  background:
+    radial-gradient(circle at 88% -80%, rgba(78,146,175,.32), transparent 32%),
+    linear-gradient(120deg, var(--apos-navy) 0%, var(--apos-navy-deep) 72%) !important;
+  box-shadow: 0 9px 28px rgba(8,39,53,.12) !important;
+}
+
+body .eng-brand__mark {
+  width: 42px !important;
+  height: 48px !important;
+}
+
+body .eng-brand__text strong {
+  color: #fff !important;
+  font-size: .94rem !important;
+  letter-spacing: -.01em;
+}
+
+body .eng-brand__text small,
+body .eng-tenant small,
+body .eng-tenant strong {
+  color: #bdccd2 !important;
+}
+
+body .eng-presence {
+  background: #78ad8f !important;
+  box-shadow: 0 0 0 4px rgba(120,173,143,.13) !important;
+}
+
+body .eng-nav-link {
+  min-height: 38px !important;
+  color: #c9d6dc !important;
+  border-radius: 999px !important;
+}
+
+body .eng-nav-link:hover {
+  color: #fff !important;
+  background: rgba(255,255,255,.07) !important;
+}
+
+body .eng-nav-link.current {
+  color: #fff !important;
+  background: rgba(76,140,170,.22) !important;
+}
+
+body .eng-nav-link.current::after {
+  right: 14px !important;
+  bottom: -18px !important;
+  left: 14px !important;
+  height: 3px !important;
+  background: #c5a15d !important;
+}
+
+body .eng-modulebar__utilities {
+  border-left-color: rgba(255,255,255,.12) !important;
+}
+
+body .eng-settings-link {
+  color: #c7d4da !important;
+}
+
+body .eng-settings-link:hover {
+  color: #fff !important;
+  background: rgba(255,255,255,.07) !important;
+}
+
+body .eng-start-action {
+  border: 1px solid rgba(255,255,255,.14) !important;
+  color: #fff !important;
+  background: #376f8d !important;
+  box-shadow: 0 6px 16px rgba(5,29,42,.18) !important;
+}
+
+body .eng-avatar {
+  border: 1px solid rgba(255,255,255,.16) !important;
+  background: rgba(255,255,255,.10) !important;
+}
+
+body .eng-main {
+  min-height: calc(100vh - 76px);
+  background:
+    radial-gradient(circle at 98% 0, rgba(55,111,141,.055), transparent 30rem),
+    var(--apos-cream) !important;
+}
+
+body .director-heading h1,
+body .engagement-heading h1,
+body .team-heading h1,
+body .page-heading h1,
+body .legacy-assignment-hero h1,
+body .legacy-workspace-heading h1 {
+  font-family: Georgia, 'Times New Roman', serif !important;
+  font-weight: 500 !important;
+  letter-spacing: -.032em !important;
+  color: #153749 !important;
+}
+
+body .command-board h2,
+body .director-panel h2,
+body .panel h2,
+body .overview-card h2,
+body .team-card h2,
+body .legacy-overview-card h4,
+body .legacy-readiness-panel h4,
+body .legacy-record-heading h2 {
+  font-family: Georgia, 'Times New Roman', serif !important;
+  font-weight: 500 !important;
+  color: #17384a !important;
+}
+
+body .director-heading,
+body .team-heading,
+body .page-heading {
+  padding-bottom: 18px !important;
+  margin-bottom: 20px !important;
+  border-bottom: 1px solid rgba(17,58,80,.10) !important;
+}
+
+body .command-board,
+body .director-panel,
+body .panel,
+body .overview-card,
+body .engagement-heading,
+body .team-card,
+body .legacy-assignment-card,
+body .legacy-overview-card,
+body .legacy-invitation-source-panel,
+body .legacy-readiness-panel,
+body .legacy-record-page {
+  border-color: rgba(17,58,80,.11) !important;
+  border-radius: 18px !important;
+  background: var(--apos-paper) !important;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.9),
+    0 10px 30px rgba(8,39,53,.045) !important;
+}
+
+body .command-board > header,
+body .director-panel > header,
+body .panel > header {
+  border-bottom-color: rgba(17,58,80,.09) !important;
+  background: linear-gradient(180deg, rgba(255,255,255,.56), rgba(255,253,249,.24));
+}
+
+body .command-focus {
+  gap: 6px !important;
+  padding: 5px;
+  border: 1px solid rgba(17,58,80,.09);
+  border-radius: 14px;
+  background: rgba(255,253,249,.7);
+}
+
+body .command-focus button {
+  min-width: 190px !important;
+  min-height: 48px !important;
+  padding: 8px 11px !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+body .command-focus button.selected {
+  border-color: rgba(55,111,141,.26) !important;
+  background: var(--apos-blue-soft) !important;
+  box-shadow: inset 3px 0 0 var(--apos-blue) !important;
+}
+
+body .command-focus strong {
+  color: #17384a !important;
+  font-size: .93rem !important;
+}
+
+body .director-summary {
+  gap: 5px !important;
+  padding: 8px 10px !important;
+}
+
+body .director-summary article,
+body .director-summary button {
+  min-width: 160px !important;
+  min-height: 46px !important;
+  padding: 7px 10px !important;
+  border-color: transparent !important;
+  border-radius: 9px !important;
+  background: #faf9f5 !important;
+}
+
+body .director-summary button:hover {
+  background: #f2f5f3 !important;
+}
+
+body .director-summary button.selected {
+  border-color: rgba(55,111,141,.23) !important;
+  background: var(--apos-blue-soft) !important;
+  box-shadow: inset 3px 0 0 var(--apos-blue) !important;
+}
+
+body .primary-action,
+body .primary-button,
+body .eng-button:not(.secondary),
+body .workspace-primary-tabs button.active,
+body .window-switcher button.selected,
+body .legacy-filter-group button.selected,
+body .legacy-assignment-tab.is-active,
+body .legacy-form-save button,
+body .legacy-response-list article > button,
+body .legacy-card-action {
+  border-color: #113c50 !important;
+  background: #113c50 !important;
+  box-shadow: 0 5px 14px rgba(8,39,53,.10);
+}
+
+body .secondary-action,
+body .secondary-button,
+body .eng-button.secondary {
+  border-color: rgba(17,58,80,.14) !important;
+  background: rgba(255,253,249,.84) !important;
+}
+
+body .workspace-navigation {
+  padding: 7px !important;
+  border-radius: 15px !important;
+  background: rgba(255,253,249,.92) !important;
+}
+
+body .workspace-primary-tabs {
+  gap: 4px !important;
+}
+
+body .workspace-primary-tabs button {
+  min-height: 38px !important;
+  border-color: transparent !important;
+  background: transparent !important;
+}
+
+body .workspace-primary-tabs button:hover {
+  background: #f3f3ef !important;
+}
+
+body .workspace-primary-tabs button.active {
+  color: #fff !important;
+}
+
+body .workspace-subtabs button.active {
+  color: #17455a !important;
+  background: #eaf1ef !important;
+  box-shadow: inset 0 -2px 0 #70947f;
+}
+
+body .engagement-heading {
+  background:
+    radial-gradient(circle at 100% 0, rgba(55,111,141,.08), transparent 18rem),
+    var(--apos-paper) !important;
+}
+
+body .engagement-heading .readiness {
+  border-color: rgba(63,124,97,.18) !important;
+  background: #edf5f0 !important;
+}
+
+body .engagement-heading .readiness strong {
+  color: #3d765d !important;
+}
+
+body .attention-chip,
+body .eng-status,
+body .workspace-save-state,
+body .thread-state,
+body .connection-state {
+  border-radius: 999px !important;
+}
+
+body app-host-coordination-conversation .conversation-card {
+  box-shadow: 0 14px 34px rgba(8,39,53,.055) !important;
+}
+
+body app-host-coordination-conversation header {
+  padding: 17px 20px !important;
+  background:
+    linear-gradient(180deg, rgba(234,243,246,.55), rgba(255,253,249,.9)) !important;
+}
+
+body app-host-coordination-conversation .message-list {
+  background:
+    linear-gradient(180deg, #f7f7f3, #fbfaf7) !important;
+}
+
+body app-host-coordination-conversation .message {
+  border-color: #cbdfe8 !important;
+  background: #eaf3f7 !important;
+}
+
+body app-host-coordination-conversation .message.from-host {
+  border-color: #e0ded7 !important;
+  background: #fffefa !important;
+}
+
+body .lane-row,
+body .team-roster-list article,
+body .member-grid article,
+body .owner-card {
+  border-color: rgba(17,58,80,.10) !important;
+  background: #fbfaf6 !important;
+}
+
+body .legacy-assignment-card-heading {
+  border-bottom-color: rgba(17,58,80,.09) !important;
+  background:
+    linear-gradient(90deg, #fbfaf6 0%, #f8f1e5 100%) !important;
+}
+
+body .legacy-assignment-card:hover {
+  transform: translateY(-1px) !important;
+  border-color: rgba(55,111,141,.30) !important;
+}
+
+body .legacy-summary-icon--navy,
+body .legacy-summary-icon--gold,
+body .legacy-action-mark,
+body .legacy-form-section-title > span {
+  border-color: #dfcba0 !important;
+  color: #183746 !important;
+  background: #f2dfb9 !important;
+}
+
+body .legacy-assignment-tab.is-active::after {
+  background: #c5a15d !important;
+}
+
+@media (max-width: 1180px) {
+  body .eng-modulebar {
+    min-height: auto !important;
+  }
+
+  body .eng-nav-link.current::after {
+    bottom: -9px !important;
+  }
+}
+
+@media (max-width: 720px) {
+  body .eng-modulebar {
+    padding-inline: 16px !important;
+  }
+
+  body .command-focus {
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+}
+
+
+/* ==========================================================================
+   ApostolOS warm-gray surface refinement
+   Keeps Engagements structure intact while moving the module away from bright
+   white into the quieter gray/stone palette used in the approved mockups.
+   ========================================================================== */
+
+:root {
+  --eng-canvas: #f0f1ef;
+  --eng-surface: #fbfbf8;
+  --eng-soft: #f5f5f2;
+  --legacy-bg: #f0f1ef;
+  --legacy-surface: #fbfbf8;
+  --legacy-border: #d9dfdc;
+}
+
+body .eng-main {
+  background:
+    radial-gradient(circle at 98% 0, rgba(55,111,141,.035), transparent 30rem),
+    #f0f1ef !important;
+}
+
+body .command-board,
+body .director-panel,
+body .panel,
+body .overview-card,
+body .engagement-heading,
+body .team-card,
+body .legacy-assignment-card,
+body .legacy-overview-card,
+body .legacy-invitation-source-panel,
+body .legacy-readiness-panel,
+body .legacy-record-page {
+  background: #fbfbf8 !important;
+}
+
+body .command-board > header,
+body .director-panel > header,
+body .panel > header,
+body .legacy-assignment-card-heading {
+  background: linear-gradient(180deg, #fafaf7 0%, #f4f5f2 100%) !important;
+}
+
+body .lane-row,
+body .team-roster-list article,
+body .member-grid article,
+body .owner-card,
+body .director-summary article,
+body .director-summary button {
+  background: #f5f5f2 !important;
+}
+
+body .brief-row:hover,
+body .engagement-row:hover,
+body .director-summary button:hover {
+  background: #eef0ed !important;
+}

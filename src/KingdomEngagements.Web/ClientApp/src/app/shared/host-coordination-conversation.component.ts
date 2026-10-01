@@ -24,15 +24,15 @@ interface CoordinationUpdatedEvent {
       <header>
         <div>
           <span class="eyebrow">HOST COORDINATION</span>
-          <h3>Conversation</h3>
-          <p>Messages are saved to this engagement and delivered to the host in real time.</p>
+          <h3>Host conversation</h3>
+          <p>Messages here stay with the engagement and are shared with the host in real time.</p>
         </div>
         <div class="conversation-actions">
-          <span class="thread-state" [class.closed]="thread().isClosed">
-            {{ thread().isClosed ? 'Closed' : 'Open' }}
-          </span>
+          @if (thread().isClosed) {
+            <span class="thread-state closed">Closed</span>
+          }
           <span class="connection-state" [class.is-live]="live()">
-            {{ live() ? 'Live' : 'Saved updates' }}
+            {{ live() ? 'Live' : 'Saved' }}
           </span>
           @if (roles.canDirectEngagements()) {
             <details class="conversation-menu">
@@ -122,18 +122,282 @@ interface CoordinationUpdatedEvent {
     </section>
   `,
   styles: [`
-    :host{display:block;min-height:0;--conversation-height:min(600px,calc(100vh - 235px));--conversation-min-height:430px}.conversation-card{display:flex;height:var(--conversation-height);min-height:var(--conversation-min-height);flex-direction:column;overflow:hidden;border:1px solid #e1ddd4;border-radius:14px;background:#fff}
-    header{display:flex;flex:0 0 auto;justify-content:space-between;gap:24px;align-items:flex-start;padding:18px 20px;border-bottom:1px solid #ece8df}
-    h3{margin:3px 0 5px;font-size:1.1rem}.eyebrow{font-size:.68rem;font-weight:800;letter-spacing:.13em;color:#687387}
-    header p,.empty-state,.error-state{margin:0;color:#687387;font-size:.84rem;line-height:1.5}
-    .conversation-actions{display:flex;align-items:center;gap:7px}.thread-state,.connection-state{border:1px solid #d9d3c7;border-radius:999px;padding:6px 10px;background:#f7f5ef;color:#687387;font-size:.68rem;font-weight:800;white-space:nowrap}.thread-state{border-color:#b9d8c1;background:#edf8ef;color:#2f6b3b}.thread-state.closed{border-color:#d9d3c7;background:#f3f3f1;color:#737b77}
-    .connection-state.is-live{border-color:#bfd4e8;background:#f0f6fb;color:#355d84}.conversation-menu{position:relative}.conversation-menu summary{display:grid;width:34px;height:34px;place-items:center;border:1px solid #d9d3c7;border-radius:8px;background:#fff;color:#596476;cursor:pointer;list-style:none;font-weight:900;letter-spacing:.08em}.conversation-menu summary::-webkit-details-marker{display:none}.conversation-menu-panel{position:absolute;z-index:20;top:40px;right:0;display:grid;width:270px;gap:6px;padding:12px;border:1px solid #d9d3c7;border-radius:10px;background:#fff;box-shadow:0 12px 28px rgba(18,26,44,.14)}.conversation-menu-panel strong{font-size:.74rem}.conversation-menu-panel span{color:#737c78;font-size:.62rem;line-height:1.4}.conversation-menu-panel button{width:100%;margin-top:4px;background:#8f3d50}.conversation-menu-panel button.reopen{background:#334f36}
-    .message-list{display:flex;min-height:0;flex:1 1 auto;flex-direction:column;gap:10px;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:16px 18px 20px;background:#fbfaf7}
-    .message-list>.empty-state{margin:auto;text-align:center}
-    .message{max-width:min(80%,720px);margin-left:auto;border:1px solid #d7e0ea;border-radius:12px;padding:11px 13px;background:#f1f6fb}
-    .message.from-host{margin-right:auto;margin-left:0;border-color:#e1ddd4;background:#fff}.message div{display:flex;justify-content:space-between;gap:12px}.message strong{font-size:.78rem}.message time{font-size:.68rem;color:#8a94a4}.message p{margin:5px 0 0;white-space:pre-wrap;font-size:.84rem;line-height:1.45}.system-message{align-self:center;display:flex;gap:7px;align-items:center;margin:2px 0;padding:5px 9px;border-radius:999px;background:#eeece6;color:#727a75;font-size:.62rem}.system-message time{color:#909691;font-size:.56rem}
-    form{display:flex;flex:0 0 auto;gap:10px;align-items:flex-end;border-top:1px solid #ece8df;padding:12px 14px;background:#fff}textarea{flex:1;min-height:46px;max-height:120px;resize:vertical;border:1px solid #d9d3c7;border-radius:9px;padding:10px 12px;font:inherit}button{min-height:42px;border:0;border-radius:8px;padding:0 16px;background:#17365d;color:#fff;font-weight:800;cursor:pointer}button:disabled{opacity:.55;cursor:not-allowed}.closed-banner{display:flex;flex:0 0 auto;justify-content:space-between;gap:14px;align-items:center;border-top:1px solid #e4e5e2;padding:12px 14px;background:#f5f4f1}.closed-banner strong,.closed-banner span{display:block}.closed-banner strong{font-size:.72rem}.closed-banner span{margin-top:2px;color:#737c78;font-size:.62rem}.closed-banner button{min-height:36px;background:#334f36}.error-state{padding:18px 20px;color:#b42318}
-    @media(max-width:720px){.conversation-card{height:65vh;min-height:430px}header{gap:12px;padding:15px 16px}.conversation-actions{align-items:flex-end;flex-direction:column}.conversation-menu-panel{right:0}.message-list{padding:14px}.message{max-width:94%}form{align-items:stretch;flex-direction:column}.closed-banner{align-items:stretch;flex-direction:column}.closed-banner button,form>button{width:100%}}
+    :host{
+      display:block;
+      min-height:0;
+      --conversation-height:min(600px,calc(100vh - 235px));
+      --conversation-min-height:430px
+    }
+    .conversation-card{
+      display:flex;
+      height:var(--conversation-height);
+      min-height:var(--conversation-min-height);
+      flex-direction:column;
+      overflow:hidden;
+      border:1px solid #d5ddda;
+      border-radius:14px;
+      background:#fbfbf8
+    }
+    header{
+      display:flex;
+      flex:0 0 auto;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:24px;
+      padding:16px 18px;
+      border-bottom:1px solid #dfe4e1;
+      background:linear-gradient(180deg,#f8f9f6 0%,#f4f5f2 100%)
+    }
+    h3{
+      margin:3px 0 5px;
+      color:#213640;
+      font:500 1.08rem/1.2 Georgia,'Times New Roman',serif;
+      letter-spacing:-.015em
+    }
+    .eyebrow{
+      color:#6a7880;
+      font-size:.62rem;
+      font-weight:850;
+      letter-spacing:.13em
+    }
+    header p,.empty-state,.error-state{
+      margin:0;
+      color:#748087;
+      font-size:.72rem;
+      line-height:1.5
+    }
+
+    .conversation-actions{
+      display:flex;
+      align-items:center;
+      gap:7px
+    }
+    .thread-state,.connection-state{
+      padding:5px 9px;
+      border:1px solid #d5dbd8;
+      border-radius:999px;
+      color:#68757a;
+      background:#eff1ee;
+      font-size:.58rem;
+      font-weight:850;
+      white-space:nowrap
+    }
+    .thread-state.closed{
+      border-color:#d4d9d6;
+      color:#727b77;
+      background:#e9ebe8
+    }
+    .connection-state.is-live{
+      border-color:#c6dbe4;
+      color:#31657e;
+      background:#eaf3f6
+    }
+
+    .conversation-menu{position:relative}
+    .conversation-menu summary{
+      display:grid;
+      width:34px;
+      height:34px;
+      place-items:center;
+      border:1px solid #d3dad7;
+      border-radius:8px;
+      color:#5e6b72;
+      background:#fbfbf8;
+      cursor:pointer;
+      list-style:none;
+      font-weight:900;
+      letter-spacing:.08em
+    }
+    .conversation-menu summary::-webkit-details-marker{display:none}
+    .conversation-menu-panel{
+      position:absolute;
+      z-index:20;
+      top:40px;
+      right:0;
+      display:grid;
+      width:270px;
+      gap:6px;
+      padding:12px;
+      border:1px solid #d6ddda;
+      border-radius:10px;
+      background:#fbfbf8;
+      box-shadow:0 12px 28px rgba(18,26,44,.14)
+    }
+    .conversation-menu-panel strong{font-size:.74rem}
+    .conversation-menu-panel span{
+      color:#737c78;
+      font-size:.62rem;
+      line-height:1.4
+    }
+    .conversation-menu-panel button{
+      width:100%;
+      margin-top:4px;
+      background:#8f3d50
+    }
+    .conversation-menu-panel button.reopen{background:#356b54}
+
+    .message-list{
+      display:flex;
+      min-height:0;
+      flex:1 1 auto;
+      flex-direction:column;
+      gap:11px;
+      overflow-y:auto;
+      overscroll-behavior:contain;
+      scrollbar-gutter:stable;
+      padding:18px 20px 22px;
+      background:#eceeeb
+    }
+    .message-list>.empty-state{
+      margin:auto;
+      text-align:center
+    }
+    .message{
+      max-width:min(76%,720px);
+      margin-left:auto;
+      padding:11px 13px;
+      border:1px solid #cadde6;
+      border-radius:12px 12px 4px 12px;
+      background:#e8f2f6;
+      box-shadow:0 2px 8px rgba(8,39,53,.025)
+    }
+    .message.from-host{
+      margin-right:auto;
+      margin-left:0;
+      border-color:#d8ddda;
+      border-radius:12px 12px 12px 4px;
+      background:#fbfbf8
+    }
+    .message div{
+      display:flex;
+      justify-content:space-between;
+      gap:12px
+    }
+    .message strong{
+      color:#253840;
+      font-size:.73rem
+    }
+    .message time{
+      color:#8a9498;
+      font-size:.61rem
+    }
+    .message p{
+      margin:5px 0 0;
+      color:#273942;
+      white-space:pre-wrap;
+      font-size:.79rem;
+      line-height:1.48
+    }
+    .system-message{
+      align-self:center;
+      display:flex;
+      gap:7px;
+      align-items:center;
+      margin:2px 0;
+      padding:5px 9px;
+      border-radius:999px;
+      color:#727b77;
+      background:#dfe2df;
+      font-size:.59rem
+    }
+    .system-message time{
+      color:#909793;
+      font-size:.54rem
+    }
+
+    form{
+      display:flex;
+      flex:0 0 auto;
+      gap:10px;
+      align-items:flex-end;
+      padding:12px 14px;
+      border-top:1px solid #dce1de;
+      background:#f7f8f5
+    }
+    textarea{
+      flex:1;
+      min-height:48px;
+      max-height:120px;
+      resize:vertical;
+      padding:11px 12px;
+      border:1px solid #cfd7d4;
+      border-radius:10px;
+      outline:none;
+      color:#273942;
+      background:#fbfbf8;
+      font:inherit
+    }
+    textarea:focus{
+      border-color:#7ca5b8;
+      box-shadow:0 0 0 3px rgba(55,111,141,.08)
+    }
+    button{
+      min-height:42px;
+      padding:0 16px;
+      border:0;
+      border-radius:9px;
+      color:#fff;
+      background:#113c50;
+      font-weight:800;
+      cursor:pointer
+    }
+    button:disabled{
+      cursor:not-allowed;
+      opacity:.55
+    }
+
+    .closed-banner{
+      display:flex;
+      flex:0 0 auto;
+      justify-content:space-between;
+      align-items:center;
+      gap:14px;
+      padding:12px 14px;
+      border-top:1px solid #dce1de;
+      background:#eceeeb
+    }
+    .closed-banner strong,.closed-banner span{display:block}
+    .closed-banner strong{font-size:.72rem}
+    .closed-banner span{
+      margin-top:2px;
+      color:#737c78;
+      font-size:.62rem
+    }
+    .closed-banner button{
+      min-height:36px;
+      background:#356b54
+    }
+    .error-state{
+      padding:18px 20px;
+      color:#b42318
+    }
+
+    @media(max-width:720px){
+      .conversation-card{
+        height:65vh;
+        min-height:430px
+      }
+      header{
+        gap:12px;
+        padding:15px 16px
+      }
+      .conversation-actions{
+        align-items:flex-end;
+        flex-direction:column
+      }
+      .conversation-menu-panel{right:0}
+      .message-list{padding:14px}
+      .message{max-width:94%}
+      form{
+        align-items:stretch;
+        flex-direction:column
+      }
+      .closed-banner{
+        align-items:stretch;
+        flex-direction:column
+      }
+      .closed-banner button,form>button{width:100%}
+    }
   `],
 })
 export class HostCoordinationConversationComponent implements OnInit, OnDestroy, AfterViewChecked {

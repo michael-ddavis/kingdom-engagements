@@ -23,8 +23,9 @@ interface HostThreadView {
     <section class="host-page">
       <header class="host-heading">
         <div>
+          <span class="page-kicker">Host coordination</span>
           <h1>Host Activity</h1>
-          <p>Use this page when you need to see what hosts recently said, who still needs a reply, or which conversation to open.</p>
+          <p>Review recent host conversations, see new messages, and continue coordination without opening each engagement first.</p>
         </div>
         <a routerLink="/organization/ctg/command-center">← Command Center</a>
       </header>
@@ -37,9 +38,13 @@ interface HostThreadView {
         <section class="host-grid">
           <aside class="host-list">
             <header>
-              <strong>Messages</strong>
-              @if (unreadCount() > 0) { <span class="unread-count">{{ unreadCount() }} unread</span> }
+              <div>
+                <strong>Host conversations</strong>
+                <span>Most recent first</span>
+              </div>
+              @if (unreadCount() > 0) { <span class="unread-count">{{ unreadCount() }} new</span> }
             </header>
+
             @for (item of threads(); track item.snapshot.assignment.id) {
               <button
                 type="button"
@@ -50,12 +55,20 @@ interface HostThreadView {
                   <strong>{{ item.snapshot.assignment.hostOrganization }}</strong>
                   <span>{{ item.snapshot.assignment.title }}</span>
                 </div>
-                @if (isUnread(item)) { <i class="unread-dot" aria-label="Unread message"></i> }
+
+                @if (isUnread(item)) {
+                  <i class="unread-dot" aria-label="New host message"></i>
+                }
+
                 @if (item.thread.messages.length > 0) {
                   <p class="message-preview">{{ lastMessage(item)?.message }}</p>
                   <footer>
                     <span>{{ lastMessage(item)?.senderName }} · {{ relativeDate(lastMessage(item)!.createdAtUtc) }}</span>
-                    @if (item.thread.isClosed) { <b class="closed-label">Closed</b> }
+                    @if (isUnread(item)) {
+                      <b class="new-label">New</b>
+                    } @else if (item.thread.isClosed) {
+                      <b class="closed-label">Closed</b>
+                    }
                   </footer>
                 } @else {
                   <p class="message-preview empty">No messages yet</p>
@@ -66,26 +79,41 @@ interface HostThreadView {
 
           <section class="conversation">
             @if (selected(); as item) {
-              <header>
+              <header class="conversation-context">
                 <div>
-                  <small>{{ item.snapshot.assignment.title }}</small>
+                  <small>Engagement</small>
                   <h2>{{ item.snapshot.assignment.hostOrganization }}</h2>
-                  <p>{{ dateLabel(item.snapshot.assignment.startsAtUtc) }} · {{ item.snapshot.assignment.location || 'Location pending' }}</p>
+                  <p>
+                    {{ item.snapshot.assignment.title }}
+                    <span aria-hidden="true">·</span>
+                    {{ dateLabel(item.snapshot.assignment.startsAtUtc) }}
+                    <span aria-hidden="true">·</span>
+                    {{ item.snapshot.assignment.location || 'Location pending' }}
+                  </p>
                 </div>
+
                 <div class="coordination-status">
-                  <span class="thread-status" [class.closed]="item.thread.isClosed">{{ item.thread.isClosed ? 'Closed' : 'Open' }}</span>
-                  <a [routerLink]="['/organization/ctg/engagements', item.snapshot.assignment.id]" [queryParams]="{ lane: 'host-coordination' }">Open engagement →</a>
+                  <span class="thread-status" [class.closed]="item.thread.isClosed">
+                    {{ item.thread.isClosed ? 'Conversation closed' : 'Conversation open' }}
+                  </span>
+                  <a
+                    [routerLink]="['/organization/ctg/engagements', item.snapshot.assignment.id]"
+                    [queryParams]="{ lane: 'host-coordination' }">
+                    View engagement
+                  </a>
                 </div>
               </header>
 
               @for (active of [item]; track active.snapshot.assignment.id) {
                 <div class="conversation-body">
                   <app-host-access-link [assignmentId]="active.snapshot.assignment.id" />
-                  <app-host-coordination-conversation [assignmentId]="active.snapshot.assignment.id" (threadChanged)="updateThread(active.snapshot.assignment.id, $event)" />
+                  <app-host-coordination-conversation
+                    [assignmentId]="active.snapshot.assignment.id"
+                    (threadChanged)="updateThread(active.snapshot.assignment.id, $event)" />
                 </div>
               }
             } @else {
-              <div class="state">Select an engagement host.</div>
+              <div class="state">Select a host conversation.</div>
             }
           </section>
         </section>
@@ -93,12 +121,344 @@ interface HostThreadView {
     </section>
   `,
   styles: [`
-    :host{display:block}.host-page{display:flex;width:min(1240px,calc(100% - 38px));height:calc(100dvh - 82px);min-height:620px;margin:0 auto;padding:14px 0 18px;flex-direction:column;overflow:hidden;color:#17202b}.host-heading{display:flex;flex:0 0 auto;justify-content:space-between;align-items:center;gap:22px;margin-bottom:10px;padding:2px 0 10px;border-bottom:1px solid #dde1df}.host-heading h1,.conversation h2{margin:0;font:500 clamp(1.65rem,2.3vw,2.2rem)/1.08 Georgia,'Times New Roman',serif;color:#17243a}.host-heading p{max-width:720px;margin:5px 0 0;color:#69736e;font-size:.69rem;line-height:1.45}.host-heading>a{color:#315faf;font-size:.68rem;font-weight:850;text-decoration:none}.eyebrow{margin:0!important;color:#876f33!important;font:850 .65rem/1.2 system-ui,sans-serif!important;letter-spacing:.1em;text-transform:uppercase}
-    .host-grid{display:grid;min-height:0;flex:1;grid-template-columns:330px 1fr;border:1px solid #dfe3e0;border-radius:16px;background:#fffdfa;overflow:hidden;box-shadow:0 10px 30px rgba(18,26,44,.04)}.host-list{min-height:0;overflow-y:auto;overscroll-behavior:contain;border-right:1px solid #e2e5e2;background:#f8f7f3}.host-list>header{position:sticky;z-index:2;top:0;display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid #e2e5e2;background:#f8f7f3;font-size:.74rem}.unread-count{padding:3px 7px;border-radius:999px;background:#172a46;color:#fff;font-size:.55rem;font-weight:850}.host-list button{display:grid;width:100%;grid-template-columns:1fr auto;gap:4px;padding:13px 15px;border:0;border-bottom:1px solid #e5e7e5;background:transparent;text-align:left;color:inherit;cursor:pointer}.host-list button.selected{background:#fffdfa;box-shadow:inset 3px 0 #9d7438}.host-list button.unread{background:#fffefb}.thread-identity strong,.thread-identity span{display:block}.thread-identity strong{font-size:.75rem}.host-list button.unread .thread-identity strong,.host-list button.unread .message-preview{font-weight:850;color:#17243a}.thread-identity span{margin-top:2px;color:#777f7a;font-size:.62rem}.unread-dot{align-self:start;width:9px;height:9px;margin-top:4px;border-radius:50%;background:#315faf;box-shadow:0 0 0 3px rgba(49,95,175,.09)}.message-preview{display:-webkit-box;grid-column:1/-1;margin:6px 0 0;overflow:hidden;color:#65706a;font-size:.61rem;line-height:1.35;-webkit-box-orient:vertical;-webkit-line-clamp:2}.message-preview.empty{color:#969c98}.host-list button footer{display:flex;grid-column:1/-1;justify-content:space-between;gap:8px;align-items:center;margin-top:5px}.host-list button footer span{color:#8a918d;font-size:.56rem}.closed-label{color:#8a918d;font-size:.53rem;font-weight:800}
-    .conversation{display:flex;min-width:0;min-height:0;flex-direction:column;overflow:hidden}.conversation>header{display:flex;flex:0 0 auto;justify-content:space-between;gap:18px;padding:14px 18px;border-bottom:1px solid #e3e6e3}.conversation>header small{color:#8a7337;font-size:.58rem;font-weight:850;text-transform:uppercase}.conversation h2{font-size:1.35rem}.conversation>header p{margin:0;color:#78807b;font-size:.64rem}.coordination-status{display:flex;align-items:center;gap:10px;text-align:right}.thread-status{display:inline-flex;padding:5px 8px;border:1px solid #b9d8c1;border-radius:999px;background:#edf8ef;color:#2f6b3b!important;font-size:.58rem!important;font-weight:850}.thread-status.closed{border-color:#d8dcd9;background:#f2f3f1;color:#737b77!important}.coordination-status a{color:#315faf;font-size:.63rem;font-weight:850;text-decoration:none;white-space:nowrap}
-    .conversation-body{display:flex;min-height:0;flex:1;flex-direction:column;padding:10px;overflow:hidden}.conversation-body app-host-coordination-conversation{display:block;min-height:0;flex:1;--conversation-height:100%;--conversation-min-height:0}
-    .state{padding:40px;text-align:center;color:#747c78}.state.error{color:#a84642}
-    @media(max-width:800px){.host-page{height:auto;min-height:0;padding-bottom:40px;overflow:visible}.host-heading{align-items:flex-start;flex-direction:column}.host-grid{height:auto;min-height:0;grid-template-columns:1fr}.host-list{max-height:290px;overflow:auto;border-right:0;border-bottom:1px solid #e2e5e2}.conversation>header{align-items:flex-start;flex-direction:column}.coordination-status{width:100%;justify-content:space-between}.conversation-body{min-height:590px;overflow:visible}.conversation-body app-host-coordination-conversation{--conversation-height:540px;--conversation-min-height:430px}}
+    :host{display:block}
+    .host-page{
+      display:flex;
+      width:min(1280px,calc(100% - 42px));
+      height:calc(100dvh - 84px);
+      min-height:620px;
+      margin:0 auto;
+      padding:18px 0 20px;
+      flex-direction:column;
+      overflow:hidden;
+      color:#20313a
+    }
+
+    .host-heading{
+      display:flex;
+      flex:0 0 auto;
+      justify-content:space-between;
+      align-items:flex-end;
+      gap:24px;
+      margin-bottom:14px;
+      padding:4px 2px 16px;
+      border-bottom:1px solid #d8ddda
+    }
+    .page-kicker{
+      display:block;
+      margin-bottom:5px;
+      color:#7a6842;
+      font-size:.58rem;
+      font-weight:850;
+      letter-spacing:.12em;
+      text-transform:uppercase
+    }
+    .host-heading h1,.conversation h2{
+      margin:0;
+      color:#153448;
+      font:500 clamp(1.7rem,2.4vw,2.25rem)/1.08 Georgia,'Times New Roman',serif;
+      letter-spacing:-.025em
+    }
+    .host-heading p{
+      max-width:760px;
+      margin:6px 0 0;
+      color:#6f7b80;
+      font-size:.7rem;
+      line-height:1.5
+    }
+    .host-heading>a{
+      color:#356f8d;
+      font-size:.68rem;
+      font-weight:800;
+      text-decoration:none;
+      white-space:nowrap
+    }
+
+    .host-grid{
+      display:grid;
+      min-height:0;
+      flex:1;
+      grid-template-columns:310px minmax(0,1fr);
+      overflow:hidden;
+      border:1px solid #d6ddda;
+      border-radius:18px;
+      background:#fbfbf8;
+      box-shadow:0 12px 34px rgba(8,39,53,.045)
+    }
+
+    .host-list{
+      min-height:0;
+      overflow-y:auto;
+      overscroll-behavior:contain;
+      border-right:1px solid #dce1de;
+      background:#eceeeb
+    }
+    .host-list>header{
+      position:sticky;
+      z-index:2;
+      top:0;
+      display:flex;
+      min-height:58px;
+      box-sizing:border-box;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      padding:12px 15px;
+      border-bottom:1px solid #d9dedb;
+      background:rgba(236,238,235,.96);
+      backdrop-filter:blur(8px)
+    }
+    .host-list>header>div{
+      display:grid;
+      gap:2px
+    }
+    .host-list>header strong{
+      color:#26363e;
+      font-size:.72rem
+    }
+    .host-list>header>div span{
+      color:#858f8b;
+      font-size:.56rem
+    }
+    .unread-count{
+      padding:4px 8px;
+      border:1px solid #c9dce4;
+      border-radius:999px;
+      color:#2f627c;
+      background:#eaf3f6;
+      font-size:.54rem;
+      font-weight:850
+    }
+
+    .host-list button{
+      display:grid;
+      width:100%;
+      min-height:106px;
+      box-sizing:border-box;
+      grid-template-columns:1fr auto;
+      gap:4px;
+      padding:14px 15px 12px;
+      border:0;
+      border-bottom:1px solid #dce1de;
+      color:inherit;
+      background:transparent;
+      text-align:left;
+      cursor:pointer;
+      transition:background .15s ease,box-shadow .15s ease
+    }
+    .host-list button:hover{
+      background:#f3f4f1
+    }
+    .host-list button.selected{
+      background:#fbfbf8;
+      box-shadow:inset 3px 0 #9f814a
+    }
+    .host-list button.unread:not(.selected){
+      background:#f2f4f2
+    }
+    .thread-identity strong,.thread-identity span{display:block}
+    .thread-identity strong{
+      color:#20323c;
+      font-size:.75rem
+    }
+    .host-list button.unread .thread-identity strong{
+      color:#153448;
+      font-weight:850
+    }
+    .thread-identity span{
+      margin-top:3px;
+      color:#758087;
+      font-size:.61rem
+    }
+    .unread-dot{
+      align-self:start;
+      width:8px;
+      height:8px;
+      margin-top:4px;
+      border-radius:50%;
+      background:#3e7895;
+      box-shadow:0 0 0 3px rgba(62,120,149,.09)
+    }
+    .message-preview{
+      display:-webkit-box;
+      grid-column:1/-1;
+      margin:8px 0 0;
+      overflow:hidden;
+      color:#68757a;
+      font-size:.61rem;
+      line-height:1.42;
+      -webkit-box-orient:vertical;
+      -webkit-line-clamp:2
+    }
+    .message-preview.empty{
+      color:#949b98;
+      font-style:italic
+    }
+    .host-list button footer{
+      display:flex;
+      grid-column:1/-1;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+      margin-top:7px
+    }
+    .host-list button footer span{
+      color:#8a9491;
+      font-size:.55rem
+    }
+    .new-label,.closed-label{
+      padding:2px 6px;
+      border-radius:999px;
+      font-size:.5rem;
+      font-weight:850
+    }
+    .new-label{
+      color:#2f627c;
+      background:#e7f1f5
+    }
+    .closed-label{
+      color:#777f7b;
+      background:#e7e9e6
+    }
+
+    .conversation{
+      display:flex;
+      min-width:0;
+      min-height:0;
+      flex-direction:column;
+      overflow:hidden;
+      background:#f7f8f5
+    }
+    .conversation-context{
+      display:flex;
+      flex:0 0 auto;
+      justify-content:space-between;
+      align-items:center;
+      gap:20px;
+      min-height:88px;
+      box-sizing:border-box;
+      padding:15px 20px;
+      border-bottom:1px solid #dce1de;
+      background:#fbfbf8
+    }
+    .conversation-context small{
+      color:#8a713d;
+      font-size:.56rem;
+      font-weight:850;
+      letter-spacing:.1em;
+      text-transform:uppercase
+    }
+    .conversation h2{
+      margin-top:3px;
+      font-size:1.42rem
+    }
+    .conversation-context p{
+      display:flex;
+      flex-wrap:wrap;
+      gap:4px;
+      margin:4px 0 0;
+      color:#7a858a;
+      font-size:.62rem
+    }
+    .coordination-status{
+      display:flex;
+      align-items:center;
+      gap:9px;
+      text-align:right
+    }
+    .thread-status{
+      display:inline-flex;
+      padding:5px 9px;
+      border:1px solid #c5d8cb;
+      border-radius:999px;
+      color:#3e7057;
+      background:#edf4ef;
+      font-size:.56rem;
+      font-weight:850;
+      white-space:nowrap
+    }
+    .thread-status.closed{
+      border-color:#d5dad7;
+      color:#727b77;
+      background:#eeefed
+    }
+    .coordination-status a{
+      padding:7px 9px;
+      border-radius:8px;
+      color:#356f8d;
+      font-size:.61rem;
+      font-weight:800;
+      text-decoration:none;
+      white-space:nowrap
+    }
+    .coordination-status a:hover{
+      background:#edf1f1
+    }
+
+    .conversation-body{
+      display:flex;
+      min-height:0;
+      flex:1;
+      flex-direction:column;
+      padding:12px;
+      overflow:hidden;
+      background:#f1f2ef
+    }
+    .conversation-body app-host-coordination-conversation{
+      display:block;
+      min-height:0;
+      flex:1;
+      --conversation-height:100%;
+      --conversation-min-height:0
+    }
+
+    .state{
+      padding:40px;
+      color:#747d79;
+      text-align:center
+    }
+    .state.error{color:#a84642}
+
+    @media(max-width:800px){
+      .host-page{
+        width:min(100% - 28px,1280px);
+        height:auto;
+        min-height:0;
+        padding-bottom:40px;
+        overflow:visible
+      }
+      .host-heading{
+        align-items:flex-start;
+        flex-direction:column
+      }
+      .host-grid{
+        height:auto;
+        min-height:0;
+        grid-template-columns:1fr
+      }
+      .host-list{
+        max-height:300px;
+        overflow:auto;
+        border-right:0;
+        border-bottom:1px solid #dce1de
+      }
+      .conversation-context{
+        align-items:flex-start;
+        flex-direction:column
+      }
+      .coordination-status{
+        width:100%;
+        justify-content:space-between
+      }
+      .conversation-body{
+        min-height:590px;
+        overflow:visible
+      }
+      .conversation-body app-host-coordination-conversation{
+        --conversation-height:540px;
+        --conversation-min-height:430px
+      }
+    }
   `],
 })
 export class CtgHostActivityComponent implements OnInit {

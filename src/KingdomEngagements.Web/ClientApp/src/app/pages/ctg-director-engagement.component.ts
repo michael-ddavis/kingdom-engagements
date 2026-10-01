@@ -1,6 +1,6 @@
 import { HostCoordinationConversationComponent } from '../shared/host-coordination-conversation.component';
 import { HostAccessLinkComponent } from '../shared/host-access-link.component';
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Observable, catchError, forkJoin, of } from 'rxjs';
@@ -652,7 +652,7 @@ interface ResponsibilityDraft {
     @media(max-width:760px){.director-engagement{width:min(100% - 24px,1320px)}.engagement-heading{align-items:flex-start;flex-direction:column}.heading-actions{width:100%;justify-content:space-between}.next-action-card{align-items:flex-start;flex-direction:column}.next-action-card button{width:100%}.workspace-save-state{align-items:flex-start;flex-wrap:wrap}.workspace-save-state small{width:100%;margin-left:17px}.overview-grid,.two-column{grid-template-columns:1fr}.overview-card--wide{grid-column:auto}.review-list{grid-template-columns:1fr}.responsibility-grid{grid-template-columns:1fr 1fr}.form-grid{grid-template-columns:1fr}.form-grid .full{grid-column:auto}.schedule-row{grid-template-columns:1fr 1fr}.asset-editor{grid-template-columns:1fr}.asset-editor .wide{grid-column:auto}}
   `],
 })
-export class CtgDirectorEngagementComponent implements OnInit {
+export class CtgDirectorEngagementComponent implements OnInit, OnDestroy {
   readonly tabs: readonly { key: DirectorTab; label: string; lane?: string }[] = [
     { key: 'overview', label: 'Overview' },
     { key: 'responsibilities', label: 'Team responsibilities' },
@@ -1008,6 +1008,14 @@ export class CtgDirectorEngagementComponent implements OnInit {
     return `${complete} of ${items.length} applicable areas are complete. Open any area below to review or update it.`;
   }
 
+  ngOnDestroy(): void {
+    this.setGlobalUnsavedState(false);
+    for (const timer of this.autosaveTimers.values()) {
+      window.clearTimeout(timer);
+    }
+    this.autosaveTimers.clear();
+  }
+
   saveStatusCopy(): string {
     switch (this.saveState()) {
       case 'dirty': return 'Unsaved changes';
@@ -1029,6 +1037,7 @@ export class CtgDirectorEngagementComponent implements OnInit {
     if (!this.autosaveSupported(tab)) return;
 
     this.saveState.set('dirty');
+    this.setGlobalUnsavedState(true);
     const existing = this.autosaveTimers.get(tab);
     if (existing !== undefined) window.clearTimeout(existing);
 
@@ -1503,6 +1512,7 @@ export class CtgDirectorEngagementComponent implements OnInit {
   private beginSave(): void {
     this.saving.set(true);
     this.saveState.set('saving');
+    this.setGlobalUnsavedState(true);
     this.saveMessage.set(null);
     this.saveError.set(null);
   }
@@ -1510,13 +1520,24 @@ export class CtgDirectorEngagementComponent implements OnInit {
   private finishSave(_message: string, _quiet = false): void {
     this.saving.set(false);
     this.saveState.set('saved');
+    this.setGlobalUnsavedState(false);
   }
 
   private failSave(message: string): void {
     this.saving.set(false);
     this.saveState.set('error');
+    this.setGlobalUnsavedState(true);
     this.saveError.set(message);
     window.setTimeout(() => this.saveError.set(null), 3000);
+  }
+
+  private setGlobalUnsavedState(unsaved: boolean): void {
+    if (unsaved) {
+      document.body.dataset['apostolosUnsaved'] = 'true';
+      return;
+    }
+
+    delete document.body.dataset['apostolosUnsaved'];
   }
 
   private saveCurrentSection(tab: DirectorTab): void {

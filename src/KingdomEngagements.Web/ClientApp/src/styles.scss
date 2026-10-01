@@ -1362,3 +1362,61 @@ body .legacy-assignment-tab.is-active::after {
     background: transparent;
   }
 }
+
+
+/* ==========================================================================
+   ApostolOS warm-gray surface refinement
+   Keeps Engagements structure intact while moving the module away from bright
+   white into the quieter gray/stone palette used in the approved mockups.
+   ========================================================================== */
+
+:root {
+  --eng-canvas: #f0f1ef;
+  --eng-surface: #fbfbf8;
+  --eng-soft: #f5f5f2;
+  --legacy-bg: #f0f1ef;
+  --legacy-surface: #fbfbf8;
+  --legacy-border: #d9dfdc;
+}
+
+body .eng-main {
+  background:
+    radial-gradient(circle at 98% 0, rgba(55,111,141,.035), transparent 30rem),
+    #f0f1ef !important;
+}
+
+body .command-board,
+body .director-panel,
+body .panel,
+body .overview-card,
+body .engagement-heading,
+body .team-card,
+body .legacy-assignment-card,
+body .legacy-overview-card,
+body .legacy-invitation-source-panel,
+body .legacy-readiness-panel,
+body .legacy-record-page {
+  background: #fbfbf8 !important;
+}
+
+body .command-board > header,
+body .director-panel > header,
+body .panel > header,
+body .legacy-assignment-card-heading {
+  background: linear-gradient(180deg, #fafaf7 0%, #f4f5f2 100%) !important;
+}
+
+body .lane-row,
+body .team-roster-list article,
+body .member-grid article,
+body .owner-card,
+body .director-summary article,
+body .director-summary button {
+  background: #f5f5f2 !important;
+}
+
+body .brief-row:hover,
+body .engagement-row:hover,
+body .director-summary button:hover {
+  background: #eef0ed !important;
+}

@@ -32,7 +32,7 @@ export class AccountPanelComponent {
   }
   open(): void {
     for (const name of ['Primary', 'Secondary'] as const) {
-      const cookie = document.cookie.split(';').map(v => v.trim()).find(v => v.startsWith(`KingdomOS.Action${name}=`));
+      const cookieName = name === 'Primary' ? 'KingdomOS.ActionPrimary' : 'KingdomOS.ActionSecondary';\n      const cookie = document.cookie.split(';').map(v => v.trim()).find(v => v.startsWith(`${cookieName}=`));
       const value = cookie ? decodeURIComponent(cookie.split('=').slice(1).join('=')) : '';
       if (/^#[0-9a-f]{6}$/i.test(value)) (name === 'Primary' ? this.primary : this.secondary).set(value);
     }
@@ -43,7 +43,7 @@ export class AccountPanelComponent {
   setColor(name: 'Primary' | 'Secondary', value: string): void {
     if (!/^#[0-9a-f]{6}$/i.test(value)) return;
     (name === 'Primary' ? this.primary : this.secondary).set(value);
-    document.cookie = `KingdomOS.Action${name}=${encodeURIComponent(value)};path=/;max-age=31536000;SameSite=Lax${location.protocol === 'https:' ? ';Secure' : ''}`;
+    const cookieName = name === 'Primary' ? 'KingdomOS.ActionPrimary' : 'KingdomOS.ActionSecondary';\n    document.cookie = `${cookieName}=${encodeURIComponent(value)};path=/;max-age=31536000;SameSite=Lax${location.protocol === 'https:' ? ';Secure' : ''}`;
     document.documentElement.style.setProperty(`--kos-action-${name.toLowerCase()}`, value);
     document.documentElement.style.setProperty(`--action-${name.toLowerCase()}`, value);
     this.saved.set('Appearance saved.');
